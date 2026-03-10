@@ -459,7 +459,7 @@ export function LevelSyllableBuilder({
                             : item.isVowel
                               ? "linear-gradient(135deg, #FF6B8A 0%, #FF4B8A 100%)"
                               : "linear-gradient(135deg, #1CB0F6 0%, #0a8ed4 100%)",
-                        ringColor: isSelected ? accent.primary : undefined,
+                        boxShadow: isSelected ? `0 0 0 2px ${accent.primary}` : undefined,
                       }}
                     >
                       <span className="text-white text-2xl sm:text-3xl">
