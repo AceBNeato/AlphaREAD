@@ -23,6 +23,8 @@ import {
 } from "../data/levels";
 import { motion, AnimatePresence } from "motion/react";
 import { playElevenLabsAudio } from "../../utils/elevenLabsTTS";
+// @ts-ignore - Vosk types not available
+import { createModel, Model, Recognizer } from "vosk-browser";
 
 interface LevelSyllableReaderProps {
   levelId: number;
@@ -77,144 +79,327 @@ export function LevelSyllableReader({
   const [isRecording, setIsRecording] = useState(false);
   const [recordingFeedback, setRecordingFeedback] = useState<"correct" | "incorrect" | "listening" | null>(null);
   const [speechSupported, setSpeechSupported] = useState(true);
+  const [speechMethod, setSpeechMethod] = useState<"web-api" | "vosk" | "fallback" | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
   const recognitionRef = useRef<any>(null);
+  const voskModelRef = useRef<Model | null>(null);
+  const voskRecognizerRef = useRef<Recognizer | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const mediaStreamRef = useRef<MediaStream | null>(null);
 
   const currentTarget = targets[currentIndex];
   const allDone = completedTargets.size >= targets.length;
   const progress = (completedTargets.size / targets.length) * 100;
 
-  // Initialize speech recognition
+  // Initialize speech recognition with fallback system
   useMemo(() => {
-    if (typeof window !== 'undefined') {
+    const initializeSpeechRecognition = async () => {
+      if (typeof window === "undefined") {
+        setSpeechSupported(false);
+        setSpeechMethod("fallback");
+        return;
+      }
+
       // Check if HTTPS is required (most browsers require it for speech recognition)
-      const isHttps = window.location.protocol === 'https:' || window.location.hostname === 'localhost';
-      
+      const isHttps =
+        window.location.protocol === "https:" ||
+        window.location.hostname === "localhost";
+
       if (!isHttps) {
-        console.warn('Speech recognition requires HTTPS. Running on localhost should work.');
+        console.warn(
+          "Speech recognition requires HTTPS. Running on localhost should work."
+        );
         setSpeechSupported(false);
+        setSpeechMethod("fallback");
         return;
       }
 
-      // Check for speech recognition support
-      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-      
-      if (!SpeechRecognition) {
-        console.warn('Speech recognition not supported in this browser');
-        setSpeechSupported(false);
-        return;
-      }
+      // Try Web Speech API first
+      const SpeechRecognition =
+        (window as any).SpeechRecognition ||
+        (window as any).webkitSpeechRecognition;
 
-      try {
-        recognitionRef.current = new SpeechRecognition();
-        recognitionRef.current.continuous = false;
-        recognitionRef.current.interimResults = false;
-        recognitionRef.current.lang = 'en-US';
-        recognitionRef.current.maxAlternatives = 1;
+      if (SpeechRecognition) {
+        try {
+          recognitionRef.current = new SpeechRecognition();
+          recognitionRef.current.continuous = false;
+          recognitionRef.current.interimResults = false;
+          recognitionRef.current.lang = "en-US";
+          recognitionRef.current.maxAlternatives = 1;
 
-        recognitionRef.current.onstart = () => {
-          console.log('Speech recognition started');
-          setIsRecording(true);
-          setRecordingFeedback("listening");
-        };
+          recognitionRef.current.onstart = () => {
+            console.log("Web Speech API started");
+            setIsRecording(true);
+            setRecordingFeedback("listening");
+            setSpeechMethod("web-api");
+          };
 
-        recognitionRef.current.onresult = (event: any) => {
-          console.log('Speech recognition result:', event);
-          const transcript = event.results[0][0].transcript.toLowerCase().trim();
-          const expected = currentTarget.syllable.toLowerCase();
-          
-          console.log('Transcript:', transcript, 'Expected:', expected);
-          
-          // More flexible validation
-          const transcriptClean = transcript.replace(/[^a-z]/g, '');
-          const expectedClean = expected.replace(/[^a-z]/g, '');
-          
-          const isCorrect = transcriptClean.includes(expectedClean) || 
-                           expectedClean.includes(transcriptClean) || 
-                           transcriptClean === expectedClean ||
-                           // Check if individual letters match
-                           transcriptClean.split('').some((letter: string) => expectedClean.includes(letter));
-          
-          console.log('Validation result:', isCorrect);
-          
-          setRecordingFeedback(isCorrect ? "correct" : "incorrect");
-          setIsRecording(false);
-          
-          if (isCorrect) {
-            setScore((s) => s + 1);
-            setTimeout(() => {
-              handleComplete();
-            }, 1500);
-          } else {
-            setTimeout(() => {
-              setRecordingFeedback(null);
-            }, 3000);
-          }
-        };
+          recognitionRef.current.onresult = (event: any) => {
+            console.log("Web Speech result:", event);
+            const transcript = event.results[0][0].transcript.toLowerCase().trim();
+            const expected = currentTarget.syllable.toLowerCase();
 
-        recognitionRef.current.onerror = (event: any) => {
-          console.error('Speech recognition error:', event.error, event);
-          console.log('Environment info:', {
-            protocol: window.location.protocol,
-            hostname: window.location.hostname,
-            userAgent: navigator.userAgent,
-            speechSupported: !!recognitionRef.current
-          });
-          
-          setIsRecording(false);
-          setRecordingFeedback(null);
-          
-          // Enhanced error handling for deployed environments
-          if (event.error === 'not-allowed') {
-            alert('🎤 Microphone access denied. Please:\n1. Click the lock icon in your browser address bar\n2. Allow microphone access for this site\n3. Refresh and try again');
-          } else if (event.error === 'no-speech') {
-            alert('🎤 No speech was detected. Please speak clearly into your microphone and try again.');
-          } else if (event.error === 'network') {
-            const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
-            if (isProduction) {
-              alert('🎤 Speech recognition may not be available in your region or browser.\n\n💡 Try using Chrome or Edge browser.\n\nAlternatively, use the "I Sounded It Out!" button below.');
+            console.log("Transcript:", transcript, "Expected:", expected);
+
+            // More flexible validation
+            const transcriptClean = transcript.replace(/[^a-z]/g, "");
+            const expectedClean = expected.replace(/[^a-z]/g, "");
+
+            const isCorrect =
+              transcriptClean.includes(expectedClean) ||
+              expectedClean.includes(transcriptClean) ||
+              transcriptClean === expectedClean ||
+              // Check if individual letters match
+              transcriptClean.split("").some((letter: string) =>
+                expectedClean.includes(letter)
+              );
+
+            console.log("Validation result:", isCorrect);
+
+            setRecordingFeedback(isCorrect ? "correct" : "incorrect");
+            setIsRecording(false);
+
+            if (isCorrect) {
+              setScore((s) => s + 1);
+              setRetryCount(0); // Reset retry count on success
+              setTimeout(() => {
+                handleComplete();
+              }, 1500);
             } else {
-              alert('🎤 Network error - speech recognition requires internet connection.\n\n💡 Please check your connection and try again.');
+              setRetryCount((prev) => prev + 1);
+              setTimeout(() => {
+                setRecordingFeedback(null);
+              }, 3000);
             }
-          } else if (event.error === 'service-not-allowed') {
-            alert('🎤 Speech recognition service is not available.\n\n💡 This might be due to:\n• Browser restrictions\n• Network blocking\n• Regional limitations\n\nUse the "I Sounded It Out!" button instead.');
-          } else if (event.error === 'aborted') {
-            // User cancelled or another error - don't show alert
-            return;
-          } else {
-            console.warn('Unknown speech recognition error:', event.error);
-            alert(`🎤 Speech recognition error: ${event.error}\n\n💡 Try using the "I Sounded It Out!" button instead.`);
-          }
-        };
+          };
 
-        recognitionRef.current.onend = () => {
-          console.log('Speech recognition ended');
-          setIsRecording(false);
-        };
+          recognitionRef.current.onerror = async (event: any) => {
+            console.error("Web Speech API error:", event.error, event);
 
-      } catch (error) {
-        console.error('Error initializing speech recognition:', error);
-        setSpeechSupported(false);
+            // If Web Speech API fails, try Vosk.js as fallback
+            if (event.error === "network" || event.error === "service-not-allowed") {
+              console.log("Web Speech API failed, trying Vosk.js...");
+              await initializeVoskFallback();
+              return;
+            }
+
+            // Handle other Web Speech API errors
+            setIsRecording(false);
+            setRecordingFeedback(null);
+
+            const isProduction =
+              window.location.hostname !== "localhost" &&
+              window.location.hostname !== "127.0.0.1";
+            if (event.error === "not-allowed") {
+              alert(
+                " Microphone access denied. Please:\n1. Click the lock icon in your browser address bar\n2. Allow microphone access for this site\n3. Refresh and try again"
+              );
+            } else if (event.error === "no-speech") {
+              alert(
+                " No speech was detected. Please speak clearly into your microphone and try again."
+              );
+            } else if (event.error === "network" && isProduction) {
+              alert(
+                " Speech recognition may not be available in your region or browser.\n\n The app will use offline speech recognition.\n\nAlternatively, use the 'I Sounded It Out!' button below."
+              );
+              await initializeVoskFallback();
+            } else {
+              alert(
+                " Speech recognition error: " +
+                  event.error +
+                  "\n\n The app will use offline speech recognition."
+              );
+              await initializeVoskFallback();
+            }
+          };
+
+          recognitionRef.current.onend = () => {
+            console.log("Web Speech API ended");
+            setIsRecording(false);
+          };
+        } catch (error) {
+          console.error("Error initializing Web Speech API:", error);
+          await initializeVoskFallback();
+        }
+      } else {
+        console.warn("Web Speech API not supported, trying Vosk.js...");
+        await initializeVoskFallback();
       }
-    } else {
-      setSpeechSupported(false);
-    }
+    };
+
+    const initializeVoskFallback = async () => {
+      try {
+        console.log("Initializing Vosk.js for offline speech recognition...");
+
+        // Create Vosk model (this will download the English model)
+        voskModelRef.current = await createModel(
+          "https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip"
+        );
+        console.log("Vosk model loaded successfully");
+
+        // Create recognizer
+        voskRecognizerRef.current = new voskModelRef.current.KaldiRecognizer(
+          16000
+        );
+        voskRecognizerRef.current.setWords(true);
+
+        setSpeechMethod("vosk");
+        console.log("Vosk.js initialized successfully");
+      } catch (error) {
+        console.error("Error initializing Vosk.js:", error);
+        setSpeechSupported(false);
+        setSpeechMethod("fallback");
+      }
+    };
+
+    initializeSpeechRecognition();
   }, [currentTarget]);
 
-  const startRecording = useCallback(() => {
-    if (recognitionRef.current && !isRecording) {
+  const startRecording = useCallback(async () => {
+    if (isRecording) return;
+
+    // If using Web Speech API
+    if (speechMethod === "web-api" && recognitionRef.current) {
       try {
         recognitionRef.current.start();
       } catch (error) {
-        console.error('Error starting speech recognition:', error);
+        console.error("Error starting Web Speech API:", error);
+      }
+      return;
+    }
+
+    // If using Vosk.js (offline)
+    if (speechMethod === "vosk" && voskRecognizerRef.current) {
+      try {
+        console.log("Starting Vosk.js recording...");
+        setIsRecording(true);
+        setRecordingFeedback("listening");
+
+        // Get microphone access
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            sampleRate: 16000,
+            channelCount: 1,
+          },
+        });
+
+        mediaStreamRef.current = stream;
+
+        // Create audio context
+        audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+        
+        // Create source and processor
+        const source = audioContextRef.current.createMediaStreamSource(stream);
+        const processor = audioContextRef.current.createScriptProcessor(4096, 1, 1);
+
+        let recordingStartTime = Date.now();
+        const maxRecordingTime = 5000; // 5 seconds max
+
+        processor.onaudioprocess = (event) => {
+          if (!isRecording) return;
+
+          // Check if recording time exceeded
+          if (Date.now() - recordingStartTime > maxRecordingTime) {
+            stopVoskRecording();
+            return;
+          }
+
+          // Get audio data
+          const inputBuffer = event.inputBuffer;
+          const inputData = inputBuffer.getChannelData(0);
+
+          // Convert to 16-bit PCM
+          const pcmData = new Int16Array(inputData.length);
+          for (let i = 0; i < inputData.length; i++) {
+            pcmData[i] = Math.max(-32768, Math.min(32767, inputData[i] * 32768));
+          }
+
+          // Send to Vosk recognizer
+          if (voskRecognizerRef.current) {
+            const result = voskRecognizerRef.current.process(pcmData);
+            
+            if (result && result.result && result.result.length > 0) {
+              const transcript = result.result[0].word.toLowerCase().trim();
+              console.log("Vosk transcript:", transcript);
+              
+              // Process the result
+              processVoskResult(transcript);
+            }
+          }
+        };
+
+        source.connect(processor);
+        processor.connect(audioContextRef.current.destination);
+
+      } catch (error) {
+        console.error("Error starting Vosk recording:", error);
+        setIsRecording(false);
+        setRecordingFeedback(null);
+        
+        if (error.name === 'NotAllowedError') {
+          alert('🎤 Microphone access denied. Please allow microphone access and try again.');
+        } else {
+          alert('🎤 Error accessing microphone. Please check your audio settings.');
+        }
       }
     }
-  }, [isRecording]);
+  }, [isRecording, speechMethod]);
 
   const stopRecording = useCallback(() => {
-    if (recognitionRef.current && isRecording) {
+    if (speechMethod === "web-api" && recognitionRef.current) {
       recognitionRef.current.stop();
+    } else if (speechMethod === "vosk") {
+      stopVoskRecording();
     }
-  }, [isRecording]);
+  }, [speechMethod]);
+
+  const stopVoskRecording = () => {
+    console.log("Stopping Vosk recording...");
+    setIsRecording(false);
+    
+    // Stop media stream
+    if (mediaStreamRef.current) {
+      mediaStreamRef.current.getTracks().forEach(track => track.stop());
+      mediaStreamRef.current = null;
+    }
+    
+    // Disconnect audio context
+    if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+      audioContextRef.current.close();
+      audioContextRef.current = null;
+    }
+  };
+
+  const processVoskResult = (transcript: string) => {
+    console.log("Processing Vosk result:", transcript);
+    
+    const expected = currentTarget.syllable.toLowerCase();
+    const transcriptClean = transcript.replace(/[^a-z]/g, '');
+    const expectedClean = expected.replace(/[^a-z]/g, '');
+    
+    const isCorrect = transcriptClean.includes(expectedClean) || 
+                     expectedClean.includes(transcriptClean) || 
+                     transcriptClean === expectedClean ||
+                     transcriptClean.split('').some((letter: string) => expectedClean.includes(letter));
+    
+    console.log("Vosk validation result:", isCorrect);
+    
+    setRecordingFeedback(isCorrect ? "correct" : "incorrect");
+    stopVoskRecording();
+    
+    if (isCorrect) {
+      setScore((s) => s + 1);
+      setRetryCount(0);
+      setTimeout(() => {
+        handleComplete();
+      }, 1500);
+    } else {
+      setRetryCount(prev => prev + 1);
+      setTimeout(() => {
+        setRecordingFeedback(null);
+      }, 3000);
+    }
+  };
 
   // Helper to play syllable audio by playing each letter sound in sequence
   const playSyllableAudio = useCallback(async (target: SyllableTarget) => {
@@ -437,12 +622,16 @@ export function LevelSyllableReader({
                 ) : (
                   <div className="text-center p-4 bg-yellow-100 dark:bg-yellow-900/20 rounded-lg">
                     <p className="text-yellow-800 dark:text-yellow-200 mb-2">
-                      🎤 Speech recognition not supported
+                      🎤 Speech recognition not available
                     </p>
                     <p className="text-sm text-yellow-700 dark:text-yellow-300 mb-4">
-                      This feature works best in Chrome/Edge with HTTPS. 
-                      {!window.location.protocol.includes('https') && window.location.hostname !== 'localhost' && 
-                        ' Please use HTTPS or localhost for speech recognition.'}
+                      {speechMethod === "vosk" ? (
+                        <>Offline speech recognition is loading...</>
+                      ) : speechMethod === "web-api" ? (
+                        <>Using online speech recognition (may not work in all regions)</>
+                      ) : (
+                        <>No speech recognition available. This feature requires microphone access and may not work in all browsers.</>
+                      )}
                     </p>
                     <Button
                       onClick={handleComplete}
