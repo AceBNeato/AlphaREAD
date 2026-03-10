@@ -40,6 +40,50 @@ const patternColors: Record<SyllablePattern, string> = {
   CVC: "#FF4B8A",
 };
 
+// Simple CV syllables for elementary standards
+const SIMPLE_CV_SYLLABLES = [
+  { pattern: "CV" as const, letters: ["B", "A"], syllable: "BA" },
+  { pattern: "CV" as const, letters: ["C", "A"], syllable: "CA" },
+  { pattern: "CV" as const, letters: ["D", "A"], syllable: "DA" },
+  { pattern: "CV" as const, letters: ["M", "A"], syllable: "MA" },
+  { pattern: "CV" as const, letters: ["P", "A"], syllable: "PA" },
+  { pattern: "CV" as const, letters: ["S", "A"], syllable: "SA" },
+  { pattern: "CV" as const, letters: ["T", "A"], syllable: "TA" },
+  { pattern: "CV" as const, letters: ["B", "I"], syllable: "BI" },
+  { pattern: "CV" as const, letters: ["C", "I"], syllable: "CI" },
+  { pattern: "CV" as const, letters: ["D", "I"], syllable: "DI" },
+  { pattern: "CV" as const, letters: ["M", "I"], syllable: "MI" },
+  { pattern: "CV" as const, letters: ["P", "I"], syllable: "PI" },
+  { pattern: "CV" as const, letters: ["S", "I"], syllable: "SI" },
+  { pattern: "CV" as const, letters: ["T", "I"], syllable: "TI" },
+];
+
+// Simple VC syllables for elementary standards
+const SIMPLE_VC_SYLLABLES = [
+  { pattern: "VC" as const, letters: ["A", "B"], syllable: "AB" },
+  { pattern: "VC" as const, letters: ["A", "D"], syllable: "AD" },
+  { pattern: "VC" as const, letters: ["A", "M"], syllable: "AM" },
+  { pattern: "VC" as const, letters: ["A", "P"], syllable: "AP" },
+  { pattern: "VC" as const, letters: ["A", "T"], syllable: "AT" },
+  { pattern: "VC" as const, letters: ["I", "B"], syllable: "IB" },
+  { pattern: "VC" as const, letters: ["I", "D"], syllable: "ID" },
+  { pattern: "VC" as const, letters: ["I", "M"], syllable: "IM" },
+  { pattern: "VC" as const, letters: ["I", "P"], syllable: "IP" },
+  { pattern: "VC" as const, letters: ["I", "T"], syllable: "IT" },
+];
+
+// Simple CVC syllables for elementary standards (using real words)
+const SIMPLE_CVC_SYLLABLES = [
+  { pattern: "CVC" as const, letters: ["C", "A", "T"], syllable: "CAT" },
+  { pattern: "CVC" as const, letters: ["D", "O", "G"], syllable: "DOG" },
+  { pattern: "CVC" as const, letters: ["P", "I", "G"], syllable: "PIG" },
+  { pattern: "CVC" as const, letters: ["R", "A", "T"], syllable: "RAT" },
+  { pattern: "CVC" as const, letters: ["S", "U", "N"], syllable: "SUN" },
+  { pattern: "CVC" as const, letters: ["B", "I", "G"], syllable: "BIG" },
+  { pattern: "CVC" as const, letters: ["R", "U", "G"], syllable: "RUG" },
+  { pattern: "CVC" as const, letters: ["H", "O", "G"], syllable: "HOG" },
+];
+
 export function LevelSyllableBuilder({
   levelId,
   patterns,
@@ -47,7 +91,54 @@ export function LevelSyllableBuilder({
 }: LevelSyllableBuilderProps) {
   const navigate = useNavigate();
 
-  const targets = useMemo(() => generateSyllableTargets(patterns, 8), [patterns]);
+  let targets = useMemo(() => {
+    const allTargets: SyllableTarget[] = [];
+
+    if (patterns.includes("CV")) {
+      allTargets.push(...SIMPLE_CV_SYLLABLES);
+    }
+    if (patterns.includes("VC")) {
+      allTargets.push(...SIMPLE_VC_SYLLABLES);
+    }
+    if (patterns.includes("CVC")) {
+      allTargets.push(...SIMPLE_CVC_SYLLABLES);
+    }
+
+    if (allTargets.length > 0) {
+      // Weighted randomization based on level
+      if (levelId === 4) {
+        // Level 4: Focus more on VC (70% VC, 30% CV)
+        const vcTargets = allTargets.filter(t => t.pattern === "VC");
+        const cvTargets = allTargets.filter(t => t.pattern === "CV");
+        const vcCount = Math.min(7, vcTargets.length);
+        const cvCount = Math.min(3, cvTargets.length);
+        const selected = [
+          ...shuffle(vcTargets).slice(0, vcCount),
+          ...shuffle(cvTargets).slice(0, cvCount)
+        ];
+        return shuffle(selected);
+      } else if (levelId === 5) {
+        // Level 5: Focus on CVC (60% CVC, 20% VC, 20% CV)
+        const cvcTargets = allTargets.filter(t => t.pattern === "CVC");
+        const vcTargets = allTargets.filter(t => t.pattern === "VC");
+        const cvTargets = allTargets.filter(t => t.pattern === "CV");
+        const cvcCount = Math.min(6, cvcTargets.length);
+        const vcCount = Math.min(2, vcTargets.length);
+        const cvCount = Math.min(2, cvTargets.length);
+        const selected = [
+          ...shuffle(cvcTargets).slice(0, cvcCount),
+          ...shuffle(vcTargets).slice(0, vcCount),
+          ...shuffle(cvTargets).slice(0, cvCount)
+        ];
+        return shuffle(selected);
+      } else {
+        // Level 3: Just CV, 5-10 syllables
+        return shuffle(allTargets).slice(0, Math.min(10, allTargets.length));
+      }
+    } else {
+      return generateSyllableTargets(patterns, 8);
+    }
+  }, [patterns, levelId]);
 
   // Build the letter pool from all targets
   const letterPool = useMemo(() => {
@@ -106,10 +197,24 @@ export function LevelSyllableBuilder({
     }
   }, []);
 
-  // Helper to play syllable audio with phonetic pronunciation
-  const playSyllableAudio = useCallback((target: SyllableTarget) => {
-    const phonetic = getPhoneticPronunciation(target.syllable, target.pattern);
-    playAudio(phonetic);
+  // Helper to play syllable audio by playing each letter sound in sequence
+  const playSyllableAudio = useCallback(async (target: SyllableTarget) => {
+    // Play each letter sound in sequence with a delay
+    for (let i = 0; i < target.letters.length; i++) {
+      const letter = target.letters[i];
+      setPlayingLetter(letter);
+      try {
+        await playElevenLabsAudio(letter);
+      } catch (error) {
+        console.error("Error playing audio:", error);
+      }
+      
+      // Wait 1 second between letters
+      if (i < target.letters.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 900));
+      }
+    }
+    setPlayingLetter(null);
   }, [playAudio]);
 
   const handleLetterClick = (letter: string) => {
@@ -127,11 +232,6 @@ export function LevelSyllableBuilder({
         setFeedback("correct");
         setScore((s) => s + 1);
 
-        // Use phonetic pronunciation for syllables
-        setTimeout(() => {
-          playSyllableAudio(currentTarget);
-        }, 500);
-
         setTimeout(() => {
           const newCompleted = new Set(completedTargets);
           newCompleted.add(currentIndex);
@@ -139,11 +239,7 @@ export function LevelSyllableBuilder({
           setFeedback(null);
           setSelectedLetters([]);
 
-          // Auto-advance to next uncompleted
-          if (newCompleted.size < targets.length) {
-            const next = findNextUncompleted(currentIndex, newCompleted);
-            if (next !== null) setCurrentIndex(next);
-          }
+          // Removed auto-advance - stay on completed syllable
         }, 1500);
       } else {
         setFeedback("wrong");
