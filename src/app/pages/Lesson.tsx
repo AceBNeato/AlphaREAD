@@ -4,7 +4,6 @@ import { levels } from "../data/levels";
 import { LevelPairs } from "../components/LevelPairs";
 import { LevelSounds } from "../components/LevelSounds";
 import { LevelSyllableBuilder } from "../components/LevelSyllableBuilder";
-import { LevelSyllableReader } from "../components/LevelSyllableReader";
 
 const levelAccents = [
   { primary: "#58CC02", dark: "#46a302", lightBg: "#e8f9d4" },
@@ -46,13 +45,6 @@ export default function Lesson() {
           levelId={level.id}
           patterns={level.patterns || ["CV"]}
           accent={accent}
-        />
-      );
-    case "syllable-reader":
-      return (
-        <LevelSyllableReader
-          levelId={level.id}
-          patterns={level.patterns || ["CV"]}
         />
       );
     default:

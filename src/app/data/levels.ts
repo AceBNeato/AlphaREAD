@@ -4,7 +4,7 @@ export interface Letter {
   image: string;
 }
 
-export type LevelType = "pairs" | "sounds" | "syllable-builder" | "syllable-reader";
+export type LevelType = "pairs" | "sounds" | "syllable-builder";
 export type SyllablePattern = "CV" | "VC" | "CVC";
 
 export interface Level {
@@ -236,16 +236,6 @@ export const levels: Level[] = [
     title: "CVC Master",
     subtitle: "Build CV, VC, and CVC syllables",
     type: "syllable-builder",
-    patterns: ["CV", "VC", "CVC"],
-    letters: allLetters,
-    locked: true,
-    completed: false,
-  },
-  {
-    id: 6,
-    title: "Syllable Reader",
-    subtitle: "Sound out CV, VC, and CVC syllables",
-    type: "syllable-reader",
     patterns: ["CV", "VC", "CVC"],
     letters: allLetters,
     locked: true,
