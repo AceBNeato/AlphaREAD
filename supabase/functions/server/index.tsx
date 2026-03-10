@@ -1,7 +1,10 @@
 import { Hono } from "npm:hono";
 import { cors } from "npm:hono/cors";
-
+import { logger } from "npm:hono/logger";
 const app = new Hono();
+
+// Enable logger
+app.use('*', logger(console.log));
 
 // Enable CORS for all routes and methods
 app.use(
@@ -9,11 +12,16 @@ app.use(
   cors({
     origin: "*",
     allowHeaders: ["Content-Type", "Authorization"],
-    allowMethods: ["GET\", \"POST", "PUT", "DELETE", "OPTIONS"],
+    allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     exposeHeaders: ["Content-Length"],
     maxAge: 600,
   }),
 );
+
+// Health check endpoint
+app.get("/make-server-f3736f45/health", (c) => {
+  return c.json({ status: "ok" });
+});
 
 // TTS endpoint
 app.post("/make-server-f3736f45/tts", async (c) => {
@@ -22,7 +30,6 @@ app.post("/make-server-f3736f45/tts", async (c) => {
     const apiKey = Deno.env.get("ELEVENLABS_API_KEY");
 
     if (!apiKey) {
-      console.error("[TTS] ELEVENLABS_API_KEY not configured");
       return c.json(
         { error: "ELEVENLABS_API_KEY not configured" },
         500
@@ -31,7 +38,8 @@ app.post("/make-server-f3736f45/tts", async (c) => {
 
     console.log(`[TTS] Generating speech for: "${text}"`);
 
-    // Use Rachel voice with eleven_turbo_v2_5 model
+    // Use the free-tier compatible model: eleven_turbo_v2_5
+    // Other free options: eleven_turbo_v2, eleven_multilingual_v2
     const response = await fetch(
       "https://api.elevenlabs.io/v1/text-to-speech/21m00Tcm4TlvDq8ikWAM",
       {
@@ -43,7 +51,7 @@ app.post("/make-server-f3736f45/tts", async (c) => {
         },
         body: JSON.stringify({
           text,
-          model_id: "eleven_turbo_v2_5",
+          model_id: "eleven_turbo_v2_5", // Free tier model
           voice_settings: {
             stability: 0.5,
             similarity_boost: 0.75,

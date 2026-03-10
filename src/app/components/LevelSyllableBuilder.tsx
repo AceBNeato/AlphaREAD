@@ -106,6 +106,12 @@ export function LevelSyllableBuilder({
     }
   }, []);
 
+  // Helper to play syllable audio with phonetic pronunciation
+  const playSyllableAudio = useCallback((target: SyllableTarget) => {
+    const phonetic = getPhoneticPronunciation(target.syllable, target.pattern);
+    playAudio(phonetic);
+  }, [playAudio]);
+
   const handleLetterClick = (letter: string) => {
     if (feedback || allDone || completedTargets.has(currentIndex)) return;
 
@@ -121,12 +127,23 @@ export function LevelSyllableBuilder({
         setFeedback("correct");
         setScore((s) => s + 1);
 
+        // Use phonetic pronunciation for syllables
+        setTimeout(() => {
+          playSyllableAudio(currentTarget);
+        }, 500);
+
         setTimeout(() => {
           const newCompleted = new Set(completedTargets);
           newCompleted.add(currentIndex);
           setCompletedTargets(newCompleted);
           setFeedback(null);
           setSelectedLetters([]);
+
+          // Auto-advance to next uncompleted
+          if (newCompleted.size < targets.length) {
+            const next = findNextUncompleted(currentIndex, newCompleted);
+            if (next !== null) setCurrentIndex(next);
+          }
         }, 1500);
       } else {
         setFeedback("wrong");
@@ -287,6 +304,15 @@ export function LevelSyllableBuilder({
                         </span>
                       ))}
                     </span>
+                    <button
+                      onClick={() => playSyllableAudio(currentTarget)}
+                      className="p-3 rounded-full text-white shadow-md hover:scale-110 active:scale-95 transition-transform"
+                      style={{
+                        background: `linear-gradient(135deg, ${patternColors[currentTarget.pattern]}, ${accent.dark})`,
+                      }}
+                    >
+                      <Volume2 className="w-6 h-6" />
+                    </button>
                   </div>
 
                   <span className="text-xs text-gray-500 dark:text-gray-400">
@@ -306,7 +332,7 @@ export function LevelSyllableBuilder({
                       Completed! — "{currentTarget.syllable}"
                     </span>
                     <button
-                      onClick={() => playAudio(currentTarget.syllable)}
+                      onClick={() => playSyllableAudio(currentTarget)}
                       className="ml-1 p-1 rounded-full hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors"
                     >
                       <Volume2 className="w-4 h-4" />
@@ -492,7 +518,7 @@ export function LevelSyllableBuilder({
                           style={{
                             background: `linear-gradient(135deg, ${patternColors[t.pattern]}, ${accent.dark})`,
                           }}
-                          onClick={() => playAudio(t.syllable)}
+                          onClick={() => playSyllableAudio(t)}
                         >
                           <Volume2 className="w-3 h-3 inline mr-1" />
                           {t.syllable}
@@ -534,7 +560,7 @@ export function LevelSyllableBuilder({
                   style={{
                     background: `linear-gradient(135deg, ${patternColors[t.pattern]}, ${accent.dark})`,
                   }}
-                  onClick={() => playAudio(t.syllable)}
+                  onClick={() => playSyllableAudio(t)}
                 >
                   <Volume2 className="w-3 h-3 inline mr-1" />
                   {t.syllable}
