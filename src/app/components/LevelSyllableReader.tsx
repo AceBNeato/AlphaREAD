@@ -153,25 +153,36 @@ export function LevelSyllableReader({
 
         recognitionRef.current.onerror = (event: any) => {
           console.error('Speech recognition error:', event.error, event);
+          console.log('Environment info:', {
+            protocol: window.location.protocol,
+            hostname: window.location.hostname,
+            userAgent: navigator.userAgent,
+            speechSupported: !!recognitionRef.current
+          });
+          
           setIsRecording(false);
           setRecordingFeedback(null);
           
-          // Handle specific error types with better messaging
+          // Enhanced error handling for deployed environments
           if (event.error === 'not-allowed') {
-            alert('Microphone permission denied. Please click "Allow" when your browser asks for microphone access, then try again.');
+            alert('🎤 Microphone access denied. Please:\n1. Click the lock icon in your browser address bar\n2. Allow microphone access for this site\n3. Refresh and try again');
           } else if (event.error === 'no-speech') {
-            alert('No speech was detected. Please speak clearly into your microphone and try again.');
+            alert('🎤 No speech was detected. Please speak clearly into your microphone and try again.');
           } else if (event.error === 'network') {
-            const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-            if (isLocalhost) {
-              alert('Speech recognition requires an internet connection even on localhost. Please check your network connection, or use the "I Sounded It Out!" button for now.');
+            const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+            if (isProduction) {
+              alert('🎤 Speech recognition may not be available in your region or browser.\n\n💡 Try using Chrome or Edge browser.\n\nAlternatively, use the "I Sounded It Out!" button below.');
             } else {
-              alert('Network error occurred. Please check your internet connection and try again.');
+              alert('🎤 Network error - speech recognition requires internet connection.\n\n💡 Please check your connection and try again.');
             }
           } else if (event.error === 'service-not-allowed') {
-            alert('Speech recognition service is not available. This might be due to browser restrictions or network issues.');
+            alert('🎤 Speech recognition service is not available.\n\n💡 This might be due to:\n• Browser restrictions\n• Network blocking\n• Regional limitations\n\nUse the "I Sounded It Out!" button instead.');
+          } else if (event.error === 'aborted') {
+            // User cancelled or another error - don't show alert
+            return;
           } else {
-            alert(`Speech recognition error: ${event.error}. Please try again or use the manual button.`);
+            console.warn('Unknown speech recognition error:', event.error);
+            alert(`🎤 Speech recognition error: ${event.error}\n\n💡 Try using the "I Sounded It Out!" button instead.`);
           }
         };
 
