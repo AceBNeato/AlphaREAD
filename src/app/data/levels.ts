@@ -226,7 +226,7 @@ export const levels: Level[] = [
     title: "CV & VC Builder",
     subtitle: "Build mostly CV syllables with some VC practice",
     type: "syllable-builder",
-    patterns: ["CV", "CV", "VC"],
+    patterns: ["CV", "CV", "CV", "VC"],
     letters: allLetters,
     locked: true,
     completed: false,
