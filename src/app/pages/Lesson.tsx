@@ -4,6 +4,7 @@ import { levels } from "../data/levels";
 import { LevelPairs } from "../components/LevelPairs";
 import { LevelSounds } from "../components/LevelSounds";
 import { LevelSyllableBuilder } from "../components/LevelSyllableBuilder";
+import LevelVoicePractice, { createCVCVoiceLevel } from "../components/LevelVoicePractice";
 
 const levelAccents = [
   { primary: "#58CC02", dark: "#46a302", lightBg: "#e8f9d4" },
@@ -40,6 +41,17 @@ export default function Lesson() {
     case "sounds":
       return <LevelSounds levelId={level.id} accent={accent} />;
     case "syllable-builder":
+      // Special handling for Level 6 - Voice Evaluation
+      if (level.id === 6) {
+        return (
+          <LevelVoicePractice
+            title="Voice Evaluation - Words"
+            subtitle="Practice saying CVC words out loud"
+            items={createCVCVoiceLevel()}
+            onLevelComplete={() => navigate("/")}
+          />
+        );
+      }
       return (
         <LevelSyllableBuilder
           levelId={level.id}

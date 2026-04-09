@@ -1,6 +1,7 @@
 import { createBrowserRouter, Navigate } from "react-router";
 import Home from "./pages/Home";
 import Lesson from "./pages/Lesson";
+import VoicePractice from "./pages/VoicePractice";
 
 export const router = createBrowserRouter([
   {
@@ -10,6 +11,10 @@ export const router = createBrowserRouter([
   {
     path: "/lesson/:levelId",
     Component: Lesson,
+  },
+  {
+    path: "/voice-practice",
+    Component: VoicePractice,
   },
   {
     path: "*",

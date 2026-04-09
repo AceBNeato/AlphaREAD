@@ -11,6 +11,7 @@ import {
   Puzzle,
   Shapes,
   Brain,
+  Mic,
 } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { levels } from "../data/levels";
@@ -47,9 +48,15 @@ const levelColors = [
     light: "#ffe4ef",
     text: "#FF4B8A",
   },
+  {
+    bg: "from-[#8B5CF6] to-[#7c3aed]",
+    border: "border-[#8B5CF6]",
+    light: "#f3e8ff",
+    text: "#8B5CF6",
+  },
 ];
 
-const levelIcons = [Layers, Music, Puzzle, Shapes, Brain];
+const levelIcons = [Layers, Music, Puzzle, Shapes, Brain, Mic];
 
 const levelDescriptions = [
   "Learn all 26 letters in shuffled pairs. Each pair has a listen button so you can hear each letter's sound.",
@@ -57,6 +64,7 @@ const levelDescriptions = [
   "Build CV (Consonant + Vowel) syllables! Click letters in order to form patterns like BA, MI, TO.",
   "Now add VC (Vowel + Consonant) syllables alongside CV! Build patterns like AB, IM, OT and more.",
   "Master all three patterns: CV, VC, and CVC! Form syllables like BAT, MIL, FUN in this ultimate challenge.",
+  "Practice pronunciation with speech recognition! Say CVC words out loud and get instant feedback.",
 ];
 
 const levelTags = [
@@ -65,6 +73,7 @@ const levelTags = [
   ["CV Pattern", "Syllables", "Audio"],
   ["CV + VC", "Syllables", "Audio"],
   ["CV + VC + CVC", "Syllables", "Audio"],
+  ["Voice Recognition", "CVC Words", "Speech Practice"],
 ];
 
 export default function Home() {
@@ -101,7 +110,7 @@ export default function Home() {
             </h1>
           </div>
           <p className="text-gray-500 dark:text-gray-400">
-            Master the alphabet through 5 fun, progressive levels!
+            Master the alphabet through 6 fun, progressive levels!
           </p>
         </header>
 
@@ -233,6 +242,51 @@ export default function Home() {
               </div>
             );
           })}
+        </div>
+
+        {/* Voice Practice Card */}
+        <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-lg overflow-hidden border-4 border-[#FF9600] dark:border-[#e08000] hover:shadow-2xl hover:scale-[1.02] transition-all duration-300">
+          <div className="p-6">
+            <div className="flex items-start justify-between mb-4">
+              <div className="flex-1">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-white bg-gradient-to-br from-[#FF9600] to-[#e08000]">
+                    <Mic className="w-7 h-7" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl text-gray-800 dark:text-gray-100">
+                      Voice Practice
+                    </h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      Practice pronunciation with speech recognition
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 leading-relaxed">
+              Use your microphone to practice saying letters and words out loud. Get instant feedback on your pronunciation!
+            </p>
+
+            <div className="flex gap-2 mb-4 flex-wrap">
+              <span className="text-xs px-3 py-1 rounded-full bg-[#fff2d4] text-[#FF9600]">
+                Speech Recognition
+              </span>
+              <span className="text-xs px-3 py-1 rounded-full bg-[#fff2d4] text-[#FF9600]">
+                Voice Practice
+              </span>
+              <span className="text-xs px-3 py-1 rounded-full bg-[#fff2d4] text-[#FF9600]">
+                Interactive
+              </span>
+            </div>
+
+            <Link to="/voice-practice">
+              <Button className="w-full py-6 text-lg rounded-2xl text-white shadow-md hover:shadow-lg transition-all bg-gradient-to-r from-[#FF9600] to-[#e08000] hover:from-[#e08000] hover:to-[#cc6600]">
+                Start Voice Practice
+              </Button>
+            </Link>
+          </div>
         </div>
       </div>
     </div>

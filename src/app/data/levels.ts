@@ -18,7 +18,7 @@ export interface Level {
   completed: boolean;
 }
 
-const allLetters: Letter[] = [
+export const allLetters: Letter[] = [
   { letter: "A", example: "Apple", image: "red apple fruit" },
   { letter: "B", example: "Ball", image: "colorful beach ball" },
   { letter: "C", example: "Cat", image: "cute orange cat" },
@@ -239,6 +239,16 @@ export const levels: Level[] = [
     patterns: ["CVC"],
     letters: allLetters,
     locked: true,
+    completed: false,
+  },
+  {
+    id: 6,
+    title: "Voice Evaluation",
+    subtitle: "Practice pronunciation with speech recognition",
+    type: "syllable-builder",
+    patterns: ["CVC"],
+    letters: allLetters,
+    locked: false,
     completed: false,
   },
 ];
