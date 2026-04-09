@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Mic, MicOff, Volume2, CheckCircle, XCircle } from 'lucide-react';
+import { Mic, MicOff, Volume2, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { voiceRecognizer, VoiceRecognitionResult } from '../../utils/voskRecognizer';
 import { playElevenLabsAudio } from '../../utils/elevenLabsTTS';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
 import { Badge } from './ui/badge';
+import { Progress } from './ui/progress';
 
 interface VoiceRecognitionProps {
   targetWord: string;
@@ -19,10 +20,13 @@ export default function VoiceRecognition({
 }: VoiceRecognitionProps) {
   const [isListening, setIsListening] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [initProgress, setInitProgress] = useState(0);
   const [result, setResult] = useState<VoiceRecognitionResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isPressed, setIsPressed] = useState(false);
   const mediaStreamRef = useRef<MediaStream | null>(null);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     initializeRecognizer();
@@ -34,11 +38,39 @@ export default function VoiceRecognition({
   const initializeRecognizer = async () => {
     try {
       setError(null);
+      setInitProgress(10);
+      
+      // Simulate progress for better UX (actual loading happens in initialize)
+      const progressInterval = setInterval(() => {
+        setInitProgress(prev => Math.min(prev + 15, 90));
+      }, 500);
+      
       await voiceRecognizer.initialize();
+      
+      clearInterval(progressInterval);
+      setInitProgress(100);
       setIsInitialized(true);
     } catch (err) {
       setError('Failed to initialize voice recognition. Please check your microphone.');
       console.error('Voice recognition init error:', err);
+    }
+  };
+
+  const handleMicPress = async () => {
+    if (!isInitialized || isProcessing) return;
+    
+    setIsPressed(true);
+    
+    // Small delay to make it feel like a "press and hold"
+    timeoutRef.current = setTimeout(async () => {
+      await startListening();
+    }, 200);
+  };
+
+  const handleMicRelease = () => {
+    setIsPressed(false);
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
     }
   };
 
@@ -90,6 +122,7 @@ export default function VoiceRecognition({
     } finally {
       stopListening();
       setIsProcessing(false);
+      setIsPressed(false);
     }
   };
 
@@ -112,6 +145,9 @@ export default function VoiceRecognition({
   };
 
   const cleanup = async () => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
     stopListening();
     await voiceRecognizer.cleanup();
   };
@@ -148,23 +184,41 @@ export default function VoiceRecognition({
           </Button>
         </div>
 
-        {/* Microphone Button */}
-        <Button
-          onClick={isListening ? stopListening : startListening}
-          disabled={!isInitialized || isProcessing}
-          size="lg"
-          className={`w-20 h-20 rounded-full ${
-            isListening 
-              ? 'bg-red-500 hover:bg-red-600 animate-pulse' 
-              : 'bg-primary hover:bg-primary/90'
-          }`}
-        >
-          {isListening ? (
-            <MicOff className="w-8 h-8" />
-          ) : (
-            <Mic className="w-8 h-8" />
-          )}
-        </Button>
+        {/* Microphone Button - Touch & Hold */}
+        <div className="flex flex-col items-center gap-3">
+          <Button
+            onMouseDown={handleMicPress}
+            onMouseUp={handleMicRelease}
+            onMouseLeave={handleMicRelease}
+            onTouchStart={handleMicPress}
+            onTouchEnd={handleMicRelease}
+            disabled={!isInitialized || isProcessing}
+            size="lg"
+            className={`w-24 h-24 rounded-full transition-all duration-200 ${
+              isListening 
+                ? 'bg-red-500 hover:bg-red-600 scale-110' 
+                : isPressed
+                  ? 'bg-primary/80 scale-95'
+                  : 'bg-primary hover:bg-primary/90 hover:scale-105'
+            }`}
+          >
+            {isListening ? (
+              <div className="flex flex-col items-center">
+                <MicOff className="w-8 h-8" />
+                <span className="text-xs mt-1">Listening...</span>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center">
+                <Mic className="w-8 h-8" />
+                <span className="text-xs mt-1">Hold to Speak</span>
+              </div>
+            )}
+          </Button>
+          
+          <p className="text-xs text-muted-foreground">
+            {isListening ? 'Release when done speaking' : 'Touch & hold microphone to speak'}
+          </p>
+        </div>
 
         {/* Status Messages */}
         {isProcessing && (
@@ -214,9 +268,16 @@ export default function VoiceRecognition({
 
         {/* Initialization Status */}
         {!isInitialized && !error && (
-          <p className="text-sm text-muted-foreground">
-            Initializing voice recognition...
-          </p>
+          <div className="space-y-3 w-full max-w-xs mx-auto">
+            <div className="flex items-center justify-center gap-2">
+              <Loader2 className="w-5 h-5 animate-spin" />
+              <span className="text-sm font-medium">Loading speech model...</span>
+            </div>
+            <Progress value={initProgress} className="h-2" />
+            <p className="text-xs text-muted-foreground">
+              This may take 5-10 seconds on first load
+            </p>
+          </div>
         )}
       </div>
     </Card>

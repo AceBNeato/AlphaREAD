@@ -78,6 +78,14 @@ const levelTags = [
 
 export default function Home() {
   const [userLevels] = useState(() => {
+    // Clear cache if app version changed (forces Level 6 to appear)
+    const APP_VERSION = "1.1"; // Increment this when adding new levels
+    const storedVersion = localStorage.getItem("appVersion");
+    if (storedVersion !== APP_VERSION) {
+      localStorage.clear();
+      localStorage.setItem("appVersion", APP_VERSION);
+    }
+    
     const completedLevels = JSON.parse(
       localStorage.getItem("completedLevels") || "[]"
     );
@@ -242,51 +250,6 @@ export default function Home() {
               </div>
             );
           })}
-        </div>
-
-        {/* Voice Practice Card */}
-        <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-lg overflow-hidden border-4 border-[#FF9600] dark:border-[#e08000] hover:shadow-2xl hover:scale-[1.02] transition-all duration-300">
-          <div className="p-6">
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex-1">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-white bg-gradient-to-br from-[#FF9600] to-[#e08000]">
-                    <Mic className="w-7 h-7" />
-                  </div>
-                  <div>
-                    <h3 className="text-xl text-gray-800 dark:text-gray-100">
-                      Voice Practice
-                    </h3>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                      Practice pronunciation with speech recognition
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 leading-relaxed">
-              Use your microphone to practice saying letters and words out loud. Get instant feedback on your pronunciation!
-            </p>
-
-            <div className="flex gap-2 mb-4 flex-wrap">
-              <span className="text-xs px-3 py-1 rounded-full bg-[#fff2d4] text-[#FF9600]">
-                Speech Recognition
-              </span>
-              <span className="text-xs px-3 py-1 rounded-full bg-[#fff2d4] text-[#FF9600]">
-                Voice Practice
-              </span>
-              <span className="text-xs px-3 py-1 rounded-full bg-[#fff2d4] text-[#FF9600]">
-                Interactive
-              </span>
-            </div>
-
-            <Link to="/voice-practice">
-              <Button className="w-full py-6 text-lg rounded-2xl text-white shadow-md hover:shadow-lg transition-all bg-gradient-to-r from-[#FF9600] to-[#e08000] hover:from-[#e08000] hover:to-[#cc6600]">
-                Start Voice Practice
-              </Button>
-            </Link>
-          </div>
         </div>
       </div>
     </div>
