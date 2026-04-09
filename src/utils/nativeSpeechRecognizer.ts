@@ -32,10 +32,7 @@ class NativeSpeechRecognizer {
       }
 
       // Request permissions
-      const { status } = await SpeechRecognition.requestPermission();
-      if (status !== 'granted') {
-        throw new Error('Microphone permission denied');
-      }
+      await SpeechRecognition.requestPermissions();
     } catch (error) {
       console.error('Speech recognition initialization error:', error);
       throw error;
@@ -57,7 +54,7 @@ class NativeSpeechRecognizer {
         language: 'en-US',
         maxResults: 5,
         prompt: 'Say the word',
-        partialResults: false,
+        partialResults: true,
         popup: false // Don't show native popup, we'll handle UI
       });
 
@@ -68,13 +65,12 @@ class NativeSpeechRecognizer {
           reject(new Error('Listening timeout'));
         }, 10000); // 10 second timeout
 
-        // Listen for results
-        SpeechRecognition.addListener('listening', (event: ListeningEvent) => {
-          const result = event.result || event.results?.[0];
-          if (result) {
+        // Listen for partial results
+        SpeechRecognition.addListener('partialResults', (data: { matches: string[] }) => {
+          if (data.matches && data.matches.length > 0) {
             clearTimeout(timeout);
             
-            const transcript = result.toUpperCase().trim();
+            const transcript = data.matches[0].toUpperCase().trim();
             
             // Check if any target word is in the transcript
             const isCorrect = this.targetWords.some(word => 
@@ -82,17 +78,18 @@ class NativeSpeechRecognizer {
             );
 
             resolve({
-              transcript: result,
+              transcript: data.matches[0],
               isCorrect,
               confidence: isCorrect ? 0.9 : 0.5
             });
           }
         });
 
-        // Handle errors
-        SpeechRecognition.addListener('error', (event: ErrorEvent) => {
-          clearTimeout(timeout);
-          reject(new Error(event.error || event.message || 'Speech recognition error'));
+        // Handle listening state changes
+        SpeechRecognition.addListener('listeningState', (data: { status: 'started' | 'stopped' }) => {
+          if (data.status === 'stopped') {
+            clearTimeout(timeout);
+          }
         });
       });
 

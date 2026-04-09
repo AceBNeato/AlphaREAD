@@ -7,7 +7,7 @@ import { Volume2, Trophy, RotateCcw } from 'lucide-react';
 import VoiceRecognition from './VoiceRecognition';
 import { playElevenLabsAudio } from '../../utils/elevenLabsTTS';
 import { CVC_WORDS, allLetters, Letter } from '../data/levels';
-import { VoiceRecognitionResult } from '../../utils/voskRecognizer';
+import { VoiceRecognitionResult } from '../../utils/nativeSpeechRecognizer';
 
 interface VoicePracticeItem {
   text: string;

@@ -79,7 +79,7 @@ const levelTags = [
 export default function Home() {
   const [userLevels] = useState(() => {
     // Clear cache if app version changed (forces Level 6 to appear)
-    const APP_VERSION = "1.1"; // Increment this when adding new levels
+    const APP_VERSION = "2.0"; // Increment this when adding new levels
     const storedVersion = localStorage.getItem("appVersion");
     if (storedVersion !== APP_VERSION) {
       localStorage.clear();
