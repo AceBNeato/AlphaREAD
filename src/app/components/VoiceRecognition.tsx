@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Mic, MicOff, Volume2, CheckCircle, XCircle, Loader2 } from 'lucide-react';
-import { voiceRecognizer, VoiceRecognitionResult } from '../../utils/voskRecognizer';
+import { nativeSpeechRecognizer, VoiceRecognitionResult } from '../../utils/nativeSpeechRecognizer';
 import { playElevenLabsAudio } from '../../utils/elevenLabsTTS';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
@@ -25,7 +25,6 @@ export default function VoiceRecognition({
   const [error, setError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isPressed, setIsPressed] = useState(false);
-  const mediaStreamRef = useRef<MediaStream | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
@@ -40,14 +39,11 @@ export default function VoiceRecognition({
       setError(null);
       setInitProgress(10);
       
-      // Simulate progress for better UX (actual loading happens in initialize)
-      const progressInterval = setInterval(() => {
-        setInitProgress(prev => Math.min(prev + 15, 90));
-      }, 500);
+      // Native speech recognition loads instantly!
+      setInitProgress(50);
       
-      await voiceRecognizer.initialize();
+      await nativeSpeechRecognizer.initialize();
       
-      clearInterval(progressInterval);
       setInitProgress(100);
       setIsInitialized(true);
     } catch (err) {
@@ -86,25 +82,15 @@ export default function VoiceRecognition({
       setIsProcessing(true);
 
       // Set target word for better recognition
-      voiceRecognizer.setTargetWords([targetWord]);
+      nativeSpeechRecognizer.setTargetWords([targetWord]);
 
-      // Get microphone access
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          sampleRate: 16000
-        } 
-      });
-      
-      mediaStreamRef.current = stream;
       setIsListening(true);
 
       // Play the target word
       await playElevenLabsAudio(targetWord);
 
-      // Start recognition
-      const recognitionResult = await voiceRecognizer.recognizeSpeech(stream);
+      // Start native speech recognition
+      const recognitionResult = await nativeSpeechRecognizer.startListening();
       
       setResult(recognitionResult);
       onResult?.(recognitionResult);
@@ -126,11 +112,8 @@ export default function VoiceRecognition({
     }
   };
 
-  const stopListening = () => {
-    if (mediaStreamRef.current) {
-      mediaStreamRef.current.getTracks().forEach(track => track.stop());
-      mediaStreamRef.current = null;
-    }
+  const stopListening = async () => {
+    await nativeSpeechRecognizer.stopListening();
     setIsListening(false);
   };
 
@@ -148,8 +131,7 @@ export default function VoiceRecognition({
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
-    stopListening();
-    await voiceRecognizer.cleanup();
+    await nativeSpeechRecognizer.cleanup();
   };
 
   const replayTargetWord = async () => {
