@@ -1,5 +1,4 @@
-import React from 'react';
-import LevelVoicePractice, { createLetterVoiceLevel, createCVCVoiceLevel } from '../components/LevelVoicePractice';
+import LevelVoicePractice, { createLetterVoiceLevel } from '../components/LevelVoicePractice';
 import { useNavigate } from 'react-router';
 
 export default function VoicePractice() {

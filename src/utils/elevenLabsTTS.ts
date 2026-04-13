@@ -1,4 +1,3 @@
-import { getLetterPhonetic } from '../app/data/levels';
 
 // Audio cache to avoid redundant loads
 const audioCache = new Map<string, HTMLAudioElement>();

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import {
   Trophy,
   Star,
@@ -12,6 +12,7 @@ import {
   Shapes,
   Brain,
   Mic,
+  Home as HomeIcon,
 } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { levels } from "../data/levels";
@@ -76,7 +77,7 @@ const levelTags = [
   ["Voice Recognition", "CVC Words", "Speech Practice"],
 ];
 
-export default function Home() {
+export default function LevelsPage() {
   const [userLevels] = useState(() => {
     // Clear cache if app version changed (forces Level 6 to appear)
     const APP_VERSION = "2.0"; // Increment this when adding new levels
@@ -98,12 +99,21 @@ export default function Home() {
 
   const completedCount = userLevels.filter((level) => level.completed).length;
   const totalProgress = (completedCount / levels.length) * 100;
+  const navigate = useNavigate();
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#f0fdf4] via-[#ecfeff] to-[#eff6ff] dark:from-gray-900 dark:via-gray-850 dark:to-gray-900">
       <div className="max-w-4xl mx-auto px-4 py-8">
-        {/* Theme Toggle */}
-        <div className="flex justify-end mb-4">
+        {/* Header with Home Button */}
+        <div className="flex justify-between items-center mb-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate('/')}
+          >
+            <HomeIcon className="w-5 h-5 mr-2" />
+            Home
+          </Button>
           <ThemeToggle />
         </div>
 

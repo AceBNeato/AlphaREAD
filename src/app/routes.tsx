@@ -1,12 +1,19 @@
-import { createBrowserRouter, Navigate } from "react-router";
-import Home from "./pages/Home";
+import { createHashRouter, Navigate } from "react-router";
+import MainMenu from "./pages/MainMenu";
+import LevelsPage from "./pages/LevelsPage";
 import Lesson from "./pages/Lesson";
 import VoicePractice from "./pages/VoicePractice";
+import ProfileSelector from "./pages/ProfileSelector";
+import Settings from "./pages/Settings";
 
-export const router = createBrowserRouter([
+export const router = createHashRouter([
   {
     path: "/",
-    Component: Home,
+    Component: MainMenu,
+  },
+  {
+    path: "/levels",
+    Component: LevelsPage,
   },
   {
     path: "/lesson/:levelId",
@@ -15,6 +22,14 @@ export const router = createBrowserRouter([
   {
     path: "/voice-practice",
     Component: VoicePractice,
+  },
+  {
+    path: "/profiles",
+    Component: ProfileSelector,
+  },
+  {
+    path: "/settings",
+    Component: Settings,
   },
   {
     path: "*",

@@ -1,10 +1,12 @@
 import { useParams, useNavigate } from "react-router";
+import { useEffect } from "react";
 import { Button } from "../components/ui/button";
 import { levels } from "../data/levels";
 import { LevelPairs } from "../components/LevelPairs";
 import { LevelSounds } from "../components/LevelSounds";
 import { LevelSyllableBuilder } from "../components/LevelSyllableBuilder";
 import LevelVoicePractice, { createCVCVoiceLevel } from "../components/LevelVoicePractice";
+import { useStudent } from "../context/StudentContext";
 
 const levelAccents = [
   { primary: "#58CC02", dark: "#46a302", lightBg: "#e8f9d4" },
@@ -18,6 +20,22 @@ const levelAccents = [
 export default function Lesson() {
   const { levelId } = useParams();
   const navigate = useNavigate();
+  const { currentProfile, updateProfile } = useStudent();
+
+  // Track last visited level
+  useEffect(() => {
+    if (currentProfile && levelId) {
+      const levelNum = Number(levelId);
+      if (!isNaN(levelNum)) {
+        updateProfile(currentProfile.id, {
+          stats: {
+            ...currentProfile.stats,
+            lastLevel: levelNum,
+          },
+        });
+      }
+    }
+  }, [levelId, currentProfile, updateProfile]);
 
   const level = levels.find((l) => l.id === Number(levelId));
   const accent = levelAccents[(Number(levelId) - 1) % levelAccents.length];
@@ -29,7 +47,7 @@ export default function Lesson() {
           <h2 className="text-2xl text-gray-800 dark:text-gray-100 mb-4">
             Level not found
           </h2>
-          <Button onClick={() => navigate("/")}>Go Home</Button>
+          <Button onClick={() => navigate("/levels")}>Go to Levels</Button>
         </div>
       </div>
     );
@@ -48,7 +66,7 @@ export default function Lesson() {
             title="Voice Evaluation - Words"
             subtitle="Practice saying CVC words out loud"
             items={createCVCVoiceLevel()}
-            onLevelComplete={() => navigate("/")}
+            onLevelComplete={() => navigate("/levels")}
           />
         );
       }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Mic, MicOff, Volume2, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { nativeSpeechRecognizer, VoiceRecognitionResult } from '../../utils/nativeSpeechRecognizer';
 import { playElevenLabsAudio } from '../../utils/elevenLabsTTS';
@@ -6,6 +6,7 @@ import { Button } from './ui/button';
 import { Card } from './ui/card';
 import { Badge } from './ui/badge';
 import { Progress } from './ui/progress';
+import { useStudent } from '../context/StudentContext';
 
 interface VoiceRecognitionProps {
   targetWord: string;
@@ -18,13 +19,13 @@ export default function VoiceRecognition({
   onResult, 
   onComplete 
 }: VoiceRecognitionProps) {
+  const { currentProfile } = useStudent();
   const [isListening, setIsListening] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
   const [initProgress, setInitProgress] = useState(0);
   const [result, setResult] = useState<VoiceRecognitionResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [isPressed, setIsPressed] = useState(false);
   const timeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -34,12 +35,26 @@ export default function VoiceRecognition({
     };
   }, []);
 
+  // Cleanup when target word changes
+  useEffect(() => {
+    // Reset state when target changes
+    setResult(null);
+    setError(null);
+    setIsListening(false);
+    setIsProcessing(false);
+  }, [targetWord]);
+
   const initializeRecognizer = async () => {
     try {
       setError(null);
       setInitProgress(10);
       
-      // Native speech recognition loads instantly!
+      // Configure recognizer with student profile settings
+      if (currentProfile) {
+        nativeSpeechRecognizer.setLanguage(currentProfile.accent);
+        nativeSpeechRecognizer.setPhoneticThreshold(currentProfile.phoneticBias);
+      }
+      
       setInitProgress(50);
       
       await nativeSpeechRecognizer.initialize();
@@ -52,27 +67,25 @@ export default function VoiceRecognition({
     }
   };
 
-  const handleMicPress = async () => {
-    if (!isInitialized || isProcessing) return;
+  const handleMicTap = async () => {
+    if (!isInitialized || isProcessing || isListening) return;
     
-    setIsPressed(true);
+    // Reset states before starting
+    setError(null);
+    setResult(null);
     
-    // Small delay to make it feel like a "press and hold"
-    timeoutRef.current = setTimeout(async () => {
-      await startListening();
-    }, 200);
-  };
-
-  const handleMicRelease = () => {
-    setIsPressed(false);
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-    }
+    await startListening();
   };
 
   const startListening = async () => {
     if (!isInitialized) {
       setError('Voice recognition not ready');
+      return;
+    }
+
+    // Prevent starting if already listening
+    if (isListening || isProcessing) {
+      console.log('Already listening or processing, ignoring tap');
       return;
     }
 
@@ -89,6 +102,9 @@ export default function VoiceRecognition({
       // Play the target word
       await playElevenLabsAudio(targetWord);
 
+      // Wait a moment after playing audio before starting recognition
+      await new Promise(resolve => setTimeout(resolve, 500));
+
       // Start native speech recognition
       const recognitionResult = await nativeSpeechRecognizer.startListening();
       
@@ -103,18 +119,26 @@ export default function VoiceRecognition({
       }
 
     } catch (err) {
-      setError('Microphone access denied or speech recognition failed');
+      const errorMessage = err instanceof Error ? err.message : String(err);
       console.error('Speech recognition error:', err);
+      
+      // Don't show error for normal stops
+      if (!errorMessage.includes('stopped') && !errorMessage.includes('timeout')) {
+        setError('Microphone access denied or speech recognition failed');
+      }
     } finally {
-      stopListening();
+      await stopListening();
       setIsProcessing(false);
-      setIsPressed(false);
+      setIsListening(false);
     }
   };
 
   const stopListening = async () => {
-    await nativeSpeechRecognizer.stopListening();
-    setIsListening(false);
+    try {
+      await nativeSpeechRecognizer.stopListening();
+    } catch (error) {
+      console.log('Stop listening error:', error);
+    }
   };
 
   const playSuccessSound = () => {
@@ -130,8 +154,13 @@ export default function VoiceRecognition({
   const cleanup = async () => {
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
     }
-    await nativeSpeechRecognizer.cleanup();
+    try {
+      await nativeSpeechRecognizer.cleanup();
+    } catch (error) {
+      console.log('Cleanup error:', error);
+    }
   };
 
   const replayTargetWord = async () => {
@@ -166,22 +195,16 @@ export default function VoiceRecognition({
           </Button>
         </div>
 
-        {/* Microphone Button - Touch & Hold */}
+        {/* Microphone Button - Tap to Speak */}
         <div className="flex flex-col items-center gap-3">
           <Button
-            onMouseDown={handleMicPress}
-            onMouseUp={handleMicRelease}
-            onMouseLeave={handleMicRelease}
-            onTouchStart={handleMicPress}
-            onTouchEnd={handleMicRelease}
+            onClick={handleMicTap}
             disabled={!isInitialized || isProcessing}
             size="lg"
             className={`w-24 h-24 rounded-full transition-all duration-200 ${
               isListening 
                 ? 'bg-red-500 hover:bg-red-600 scale-110' 
-                : isPressed
-                  ? 'bg-primary/80 scale-95'
-                  : 'bg-primary hover:bg-primary/90 hover:scale-105'
+                : 'bg-primary hover:bg-primary/90 hover:scale-105'
             }`}
           >
             {isListening ? (
@@ -192,13 +215,13 @@ export default function VoiceRecognition({
             ) : (
               <div className="flex flex-col items-center">
                 <Mic className="w-8 h-8" />
-                <span className="text-xs mt-1">Hold to Speak</span>
+                <span className="text-xs mt-1">Tap to Speak</span>
               </div>
             )}
           </Button>
           
           <p className="text-xs text-muted-foreground">
-            {isListening ? 'Release when done speaking' : 'Touch & hold microphone to speak'}
+            {isListening ? 'Listening...' : 'Tap microphone to speak'}
           </p>
         </div>
 

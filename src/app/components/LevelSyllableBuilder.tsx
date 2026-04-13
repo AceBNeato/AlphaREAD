@@ -2,9 +2,8 @@ import { useState, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router";
 import {
   Volume2,
-  Home,
-  ArrowRight,
   ArrowLeft,
+  ArrowRight,
   RotateCcw,
   Sparkles,
   CheckCircle2,
@@ -15,7 +14,6 @@ import {
   VOWELS,
   CONSONANTS,
   generateSyllableTargets,
-  getPhoneticPronunciation,
   type SyllablePattern,
   type SyllableTarget,
 } from "../data/levels";
@@ -251,17 +249,6 @@ export function LevelSyllableBuilder({
     }
   };
 
-  const findNextUncompleted = (
-    from: number,
-    completed: Set<number>
-  ): number | null => {
-    for (let i = 1; i <= targets.length; i++) {
-      const idx = (from + i) % targets.length;
-      if (!completed.has(idx)) return idx;
-    }
-    return null;
-  };
-
   const goNext = () => {
     if (currentIndex < targets.length - 1) {
       setCurrentIndex(currentIndex + 1);
@@ -291,6 +278,8 @@ export function LevelSyllableBuilder({
         return ["V", "C"];
       case "CVC":
         return ["C", "V", "C"];
+      default:
+        return [];
     }
   };
 
@@ -300,12 +289,13 @@ export function LevelSyllableBuilder({
       <div className="sticky top-0 z-10 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 px-4 py-3">
         <div className="max-w-2xl mx-auto flex items-center gap-3">
           <Button
+            type="button"
             variant="ghost"
-            size="sm"
-            onClick={() => navigate("/")}
-            className="rounded-full"
+            onClick={() => currentIndex === 0 ? navigate("/levels") : goPrev()}
+            className="rounded-full gap-2 h-12 px-4 text-base touch-manipulation"
           >
-            <Home className="w-5 h-5" />
+            <ArrowLeft className="w-6 h-6" />
+            Back
           </Button>
           <div className="flex-1">
             <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 overflow-hidden">
@@ -442,7 +432,7 @@ export function LevelSyllableBuilder({
                     {Array.from({ length: slotCount }).map((_, slot) => (
                       <div
                         key={slot}
-                        className={`w-18 h-18 sm:w-20 sm:h-20 rounded-2xl border-3 flex items-center justify-center text-3xl sm:text-4xl transition-all ${
+                        className={`w-18 h-18 sm:w-20 sm:h-20 rounded-2xl border-3 flex items-center justify-center text-3xl sm:text-4xl transition-all shadow-md hover:shadow-lg active:scale-90 cursor-pointer ${
                           feedback === "correct"
                             ? "border-[#58CC02] bg-[#d7ffb8] dark:bg-green-900/30"
                             : feedback === "wrong"
@@ -573,22 +563,23 @@ export function LevelSyllableBuilder({
             {/* Navigation Arrows */}
             <div className="flex justify-between items-center mt-4">
               <Button
-                onClick={goPrev}
-                disabled={currentIndex === 0}
+                type="button"
+                onClick={() => currentIndex === 0 ? navigate("/levels") : goPrev()}
                 variant="outline"
                 size="lg"
-                className="rounded-xl px-6 py-5 border-2 disabled:opacity-30"
+                className="rounded-xl px-6 py-5 border-2 touch-manipulation"
                 style={{ borderColor: accent.primary, color: accent.primary }}
               >
                 <ArrowLeft className="w-5 h-5 mr-1" />
                 Back
               </Button>
               <Button
+                type="button"
                 onClick={goNext}
                 disabled={currentIndex === targets.length - 1}
                 variant="outline"
                 size="lg"
-                className="rounded-xl px-6 py-5 border-2 disabled:opacity-30"
+                className="rounded-xl px-6 py-5 border-2 disabled:opacity-30 touch-manipulation"
                 style={{ borderColor: accent.primary, color: accent.primary }}
               >
                 Next
@@ -665,6 +656,7 @@ export function LevelSyllableBuilder({
               ))}
             </div>
             <Button
+              type="button"
               onClick={() => {
                 const completedLevels = JSON.parse(
                   localStorage.getItem("completedLevels") || "[]"
@@ -676,16 +668,15 @@ export function LevelSyllableBuilder({
                     JSON.stringify(completedLevels)
                   );
                 }
-                navigate("/");
+                navigate("/levels");
               }}
-              size="lg"
-              className="rounded-xl px-8 py-6 text-lg text-white"
+              className="rounded-xl px-8 py-6 text-lg text-white h-16 touch-manipulation"
               style={{
                 background: `linear-gradient(135deg, ${accent.primary} 0%, ${accent.dark} 100%)`,
               }}
             >
-              <Home className="w-5 h-5 mr-2" />
-              Back to Home
+              <ArrowLeft className="w-6 h-6 mr-2" />
+              Back to Levels
             </Button>
           </motion.div>
         )}
