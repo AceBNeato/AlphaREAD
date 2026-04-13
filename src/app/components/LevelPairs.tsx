@@ -65,8 +65,18 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
           <Button
             variant="ghost"
             size="lg"
-            onClick={() => navigate("/levels")}
-            className="rounded-full gap-2 h-14 px-6 text-lg touch-manipulation"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              console.log("Back clicked - navigating to /levels");
+              try {
+                navigate("/levels");
+              } catch (err) {
+                console.error("Navigate failed, using fallback", err);
+                window.location.hash = "#/levels";
+              }
+            }}
+            className="rounded-full gap-2 h-14 px-6 text-lg touch-manipulation cursor-pointer"
           >
             <ArrowLeft className="w-6 h-6" />
             Back
