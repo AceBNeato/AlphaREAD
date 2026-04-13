@@ -23,7 +23,7 @@ export default function MainMenu() {
   const handleContinue = () => {
     if (currentProfile) {
       const lastLevel = currentProfile.stats.lastLevel;
-      navigate(`/lesson/${lastLevel}`);
+      navigate(`/level/lesson/${lastLevel}`);
     }
   };
 

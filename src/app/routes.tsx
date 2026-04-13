@@ -16,7 +16,7 @@ export const router = createHashRouter([
     Component: LevelsPage,
   },
   {
-    path: "/lesson/:levelId",
+    path: "/level/lesson/:levelId",
     Component: Lesson,
   },
   {

@@ -235,7 +235,7 @@ export default function LevelsPage() {
 
                   {/* Action Button */}
                   {!isLocked && (
-                    <Link to={`/lesson/${level.id}`}>
+                    <Link to={`/level/lesson/${level.id}`}>
                       <Button
                         className={`w-full py-6 text-lg rounded-2xl text-white shadow-md hover:shadow-lg transition-all ${
                           level.completed
