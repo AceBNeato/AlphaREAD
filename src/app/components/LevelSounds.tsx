@@ -49,15 +49,14 @@ export function LevelSounds({ levelId, accent }: LevelSoundsProps) {
       {/* Header */}
       <div className="sticky top-0 z-10 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 px-4 py-3">
         <div className="max-w-2xl mx-auto flex items-center gap-3">
-          <Button
+          <button
             type="button"
-            variant="ghost"
             onClick={() => navigate("/levels")}
-            className="rounded-full gap-2 h-12 px-4 text-base touch-manipulation"
+            className="rounded-full gap-2 h-12 px-4 text-base touch-manipulation flex items-center justify-center font-medium text-gray-700 dark:text-gray-200 active:bg-gray-200 dark:active:bg-gray-700 pointer-events-auto"
           >
-            <ArrowLeft className="w-6 h-6" />
-            Back
-          </Button>
+            <ArrowLeft className="w-6 h-6 pointer-events-none" />
+            <span>Back</span>
+          </button>
           <div className="flex-1">
             <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 overflow-hidden">
               <motion.div
