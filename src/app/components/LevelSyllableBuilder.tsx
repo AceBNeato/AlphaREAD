@@ -2,8 +2,9 @@ import { useState, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router";
 import {
   Volume2,
-  ArrowLeft,
+  Home,
   ArrowRight,
+  ArrowLeft,
   RotateCcw,
   Sparkles,
   CheckCircle2,
@@ -14,6 +15,7 @@ import {
   VOWELS,
   CONSONANTS,
   generateSyllableTargets,
+  getPhoneticPronunciation,
   type SyllablePattern,
   type SyllableTarget,
 } from "../data/levels";
@@ -38,50 +40,6 @@ const patternColors: Record<SyllablePattern, string> = {
   CVC: "#FF4B8A",
 };
 
-// Simple CV syllables for elementary standards
-const SIMPLE_CV_SYLLABLES = [
-  { pattern: "CV" as const, letters: ["B", "A"], syllable: "BA" },
-  { pattern: "CV" as const, letters: ["C", "A"], syllable: "CA" },
-  { pattern: "CV" as const, letters: ["D", "A"], syllable: "DA" },
-  { pattern: "CV" as const, letters: ["M", "A"], syllable: "MA" },
-  { pattern: "CV" as const, letters: ["P", "A"], syllable: "PA" },
-  { pattern: "CV" as const, letters: ["S", "A"], syllable: "SA" },
-  { pattern: "CV" as const, letters: ["T", "A"], syllable: "TA" },
-  { pattern: "CV" as const, letters: ["B", "I"], syllable: "BI" },
-  { pattern: "CV" as const, letters: ["C", "I"], syllable: "CI" },
-  { pattern: "CV" as const, letters: ["D", "I"], syllable: "DI" },
-  { pattern: "CV" as const, letters: ["M", "I"], syllable: "MI" },
-  { pattern: "CV" as const, letters: ["P", "I"], syllable: "PI" },
-  { pattern: "CV" as const, letters: ["S", "I"], syllable: "SI" },
-  { pattern: "CV" as const, letters: ["T", "I"], syllable: "TI" },
-];
-
-// Simple VC syllables for elementary standards
-const SIMPLE_VC_SYLLABLES = [
-  { pattern: "VC" as const, letters: ["A", "B"], syllable: "AB" },
-  { pattern: "VC" as const, letters: ["A", "D"], syllable: "AD" },
-  { pattern: "VC" as const, letters: ["A", "M"], syllable: "AM" },
-  { pattern: "VC" as const, letters: ["A", "P"], syllable: "AP" },
-  { pattern: "VC" as const, letters: ["A", "T"], syllable: "AT" },
-  { pattern: "VC" as const, letters: ["I", "B"], syllable: "IB" },
-  { pattern: "VC" as const, letters: ["I", "D"], syllable: "ID" },
-  { pattern: "VC" as const, letters: ["I", "M"], syllable: "IM" },
-  { pattern: "VC" as const, letters: ["I", "P"], syllable: "IP" },
-  { pattern: "VC" as const, letters: ["I", "T"], syllable: "IT" },
-];
-
-// Simple CVC syllables for elementary standards (using real words)
-const SIMPLE_CVC_SYLLABLES = [
-  { pattern: "CVC" as const, letters: ["C", "A", "T"], syllable: "CAT" },
-  { pattern: "CVC" as const, letters: ["D", "O", "G"], syllable: "DOG" },
-  { pattern: "CVC" as const, letters: ["P", "I", "G"], syllable: "PIG" },
-  { pattern: "CVC" as const, letters: ["R", "A", "T"], syllable: "RAT" },
-  { pattern: "CVC" as const, letters: ["S", "U", "N"], syllable: "SUN" },
-  { pattern: "CVC" as const, letters: ["B", "I", "G"], syllable: "BIG" },
-  { pattern: "CVC" as const, letters: ["R", "U", "G"], syllable: "RUG" },
-  { pattern: "CVC" as const, letters: ["H", "O", "G"], syllable: "HOG" },
-];
-
 export function LevelSyllableBuilder({
   levelId,
   patterns,
@@ -89,54 +47,7 @@ export function LevelSyllableBuilder({
 }: LevelSyllableBuilderProps) {
   const navigate = useNavigate();
 
-  let targets = useMemo(() => {
-    const allTargets: SyllableTarget[] = [];
-
-    if (patterns.includes("CV")) {
-      allTargets.push(...SIMPLE_CV_SYLLABLES);
-    }
-    if (patterns.includes("VC")) {
-      allTargets.push(...SIMPLE_VC_SYLLABLES);
-    }
-    if (patterns.includes("CVC")) {
-      allTargets.push(...SIMPLE_CVC_SYLLABLES);
-    }
-
-    if (allTargets.length > 0) {
-      // Weighted randomization based on level
-      if (levelId === 4) {
-        // Level 4: Focus more on VC (70% VC, 30% CV)
-        const vcTargets = allTargets.filter(t => t.pattern === "VC");
-        const cvTargets = allTargets.filter(t => t.pattern === "CV");
-        const vcCount = Math.min(7, vcTargets.length);
-        const cvCount = Math.min(3, cvTargets.length);
-        const selected = [
-          ...shuffle(vcTargets).slice(0, vcCount),
-          ...shuffle(cvTargets).slice(0, cvCount)
-        ];
-        return shuffle(selected);
-      } else if (levelId === 5) {
-        // Level 5: Focus on CVC (60% CVC, 20% VC, 20% CV)
-        const cvcTargets = allTargets.filter(t => t.pattern === "CVC");
-        const vcTargets = allTargets.filter(t => t.pattern === "VC");
-        const cvTargets = allTargets.filter(t => t.pattern === "CV");
-        const cvcCount = Math.min(6, cvcTargets.length);
-        const vcCount = Math.min(2, vcTargets.length);
-        const cvCount = Math.min(2, cvTargets.length);
-        const selected = [
-          ...shuffle(cvcTargets).slice(0, cvcCount),
-          ...shuffle(vcTargets).slice(0, vcCount),
-          ...shuffle(cvTargets).slice(0, cvCount)
-        ];
-        return shuffle(selected);
-      } else {
-        // Level 3: Just CV, 5-10 syllables
-        return shuffle(allTargets).slice(0, Math.min(10, allTargets.length));
-      }
-    } else {
-      return generateSyllableTargets(patterns, 8);
-    }
-  }, [patterns, levelId]);
+  const targets = useMemo(() => generateSyllableTargets(patterns, 8), [patterns]);
 
   // Build the letter pool from all targets
   const letterPool = useMemo(() => {
@@ -195,26 +106,6 @@ export function LevelSyllableBuilder({
     }
   }, []);
 
-  // Helper to play syllable audio by playing each letter sound in sequence
-  const playSyllableAudio = useCallback(async (target: SyllableTarget) => {
-    // Play each letter sound in sequence with a delay
-    for (let i = 0; i < target.letters.length; i++) {
-      const letter = target.letters[i];
-      setPlayingLetter(letter);
-      try {
-        await playElevenLabsAudio(letter);
-      } catch (error) {
-        console.error("Error playing audio:", error);
-      }
-      
-      // Wait 1 second between letters
-      if (i < target.letters.length - 1) {
-        await new Promise(resolve => setTimeout(resolve, 900));
-      }
-    }
-    setPlayingLetter(null);
-  }, [playAudio]);
-
   const handleLetterClick = (letter: string) => {
     if (feedback || allDone || completedTargets.has(currentIndex)) return;
 
@@ -236,8 +127,6 @@ export function LevelSyllableBuilder({
           setCompletedTargets(newCompleted);
           setFeedback(null);
           setSelectedLetters([]);
-
-          // Removed auto-advance - stay on completed syllable
         }, 1500);
       } else {
         setFeedback("wrong");
@@ -247,6 +136,17 @@ export function LevelSyllableBuilder({
         }, 1000);
       }
     }
+  };
+
+  const findNextUncompleted = (
+    from: number,
+    completed: Set<number>
+  ): number | null => {
+    for (let i = 1; i <= targets.length; i++) {
+      const idx = (from + i) % targets.length;
+      if (!completed.has(idx)) return idx;
+    }
+    return null;
   };
 
   const goNext = () => {
@@ -278,8 +178,6 @@ export function LevelSyllableBuilder({
         return ["V", "C"];
       case "CVC":
         return ["C", "V", "C"];
-      default:
-        return [];
     }
   };
 
@@ -290,12 +188,11 @@ export function LevelSyllableBuilder({
         <div className="max-w-2xl mx-auto flex items-center gap-3">
           <Button
             variant="ghost"
-            size="lg"
-            onClick={() => currentIndex === 0 ? navigate("/levels") : goPrev()}
-            className="rounded-full gap-2 h-14 px-6 text-lg touch-manipulation"
+            size="sm"
+            onClick={() => navigate("/levels")}
+            className="rounded-full"
           >
-            <ArrowLeft className="w-6 h-6" />
-            Back
+            <Home className="w-5 h-5" />
           </Button>
           <div className="flex-1">
             <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 overflow-hidden">
@@ -390,15 +287,6 @@ export function LevelSyllableBuilder({
                         </span>
                       ))}
                     </span>
-                    <button
-                      onClick={() => playSyllableAudio(currentTarget)}
-                      className="p-3 rounded-full text-white shadow-md hover:scale-110 active:scale-95 transition-transform"
-                      style={{
-                        background: `linear-gradient(135deg, ${patternColors[currentTarget.pattern]}, ${accent.dark})`,
-                      }}
-                    >
-                      <Volume2 className="w-6 h-6" />
-                    </button>
                   </div>
 
                   <span className="text-xs text-gray-500 dark:text-gray-400">
@@ -418,7 +306,7 @@ export function LevelSyllableBuilder({
                       Completed! — "{currentTarget.syllable}"
                     </span>
                     <button
-                      onClick={() => playSyllableAudio(currentTarget)}
+                      onClick={() => playAudio(currentTarget.syllable)}
                       className="ml-1 p-1 rounded-full hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors"
                     >
                       <Volume2 className="w-4 h-4" />
@@ -432,7 +320,7 @@ export function LevelSyllableBuilder({
                     {Array.from({ length: slotCount }).map((_, slot) => (
                       <div
                         key={slot}
-                        className={`w-18 h-18 sm:w-20 sm:h-20 rounded-2xl border-3 flex items-center justify-center text-3xl sm:text-4xl transition-all shadow-md hover:shadow-lg active:scale-90 cursor-pointer ${
+                        className={`w-18 h-18 sm:w-20 sm:h-20 rounded-2xl border-3 flex items-center justify-center text-3xl sm:text-4xl transition-all ${
                           feedback === "correct"
                             ? "border-[#58CC02] bg-[#d7ffb8] dark:bg-green-900/30"
                             : feedback === "wrong"
@@ -545,7 +433,7 @@ export function LevelSyllableBuilder({
                             : item.isVowel
                               ? "linear-gradient(135deg, #FF6B8A 0%, #FF4B8A 100%)"
                               : "linear-gradient(135deg, #1CB0F6 0%, #0a8ed4 100%)",
-                        boxShadow: isSelected ? `0 0 0 2px ${accent.primary}` : undefined,
+                        ringColor: isSelected ? accent.primary : undefined,
                       }}
                     >
                       <span className="text-white text-2xl sm:text-3xl">
@@ -563,23 +451,22 @@ export function LevelSyllableBuilder({
             {/* Navigation Arrows */}
             <div className="flex justify-between items-center mt-4">
               <Button
-                type="button"
-                onClick={() => currentIndex === 0 ? navigate("/levels") : goPrev()}
+                onClick={goPrev}
+                disabled={currentIndex === 0}
                 variant="outline"
                 size="lg"
-                className="rounded-xl px-6 py-5 border-2 touch-manipulation"
+                className="rounded-xl px-6 py-5 border-2 disabled:opacity-30"
                 style={{ borderColor: accent.primary, color: accent.primary }}
               >
                 <ArrowLeft className="w-5 h-5 mr-1" />
                 Back
               </Button>
               <Button
-                type="button"
                 onClick={goNext}
                 disabled={currentIndex === targets.length - 1}
                 variant="outline"
                 size="lg"
-                className="rounded-xl px-6 py-5 border-2 disabled:opacity-30 touch-manipulation"
+                className="rounded-xl px-6 py-5 border-2 disabled:opacity-30"
                 style={{ borderColor: accent.primary, color: accent.primary }}
               >
                 Next
@@ -605,7 +492,7 @@ export function LevelSyllableBuilder({
                           style={{
                             background: `linear-gradient(135deg, ${patternColors[t.pattern]}, ${accent.dark})`,
                           }}
-                          onClick={() => playSyllableAudio(t)}
+                          onClick={() => playAudio(t.syllable)}
                         >
                           <Volume2 className="w-3 h-3 inline mr-1" />
                           {t.syllable}
@@ -647,7 +534,7 @@ export function LevelSyllableBuilder({
                   style={{
                     background: `linear-gradient(135deg, ${patternColors[t.pattern]}, ${accent.dark})`,
                   }}
-                  onClick={() => playSyllableAudio(t)}
+                  onClick={() => playAudio(t.syllable)}
                 >
                   <Volume2 className="w-3 h-3 inline mr-1" />
                   {t.syllable}
@@ -656,7 +543,6 @@ export function LevelSyllableBuilder({
               ))}
             </div>
             <Button
-              type="button"
               onClick={() => {
                 const completedLevels = JSON.parse(
                   localStorage.getItem("completedLevels") || "[]"
@@ -670,12 +556,13 @@ export function LevelSyllableBuilder({
                 }
                 navigate("/levels");
               }}
-              className="rounded-xl px-8 py-6 text-lg text-white h-16 touch-manipulation"
+              size="lg"
+              className="rounded-xl px-8 py-6 text-lg text-white"
               style={{
                 background: `linear-gradient(135deg, ${accent.primary} 0%, ${accent.dark} 100%)`,
               }}
             >
-              <ArrowLeft className="w-6 h-6 mr-2" />
+              <Home className="w-5 h-5 mr-2" />
               Back to Levels
             </Button>
           </motion.div>

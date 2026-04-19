@@ -4,7 +4,7 @@ export interface Letter {
   image: string;
 }
 
-export type LevelType = "pairs" | "sounds" | "syllable-builder";
+export type LevelType = "pairs" | "sounds" | "syllable-builder" | "voice-evaluation";
 export type SyllablePattern = "CV" | "VC" | "CVC";
 
 export interface Level {
@@ -18,7 +18,7 @@ export interface Level {
   completed: boolean;
 }
 
-export const allLetters: Letter[] = [
+const allLetters: Letter[] = [
   { letter: "A", example: "Apple", image: "red apple fruit" },
   { letter: "B", example: "Ball", image: "colorful beach ball" },
   { letter: "C", example: "Cat", image: "cute orange cat" },
@@ -68,16 +68,16 @@ export const LETTER_PHONETICS: Record<string, string> = {
   "L": "lll",
   "M": "mmm",
   "N": "nnn",
-  "O": "Ohh",
+  "O": "ahh",
   "P": "puh",
   "Q": "kwuh",
   "R": "rrr",
   "S": "sss",
-  "T": "tih",
+  "T": "tuh",
   "U": "uh",
   "V": "vuh",
   "W": "wuh",
-  "X": "xsss",
+  "X": "ksss",
   "Y": "yuhh",
   "Z": "zzz"
 };
@@ -213,16 +213,6 @@ export const levels: Level[] = [
   },
   {
     id: 3,
-    title: "VC Builder",
-    subtitle: "Build Vowel + Consonant syllables",
-    type: "syllable-builder",
-    patterns: ["VC"],
-    letters: allLetters,
-    locked: true,
-    completed: false,
-  },
-  {
-    id: 4,
     title: "CV Builder",
     subtitle: "Build Consonant + Vowel syllables",
     type: "syllable-builder",
@@ -232,11 +222,21 @@ export const levels: Level[] = [
     completed: false,
   },
   {
+    id: 4,
+    title: "VC & CV Builder",
+    subtitle: "Build Vowel + Consonant and CV syllables",
+    type: "syllable-builder",
+    patterns: ["CV", "VC"],
+    letters: allLetters,
+    locked: true,
+    completed: false,
+  },
+  {
     id: 5,
     title: "CVC Master",
-    subtitle: "Build CVC syllables",
+    subtitle: "Build CV, VC, and CVC syllables",
     type: "syllable-builder",
-    patterns: ["CVC"],
+    patterns: ["CV", "VC", "CVC"],
     letters: allLetters,
     locked: true,
     completed: false,
@@ -245,10 +245,9 @@ export const levels: Level[] = [
     id: 6,
     title: "Voice Evaluation",
     subtitle: "Practice pronunciation with speech recognition",
-    type: "syllable-builder",
-    patterns: ["CVC"],
+    type: "voice-evaluation",
     letters: allLetters,
-    locked: false,
+    locked: true,
     completed: false,
   },
 ];

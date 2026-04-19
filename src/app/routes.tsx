@@ -1,31 +1,31 @@
 import { createHashRouter, Navigate } from "react-router";
-import MainMenu from "./pages/MainMenu";
-import LevelsPage from "./pages/LevelsPage";
+import WhoIsLearning from "./pages/WhoIsLearning";
+import ProfileSetup from "./pages/ProfileSetup";
+import Dashboard from "./pages/Dashboard";
+import Levels from "./pages/Levels";
 import Lesson from "./pages/Lesson";
-import VoicePractice from "./pages/VoicePractice";
-import ProfileSelector from "./pages/ProfileSelector";
 import Settings from "./pages/Settings";
 
 export const router = createHashRouter([
   {
     path: "/",
-    Component: MainMenu,
+    Component: WhoIsLearning,
+  },
+  {
+    path: "/profile-setup",
+    Component: ProfileSetup,
+  },
+  {
+    path: "/dashboard",
+    Component: Dashboard,
   },
   {
     path: "/levels",
-    Component: LevelsPage,
+    Component: Levels,
   },
   {
-    path: "/level/lesson/:levelId",
+    path: "/lesson/:levelId",
     Component: Lesson,
-  },
-  {
-    path: "/voice-practice",
-    Component: VoicePractice,
-  },
-  {
-    path: "/profiles",
-    Component: ProfileSelector,
   },
   {
     path: "/settings",

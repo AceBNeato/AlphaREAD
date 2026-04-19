@@ -1,12 +1,10 @@
 import { useParams, useNavigate } from "react-router";
-import { useEffect } from "react";
 import { Button } from "../components/ui/button";
 import { levels } from "../data/levels";
 import { LevelPairs } from "../components/LevelPairs";
 import { LevelSounds } from "../components/LevelSounds";
 import { LevelSyllableBuilder } from "../components/LevelSyllableBuilder";
-import LevelVoicePractice, { createCVCVoiceLevel } from "../components/LevelVoicePractice";
-import { useStudent } from "../context/StudentContext";
+import { LevelVoiceEvaluation } from "../components/LevelVoiceEvaluation";
 
 const levelAccents = [
   { primary: "#58CC02", dark: "#46a302", lightBg: "#e8f9d4" },
@@ -14,28 +12,12 @@ const levelAccents = [
   { primary: "#FF9600", dark: "#e08600", lightBg: "#fff0d4" },
   { primary: "#CE82FF", dark: "#a855f7", lightBg: "#f3e8ff" },
   { primary: "#FF4B8A", dark: "#e0336e", lightBg: "#ffe4ef" },
-  { primary: "#8B5CF6", dark: "#7c3aed", lightBg: "#f3e8ff" }, // Purple for level 6
+  { primary: "#7C3AED", dark: "#6d28d9", lightBg: "#f3e8ff" },
 ];
 
 export default function Lesson() {
   const { levelId } = useParams();
   const navigate = useNavigate();
-  const { currentProfile, updateProfile } = useStudent();
-
-  // Track last visited level
-  useEffect(() => {
-    if (currentProfile && levelId) {
-      const levelNum = Number(levelId);
-      if (!isNaN(levelNum)) {
-        updateProfile(currentProfile.id, {
-          stats: {
-            ...currentProfile.stats,
-            lastLevel: levelNum,
-          },
-        });
-      }
-    }
-  }, [levelId, currentProfile, updateProfile]);
 
   const level = levels.find((l) => l.id === Number(levelId));
   const accent = levelAccents[(Number(levelId) - 1) % levelAccents.length];
@@ -59,17 +41,6 @@ export default function Lesson() {
     case "sounds":
       return <LevelSounds levelId={level.id} accent={accent} />;
     case "syllable-builder":
-      // Special handling for Level 6 - Voice Evaluation
-      if (level.id === 6) {
-        return (
-          <LevelVoicePractice
-            title="Voice Evaluation - Words"
-            subtitle="Practice saying CVC words out loud"
-            items={createCVCVoiceLevel()}
-            onLevelComplete={() => navigate("/levels")}
-          />
-        );
-      }
       return (
         <LevelSyllableBuilder
           levelId={level.id}
@@ -77,6 +48,8 @@ export default function Lesson() {
           accent={accent}
         />
       );
+    case "voice-evaluation":
+      return <LevelVoiceEvaluation levelId={level.id} accent={accent} />;
     default:
       return null;
   }

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
-import { Volume2, ArrowLeft, Sparkles } from "lucide-react";
+import { Volume2, Home, ArrowRight, Sparkles } from "lucide-react";
 import { Button } from "./ui/button";
 import { motion } from "motion/react";
 import { getLetterPhonetic } from "../data/levels";
@@ -42,7 +42,7 @@ export function LevelSounds({ levelId, accent }: LevelSoundsProps) {
     }
   };
 
-  const allTapped = tappedLetters.size >= 0; // Allow continue without tapping all letters
+  const allTapped = tappedLetters.size >= ALL_LETTERS.length;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-cyan-50 to-indigo-50 dark:from-gray-900 dark:via-gray-850 dark:to-gray-800">
@@ -51,12 +51,11 @@ export function LevelSounds({ levelId, accent }: LevelSoundsProps) {
         <div className="max-w-2xl mx-auto flex items-center gap-3">
           <Button
             variant="ghost"
-            size="lg"
+            size="sm"
             onClick={() => navigate("/levels")}
-            className="rounded-full gap-2 h-14 px-6 text-lg touch-manipulation"
+            className="rounded-full"
           >
-            <ArrowLeft className="w-6 h-6" />
-            Back
+            <Home className="w-5 h-5" />
           </Button>
           <div className="flex-1">
             <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 overflow-hidden">
@@ -187,7 +186,6 @@ export function LevelSounds({ levelId, accent }: LevelSoundsProps) {
         {/* Continue Button */}
         <div className="text-center">
           <Button
-            type="button"
             onClick={() => {
               // Mark level as completed
               const completedLevels = JSON.parse(localStorage.getItem("completedLevels") || "[]");
@@ -197,8 +195,9 @@ export function LevelSounds({ levelId, accent }: LevelSoundsProps) {
               }
               navigate("/levels");
             }}
+            size="lg"
             disabled={!allTapped}
-            className="rounded-xl px-8 py-6 text-lg text-white disabled:opacity-40 h-16 touch-manipulation"
+            className="rounded-xl px-8 py-6 text-lg text-white disabled:opacity-40"
             style={{
               background: allTapped
                 ? `linear-gradient(135deg, ${accent.primary} 0%, ${accent.dark} 100%)`
