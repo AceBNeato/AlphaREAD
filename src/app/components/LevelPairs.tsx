@@ -1,10 +1,9 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router";
-import { Volume2, ArrowRight, ArrowLeft, Home, CheckCircle2, Sparkles } from "lucide-react";
+import { ArrowRight, ArrowLeft, Home, Sparkles } from "lucide-react";
 import { Button } from "./ui/button";
 import { generateLetterPairs } from "../data/levels";
 import { motion } from "motion/react";
-import { playElevenLabsAudio } from "../../utils/elevenLabsTTS";
 
 interface LevelPairsProps {
   levelId: number;
@@ -15,26 +14,17 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
   const navigate = useNavigate();
   const pairs = useMemo(() => generateLetterPairs(), []);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [playingLetter, setPlayingLetter] = useState<string | null>(null);
-  const [listenedPairs, setListenedPairs] = useState<Set<number>>(new Set());
   const [completed, setCompleted] = useState(false);
+  const [clickedLetter, setClickedLetter] = useState<string | null>(null);
 
   const currentPair = pairs[currentIndex];
   const progress = ((currentIndex + 1) / pairs.length) * 100;
 
-  const playAudio = async (text: string) => {
-    setPlayingLetter(text);
-    try {
-      await playElevenLabsAudio(
-        text,
-        undefined,
-        () => setPlayingLetter(null)
-      );
-      setListenedPairs((prev) => new Set(prev).add(currentIndex));
-    } catch (error) {
-      console.error('Error playing audio:', error);
-      setPlayingLetter(null);
-    }
+  const handleLetterClick = (letter: string) => {
+    setClickedLetter(letter);
+    setTimeout(() => {
+      setClickedLetter(null);
+    }, 1000);
   };
 
   const goNext = () => {
@@ -106,7 +96,7 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
               Level Complete!
             </h3>
             <p className="text-gray-500 dark:text-gray-400 mb-8">
-              You've listened to all the letter pairs!
+              You've reviewed all the letter pairs!
             </p>
             <Button
               onClick={() => navigate("/levels")}
@@ -130,7 +120,7 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
             Letter Pairs
           </h2>
           <p className="text-gray-500 dark:text-gray-400 text-sm">
-            Listen to each letter in the pair
+            Review each letter in the pair
           </p>
         </div>
 
@@ -155,51 +145,22 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
               className="flex-1 max-w-[200px]"
             >
               <div
-                className="rounded-3xl p-6 shadow-xl text-center cursor-pointer transition-transform hover:scale-105 active:scale-95"
+                className="rounded-3xl p-8 shadow-xl text-center cursor-pointer transition-transform hover:scale-105 active:scale-95"
                 style={{
-                  background:
-                    playingLetter === letter
-                      ? `linear-gradient(135deg, #FFC800 0%, #e6b400 100%)`
-                      : `linear-gradient(135deg, ${accent.primary} 0%, ${accent.dark} 100%)`,
+                  background: clickedLetter === letter
+                    ? `linear-gradient(135deg, #FFC800 0%, #e6b400 100%)`
+                    : `linear-gradient(135deg, ${accent.primary} 0%, ${accent.dark} 100%)`,
                 }}
-                onClick={() => playAudio(letter)}
+                onClick={() => handleLetterClick(letter)}
               >
-                <div className="text-white mb-2">
+                <div className="text-white flex items-baseline justify-center gap-2">
                   <span className="text-7xl">{letter}</span>
-                  <span className="text-5xl">{letter.toLowerCase()}</span>
-                </div>
-                <div className="mt-4">
-                  <div
-                    className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm transition-all ${
-                      playingLetter === letter
-                        ? "bg-white/40 text-white"
-                        : "bg-white/20 text-white/90 hover:bg-white/30"
-                    }`}
-                  >
-                    <Volume2
-                      className={`w-4 h-4 ${
-                        playingLetter === letter ? "animate-pulse" : ""
-                      }`}
-                    />
-                    {playingLetter === letter ? "Playing..." : "Listen"}
-                  </div>
+                  <span className="text-6xl">{letter.toLowerCase()}</span>
                 </div>
               </div>
             </motion.div>
           ))}
         </motion.div>
-
-        {/* Listened indicator */}
-        {listenedPairs.has(currentIndex) && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex items-center justify-center gap-2 mb-6 text-[#58CC02]"
-          >
-            <CheckCircle2 className="w-5 h-5" />
-            <span className="text-sm">Listened!</span>
-          </motion.div>
-        )}
 
         {/* Pair dots */}
         <div className="flex justify-center gap-2 mb-8 flex-wrap max-w-xs mx-auto">
@@ -210,12 +171,7 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
                 i === currentIndex ? "scale-125" : ""
               }`}
               style={{
-                background:
-                  i === currentIndex
-                    ? accent.primary
-                    : listenedPairs.has(i)
-                      ? `${accent.primary}60`
-                      : "#d1d5db",
+                background: i === currentIndex ? accent.primary : "#d1d5db",
               }}
             />
           ))}

@@ -48,9 +48,31 @@ const allLetters: Letter[] = [
 ];
 
 export const VOWELS = ["A", "E", "I", "O", "U"];
+
+// Common consonants used in syllables (excluding Q and X for simplicity)
+const SYLLABLE_CONSONANTS = ["B", "C", "D", "F", "G", "H", "J", "K", "L", "M", "N", "P", "R", "S", "T", "V", "W", "Y", "Z"];
+
 export const CONSONANTS = allLetters
   .map((l) => l.letter)
   .filter((l) => !VOWELS.includes(l));
+
+// Generate all possible CV syllables (Consonant + Vowel)
+// 19 consonants * 5 vowels = 95 combinations
+export const ALL_CV_SYLLABLES: string[] = [];
+for (const c of SYLLABLE_CONSONANTS) {
+  for (const v of VOWELS) {
+    ALL_CV_SYLLABLES.push(`${c}${v}`);
+  }
+}
+
+// Generate all possible VC syllables (Vowel + Consonant)
+// 5 vowels * 19 consonants = 95 combinations
+export const ALL_VC_SYLLABLES: string[] = [];
+for (const v of VOWELS) {
+  for (const c of SYLLABLE_CONSONANTS) {
+    ALL_VC_SYLLABLES.push(`${v}${c}`);
+  }
+}
 
 // Phonetic pronunciation for individual letters
 export const LETTER_PHONETICS: Record<string, string> = {
@@ -213,20 +235,20 @@ export const levels: Level[] = [
   },
   {
     id: 3,
-    title: "CV Builder",
-    subtitle: "Build Consonant + Vowel syllables",
+    title: "VC Builder",
+    subtitle: "Build Vowel + Consonant syllables",
     type: "syllable-builder",
-    patterns: ["CV"],
+    patterns: ["VC"],
     letters: allLetters,
     locked: true,
     completed: false,
   },
   {
     id: 4,
-    title: "VC & CV Builder",
-    subtitle: "Build Vowel + Consonant and CV syllables",
+    title: "CV Builder",
+    subtitle: "Build Consonant + Vowel syllables",
     type: "syllable-builder",
-    patterns: ["CV", "VC"],
+    patterns: ["CV"],
     letters: allLetters,
     locked: true,
     completed: false,
@@ -282,74 +304,69 @@ export interface SyllableTarget {
 // Generate syllable targets for a given set of patterns
 export function generateSyllableTargets(
   patterns: SyllablePattern[],
-  count: number = 8
+  count: number = 10
 ): SyllableTarget[] {
   const targets: SyllableTarget[] = [];
-  const usedSyllables = new Set<string>();
 
   // If CVC is in patterns, prioritize using real CVC words
   if (patterns.includes("CVC")) {
     const shuffledWords = shuffle(CVC_WORDS);
-    let wordIndex = 0;
-    
-    // Add real CVC words
-    while (targets.length < count && wordIndex < shuffledWords.length) {
-      const word = shuffledWords[wordIndex];
-      if (!usedSyllables.has(word)) {
-        usedSyllables.add(word);
-        targets.push({
-          pattern: "CVC",
-          letters: word.split(""),
-          syllable: word,
-        });
-      }
-      wordIndex++;
-    }
-    
-    return shuffle(targets);
+    const selectedWords = shuffledWords.slice(0, count);
+
+    return selectedWords.map(word => ({
+      pattern: "CVC" as SyllablePattern,
+      letters: word.split(""),
+      syllable: word,
+    }));
   }
 
-  // For CV and VC patterns, generate them
-  const shuffledConsonants = shuffle(CONSONANTS);
-  const shuffledVowels = shuffle(VOWELS);
+  // For CV only - use complete CV list
+  if (patterns.length === 1 && patterns[0] === "CV") {
+    const shuffledCV = shuffle([...ALL_CV_SYLLABLES]);
+    const selected = shuffledCV.slice(0, count);
 
-  let ci = 0;
-  let vi = 0;
-  let attempts = 0;
-
-  while (targets.length < count && attempts < count * 5) {
-    attempts++;
-    const pattern = patterns[targets.length % patterns.length];
-    const c1 = shuffledConsonants[ci % shuffledConsonants.length];
-    const v = shuffledVowels[vi % shuffledVowels.length];
-    const c2 = shuffledConsonants[(ci + 3) % shuffledConsonants.length];
-
-    let syllable: string;
-    let letters: string[];
-
-    switch (pattern) {
-      case "CV":
-        syllable = `${c1}${v}`;
-        letters = [c1, v];
-        break;
-      case "VC":
-        syllable = `${v}${c1}`;
-        letters = [v, c1];
-        break;
-      case "CVC":
-        syllable = `${c1}${v}${c2}`;
-        letters = [c1, v, c2];
-        break;
-    }
-
-    if (!usedSyllables.has(syllable)) {
-      usedSyllables.add(syllable);
-      targets.push({ pattern, letters, syllable });
-    }
-
-    ci++;
-    if (ci % 3 === 0) vi++;
+    return selected.map(syllable => ({
+      pattern: "CV" as SyllablePattern,
+      letters: syllable.split(""),
+      syllable,
+    }));
   }
 
-  return shuffle(targets);
+  // For VC only - use complete VC list
+  if (patterns.length === 1 && patterns[0] === "VC") {
+    const shuffledVC = shuffle([...ALL_VC_SYLLABLES]);
+    const selected = shuffledVC.slice(0, count);
+
+    return selected.map(syllable => ({
+      pattern: "VC" as SyllablePattern,
+      letters: syllable.split(""),
+      syllable,
+    }));
+  }
+
+  // For mixed patterns (CV + VC)
+  if (patterns.includes("CV") && patterns.includes("VC")) {
+    const halfCount = Math.floor(count / 2);
+    const cvCount = halfCount;
+    const vcCount = count - cvCount;
+
+    const shuffledCV = shuffle([...ALL_CV_SYLLABLES]);
+    const shuffledVC = shuffle([...ALL_VC_SYLLABLES]);
+
+    const cvTargets = shuffledCV.slice(0, cvCount).map(syllable => ({
+      pattern: "CV" as SyllablePattern,
+      letters: syllable.split(""),
+      syllable,
+    }));
+
+    const vcTargets = shuffledVC.slice(0, vcCount).map(syllable => ({
+      pattern: "VC" as SyllablePattern,
+      letters: syllable.split(""),
+      syllable,
+    }));
+
+    return shuffle([...cvTargets, ...vcTargets]);
+  }
+
+  return targets;
 }

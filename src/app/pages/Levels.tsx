@@ -57,20 +57,20 @@ const levelColors = [
 const levelIcons = [Layers, Music, Puzzle, Shapes, Brain, Mic];
 
 const levelDescriptions = [
-  "Learn all 26 letters in shuffled pairs. Each pair has a listen button so you can hear each letter's sound.",
-  "Explore all 26 letters on a tap-to-hear board. Press any letter to hear its pronunciation!",
-  "Build CV (Consonant + Vowel) syllables! Click letters in order to form patterns like BA, MI, TO.",
-  "Now add VC (Vowel + Consonant) syllables alongside CV! Build patterns like AB, IM, OT and more.",
+  "Learn all 26 letters in shuffled pairs. Review each letter's uppercase and lowercase form.",
+  "Explore all 26 letters on a QWERTY keyboard layout. Tap each letter to review!",
+  "Build VC (Vowel + Consonant) syllables! Click letters in order to form patterns like AB, IM, OT. 95 total combinations randomized each time!",
+  "Build CV (Consonant + Vowel) syllables! Click letters in order to form patterns like BA, MI, TO. 95 total combinations randomized each time!",
   "Master all three patterns: CV, VC, and CVC! Form syllables like BAT, MIL, FUN in this ultimate challenge.",
   "Practice pronunciation with speech recognition! Say CVC words out loud and get instant feedback.",
 ];
 
 const levelTags = [
-  ["Letter Pairs", "26 Letters", "Audio"],
-  ["Tap & Listen", "26 Letters", "Audio"],
-  ["CV Pattern", "Syllables", "Audio"],
-  ["CV + VC", "Syllables", "Audio"],
-  ["CV + VC + CVC", "Syllables", "Audio"],
+  ["Letter Pairs", "26 Letters", "Review"],
+  ["Tap & Review", "26 Letters", "QWERTY"],
+  ["VC Pattern", "95 Syllables", "Interactive"],
+  ["CV Pattern", "95 Syllables", "Interactive"],
+  ["CV + VC + CVC", "Syllables", "Challenge"],
   ["Voice Recognition", "CVC Words", "Speech Practice"],
 ];
 

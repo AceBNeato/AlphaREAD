@@ -1,11 +1,10 @@
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router";
 import {
   Mic,
   Home,
   ArrowRight,
   ArrowLeft,
-  Volume2,
   Sparkles,
   CheckCircle2,
   XCircle,
@@ -14,7 +13,6 @@ import {
 import { Button } from "./ui/button";
 import { CVC_WORDS, shuffle } from "../data/levels";
 import { motion, AnimatePresence } from "motion/react";
-import { playElevenLabsAudio } from "../../utils/elevenLabsTTS";
 
 interface LevelVoiceEvaluationProps {
   levelId: number;
@@ -32,7 +30,6 @@ export function LevelVoiceEvaluation({ levelId, accent }: LevelVoiceEvaluationPr
   const [completedWords, setCompletedWords] = useState<Set<number>>(new Set());
   const [score, setScore] = useState(0);
   const [recognition, setRecognition] = useState<any>(null);
-  const [playingWord, setPlayingWord] = useState<string | null>(null);
 
   const currentWord = words[currentIndex];
   const progress = (completedWords.size / words.length) * 100;
@@ -125,20 +122,6 @@ export function LevelVoiceEvaluation({ levelId, accent }: LevelVoiceEvaluationPr
       setIsListening(false);
     }
   };
-
-  const playAudio = useCallback(async (text: string) => {
-    setPlayingWord(text);
-    try {
-      await playElevenLabsAudio(
-        text,
-        undefined,
-        () => setPlayingWord(null)
-      );
-    } catch (error) {
-      console.error("Error playing audio:", error);
-      setPlayingWord(null);
-    }
-  }, []);
 
   const goNext = () => {
     if (currentIndex < words.length - 1) {
@@ -235,30 +218,13 @@ export function LevelVoiceEvaluation({ levelId, accent }: LevelVoiceEvaluationPr
                   }`}
                 >
                   {/* Display Word */}
-                  <div className="flex items-center gap-4">
+                  <div>
                     <span
                       className="text-7xl tracking-wider"
                       style={{ color: accent.primary }}
                     >
                       {currentWord}
                     </span>
-                    <button
-                      onClick={() => playAudio(currentWord)}
-                      disabled={playingWord === currentWord}
-                      className={`p-3 rounded-full transition-all ${
-                        playingWord === currentWord
-                          ? "bg-[#FFC800] scale-110"
-                          : "bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600"
-                      }`}
-                    >
-                      <Volume2
-                        className={`w-6 h-6 ${
-                          playingWord === currentWord
-                            ? "text-white animate-pulse"
-                            : "text-gray-600 dark:text-gray-300"
-                        }`}
-                      />
-                    </button>
                   </div>
 
                   {/* Microphone Button */}

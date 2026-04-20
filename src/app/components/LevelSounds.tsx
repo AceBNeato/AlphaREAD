@@ -1,10 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
-import { Volume2, Home, ArrowRight, Sparkles } from "lucide-react";
+import { Home, Sparkles } from "lucide-react";
 import { Button } from "./ui/button";
 import { motion } from "motion/react";
 import { getLetterPhonetic } from "../data/levels";
-import { playElevenLabsAudio } from "../../utils/elevenLabsTTS";
 
 // QWERTY keyboard layout
 const QWERTY_ROWS = [
@@ -22,27 +21,16 @@ interface LevelSoundsProps {
 
 export function LevelSounds({ levelId, accent }: LevelSoundsProps) {
   const navigate = useNavigate();
-  const [playingLetter, setPlayingLetter] = useState<string | null>(null);
-  const [tappedLetters, setTappedLetters] = useState<Set<string>>(new Set());
+  const [clickedLetter, setClickedLetter] = useState<string | null>(null);
 
-  const progress = (tappedLetters.size / ALL_LETTERS.length) * 100;
+  const handleLetterClick = (letter: string) => {
+    setClickedLetter(letter);
 
-  const playAudio = async (letter: string) => {
-    setPlayingLetter(letter);
-    try {
-      await playElevenLabsAudio(
-        getLetterPhonetic(letter),
-        undefined,
-        () => setPlayingLetter(null)
-      );
-      setTappedLetters((prev) => new Set(prev).add(letter));
-    } catch (error) {
-      console.error('Error playing audio:', error);
-      setPlayingLetter(null);
-    }
+    // Reset color after 1 second
+    setTimeout(() => {
+      setClickedLetter(null);
+    }, 1000);
   };
-
-  const allTapped = tappedLetters.size >= ALL_LETTERS.length;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-cyan-50 to-indigo-50 dark:from-gray-900 dark:via-gray-850 dark:to-gray-800">
@@ -57,19 +45,11 @@ export function LevelSounds({ levelId, accent }: LevelSoundsProps) {
           >
             <Home className="w-5 h-5" />
           </Button>
-          <div className="flex-1">
-            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 overflow-hidden">
-              <motion.div
-                className="h-full rounded-full"
-                style={{ background: accent.primary }}
-                animate={{ width: `${progress}%` }}
-                transition={{ duration: 0.3 }}
-              />
-            </div>
+          <div className="flex-1 text-center">
+            <h2 className="text-xl" style={{ color: accent.primary }}>
+              Level 2: Letter Sounds
+            </h2>
           </div>
-          <span className="text-sm" style={{ color: accent.primary }}>
-            {tappedLetters.size}/{ALL_LETTERS.length}
-          </span>
         </div>
       </div>
 
@@ -83,7 +63,7 @@ export function LevelSounds({ levelId, accent }: LevelSoundsProps) {
             Letter Sounds
           </h2>
           <p className="text-gray-500 dark:text-gray-400 text-sm">
-            Tap each letter to hear how it sounds!
+            Tap each letter to review!
           </p>
         </div>
 
@@ -98,8 +78,7 @@ export function LevelSounds({ levelId, accent }: LevelSoundsProps) {
               }}
             >
               {row.map((letter) => {
-                const isPlaying = playingLetter === letter;
-                const isTapped = tappedLetters.has(letter);
+                const isClicked = clickedLetter === letter;
                 const isVowel = VOWELS.has(letter);
                 const letterIndex = ALL_LETTERS.indexOf(letter);
 
@@ -107,25 +86,28 @@ export function LevelSounds({ levelId, accent }: LevelSoundsProps) {
                   <motion.button
                     key={letter}
                     initial={{ opacity: 0, scale: 0 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: letterIndex * 0.03, type: "spring", stiffness: 300 }}
-                    onClick={() => playAudio(letter)}
-                    className={`relative w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex flex-col items-center justify-center transition-all cursor-pointer shadow-md hover:shadow-lg active:scale-90 ${
-                      isPlaying ? "scale-110 ring-4 ring-[#FFC800]" : ""
-                    }`}
+                    animate={{
+                      opacity: 1,
+                      scale: isClicked ? 1.1 : 1,
+                    }}
+                    transition={{
+                      delay: letterIndex * 0.03,
+                      type: "spring",
+                      stiffness: 300
+                    }}
+                    onClick={() => handleLetterClick(letter)}
+                    className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex flex-col items-center justify-center transition-all cursor-pointer shadow-md hover:shadow-lg active:scale-90"
                     style={{
-                      background: isPlaying
-                        ? "linear-gradient(135deg, #FFC800 0%, #FF9600 100%)"
-                        : isTapped
-                          ? `linear-gradient(135deg, ${accent.primary} 0%, ${accent.dark} 100%)`
-                          : isVowel
-                            ? "linear-gradient(135deg, #FF6B8A 0%, #FF4B8A 100%)"
-                            : "linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%)",
+                      background: isClicked
+                        ? `linear-gradient(135deg, ${accent.primary} 0%, ${accent.dark} 100%)`
+                        : isVowel
+                          ? "linear-gradient(135deg, #FF6B8A 0%, #FF4B8A 100%)"
+                          : "linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%)",
                     }}
                   >
                     <span
                       className={`text-2xl sm:text-3xl ${
-                        isPlaying || isTapped || isVowel
+                        isClicked || isVowel
                           ? "text-white"
                           : "text-gray-700 dark:text-gray-800"
                       }`}
@@ -134,29 +116,13 @@ export function LevelSounds({ levelId, accent }: LevelSoundsProps) {
                     </span>
                     <span
                       className={`text-[10px] ${
-                        isPlaying || isTapped || isVowel
+                        isClicked || isVowel
                           ? "text-white/70"
                           : "text-gray-500"
                       }`}
                     >
                       {getLetterPhonetic(letter)}
                     </span>
-
-                    {isPlaying && (
-                      <motion.div
-                        className="absolute -top-1 -right-1"
-                        animate={{ scale: [1, 1.3, 1] }}
-                        transition={{ repeat: Infinity, duration: 0.6 }}
-                      >
-                        <Volume2 className="w-4 h-4 text-white" />
-                      </motion.div>
-                    )}
-
-                    {isTapped && !isPlaying && (
-                      <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#58CC02] flex items-center justify-center">
-                        <span className="text-white text-[8px]">✓</span>
-                      </div>
-                    )}
                   </motion.button>
                 );
               })}
@@ -174,13 +140,6 @@ export function LevelSounds({ levelId, accent }: LevelSoundsProps) {
             <div className="w-4 h-4 rounded bg-gradient-to-r from-gray-300 to-gray-400" />
             <span>Consonants</span>
           </div>
-          <div className="flex items-center gap-2">
-            <div
-              className="w-4 h-4 rounded"
-              style={{ background: accent.primary }}
-            />
-            <span>Listened</span>
-          </div>
         </div>
 
         {/* Continue Button */}
@@ -196,22 +155,13 @@ export function LevelSounds({ levelId, accent }: LevelSoundsProps) {
               navigate("/levels");
             }}
             size="lg"
-            disabled={!allTapped}
-            className="rounded-xl px-8 py-6 text-lg text-white disabled:opacity-40"
+            className="rounded-xl px-8 py-6 text-lg text-white"
             style={{
-              background: allTapped
-                ? `linear-gradient(135deg, ${accent.primary} 0%, ${accent.dark} 100%)`
-                : undefined,
+              background: `linear-gradient(135deg, ${accent.primary} 0%, ${accent.dark} 100%)`,
             }}
           >
-            {allTapped ? (
-              <>
-                <Sparkles className="w-5 h-5 mr-1" />
-                Complete Level!
-              </>
-            ) : (
-              `Tap all letters to continue (${ALL_LETTERS.length - tappedLetters.size} left)`
-            )}
+            <Sparkles className="w-5 h-5 mr-1" />
+            Complete Level!
           </Button>
         </div>
       </div>

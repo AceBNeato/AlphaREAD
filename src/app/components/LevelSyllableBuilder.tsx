@@ -1,7 +1,6 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo } from "react";
 import { useNavigate } from "react-router";
 import {
-  Volume2,
   Home,
   ArrowRight,
   ArrowLeft,
@@ -15,12 +14,10 @@ import {
   VOWELS,
   CONSONANTS,
   generateSyllableTargets,
-  getPhoneticPronunciation,
   type SyllablePattern,
   type SyllableTarget,
 } from "../data/levels";
 import { motion, AnimatePresence } from "motion/react";
-import { playElevenLabsAudio } from "../../utils/elevenLabsTTS";
 
 interface LevelSyllableBuilderProps {
   levelId: number;
@@ -84,7 +81,6 @@ export function LevelSyllableBuilder({
     new Set()
   );
   const [feedback, setFeedback] = useState<"correct" | "wrong" | null>(null);
-  const [playingLetter, setPlayingLetter] = useState<string | null>(null);
   const [score, setScore] = useState(0);
 
   const currentTarget = targets[currentIndex];
@@ -92,24 +88,8 @@ export function LevelSyllableBuilder({
   const progress = (completedTargets.size / targets.length) * 100;
   const slotCount = currentTarget ? currentTarget.letters.length : 2;
 
-  const playAudio = useCallback(async (text: string) => {
-    setPlayingLetter(text);
-    try {
-      await playElevenLabsAudio(
-        text,
-        undefined,
-        () => setPlayingLetter(null)
-      );
-    } catch (error) {
-      console.error("Error playing audio:", error);
-      setPlayingLetter(null);
-    }
-  }, []);
-
   const handleLetterClick = (letter: string) => {
     if (feedback || allDone || completedTargets.has(currentIndex)) return;
-
-    playAudio(letter);
 
     const newSelected = [...selectedLetters, letter];
     setSelectedLetters(newSelected);
@@ -221,7 +201,7 @@ export function LevelSyllableBuilder({
                 : "Syllable Master"}
           </h2>
           <p className="text-gray-500 dark:text-gray-400 text-sm">
-            Tap the listen button, then click letters in order to spell it!
+            Click letters in order to spell the syllable!
           </p>
           {/* Pattern legend */}
           <div className="flex justify-center gap-2 mt-2 flex-wrap">
@@ -305,12 +285,6 @@ export function LevelSyllableBuilder({
                     <span>
                       Completed! — "{currentTarget.syllable}"
                     </span>
-                    <button
-                      onClick={() => playAudio(currentTarget.syllable)}
-                      className="ml-1 p-1 rounded-full hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors"
-                    >
-                      <Volume2 className="w-4 h-4" />
-                    </button>
                   </motion.div>
                 )}
 
@@ -488,13 +462,11 @@ export function LevelSyllableBuilder({
                           key={i}
                           initial={{ scale: 0 }}
                           animate={{ scale: 1 }}
-                          className="px-4 py-2 rounded-full text-white text-sm cursor-pointer hover:scale-105 transition-transform"
+                          className="px-4 py-2 rounded-full text-white text-sm"
                           style={{
                             background: `linear-gradient(135deg, ${patternColors[t.pattern]}, ${accent.dark})`,
                           }}
-                          onClick={() => playAudio(t.syllable)}
                         >
-                          <Volume2 className="w-3 h-3 inline mr-1" />
                           {t.syllable}
                           <span className="ml-1 opacity-60 text-xs">
                             ({t.pattern})
@@ -530,13 +502,11 @@ export function LevelSyllableBuilder({
               {targets.map((t, i) => (
                 <span
                   key={i}
-                  className="px-4 py-2 rounded-full text-white text-lg cursor-pointer hover:scale-105 transition-transform"
+                  className="px-4 py-2 rounded-full text-white text-lg"
                   style={{
                     background: `linear-gradient(135deg, ${patternColors[t.pattern]}, ${accent.dark})`,
                   }}
-                  onClick={() => playAudio(t.syllable)}
                 >
-                  <Volume2 className="w-3 h-3 inline mr-1" />
                   {t.syllable}
                   <span className="ml-1 opacity-60 text-xs">({t.pattern})</span>
                 </span>
