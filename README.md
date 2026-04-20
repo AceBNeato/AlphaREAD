@@ -21,56 +21,55 @@ This project uses Capacitor to build Android APKs.
 
 1. **Install Capacitor dependencies**:
    ```bash
-npm install @capacitor/core @capacitor/cli @capacitor/android --save-exact
-```
+   npm install @capacitor/core @capacitor/cli @capacitor/android --save-exact
+   ```
 
 2. **Initialize Capacitor** (one-time):
    ```bash
-npx cap init "Alphabet GO" com.commsforedu.alphabetgo --web-dir dist
-```
+   npx cap init "Alphabet GO" com.commsforedu.alphabetgo --web-dir dist
+   ```
 
 3. **Setup Android SDK** (one-time):
    ```bash
-bash setup-android-sdk.sh
-```
+   bash setup-android-sdk.sh
+   ```
    This downloads the Android SDK to `~/android-sdk`.
 
 4. **Add Android platform**:
    ```bash
-npx cap add android
-```
+   npx cap add android
+   ```
 
-5. **Build web assets**:
+5. **Build web assets and APK** (run all together every time you make changes):
    ```bash
-npm run build
-npx cap sync android
-```
-
-6. **Build APK**:
-   ```bash
-cd android
-bash gradlew assembleDebug
-```
+   npm run build
+   npx cap sync android
+   cd android && bash gradlew assembleDebug
+   ```
    APK will be at: `android/app/build/outputs/apk/debug/app-debug.apk`
 
+   > **Important:** `npm run build` compiles your code, `cap sync` copies it into the Android project, and Gradle packages it into the `.apk`. All three steps are needed — skipping Gradle means the APK on your phone is still the old one.
+
 ### Wireless Debugging (Install APK on Phone)
+
+> **One-time setup:** Add `adb` to your Git Bash PATH permanently:
+> ```bash
+> echo 'export PATH=$PATH:/c/Users/ThinkPad/android-sdk/platform-tools' >> ~/.bashrc
+> source ~/.bashrc
+> ```
 
 1. **Enable Developer Options** on your Android phone (tap Build Number 7x)
 2. **Enable Wireless Debugging**: Developer Options → Wireless Debugging → Enable
 3. **Pair and connect**:
    ```bash
-export ANDROID_HOME=/c/Users/ThinkPad/android-sdk
-export PATH=$PATH:$ANDROID_HOME/platform-tools
-
-# Get pairing code from phone screen
-adb pair <PHONE_IP>:<PAIRING_PORT>
-
-# Connect to device
-adb connect <PHONE_IP>:<CONNECTION_PORT>
-
-# Install APK
-adb install android/app/build/outputs/apk/debug/app-debug.apk
-```
+   adb pair <PHONE_IP>:<PAIRING_PORT>
+   adb connect <PHONE_IP>:<CONNECTION_PORT>
+   adb devices
+   ```
+4. **Install APK**:
+   ```bash
+   adb install -r android/app/build/outputs/apk/debug/app-debug.apk
+   ```
 
 ### Alternative: Transfer APK Manually
 

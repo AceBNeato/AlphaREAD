@@ -61,7 +61,7 @@ const levelDescriptions = [
   "Explore all 26 letters on a QWERTY keyboard layout. Tap each letter to review!",
   "Build VC (Vowel + Consonant) syllables! Click letters in order to form patterns like AB, IM, OT. 65 total combinations randomized each time!",
   "Build CV (Consonant + Vowel) syllables! Click letters in order to form patterns like BA, MI, TO. 65 total combinations randomized each time!",
-  "Master all three patterns: CV, VC, and CVC! Form syllables like BAT, MIL, FUN in this ultimate challenge.",
+  "Build CVC (Consonant-Vowel-Consonant) words! Click letters in order to form words like BAT, MUG, TIP. 65 total words randomized each time!",
   "Practice pronunciation with speech recognition! Say CVC words out loud and get instant feedback.",
 ];
 
@@ -70,7 +70,7 @@ const levelTags = [
   ["Tap & Review", "26 Letters", "QWERTY"],
   ["VC Pattern", "65 Syllables", "Interactive"],
   ["CV Pattern", "65 Syllables", "Interactive"],
-  ["CV + VC + CVC", "Syllables", "Challenge"],
+  ["CVC Pattern", "65 Words", "Challenge"],
   ["Voice Recognition", "CVC Words", "Speech Practice"],
 ];
 

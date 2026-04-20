@@ -301,19 +301,18 @@ export function LevelSyllableBuilder({
                     {Array.from({ length: slotCount }).map((_, slot) => (
                       <div
                         key={slot}
-                        className={`w-18 h-18 sm:w-20 sm:h-20 rounded-2xl border-3 flex items-center justify-center text-3xl sm:text-4xl transition-all ${
-                          feedback === "correct"
+                        className={`w-18 h-18 sm:w-20 sm:h-20 rounded-2xl border-3 flex items-center justify-center text-3xl sm:text-4xl transition-all ${feedback === "correct"
                             ? "border-[#58CC02] bg-[#d7ffb8] dark:bg-green-900/30"
                             : feedback === "wrong"
                               ? "border-[#FF4B4B] bg-[#ffdfe0] dark:bg-red-900/30"
                               : "border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800"
-                        }`}
+                          }`}
                         style={
                           !feedback && selectedLetters[slot]
                             ? {
-                                borderColor: accent.primary,
-                                background: accent.lightBg,
-                              }
+                              borderColor: accent.primary,
+                              background: accent.lightBg,
+                            }
                             : undefined
                         }
                       >
@@ -387,8 +386,17 @@ export function LevelSyllableBuilder({
               <div className="grid grid-cols-5 sm:grid-cols-7 gap-3 mb-6">
                 {letterPool.map((item, i) => {
                   const isSelected = selectedLetters.includes(item.letter);
+                  const timesInTarget = currentTarget.syllable
+                    .split("")
+                    .filter((ch) => ch === item.letter).length;
+                  const timesSelected = selectedLetters.filter(
+                    (l) => l === item.letter
+                  ).length;
                   const isDisabled =
-                    isSelected && selectedLetters.length < slotCount && !feedback;
+                    timesInTarget > 0 &&
+                    timesSelected >= timesInTarget &&
+                    selectedLetters.length < slotCount &&
+                    !feedback;
 
                   return (
                     <motion.button
@@ -404,9 +412,8 @@ export function LevelSyllableBuilder({
                         !isDisabled && handleLetterClick(item.letter)
                       }
                       disabled={!!feedback}
-                      className={`aspect-square rounded-2xl flex flex-col items-center justify-center transition-all shadow-md hover:shadow-lg active:scale-90 cursor-pointer ${
-                        isSelected ? "ring-3 ring-offset-2" : ""
-                      }`}
+                      className={`aspect-square rounded-2xl flex flex-col items-center justify-center transition-all shadow-md hover:shadow-lg active:scale-90 cursor-pointer ${isSelected ? "ring-3 ring-offset-2" : ""
+                        }`}
                       style={{
                         background:
                           playingLetter === item.letter

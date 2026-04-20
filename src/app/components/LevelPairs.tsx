@@ -118,98 +118,97 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
             </Button>
           </motion.div>
         ) : (
-        <>
-        <div className="text-center mb-6">
-          <h2
-            className="text-2xl mb-1"
-            style={{ color: accent.primary }}
-          >
-            Letter Pairs
-          </h2>
-          <p className="text-gray-500 dark:text-gray-400 text-sm">
-            Review each letter in the pair
-          </p>
-        </div>
-
-        <motion.div
-          key={currentIndex}
-          initial={{ opacity: 0, x: 50 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.3 }}
-          className="flex gap-6 justify-center items-stretch mb-8"
-        >
-          {currentPair.map((letter, i) => (
-            <motion.div
-              key={`${currentIndex}-${i}`}
-              initial={{ scale: 0, rotate: -10 }}
-              animate={{ scale: 1, rotate: 0 }}
-              transition={{
-                type: "spring",
-                stiffness: 200,
-                damping: 15,
-                delay: i * 0.15,
-              }}
-              className="flex-1 max-w-[200px]"
-            >
-              <div
-                className="rounded-3xl p-8 shadow-xl text-center cursor-pointer transition-transform hover:scale-105 active:scale-95"
-                style={{
-                  background: clickedLetter === letter
-                    ? `linear-gradient(135deg, #FFC800 0%, #e6b400 100%)`
-                    : `linear-gradient(135deg, ${accent.primary} 0%, ${accent.dark} 100%)`,
-                }}
-                onClick={() => handleLetterClick(letter)}
+          <>
+            <div className="text-center mb-6">
+              <h2
+                className="text-2xl mb-1"
+                style={{ color: accent.primary }}
               >
-                <div className="text-white flex items-baseline justify-center gap-2">
-                  <span className="text-7xl">{letter}</span>
-                  <span className="text-6xl">{letter.toLowerCase()}</span>
-                </div>
-              </div>
+                Letter Pairs
+              </h2>
+              <p className="text-gray-500 dark:text-gray-400 text-sm">
+                Review each letter in the pair
+              </p>
+            </div>
+
+            <motion.div
+              key={currentIndex}
+              initial={{ opacity: 0, x: 50 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.3 }}
+              className="flex gap-6 justify-center items-stretch mb-8"
+            >
+              {currentPair.map((letter, i) => (
+                <motion.div
+                  key={`${currentIndex}-${i}`}
+                  initial={{ scale: 0, rotate: -10 }}
+                  animate={{ scale: 1, rotate: 0 }}
+                  transition={{
+                    type: "spring",
+                    stiffness: 200,
+                    damping: 15,
+                    delay: i * 0.15,
+                  }}
+                  className="flex-1 max-w-[200px]"
+                >
+                  <div
+                    className="rounded-3xl p-8 shadow-xl text-center cursor-pointer transition-transform hover:scale-105 active:scale-95"
+                    style={{
+                      background: clickedLetter === letter
+                        ? `linear-gradient(135deg, #FFC800 0%, #e6b400 100%)`
+                        : `linear-gradient(135deg, ${accent.primary} 0%, ${accent.dark} 100%)`,
+                    }}
+                    onClick={() => handleLetterClick(letter)}
+                  >
+                    <div className="text-white flex items-baseline justify-center gap-2">
+                      <span className="text-7xl">{letter}</span>
+                      <span className="text-6xl">{letter.toLowerCase()}</span>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
             </motion.div>
-          ))}
-        </motion.div>
 
-        {/* Pair dots */}
-        <div className="flex justify-center gap-2 mb-8 flex-wrap max-w-xs mx-auto">
-          {pairs.map((_, i) => (
-            <div
-              key={i}
-              className={`w-3 h-3 rounded-full transition-all ${
-                i === currentIndex ? "scale-125" : ""
-              }`}
-              style={{
-                background: i === currentIndex ? accent.primary : "#d1d5db",
-              }}
-            />
-          ))}
-        </div>
+            {/* Pair dots */}
+            <div className="flex justify-center gap-2 mb-8 flex-wrap max-w-xs mx-auto">
+              {pairs.map((_, i) => (
+                <div
+                  key={i}
+                  className={`w-3 h-3 rounded-full transition-all ${i === currentIndex ? "scale-125" : ""
+                    }`}
+                  style={{
+                    background: i === currentIndex ? accent.primary : "#d1d5db",
+                  }}
+                />
+              ))}
+            </div>
 
-        {/* Navigation */}
-        <div className="flex justify-between items-center">
-          <Button
-            onClick={goPrev}
-            disabled={currentIndex === 0}
-            variant="outline"
-            size="lg"
-            className="rounded-xl px-6 py-6 border-2 disabled:opacity-30"
-            style={{ borderColor: accent.primary, color: accent.primary }}
-          >
-            <ArrowLeft className="w-5 h-5 mr-1" />
-            Back
-          </Button>
-          <Button
-            onClick={goNext}
-            size="lg"
-            className="rounded-xl px-8 py-6 text-lg text-white"
-            style={{
-              background: `linear-gradient(135deg, ${accent.primary} 0%, ${accent.dark} 100%)`,
-            }}
-          >
-            {currentIndex === pairs.length - 1 ? "Finish!" : "Next"}
-            <ArrowRight className="w-5 h-5 ml-1" />
-          </Button>
-        </div>
-        </>
+            {/* Navigation */}
+            <div className="flex justify-between items-center">
+              <Button
+                onClick={goPrev}
+                disabled={currentIndex === 0}
+                variant="outline"
+                size="lg"
+                className="rounded-xl px-6 py-6 border-2 disabled:opacity-30"
+                style={{ borderColor: accent.primary, color: accent.primary }}
+              >
+                <ArrowLeft className="w-5 h-5 mr-1" />
+                Back
+              </Button>
+              <Button
+                onClick={goNext}
+                size="lg"
+                className="rounded-xl px-8 py-6 text-lg text-white"
+                style={{
+                  background: `linear-gradient(135deg, ${accent.primary} 0%, ${accent.dark} 100%)`,
+                }}
+              >
+                {currentIndex === pairs.length - 1 ? "Finish!" : "Next"}
+                <ArrowRight className="w-5 h-5 ml-1" />
+              </Button>
+            </div>
+          </>
         )}
       </div>
     </div>
