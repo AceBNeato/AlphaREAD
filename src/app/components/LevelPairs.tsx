@@ -71,7 +71,7 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
             <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 overflow-hidden">
               <motion.div
                 className="h-full rounded-full"
-                style={{ background: accent.primary }}
+                style={{ background: accent.primary } as React.CSSProperties}
                 initial={{ width: 0 }}
                 animate={{ width: `${progress}%` }}
                 transition={{ duration: 0.5 }}
