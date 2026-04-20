@@ -98,31 +98,35 @@ export function LevelSyllableBuilder({
       // Ignore autoplay errors
     });
 
-    const newSelected = [...selectedLetters, letter];
-    setSelectedLetters(newSelected);
+    setSelectedLetters((prev) => {
+      const newSelected = [...prev, letter];
 
-    if (newSelected.length === slotCount) {
-      const formed = newSelected.join("");
+      // Check if we just filled the last slot
+      if (newSelected.length === slotCount) {
+        const formed = newSelected.join("");
 
-      if (formed === currentTarget.syllable) {
-        setFeedback("correct");
-        setScore((s) => s + 1);
+        if (formed === currentTarget.syllable) {
+          setFeedback("correct");
+          setScore((s) => s + 1);
 
-        setTimeout(() => {
-          const newCompleted = new Set(completedTargets);
-          newCompleted.add(currentIndex);
-          setCompletedTargets(newCompleted);
-          setFeedback(null);
-          setSelectedLetters([]);
-        }, 1500);
-      } else {
-        setFeedback("wrong");
-        setTimeout(() => {
-          setFeedback(null);
-          setSelectedLetters([]);
-        }, 1000);
+          setTimeout(() => {
+            const newCompleted = new Set(completedTargets);
+            newCompleted.add(currentIndex);
+            setCompletedTargets(newCompleted);
+            setFeedback(null);
+            setSelectedLetters([]);
+          }, 1500);
+        } else {
+          setFeedback("wrong");
+          setTimeout(() => {
+            setFeedback(null);
+            setSelectedLetters([]);
+          }, 1000);
+        }
       }
-    }
+
+      return newSelected;
+    });
   };
 
   const findNextUncompleted = (
@@ -302,10 +306,10 @@ export function LevelSyllableBuilder({
                       <div
                         key={slot}
                         className={`w-18 h-18 sm:w-20 sm:h-20 rounded-2xl border-3 flex items-center justify-center text-3xl sm:text-4xl transition-all ${feedback === "correct"
-                            ? "border-[#58CC02] bg-[#d7ffb8] dark:bg-green-900/30"
-                            : feedback === "wrong"
-                              ? "border-[#FF4B4B] bg-[#ffdfe0] dark:bg-red-900/30"
-                              : "border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800"
+                          ? "border-[#58CC02] bg-[#d7ffb8] dark:bg-green-900/30"
+                          : feedback === "wrong"
+                            ? "border-[#FF4B4B] bg-[#ffdfe0] dark:bg-red-900/30"
+                            : "border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800"
                           }`}
                         style={
                           !feedback && selectedLetters[slot]
@@ -385,13 +389,19 @@ export function LevelSyllableBuilder({
             {!completedTargets.has(currentIndex) && (
               <div className="grid grid-cols-5 sm:grid-cols-7 gap-3 mb-6">
                 {letterPool.map((item, i) => {
-                  const isSelected = selectedLetters.includes(item.letter);
                   const timesInTarget = currentTarget.syllable
                     .split("")
                     .filter((ch) => ch === item.letter).length;
                   const timesSelected = selectedLetters.filter(
                     (l) => l === item.letter
                   ).length;
+
+                  // A letter is "selected" visually only if it's used up its count in the target
+                  // Or if it's a distractor that's been clicked at least once
+                  const isVisuallySelected = timesInTarget > 0
+                    ? timesSelected >= timesInTarget
+                    : timesSelected > 0;
+
                   const isDisabled =
                     timesInTarget > 0 &&
                     timesSelected >= timesInTarget &&
@@ -411,8 +421,8 @@ export function LevelSyllableBuilder({
                       onClick={() =>
                         !isDisabled && handleLetterClick(item.letter)
                       }
-                      disabled={!!feedback}
-                      className={`aspect-square rounded-2xl flex flex-col items-center justify-center transition-all shadow-md hover:shadow-lg active:scale-90 cursor-pointer ${isSelected ? "ring-3 ring-offset-2" : ""
+                      disabled={!!feedback || isDisabled}
+                      className={`aspect-square rounded-2xl flex flex-col items-center justify-center transition-all shadow-md hover:shadow-lg active:scale-90 cursor-pointer ${isVisuallySelected ? "ring-3 ring-offset-2 opacity-50" : ""
                         }`}
                       style={{
                         background:
@@ -421,7 +431,7 @@ export function LevelSyllableBuilder({
                             : item.isVowel
                               ? "linear-gradient(135deg, #FF6B8A 0%, #FF4B8A 100%)"
                               : "linear-gradient(135deg, #1CB0F6 0%, #0a8ed4 100%)",
-                        ringColor: isSelected ? accent.primary : undefined,
+                        ringColor: isVisuallySelected ? accent.primary : undefined,
                       } as React.CSSProperties}
                     >
                       <span className="text-white text-2xl sm:text-3xl">

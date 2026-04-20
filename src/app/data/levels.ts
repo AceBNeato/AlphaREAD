@@ -131,9 +131,9 @@ export function getLetterPhonetic(letter: string): string {
 // Real CVC words for kids (Level 5)
 export const CVC_WORDS = [
   "BAT", "CAT", "HAT", "MAT", "RAT", "SAT", "FAT", "PAT",
-  "BED", "RED", "LED", "FED", "WED", 
+  "BED", "RED", "LED", "FED", "WED",
   "BIG", "DIG", "FIG", "PIG", "WIG", "JIG",
-  "BOX", "FOX", 
+  "BOX", "FOX",
   "BUS", "CUP", "PUP", "SUN", "RUN", "FUN", "BUN", "GUM",
   "DOG", "LOG", "FOG", "HOG", "JOG",
   "BAG", "TAG", "RAG", "WAG", "GAG",
@@ -150,25 +150,25 @@ const CV_PHONETICS: Record<string, string> = {
   "HA": "Hah", "JA": "Jah", "KA": "Kah", "LA": "Lah", "MA": "Mah",
   "NA": "Nah", "PA": "Pah", "QA": "Kwah", "RA": "Rah", "SA": "Sah",
   "TA": "Tah", "VA": "Vah", "WA": "Wah", "XA": "Zah", "YA": "Yah", "ZA": "Zah",
-  
+
   // E vowel
   "BE": "Beh", "CE": "Seh", "DE": "Deh", "FE": "Feh", "GE": "Jeh",
   "HE": "Heh", "JE": "Jeh", "KE": "Keh", "LE": "Leh", "ME": "Meh",
   "NE": "Neh", "PE": "Peh", "QE": "Kweh", "RE": "Reh", "SE": "Seh",
   "TE": "Teh", "VE": "Veh", "WE": "Weh", "XE": "Zeh", "YE": "Yeh", "ZE": "Zeh",
-  
+
   // I vowel
   "BI": "Bee", "CI": "See", "DI": "Dee", "FI": "Fee", "GI": "Jee",
   "HI": "Hee", "JI": "Jee", "KI": "Kee", "LI": "Lee", "MI": "Mee",
   "NI": "Nee", "PI": "Pee", "QI": "Kwee", "RI": "Ree", "SI": "See",
   "TI": "Tee", "VI": "Vee", "WI": "Wee", "XI": "Zee", "YI": "Yee", "ZI": "Zee",
-  
+
   // O vowel
   "BO": "Boh", "CO": "Koh", "DO": "Doh", "FO": "Foh", "GO": "Goh",
   "HO": "Hoh", "JO": "Joh", "KO": "Koh", "LO": "Loh", "MO": "Moh",
   "NO": "Noh", "PO": "Poh", "QO": "Kwoh", "RO": "Roh", "SO": "Soh",
   "TO": "Toh", "VO": "Voh", "WO": "Woh", "XO": "Zoh", "YO": "Yoh", "ZO": "Zoh",
-  
+
   // U vowel
   "BU": "Boo", "CU": "Koo", "DU": "Doo", "FU": "Foo", "GU": "Goo",
   "HU": "Hoo", "JU": "Joo", "KU": "Koo", "LU": "Loo", "MU": "Moo",
@@ -183,25 +183,25 @@ const VC_PHONETICS: Record<string, string> = {
   "AH": "Ah", "AJ": "Aj", "AK": "Ak", "AL": "Al", "AM": "Am",
   "AN": "An", "AP": "Ap", "AQ": "Ak", "AR": "Ar", "AS": "As",
   "AT": "At", "AV": "Av", "AW": "Aw", "AX": "Ax", "AY": "Ay", "AZ": "Az",
-  
+
   // E + consonants
   "EB": "Eb", "EC": "Ek", "ED": "Ed", "EF": "Ef", "EG": "Eg",
   "EH": "Eh", "EJ": "Ej", "EK": "Ek", "EL": "El", "EM": "Em",
   "EN": "En", "EP": "Ep", "EQ": "Ek", "ER": "Er", "ES": "Es",
   "ET": "Et", "EV": "Ev", "EW": "Ew", "EX": "Ex", "EY": "Ey", "EZ": "Ez",
-  
+
   // I + consonants
   "IB": "Ib", "IC": "Ik", "ID": "Id", "IF": "If", "IG": "Ig",
   "IH": "Ih", "IJ": "Ij", "IK": "Ik", "IL": "Il", "IM": "Im",
   "IN": "In", "IP": "Ip", "IQ": "Ik", "IR": "Ir", "IS": "Is",
   "IT": "It", "IV": "Iv", "IW": "Iw", "IX": "Ix", "IY": "Iy", "IZ": "Iz",
-  
+
   // O + consonants
   "OB": "Ob", "OC": "Ok", "OD": "Od", "OF": "Of", "OG": "Og",
   "OH": "Oh", "OJ": "Oj", "OK": "Ok", "OL": "Ol", "OM": "Om",
   "ON": "On", "OP": "Op", "OQ": "Ok", "OR": "Or", "OS": "Os",
   "OT": "Ot", "OV": "Ov", "OW": "Ow", "OX": "Ox", "OY": "Oy", "OZ": "Oz",
-  
+
   // U + consonants
   "UB": "Ub", "UC": "Uk", "UD": "Ud", "UF": "Uf", "UG": "Ug",
   "UH": "Uh", "UJ": "Uj", "UK": "Uk", "UL": "Ul", "UM": "Um",
@@ -212,7 +212,7 @@ const VC_PHONETICS: Record<string, string> = {
 // Get phonetic pronunciation for a syllable
 export function getPhoneticPronunciation(syllable: string, pattern: SyllablePattern): string {
   syllable = syllable.toUpperCase();
-  
+
   if (pattern === "CVC") {
     // For CVC, check if it's a real word first
     if (CVC_WORDS.includes(syllable)) {
@@ -220,15 +220,15 @@ export function getPhoneticPronunciation(syllable: string, pattern: SyllablePatt
       return syllable.toLowerCase();
     }
   }
-  
+
   if (pattern === "CV" && CV_PHONETICS[syllable]) {
     return CV_PHONETICS[syllable];
   }
-  
+
   if (pattern === "VC" && VC_PHONETICS[syllable]) {
     return VC_PHONETICS[syllable];
   }
-  
+
   // Fallback to original syllable
   return syllable;
 }
@@ -275,9 +275,9 @@ export const levels: Level[] = [
   {
     id: 5,
     title: "CVC Master",
-    subtitle: "Build CV, VC, and CVC syllables",
+    subtitle: "Build 3-letter CVC words",
     type: "syllable-builder",
-    patterns: ["CV", "VC", "CVC"],
+    patterns: ["CVC"],
     letters: allLetters,
     locked: true,
     completed: false,
