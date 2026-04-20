@@ -92,6 +92,12 @@ export function LevelSyllableBuilder({
   const handleLetterClick = (letter: string) => {
     if (feedback || allDone || completedTargets.has(currentIndex)) return;
 
+    // Play audio for the letter
+    const audio = new Audio(`/audio/alphasounds-${letter.toLowerCase()}.mp3`);
+    audio.play().catch(() => {
+      // Ignore autoplay errors
+    });
+
     const newSelected = [...selectedLetters, letter];
     setSelectedLetters(newSelected);
 

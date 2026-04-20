@@ -26,6 +26,12 @@ export function LevelSounds({ levelId, accent }: LevelSoundsProps) {
   const handleLetterClick = (letter: string) => {
     setClickedLetter(letter);
 
+    // Play audio for the letter
+    const audio = new Audio(`/audio/alphasounds-${letter.toLowerCase()}.mp3`);
+    audio.play().catch(() => {
+      // Ignore autoplay errors
+    });
+
     // Reset color after 1 second
     setTimeout(() => {
       setClickedLetter(null);
@@ -103,7 +109,7 @@ export function LevelSounds({ levelId, accent }: LevelSoundsProps) {
                         : isVowel
                           ? "linear-gradient(135deg, #FF6B8A 0%, #FF4B8A 100%)"
                           : "linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%)",
-                    }}
+                    } as React.CSSProperties}
                   >
                     <span
                       className={`text-2xl sm:text-3xl ${

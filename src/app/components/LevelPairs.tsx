@@ -22,6 +22,13 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
 
   const handleLetterClick = (letter: string) => {
     setClickedLetter(letter);
+
+    // Play audio for the letter
+    const audio = new Audio(`/audio/alphasounds-${letter.toLowerCase()}.mp3`);
+    audio.play().catch(() => {
+      // Ignore autoplay errors
+    });
+
     setTimeout(() => {
       setClickedLetter(null);
     }, 1000);
