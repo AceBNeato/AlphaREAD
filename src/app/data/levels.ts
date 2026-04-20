@@ -56,6 +56,25 @@ export const CONSONANTS = allLetters
   .map((l) => l.letter)
   .filter((l) => !VOWELS.includes(l));
 
+// Simple consonants for elementary levels (easier sounds)
+const SIMPLE_CONSONANTS = ["B", "C", "D", "F", "G", "H", "L", "M", "N", "P", "R", "S", "T"];
+
+// Simple CV syllables for elementary (Level 4) - uses only simple consonants
+export const SIMPLE_CV_SYLLABLES: string[] = [];
+for (const c of SIMPLE_CONSONANTS) {
+  for (const v of VOWELS) {
+    SIMPLE_CV_SYLLABLES.push(`${c}${v}`);
+  }
+}
+
+// Simple VC syllables for elementary (Level 3) - uses only simple consonants
+export const SIMPLE_VC_SYLLABLES: string[] = [];
+for (const v of VOWELS) {
+  for (const c of SIMPLE_CONSONANTS) {
+    SIMPLE_VC_SYLLABLES.push(`${v}${c}`);
+  }
+}
+
 // Generate all possible CV syllables (Consonant + Vowel)
 // 19 consonants * 5 vowels = 95 combinations
 export const ALL_CV_SYLLABLES: string[] = [];
@@ -320,9 +339,9 @@ export function generateSyllableTargets(
     }));
   }
 
-  // For CV only - use complete CV list
+  // For CV only - use simple CV list for elementary level
   if (patterns.length === 1 && patterns[0] === "CV") {
-    const shuffledCV = shuffle([...ALL_CV_SYLLABLES]);
+    const shuffledCV = shuffle([...SIMPLE_CV_SYLLABLES]);
     const selected = shuffledCV.slice(0, count);
 
     return selected.map(syllable => ({
@@ -332,9 +351,9 @@ export function generateSyllableTargets(
     }));
   }
 
-  // For VC only - use complete VC list
+  // For VC only - use simple VC list for elementary level
   if (patterns.length === 1 && patterns[0] === "VC") {
-    const shuffledVC = shuffle([...ALL_VC_SYLLABLES]);
+    const shuffledVC = shuffle([...SIMPLE_VC_SYLLABLES]);
     const selected = shuffledVC.slice(0, count);
 
     return selected.map(syllable => ({

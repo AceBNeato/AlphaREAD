@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Alphabet GO</string>
+    <string name="title_activity_main">Alphabet GO</string>
+    <string name="package_name">com.commsforedu.alphabetgo</string>
+    <string name="custom_url_scheme">com.commsforedu.alphabetgo</string>
+</resources>

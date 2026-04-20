@@ -59,8 +59,8 @@ const levelIcons = [Layers, Music, Puzzle, Shapes, Brain, Mic];
 const levelDescriptions = [
   "Learn all 26 letters in shuffled pairs. Review each letter's uppercase and lowercase form.",
   "Explore all 26 letters on a QWERTY keyboard layout. Tap each letter to review!",
-  "Build VC (Vowel + Consonant) syllables! Click letters in order to form patterns like AB, IM, OT. 95 total combinations randomized each time!",
-  "Build CV (Consonant + Vowel) syllables! Click letters in order to form patterns like BA, MI, TO. 95 total combinations randomized each time!",
+  "Build VC (Vowel + Consonant) syllables! Click letters in order to form patterns like AB, IM, OT. 65 total combinations randomized each time!",
+  "Build CV (Consonant + Vowel) syllables! Click letters in order to form patterns like BA, MI, TO. 65 total combinations randomized each time!",
   "Master all three patterns: CV, VC, and CVC! Form syllables like BAT, MIL, FUN in this ultimate challenge.",
   "Practice pronunciation with speech recognition! Say CVC words out loud and get instant feedback.",
 ];
@@ -68,8 +68,8 @@ const levelDescriptions = [
 const levelTags = [
   ["Letter Pairs", "26 Letters", "Review"],
   ["Tap & Review", "26 Letters", "QWERTY"],
-  ["VC Pattern", "95 Syllables", "Interactive"],
-  ["CV Pattern", "95 Syllables", "Interactive"],
+  ["VC Pattern", "65 Syllables", "Interactive"],
+  ["CV Pattern", "65 Syllables", "Interactive"],
   ["CV + VC + CVC", "Syllables", "Challenge"],
   ["Voice Recognition", "CVC Words", "Speech Practice"],
 ];

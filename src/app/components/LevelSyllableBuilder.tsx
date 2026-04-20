@@ -44,7 +44,7 @@ export function LevelSyllableBuilder({
 }: LevelSyllableBuilderProps) {
   const navigate = useNavigate();
 
-  const targets = useMemo(() => generateSyllableTargets(patterns, 8), [patterns]);
+  const targets = useMemo(() => generateSyllableTargets(patterns, 10), [patterns]);
 
   // Build the letter pool from all targets
   const letterPool = useMemo(() => {
@@ -82,6 +82,7 @@ export function LevelSyllableBuilder({
   );
   const [feedback, setFeedback] = useState<"correct" | "wrong" | null>(null);
   const [score, setScore] = useState(0);
+  const [playingLetter, setPlayingLetter] = useState<string | null>(null);
 
   const currentTarget = targets[currentIndex];
   const allDone = completedTargets.size >= targets.length;
@@ -178,7 +179,7 @@ export function LevelSyllableBuilder({
             <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 overflow-hidden">
               <motion.div
                 className="h-full rounded-full"
-                style={{ background: accent.primary }}
+                style={{ background: accent.primary } as React.CSSProperties}
                 animate={{ width: `${progress}%` }}
                 transition={{ duration: 0.3 }}
               />
@@ -322,7 +323,7 @@ export function LevelSyllableBuilder({
                                   : ""
                             }
                             style={
-                              !feedback ? { color: accent.primary } : undefined
+                              !feedback ? ({ color: accent.primary } as React.CSSProperties) : undefined
                             }
                           >
                             {selectedLetters[slot]}
@@ -408,7 +409,7 @@ export function LevelSyllableBuilder({
                               ? "linear-gradient(135deg, #FF6B8A 0%, #FF4B8A 100%)"
                               : "linear-gradient(135deg, #1CB0F6 0%, #0a8ed4 100%)",
                         ringColor: isSelected ? accent.primary : undefined,
-                      }}
+                      } as React.CSSProperties}
                     >
                       <span className="text-white text-2xl sm:text-3xl">
                         {item.letter}
@@ -465,7 +466,7 @@ export function LevelSyllableBuilder({
                           className="px-4 py-2 rounded-full text-white text-sm"
                           style={{
                             background: `linear-gradient(135deg, ${patternColors[t.pattern]}, ${accent.dark})`,
-                          }}
+                          } as React.CSSProperties}
                         >
                           {t.syllable}
                           <span className="ml-1 opacity-60 text-xs">
