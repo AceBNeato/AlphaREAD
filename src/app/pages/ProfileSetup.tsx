@@ -80,13 +80,12 @@ export default function ProfileSetup() {
             {[1, 2, 3].map((i) => (
               <div
                 key={i}
-                className={`h-2 rounded-full transition-all ${
-                  i === step
-                    ? "w-12 bg-[#58CC02]"
-                    : i < step
-                      ? "w-8 bg-[#58CC02]"
-                      : "w-8 bg-gray-300 dark:bg-gray-600"
-                }`}
+                className={`h-2 rounded-full transition-all ${i === step
+                  ? "w-12 bg-[#58CC02]"
+                  : i < step
+                    ? "w-8 bg-[#58CC02]"
+                    : "w-8 bg-gray-300 dark:bg-gray-600"
+                  }`}
               />
             ))}
           </div>
@@ -107,7 +106,7 @@ export default function ProfileSetup() {
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Gian"
+                placeholder="Enter your name"
                 className="w-full px-6 py-4 rounded-2xl border-3 border-[#58CC02] text-lg focus:outline-none focus:ring-2 focus:ring-[#58CC02] bg-white dark:bg-gray-700 dark:text-white mb-6"
                 autoFocus
               />
@@ -146,11 +145,10 @@ export default function ProfileSetup() {
                   <button
                     key={idx}
                     onClick={() => setAvatar(emoji)}
-                    className={`aspect-square rounded-2xl flex items-center justify-center text-5xl transition-all hover:scale-105 ${
-                      avatar === emoji
-                        ? "bg-[#e8f9d4] dark:bg-green-900/30 ring-4 ring-[#58CC02]"
-                        : "bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600"
-                    }`}
+                    className={`aspect-square rounded-2xl flex items-center justify-center text-5xl transition-all hover:scale-105 ${avatar === emoji
+                      ? "bg-[#e8f9d4] dark:bg-green-900/30 ring-4 ring-[#58CC02]"
+                      : "bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600"
+                      }`}
                   >
                     {emoji}
                   </button>
@@ -190,11 +188,10 @@ export default function ProfileSetup() {
                   <button
                     key={acc.code}
                     onClick={() => setAccent(acc.code)}
-                    className={`w-full px-6 py-4 rounded-2xl flex items-center justify-between transition-all ${
-                      accent === acc.code
-                        ? "bg-[#e8f9d4] dark:bg-green-900/30 ring-2 ring-[#58CC02]"
-                        : "bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600"
-                    }`}
+                    className={`w-full px-6 py-4 rounded-2xl flex items-center justify-between transition-all ${accent === acc.code
+                      ? "bg-[#e8f9d4] dark:bg-green-900/30 ring-2 ring-[#58CC02]"
+                      : "bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600"
+                      }`}
                   >
                     <div className="flex items-center gap-3">
                       <span className="text-gray-600 dark:text-gray-300 font-medium">

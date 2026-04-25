@@ -41,11 +41,14 @@ This project uses Capacitor to build Android APKs.
    ```
 
 5. **Build web assets and APK** (run all together every time you make changes):
-   ```bash
+   
    npm run build
-   npx cap sync android
-   cd android && bash gradlew assembleDebug
-   ```
+   npx cap sync android 
+   cd android
+   ./gradlew assembleDebug
+   cd .. 
+   adb install -r app/build/outputs/apk/debug/app-debug.apk
+
    APK will be at: `android/app/build/outputs/apk/debug/app-debug.apk`
 
    > **Important:** `npm run build` compiles your code, `cap sync` copies it into the Android project, and Gradle packages it into the `.apk`. All three steps are needed — skipping Gradle means the APK on your phone is still the old one.
@@ -67,7 +70,9 @@ This project uses Capacitor to build Android APKs.
    adb devices
    ```
 4. **Install APK**:
+   
    ```bash
+   cd ..
    adb install -r android/app/build/outputs/apk/debug/app-debug.apk
    ```
 

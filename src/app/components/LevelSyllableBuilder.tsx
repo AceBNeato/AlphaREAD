@@ -44,7 +44,7 @@ export function LevelSyllableBuilder({
 }: LevelSyllableBuilderProps) {
   const navigate = useNavigate();
 
-  const targets = useMemo(() => generateSyllableTargets(patterns, 10), [patterns]);
+  const [targets, setTargets] = useState<SyllableTarget[]>(() => generateSyllableTargets(patterns, 10));
 
   // Build the letter pool from all targets
   const letterPool = useMemo(() => {
@@ -77,11 +77,8 @@ export function LevelSyllableBuilder({
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedLetters, setSelectedLetters] = useState<string[]>([]);
-  const [completedTargets, setCompletedTargets] = useState<Set<number>>(
-    new Set()
-  );
+  const [completedTargets, setCompletedTargets] = useState<Set<string>>(new Set());
   const [feedback, setFeedback] = useState<"correct" | "wrong" | null>(null);
-  const [score, setScore] = useState(0);
   const [playingLetter, setPlayingLetter] = useState<string | null>(null);
 
   const currentTarget = targets[currentIndex];
@@ -90,7 +87,7 @@ export function LevelSyllableBuilder({
   const slotCount = currentTarget ? currentTarget.letters.length : 2;
 
   const handleLetterClick = (letter: string) => {
-    if (feedback || allDone || completedTargets.has(currentIndex)) return;
+    if (feedback || allDone || completedTargets.has(currentTarget.syllable)) return;
 
     // Play audio for the letter
     const audio = new Audio(`/audio/alphasounds-${letter.toLowerCase()}.mp3`);
@@ -107,11 +104,10 @@ export function LevelSyllableBuilder({
 
         if (formed === currentTarget.syllable) {
           setFeedback("correct");
-          setScore((s) => s + 1);
 
           setTimeout(() => {
             const newCompleted = new Set(completedTargets);
-            newCompleted.add(currentIndex);
+            newCompleted.add(currentTarget.syllable);
             setCompletedTargets(newCompleted);
             setFeedback(null);
             setSelectedLetters([]);
@@ -129,20 +125,20 @@ export function LevelSyllableBuilder({
     });
   };
 
-  const findNextUncompleted = (
-    from: number,
-    completed: Set<number>
-  ): number | null => {
-    for (let i = 1; i <= targets.length; i++) {
-      const idx = (from + i) % targets.length;
-      if (!completed.has(idx)) return idx;
-    }
-    return null;
-  };
-
   const goNext = () => {
     if (currentIndex < targets.length - 1) {
-      setCurrentIndex(currentIndex + 1);
+      if (!completedTargets.has(currentTarget.syllable)) {
+        // Move uncompleted target to the end of the array
+        setTargets((prev) => {
+          const newTargets = [...prev];
+          const skipped = newTargets.splice(currentIndex, 1)[0];
+          newTargets.push(skipped);
+          return newTargets;
+        });
+        // Index stays the same to show the next target in the newly shifted array
+      } else {
+        setCurrentIndex(currentIndex + 1);
+      }
       setSelectedLetters([]);
       setFeedback(null);
     }
@@ -286,7 +282,7 @@ export function LevelSyllableBuilder({
                 </div>
 
                 {/* Completed badge */}
-                {completedTargets.has(currentIndex) && (
+                {completedTargets.has(currentTarget.syllable) && (
                   <motion.div
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
@@ -300,7 +296,7 @@ export function LevelSyllableBuilder({
                 )}
 
                 {/* Selected letters display */}
-                {!completedTargets.has(currentIndex) && (
+                {!completedTargets.has(currentTarget.syllable) && (
                   <div className="flex justify-center gap-3 mt-2">
                     {Array.from({ length: slotCount }).map((_, slot) => (
                       <div
@@ -371,7 +367,7 @@ export function LevelSyllableBuilder({
             {/* Reset button */}
             {selectedLetters.length > 0 &&
               !feedback &&
-              !completedTargets.has(currentIndex) && (
+              !completedTargets.has(currentTarget.syllable) && (
                 <div className="text-center mb-4">
                   <Button
                     variant="ghost"
@@ -386,7 +382,7 @@ export function LevelSyllableBuilder({
               )}
 
             {/* Letter Pool */}
-            {!completedTargets.has(currentIndex) && (
+            {!completedTargets.has(currentTarget.syllable) && (
               <div className="grid grid-cols-5 sm:grid-cols-7 gap-3 mb-6">
                 {letterPool.map((item, i) => {
                   const timesInTarget = currentTarget.syllable
@@ -479,25 +475,26 @@ export function LevelSyllableBuilder({
                   Completed syllables:
                 </p>
                 <div className="flex flex-wrap justify-center gap-2">
-                  {targets.map(
-                    (t, i) =>
-                      completedTargets.has(i) && (
-                        <motion.span
-                          key={i}
-                          initial={{ scale: 0 }}
-                          animate={{ scale: 1 }}
-                          className="px-4 py-2 rounded-full text-white text-sm"
-                          style={{
-                            background: `linear-gradient(135deg, ${patternColors[t.pattern]}, ${accent.dark})`,
-                          } as React.CSSProperties}
-                        >
-                          {t.syllable}
-                          <span className="ml-1 opacity-60 text-xs">
-                            ({t.pattern})
-                          </span>
-                        </motion.span>
-                      )
-                  )}
+                  {Array.from(completedTargets).map((syllable, i) => {
+                    const targetObj = targets.find((t) => t.syllable === syllable);
+                    if (!targetObj) return null;
+                    return (
+                      <motion.span
+                        key={i}
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        className="px-4 py-2 rounded-full text-white text-sm"
+                        style={{
+                          background: `linear-gradient(135deg, ${patternColors[targetObj.pattern]}, ${accent.dark})`,
+                        } as React.CSSProperties}
+                      >
+                        {targetObj.syllable}
+                        <span className="ml-1 opacity-60 text-xs">
+                          ({targetObj.pattern})
+                        </span>
+                      </motion.span>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -520,7 +517,7 @@ export function LevelSyllableBuilder({
               All Syllables Built!
             </h3>
             <p className="text-gray-500 dark:text-gray-400 mb-4">
-              You matched {score} out of {targets.length} syllables!
+              You matched {targets.length} out of {targets.length} syllables!
             </p>
             <div className="flex flex-wrap justify-center gap-2 mb-8">
               {targets.map((t, i) => (
