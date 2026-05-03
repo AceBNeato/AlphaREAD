@@ -18,6 +18,7 @@ import {
   type SyllableTarget,
 } from "../data/levels";
 import { motion, AnimatePresence } from "motion/react";
+import { supabase } from "../../lib/supabase";
 
 interface LevelSyllableBuilderProps {
   levelId: number;
@@ -79,6 +80,7 @@ export function LevelSyllableBuilder({
   const [selectedLetters, setSelectedLetters] = useState<string[]>([]);
   const [completedTargets, setCompletedTargets] = useState<Set<string>>(new Set());
   const [feedback, setFeedback] = useState<"correct" | "wrong" | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
   const [playingLetter, setPlayingLetter] = useState<string | null>(null);
 
   const currentTarget = targets[currentIndex];
@@ -168,6 +170,14 @@ export function LevelSyllableBuilder({
     }
   };
 
+  const handleGoBack = () => {
+    if (!allDone) {
+      const confirmExit = window.confirm("Are you sure you want to leave? Your progress will not be saved.");
+      if (!confirmExit) return;
+    }
+    navigate("/levels", { replace: true });
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-yellow-50 to-pink-50 dark:from-gray-900 dark:via-gray-850 dark:to-gray-800">
       {/* Header */}
@@ -176,7 +186,7 @@ export function LevelSyllableBuilder({
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => navigate("/levels")}
+            onClick={handleGoBack}
             className="rounded-full"
           >
             <Home className="w-5 h-5" />
@@ -534,7 +544,25 @@ export function LevelSyllableBuilder({
               ))}
             </div>
             <Button
-              onClick={() => {
+              disabled={isSaving}
+              onClick={async () => {
+                setIsSaving(true);
+                try {
+                  const profileStr = localStorage.getItem("userProfile");
+                  if (profileStr) {
+                    const profile = JSON.parse(profileStr);
+                    if (profile.id) {
+                      await supabase.from("progress").insert({
+                        student_id: profile.id,
+                        level_id: levelId,
+                        score: targets.length
+                      });
+                    }
+                  }
+                } catch (err) {
+                  console.error("Error saving progress:", err);
+                }
+
                 const completedLevels = JSON.parse(
                   localStorage.getItem("completedLevels") || "[]"
                 );
@@ -545,6 +573,7 @@ export function LevelSyllableBuilder({
                     JSON.stringify(completedLevels)
                   );
                 }
+                setIsSaving(false);
                 navigate("/levels");
               }}
               size="lg"
@@ -554,7 +583,7 @@ export function LevelSyllableBuilder({
               }}
             >
               <Home className="w-5 h-5 mr-2" />
-              Back to Levels
+              {isSaving ? "Saving..." : "Back to Levels"}
             </Button>
           </motion.div>
         )}

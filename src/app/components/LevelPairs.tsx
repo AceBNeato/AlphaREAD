@@ -4,6 +4,7 @@ import { ArrowRight, ArrowLeft, Home, Sparkles } from "lucide-react";
 import { Button } from "./ui/button";
 import { generateLetterPairs } from "../data/levels";
 import { motion } from "motion/react";
+import { supabase } from "../../lib/supabase";
 
 interface LevelPairsProps {
   levelId: number;
@@ -16,6 +17,7 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [completed, setCompleted] = useState(false);
   const [clickedLetter, setClickedLetter] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   const currentPair = pairs[currentIndex];
   const progress = ((currentIndex + 1) / pairs.length) * 100;
@@ -54,6 +56,14 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
     }
   };
 
+  const handleGoBack = () => {
+    if (!completed) {
+      const confirmExit = window.confirm("Are you sure you want to leave? Your progress will not be saved.");
+      if (!confirmExit) return;
+    }
+    navigate("/levels", { replace: true });
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-purple-50 dark:from-gray-900 dark:via-gray-850 dark:to-gray-800">
       {/* Header */}
@@ -62,7 +72,7 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => navigate("/levels")}
+            onClick={handleGoBack}
             className="rounded-full"
           >
             <Home className="w-5 h-5" />
@@ -106,7 +116,27 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
               You've reviewed all the letter pairs!
             </p>
             <Button
-              onClick={() => navigate("/levels")}
+              disabled={isSaving}
+              onClick={async () => {
+                setIsSaving(true);
+                try {
+                  const profileStr = localStorage.getItem("userProfile");
+                  if (profileStr) {
+                    const profile = JSON.parse(profileStr);
+                    if (profile.id) {
+                      await supabase.from("progress").insert({
+                        student_id: profile.id,
+                        level_id: levelId,
+                        score: pairs.length
+                      });
+                    }
+                  }
+                } catch (err) {
+                  console.error("Error saving progress:", err);
+                }
+                setIsSaving(false);
+                navigate("/levels");
+              }}
               size="lg"
               className="rounded-xl px-8 py-6 text-lg text-white"
               style={{
@@ -114,7 +144,7 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
               }}
             >
               <Home className="w-5 h-5 mr-2" />
-              Back to Levels
+              {isSaving ? "Saving..." : "Back to Levels"}
             </Button>
           </motion.div>
         ) : (

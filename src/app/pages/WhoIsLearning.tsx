@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router";
 import { Button } from "../components/ui/button";
-import { Sparkles, Users, Settings, ChevronRight } from "lucide-react";
+import { Sparkles, Users, Settings, ChevronRight, Lock } from "lucide-react";
 import { ThemeToggle } from "../components/ThemeToggle";
 import { levels } from "../data/levels";
 
@@ -124,8 +124,18 @@ export default function WhoIsLearning() {
           </div>
         )}
 
-        {/* Settings Button */}
-        <div className="text-center">
+        {/* Action Buttons */}
+        <div className="flex justify-center gap-4">
+          <Button
+            onClick={() => navigate("/admin-login")}
+            variant="outline"
+            size="lg"
+            className="px-8 py-4 rounded-2xl border-blue-200 text-blue-600 hover:bg-blue-50 dark:border-blue-900 dark:text-blue-400 dark:hover:bg-blue-900/30"
+          >
+            <Lock className="w-5 h-5 mr-2" />
+            Teacher Access
+          </Button>
+          
           <Button
             onClick={handleSettingsClick}
             variant="outline"

@@ -4,6 +4,7 @@ import { Home, Sparkles } from "lucide-react";
 import { Button } from "./ui/button";
 import { motion } from "motion/react";
 import { getLetterPhonetic } from "../data/levels";
+import { supabase } from "../../lib/supabase";
 
 // QWERTY keyboard layout
 const QWERTY_ROWS = [
@@ -22,6 +23,7 @@ interface LevelSoundsProps {
 export function LevelSounds({ levelId, accent }: LevelSoundsProps) {
   const navigate = useNavigate();
   const [clickedLetter, setClickedLetter] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   const handleLetterClick = (letter: string) => {
     setClickedLetter(letter);
@@ -38,6 +40,12 @@ export function LevelSounds({ levelId, accent }: LevelSoundsProps) {
     }, 1000);
   };
 
+  const handleGoBack = () => {
+    const confirmExit = window.confirm("Are you sure you want to leave? Your progress will not be saved.");
+    if (!confirmExit) return;
+    navigate("/levels", { replace: true });
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-cyan-50 to-indigo-50 dark:from-gray-900 dark:via-gray-850 dark:to-gray-800">
       {/* Header */}
@@ -46,7 +54,7 @@ export function LevelSounds({ levelId, accent }: LevelSoundsProps) {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => navigate("/levels")}
+            onClick={handleGoBack}
             className="rounded-full"
           >
             <Home className="w-5 h-5" />
@@ -151,13 +159,32 @@ export function LevelSounds({ levelId, accent }: LevelSoundsProps) {
         {/* Continue Button */}
         <div className="text-center">
           <Button
-            onClick={() => {
-              // Mark level as completed
+            disabled={isSaving}
+            onClick={async () => {
+              setIsSaving(true);
+              try {
+                const profileStr = localStorage.getItem("userProfile");
+                if (profileStr) {
+                  const profile = JSON.parse(profileStr);
+                  if (profile.id) {
+                    await supabase.from("progress").insert({
+                      student_id: profile.id,
+                      level_id: levelId,
+                      score: ALL_LETTERS.length // score is 26
+                    });
+                  }
+                }
+              } catch (err) {
+                console.error("Error saving progress:", err);
+              }
+
+              // Mark level as completed locally
               const completedLevels = JSON.parse(localStorage.getItem("completedLevels") || "[]");
               if (!completedLevels.includes(levelId)) {
                 completedLevels.push(levelId);
                 localStorage.setItem("completedLevels", JSON.stringify(completedLevels));
               }
+              setIsSaving(false);
               navigate("/levels");
             }}
             size="lg"
@@ -167,7 +194,7 @@ export function LevelSounds({ levelId, accent }: LevelSoundsProps) {
             }}
           >
             <Sparkles className="w-5 h-5 mr-1" />
-            Complete Level!
+            {isSaving ? "Saving..." : "Complete Level!"}
           </Button>
         </div>
       </div>

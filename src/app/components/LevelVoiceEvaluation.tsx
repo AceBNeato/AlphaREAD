@@ -14,6 +14,7 @@ import {
 import { Button } from "./ui/button";
 import { CVC_WORDS, shuffle } from "../data/levels";
 import { motion, AnimatePresence } from "motion/react";
+import { supabase } from "../../lib/supabase";
 
 const DIGIT_MAP: Record<string, string> = {
   "0": "ZERO", "1": "ONE", "2": "TWO", "3": "THREE", "4": "FOUR",
@@ -113,6 +114,7 @@ export function LevelVoiceEvaluation({ levelId, accent }: LevelVoiceEvaluationPr
   const [feedback, setFeedback] = useState<"correct" | "close" | "wrong" | null>(null);
   const [completedWords, setCompletedWords] = useState<Set<string>>(new Set());
   const [recognition, setRecognition] = useState<any>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   const currentWord = words[currentIndex];
   const progress = (completedWords.size / words.length) * 100;
@@ -220,7 +222,7 @@ export function LevelVoiceEvaluation({ levelId, accent }: LevelVoiceEvaluationPr
 
       setRecognition(currentRecognition);
     }
-    
+
     // Cleanup function to prevent zombie microphone instances when skipping words
     return () => {
       if (currentRecognition) {
@@ -229,7 +231,7 @@ export function LevelVoiceEvaluation({ levelId, accent }: LevelVoiceEvaluationPr
           currentRecognition.onresult = null;
           currentRecognition.onerror = null;
           currentRecognition.onend = null;
-        } catch (e) {}
+        } catch (e) { }
       }
     };
   }, [currentIndex, currentWord, completedWords]);
@@ -286,6 +288,14 @@ export function LevelVoiceEvaluation({ levelId, accent }: LevelVoiceEvaluationPr
     }
   };
 
+  const handleGoBack = () => {
+    if (!allDone) {
+      const confirmExit = window.confirm("Are you sure you want to leave? Your progress will not be saved.");
+      if (!confirmExit) return;
+    }
+    navigate("/levels", { replace: true });
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-gray-900 dark:via-gray-850 dark:to-gray-800">
       {/* Header */}
@@ -294,7 +304,7 @@ export function LevelVoiceEvaluation({ levelId, accent }: LevelVoiceEvaluationPr
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => navigate("/levels")}
+            onClick={handleGoBack}
             className="rounded-full"
           >
             <Home className="w-5 h-5" />
@@ -557,7 +567,25 @@ export function LevelVoiceEvaluation({ levelId, accent }: LevelVoiceEvaluationPr
               ))}
             </div>
             <Button
-              onClick={() => {
+              disabled={isSaving}
+              onClick={async () => {
+                setIsSaving(true);
+                try {
+                  const profileStr = localStorage.getItem("userProfile");
+                  if (profileStr) {
+                    const profile = JSON.parse(profileStr);
+                    if (profile.id) {
+                      await supabase.from("progress").insert({
+                        student_id: profile.id,
+                        level_id: levelId,
+                        score: words.length
+                      });
+                    }
+                  }
+                } catch (err) {
+                  console.error("Error saving progress:", err);
+                }
+
                 const completedLevels = JSON.parse(
                   localStorage.getItem("completedLevels") || "[]"
                 );
@@ -568,6 +596,7 @@ export function LevelVoiceEvaluation({ levelId, accent }: LevelVoiceEvaluationPr
                     JSON.stringify(completedLevels)
                   );
                 }
+                setIsSaving(false);
                 navigate("/levels");
               }}
               size="lg"
@@ -577,7 +606,7 @@ export function LevelVoiceEvaluation({ levelId, accent }: LevelVoiceEvaluationPr
               }}
             >
               <Home className="w-5 h-5 mr-2" />
-              Back to Levels
+              {isSaving ? "Saving..." : "Back to Levels"}
             </Button>
           </motion.div>
         )}

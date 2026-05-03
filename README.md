@@ -41,12 +41,11 @@ This project uses Capacitor to build Android APKs.
    ```
 
 5. **Build web assets and APK** (run all together every time you make changes):
-   
+   cd ..
    npm run build
    npx cap sync android 
    cd android
    ./gradlew assembleDebug
-   cd .. 
    adb install -r app/build/outputs/apk/debug/app-debug.apk
 
    APK will be at: `android/app/build/outputs/apk/debug/app-debug.apk`
