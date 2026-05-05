@@ -18,7 +18,7 @@ export interface Level {
   completed: boolean;
 }
 
-const allLetters: Letter[] = [
+export const allLetters: Letter[] = [
   { letter: "A", example: "Apple", image: "red apple fruit" },
   { letter: "B", example: "Ball", image: "colorful beach ball" },
   { letter: "C", example: "Cat", image: "cute orange cat" },
@@ -236,8 +236,8 @@ export function getPhoneticPronunciation(syllable: string, pattern: SyllablePatt
 export const levels: Level[] = [
   {
     id: 1,
-    title: "Letter Pairs",
-    subtitle: "Listen to shuffled letter pairs",
+    title: "Alphabet Master",
+    subtitle: "Complete alphabet review and evaluation",
     type: "pairs",
     letters: allLetters,
     locked: false,
@@ -245,15 +245,6 @@ export const levels: Level[] = [
   },
   {
     id: 2,
-    title: "Letter Sounds",
-    subtitle: "Tap any letter to hear its sound",
-    type: "sounds",
-    letters: allLetters,
-    locked: true,
-    completed: false,
-  },
-  {
-    id: 3,
     title: "VC Builder",
     subtitle: "Build Vowel + Consonant syllables",
     type: "syllable-builder",
@@ -263,7 +254,7 @@ export const levels: Level[] = [
     completed: false,
   },
   {
-    id: 4,
+    id: 3,
     title: "CV Builder",
     subtitle: "Build Consonant + Vowel syllables",
     type: "syllable-builder",
@@ -273,7 +264,7 @@ export const levels: Level[] = [
     completed: false,
   },
   {
-    id: 5,
+    id: 4,
     title: "CVC Master",
     subtitle: "Build 3-letter CVC words",
     type: "syllable-builder",
@@ -283,7 +274,7 @@ export const levels: Level[] = [
     completed: false,
   },
   {
-    id: 6,
+    id: 5,
     title: "Voice Evaluation",
     subtitle: "Practice pronunciation with speech recognition",
     type: "voice-evaluation",

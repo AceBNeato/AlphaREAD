@@ -10,6 +10,7 @@ import {
   XCircle,
   MicOff,
   RotateCcw,
+  AlertCircle,
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { CVC_WORDS, shuffle } from "../data/levels";
@@ -234,11 +235,15 @@ export function LevelVoiceEvaluation({ levelId, accent }: LevelVoiceEvaluationPr
         } catch (e) { }
       }
     };
-  }, [currentIndex, currentWord, completedWords]);
+  }, [currentIndex, currentWord, completedWords, feedback === null]);
 
   const handleTryAgain = () => {
+    if (recognition) {
+      try { recognition.stop(); } catch (e) {}
+    }
     setFeedback(null);
     setTranscript("");
+    setIsListening(false);
   };
 
   const startListening = () => {
@@ -348,6 +353,13 @@ export function LevelVoiceEvaluation({ levelId, accent }: LevelVoiceEvaluationPr
             </span>
           ))}
         </div>
+
+        {!(window as any).SpeechRecognition && !(window as any).webkitSpeechRecognition && (
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 text-amber-800 text-sm flex items-center gap-3">
+            <AlertCircle className="w-5 h-5 flex-shrink-0" />
+            <p>Your browser doesn't support the Voice Recognition API. Please use Chrome or a modern mobile browser.</p>
+          </div>
+        )}
 
         {!allDone ? (
           <>
