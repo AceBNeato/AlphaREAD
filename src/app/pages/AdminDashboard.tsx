@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { supabase } from "../../lib/supabase";
-import { Trash2, Edit, Save, X, UserX, Database, ArrowLeft } from "lucide-react";
+import { Trash2, Edit, Save, X, Database, ArrowLeft, Unlock, Smartphone } from "lucide-react";
 import { Button } from "../components/ui/button";
 
 export default function AdminDashboard() {
@@ -68,6 +68,23 @@ export default function AdminDashboard() {
     }
   };
 
+  const unlockDevice = async (id: string) => {
+    if (!window.confirm("Are you sure you want to unlock this student's account so they can log in on a new device?")) return;
+
+    const { error } = await supabase
+      .from("profiles")
+      .update({ activated_device_id: null })
+      .eq("id", id);
+
+    if (error) {
+      console.error("Error unlocking device:", error);
+      alert("Failed to unlock device.");
+    } else {
+      alert("Device unlocked successfully!");
+      fetchProfiles();
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
       <div className="max-w-4xl mx-auto">
@@ -103,6 +120,7 @@ export default function AdminDashboard() {
                   <th className="p-4 font-semibold">First Name</th>
                   <th className="p-4 font-semibold">Last Name</th>
                   <th className="p-4 font-semibold">Access Code</th>
+                  <th className="p-4 font-semibold text-center">Device Status</th>
                   <th className="p-4 font-semibold">Joined Date</th>
                   <th className="p-4 font-semibold text-right">Actions</th>
                 </tr>
@@ -150,6 +168,17 @@ export default function AdminDashboard() {
                           {profile.student_code || "NONE"}
                         </span>
                       </td>
+                      <td className="p-4 text-center">
+                        {profile.activated_device_id ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs font-semibold rounded-full">
+                            <Smartphone className="w-3 h-3" /> Locked
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-50 dark:bg-green-900/20 text-green-600 text-xs font-semibold rounded-full">
+                            <Unlock className="w-3 h-3" /> Open
+                          </span>
+                        )}
+                      </td>
                       <td className="p-4 text-sm text-gray-500 dark:text-gray-400">
                         {new Date(profile.created_at).toLocaleDateString()}
                       </td>
@@ -165,6 +194,11 @@ export default function AdminDashboard() {
                           </div>
                         ) : (
                           <div className="flex justify-end gap-2">
+                            {profile.activated_device_id && (
+                              <Button size="sm" variant="outline" onClick={() => unlockDevice(profile.id)} title="Unlock Device" className="hover:bg-yellow-50 dark:hover:bg-yellow-900/20">
+                                <Unlock className="w-4 h-4 text-yellow-600" />
+                              </Button>
+                            )}
                             <Button size="sm" variant="outline" onClick={() => startEditing(profile)}>
                               <Edit className="w-4 h-4 text-blue-500" />
                             </Button>

@@ -43,6 +43,30 @@ export default function Activation() {
         throw new Error("Invalid activation code.");
       }
 
+      // Check device lock
+      let localDeviceId = localStorage.getItem("activated_device_id");
+      if (!localDeviceId) {
+        localDeviceId = crypto.randomUUID();
+        localStorage.setItem("activated_device_id", localDeviceId);
+      }
+
+      if (data.activated_device_id) {
+        // If the profile already has an activated_device_id, check if it matches
+        if (data.activated_device_id !== localDeviceId) {
+          throw new Error("This code has already been used on another device.");
+        }
+      } else {
+        // First time use: lock the code to this device
+        const { error: updateError } = await supabase
+          .from("profiles")
+          .update({ activated_device_id: localDeviceId })
+          .eq("id", data.id);
+
+        if (updateError) {
+          console.error("Error locking device", updateError);
+        }
+      }
+
       // Success! Save the profile locally
       const profile = {
         id: data.id,
@@ -56,7 +80,7 @@ export default function Activation() {
       navigate("/dashboard");
       
     } catch (err: any) {
-      setError("Invalid code. Please check with your teacher.");
+      setError(err.message || "Invalid code. Please check with your teacher.");
       setCode("");
     } finally {
       setLoading(false);
