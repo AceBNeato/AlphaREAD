@@ -127,8 +127,8 @@ export function LevelSyllableBuilder({
   };
 
   const playTTS = async (text: string) => {
+    const phoneticText = getPhoneticText(text);
     try {
-      const phoneticText = getPhoneticText(text);
       await TextToSpeech.speak({
         text: phoneticText,
         lang: 'en-US',
@@ -138,7 +138,14 @@ export function LevelSyllableBuilder({
         category: 'ambient', // Allows audio to play even if device is on silent/vibrate
       });
     } catch (e) {
-      console.error('[TTS] Error speaking via Capacitor:', e);
+      console.warn('[TTS] Capacitor failed, falling back to Web Speech API:', e);
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(phoneticText);
+        utterance.lang = 'en-US';
+        utterance.rate = 0.85;
+        window.speechSynthesis.speak(utterance);
+      }
     }
   };
 

@@ -130,9 +130,10 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
   const [showConfetti, setShowConfetti] = useState(false);
 
   const playTTS = async (text: string) => {
+    const speakText = text.toLowerCase();
     try {
       await TextToSpeech.speak({
-        text: text.toLowerCase(),
+        text: speakText,
         lang: 'en-US',
         rate: 0.85,
         pitch: 1.0,
@@ -140,7 +141,14 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
         category: 'ambient',
       });
     } catch (e) {
-      console.error('[TTS] Error speaking via Capacitor:', e);
+      console.warn('[TTS] Capacitor failed, falling back to Web Speech API:', e);
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(speakText);
+        utterance.lang = 'en-US';
+        utterance.rate = 0.85;
+        window.speechSynthesis.speak(utterance);
+      }
     }
   };
 
