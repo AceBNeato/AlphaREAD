@@ -189,7 +189,13 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
                 {currentPairIndex < currentSetPairs.length - 1 ? (
                   <Button onClick={() => setCurrentPairIndex((prev: number) => prev + 1)}>Next <ArrowRight className="ml-2" /></Button>
                 ) : currentStep < STEPS.length - 1 ? (
-                  <Button onClick={handleStepNext} className="text-white shadow-lg font-bold rounded-xl px-6" style={{ background: '#58CC02' }}>Next Set <ChevronRight className="ml-2" /></Button>
+                  <Button
+                    onClick={handleStepNext}
+                    className="text-white shadow-lg hover:shadow-xl font-bold rounded-xl px-6 py-5 transition-all hover:scale-105 active:scale-95 border-b-4 border-[#3c8c01] cursor-pointer flex items-center justify-center gap-1.5"
+                    style={{ background: 'linear-gradient(135deg, #58cc02 0%, #46a302 100%)' }}
+                  >
+                    Next Set <ChevronRight className="w-5 h-5" />
+                  </Button>
                 ) : (
                   <Button onClick={saveFinalProgress} className="text-white shadow-lg font-bold rounded-xl px-6" style={{ background: '#1CB0F6' }} disabled={isSaving}>
                     {isSaving ? "Saving..." : "Finish Level!"} <ChevronRight className="ml-2" />

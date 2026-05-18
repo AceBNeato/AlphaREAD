@@ -130,7 +130,6 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
   const [showConfetti, setShowConfetti] = useState(false);
   const [showCompletionScreen, setShowCompletionScreen] = useState(false);
   const [showShyTip, setShowShyTip] = useState(false);
-  const [audioVolume, setAudioVolume] = useState(0);
 
   const playTTS = async (text: string) => {
     const speakText = text.toLowerCase();
@@ -182,18 +181,40 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
             const source = audioCtx.createMediaStreamSource(stream);
             source.connect(analyserNode);
 
+            if (audioCtx.state === 'suspended') {
+              audioCtx.resume().catch(() => {});
+            }
+
             const bufferLength = analyserNode.frequencyBinCount;
             const dataArray = new Uint8Array(bufferLength);
 
             const checkVolume = () => {
               if (!analyserNode) return;
               analyserNode.getByteFrequencyData(dataArray);
+              
               let sum = 0;
-              for (let i = 0; i < bufferLength; i++) {
+              const limit = Math.min(6, bufferLength);
+              for (let i = 0; i < limit; i++) {
                 sum += dataArray[i];
               }
-              const average = sum / bufferLength;
-              setAudioVolume(average);
+              const avg = sum / limit;
+              // Normalize volume and boost it significantly for mic inputs
+              const vol = Math.min(1, avg / 60);
+
+              const b1 = document.getElementById('wave-bar-1');
+              const b2 = document.getElementById('wave-bar-2');
+              const b3 = document.getElementById('wave-bar-3');
+              const b4 = document.getElementById('wave-bar-4');
+              const b5 = document.getElementById('wave-bar-5');
+
+              if (b1 && b2 && b3 && b4 && b5) {
+                b1.style.height = `${Math.max(6, vol * 24 + Math.random() * 4 * vol)}px`;
+                b2.style.height = `${Math.max(6, vol * 32 + Math.random() * 6 * vol)}px`;
+                b3.style.height = `${Math.max(6, vol * 40 + Math.random() * 8 * vol)}px`;
+                b4.style.height = `${Math.max(6, vol * 28 + Math.random() * 5 * vol)}px`;
+                b5.style.height = `${Math.max(6, vol * 20 + Math.random() * 4 * vol)}px`;
+              }
+
               animationFrameId = requestAnimationFrame(checkVolume);
             };
             animationFrameId = requestAnimationFrame(checkVolume);
@@ -351,7 +372,11 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
           currentRecognition.onend = null;
         } catch (e) { }
       }
-      setAudioVolume(0); // reset visualizer level
+      // reset visualizer level
+      for (let i = 1; i <= 5; i++) {
+        const b = document.getElementById(`wave-bar-${i}`);
+        if (b) b.style.height = '6px';
+      }
     };
   }, [evaluatingWord, completedWords]);
 
@@ -462,11 +487,11 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
                             <div className="flex items-center gap-2 mt-1 sm:mt-0">
                               <span className="text-pink-500 text-sm font-bold animate-pulse">Listening...</span>
                               <div className="flex gap-1 items-center h-8 justify-center min-w-[50px]">
-                                <div className="w-1.5 bg-pink-500 rounded-full transition-all duration-75" style={{ height: `${Math.max(6, (audioVolume / 255) * 28)}px` }} />
-                                <div className="w-1.5 bg-pink-400 rounded-full transition-all duration-75" style={{ height: `${Math.max(6, (audioVolume / 255) * 36)}px` }} />
-                                <div className="w-1.5 bg-pink-500 rounded-full transition-all duration-75" style={{ height: `${Math.max(6, (audioVolume / 255) * 42)}px` }} />
-                                <div className="w-1.5 bg-pink-400 rounded-full transition-all duration-75" style={{ height: `${Math.max(6, (audioVolume / 255) * 32)}px` }} />
-                                <div className="w-1.5 bg-pink-500 rounded-full transition-all duration-75" style={{ height: `${Math.max(6, (audioVolume / 255) * 24)}px` }} />
+                                <div id="wave-bar-1" className="w-1.5 bg-pink-500 rounded-full transition-all duration-75" style={{ height: '6px' }} />
+                                <div id="wave-bar-2" className="w-1.5 bg-pink-400 rounded-full transition-all duration-75" style={{ height: '6px' }} />
+                                <div id="wave-bar-3" className="w-1.5 bg-pink-500 rounded-full transition-all duration-75" style={{ height: '6px' }} />
+                                <div id="wave-bar-4" className="w-1.5 bg-pink-400 rounded-full transition-all duration-75" style={{ height: '6px' }} />
+                                <div id="wave-bar-5" className="w-1.5 bg-pink-500 rounded-full transition-all duration-75" style={{ height: '6px' }} />
                               </div>
                             </div>
                           )}
