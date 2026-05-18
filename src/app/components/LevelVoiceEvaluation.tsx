@@ -159,6 +159,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
   // Initialize speech recognition dynamically when a word is selected
   useEffect(() => {
     let currentRecognition: any = null;
+    let autoSilenceTimeout: NodeJS.Timeout | null = null;
     const SpeechRecognitionAPI = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
 
     if (evaluatingWord && typeof window !== "undefined" && SpeechRecognitionAPI) {
@@ -171,6 +172,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
       currentRecognition.maxAlternatives = 3;
 
       currentRecognition.onresult = (event: any) => {
+        if (autoSilenceTimeout) clearTimeout(autoSilenceTimeout);
         const results = event.results[0];
         let bestMatch = "";
         let bestSimilarity = 0;
@@ -254,6 +256,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
       };
 
       currentRecognition.onerror = (event: any) => {
+        if (autoSilenceTimeout) clearTimeout(autoSilenceTimeout);
         console.error("Speech recognition error:", event.error);
         setEvalFeedback(prev => ({ ...prev, [evaluatingWord]: "wrong" }));
         setTimeout(() => {
@@ -264,6 +267,20 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
 
       try {
         currentRecognition.start();
+        // Start 5-second auto-silence timeout if no speech is detected at all
+        autoSilenceTimeout = setTimeout(() => {
+          console.warn("[Speech] Auto-silence: No speech detected in 5s. Stopping microphone.");
+          if (currentRecognition) {
+            try {
+              currentRecognition.stop();
+            } catch (e) {}
+          }
+          setEvalFeedback(prev => ({ ...prev, [evaluatingWord]: "wrong" }));
+          setTimeout(() => {
+            setEvalFeedback(prev => ({ ...prev, [evaluatingWord]: null }));
+            setEvaluatingWord(null);
+          }, 1500);
+        }, 5000);
       } catch (error) {
         console.error("Error starting recognition:", error);
         setEvaluatingWord(null);
@@ -271,6 +288,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
     }
 
     return () => {
+      if (autoSilenceTimeout) clearTimeout(autoSilenceTimeout);
       if (currentRecognition) {
         try {
           currentRecognition.stop();
