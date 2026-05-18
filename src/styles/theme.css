@@ -179,3 +179,9 @@
     line-height: 1.5;
   }
 }
+
+/* Mobile voice wave animation */
+@keyframes wave {
+  0%, 100% { transform: scaleY(0.4); }
+  50%       { transform: scaleY(1.2); }
+}

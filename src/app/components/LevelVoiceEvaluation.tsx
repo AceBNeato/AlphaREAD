@@ -131,6 +131,10 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
   const [showCompletionScreen, setShowCompletionScreen] = useState(false);
   const [showShyTip, setShowShyTip] = useState(false);
 
+  // Detect mobile — on phones we skip getUserMedia to avoid mic conflict with SpeechRecognition
+  const isMobile = useMemo(() => /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent), []);
+  const isIOS = useMemo(() => /iPhone|iPad|iPod/i.test(navigator.userAgent), []);
+
   const playTTS = async (text: string) => {
     const speakText = text.toLowerCase();
     try {
@@ -169,60 +173,62 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
     const SpeechRecognitionAPI = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
 
     if (evaluatingWord && typeof window !== "undefined") {
-      // 1. Setup real-time voice visualizer
-      navigator.mediaDevices.getUserMedia({ audio: true })
-        .then(stream => {
-          micStream = stream;
-          const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-          if (AudioContextClass) {
-            audioCtx = new AudioContextClass();
-            analyserNode = audioCtx.createAnalyser();
-            analyserNode.fftSize = 32; // small size for low latency
-            const source = audioCtx.createMediaStreamSource(stream);
-            source.connect(analyserNode);
+      // 1. Setup real-time voice visualizer (DESKTOP ONLY)
+      // On mobile, getUserMedia conflicts with SpeechRecognition mic access and breaks recognition.
+      if (!isMobile) {
+        navigator.mediaDevices.getUserMedia({ audio: true })
+          .then(stream => {
+            micStream = stream;
+            const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+            if (AudioContextClass) {
+              audioCtx = new AudioContextClass();
+              analyserNode = audioCtx.createAnalyser();
+              analyserNode.fftSize = 32;
+              const source = audioCtx.createMediaStreamSource(stream);
+              source.connect(analyserNode);
 
-            if (audioCtx.state === 'suspended') {
-              audioCtx.resume().catch(() => { });
-            }
-
-            const bufferLength = analyserNode.frequencyBinCount;
-            const dataArray = new Uint8Array(bufferLength);
-
-            const checkVolume = () => {
-              if (!analyserNode) return;
-              analyserNode.getByteFrequencyData(dataArray);
-
-              let sum = 0;
-              const limit = Math.min(6, bufferLength);
-              for (let i = 0; i < limit; i++) {
-                sum += dataArray[i];
-              }
-              const avg = sum / limit;
-              // Normalize volume and boost it significantly for mic inputs
-              const vol = Math.min(1, avg / 60);
-
-              const b1 = document.getElementById('wave-bar-1');
-              const b2 = document.getElementById('wave-bar-2');
-              const b3 = document.getElementById('wave-bar-3');
-              const b4 = document.getElementById('wave-bar-4');
-              const b5 = document.getElementById('wave-bar-5');
-
-              if (b1 && b2 && b3 && b4 && b5) {
-                b1.style.height = `${Math.max(6, vol * 24 + Math.random() * 4 * vol)}px`;
-                b2.style.height = `${Math.max(6, vol * 32 + Math.random() * 6 * vol)}px`;
-                b3.style.height = `${Math.max(6, vol * 40 + Math.random() * 8 * vol)}px`;
-                b4.style.height = `${Math.max(6, vol * 28 + Math.random() * 5 * vol)}px`;
-                b5.style.height = `${Math.max(6, vol * 20 + Math.random() * 4 * vol)}px`;
+              if (audioCtx.state === 'suspended') {
+                audioCtx.resume().catch(() => { });
               }
 
+              const bufferLength = analyserNode.frequencyBinCount;
+              const dataArray = new Uint8Array(bufferLength);
+
+              const checkVolume = () => {
+                if (!analyserNode) return;
+                analyserNode.getByteFrequencyData(dataArray);
+
+                let sum = 0;
+                const limit = Math.min(6, bufferLength);
+                for (let i = 0; i < limit; i++) {
+                  sum += dataArray[i];
+                }
+                const avg = sum / limit;
+                const vol = Math.min(1, avg / 60);
+
+                const b1 = document.getElementById('wave-bar-1');
+                const b2 = document.getElementById('wave-bar-2');
+                const b3 = document.getElementById('wave-bar-3');
+                const b4 = document.getElementById('wave-bar-4');
+                const b5 = document.getElementById('wave-bar-5');
+
+                if (b1 && b2 && b3 && b4 && b5) {
+                  b1.style.height = `${Math.max(6, vol * 24 + Math.random() * 4 * vol)}px`;
+                  b2.style.height = `${Math.max(6, vol * 32 + Math.random() * 6 * vol)}px`;
+                  b3.style.height = `${Math.max(6, vol * 40 + Math.random() * 8 * vol)}px`;
+                  b4.style.height = `${Math.max(6, vol * 28 + Math.random() * 5 * vol)}px`;
+                  b5.style.height = `${Math.max(6, vol * 20 + Math.random() * 4 * vol)}px`;
+                }
+
+                animationFrameId = requestAnimationFrame(checkVolume);
+              };
               animationFrameId = requestAnimationFrame(checkVolume);
-            };
-            animationFrameId = requestAnimationFrame(checkVolume);
-          }
-        })
-        .catch(err => {
-          console.warn("Failed to initialize live voice visualizer:", err);
-        });
+            }
+          })
+          .catch(err => {
+            console.warn("Failed to initialize live voice visualizer:", err);
+          });
+      }
 
       // 2. Setup speech recognition
       if (SpeechRecognitionAPI) {
@@ -445,6 +451,14 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
         </div>
       </div>
 
+      {/* iOS warning */}
+      {isIOS && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4 mx-4 text-amber-800 text-sm flex items-center gap-3">
+          <AlertCircle className="w-5 h-5 flex-shrink-0" />
+          <p><strong>iOS Notice:</strong> Voice recognition requires Chrome on Android or a desktop browser. Safari on iPhone/iPad does not support this feature.</p>
+        </div>
+      )}
+
       {/* Content */}
       <div className="max-w-2xl mx-auto px-4 py-6">
 
@@ -506,11 +520,25 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
                             <div className="flex items-center gap-2 mt-1 sm:mt-0">
                               <span className="text-pink-500 text-sm font-bold animate-pulse">Listening...</span>
                               <div className="flex gap-1 items-center h-8 justify-center min-w-[50px]">
-                                <div id="wave-bar-1" className="w-1.5 bg-pink-500 rounded-full transition-all duration-75" style={{ height: '6px' }} />
-                                <div id="wave-bar-2" className="w-1.5 bg-pink-400 rounded-full transition-all duration-75" style={{ height: '6px' }} />
-                                <div id="wave-bar-3" className="w-1.5 bg-pink-500 rounded-full transition-all duration-75" style={{ height: '6px' }} />
-                                <div id="wave-bar-4" className="w-1.5 bg-pink-400 rounded-full transition-all duration-75" style={{ height: '6px' }} />
-                                <div id="wave-bar-5" className="w-1.5 bg-pink-500 rounded-full transition-all duration-75" style={{ height: '6px' }} />
+                                {isMobile ? (
+                                  // CSS animated wave for mobile (no getUserMedia conflict)
+                                  <>
+                                    <div className="w-1.5 bg-pink-500 rounded-full animate-[wave_0.8s_ease-in-out_infinite_0ms]" style={{ height: '20px', animationName: 'wave', animationDuration: '0.8s', animationIterationCount: 'infinite', animationDelay: '0ms' }} />
+                                    <div className="w-1.5 bg-pink-400 rounded-full" style={{ height: '28px', animation: 'wave 0.8s ease-in-out infinite 0.1s' }} />
+                                    <div className="w-1.5 bg-pink-500 rounded-full" style={{ height: '36px', animation: 'wave 0.8s ease-in-out infinite 0.2s' }} />
+                                    <div className="w-1.5 bg-pink-400 rounded-full" style={{ height: '28px', animation: 'wave 0.8s ease-in-out infinite 0.3s' }} />
+                                    <div className="w-1.5 bg-pink-500 rounded-full" style={{ height: '20px', animation: 'wave 0.8s ease-in-out infinite 0.4s' }} />
+                                  </>
+                                ) : (
+                                  // Real-time visualizer bars for desktop
+                                  <>
+                                    <div id="wave-bar-1" className="w-1.5 bg-pink-500 rounded-full transition-all duration-75" style={{ height: '6px' }} />
+                                    <div id="wave-bar-2" className="w-1.5 bg-pink-400 rounded-full transition-all duration-75" style={{ height: '6px' }} />
+                                    <div id="wave-bar-3" className="w-1.5 bg-pink-500 rounded-full transition-all duration-75" style={{ height: '6px' }} />
+                                    <div id="wave-bar-4" className="w-1.5 bg-pink-400 rounded-full transition-all duration-75" style={{ height: '6px' }} />
+                                    <div id="wave-bar-5" className="w-1.5 bg-pink-500 rounded-full transition-all duration-75" style={{ height: '6px' }} />
+                                  </>
+                                )}
                               </div>
                             </div>
                           )}
