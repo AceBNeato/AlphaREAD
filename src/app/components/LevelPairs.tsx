@@ -1,16 +1,10 @@
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { Button } from "./ui/button";
 import { allLetters as ALL_LETTERS } from "../data/levels";
 import { motion, AnimatePresence } from "motion/react";
 import { supabase } from "../../lib/supabase";
 import { ChevronRight, Home, ArrowRight, ArrowLeft } from "lucide-react";
-
-const QWERTY_ROWS = [
-  ["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"],
-  ["A", "S", "D", "F", "G", "H", "J", "K", "L"],
-  ["Z", "X", "C", "V", "B", "N", "M"]
-];
 
 interface LevelPairsProps {
   levelId: number;
@@ -20,31 +14,40 @@ interface LevelPairsProps {
 export function LevelPairs({ levelId, accent }: LevelPairsProps) {
   const navigate = useNavigate();
 
+  // ALPHABET strictly ordered A-Z
+  const ALPHABET = useMemo(() => 
+    [...ALL_LETTERS].sort((a, b) => a.letter.localeCompare(b.letter)).map(l => l.letter)
+  , []);
+
   const STEPS = useMemo(() => [
-    { type: "intro" as const, start: 0, end: 26 },
-    { type: "review" as const, start: 0, end: 6 },
-    { type: "review" as const, start: 6, end: 13 },
-    { type: "review" as const, start: 13, end: 19 },
-    { type: "review" as const, start: 19, end: 26 },
+    { type: "review" as const, start: 0, end: 12 }, // A-L (12 letters)
+    { type: "grid" as const, start: 0, end: 12 }, // Eval Grid 12
+    { type: "review" as const, start: 12, end: 26 }, // M-Z (14 letters)
+    { type: "grid" as const, start: 12, end: 26 }, // Eval Grid 14
+    { type: "grid" as const, start: 0, end: 26 }, // Final Grid A-Z 26 letters
   ], []);
 
   const [currentStep, setCurrentStep] = useState(0);
   const step = STEPS[currentStep];
 
-  const [shuffledAlphabet] = useState(() =>
-    [...ALL_LETTERS]
-      .sort(() => Math.random() - 0.5)
-      .map(item => item.letter)
-  );
-
   const activeLetters = useMemo(() =>
-    shuffledAlphabet.slice(step.start, step.end)
-    , [shuffledAlphabet, step]);
+    ALPHABET.slice(step.start, step.end)
+  , [ALPHABET, step]);
 
   const [currentPairIndex, setCurrentPairIndex] = useState(0);
-
   const [clickedLetter, setClickedLetter] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+
+  // For Grid Eval Phase
+  const [gridShuffled, setGridShuffled] = useState<string[]>([]);
+  const [gridCompleted, setGridCompleted] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (step.type === "grid") {
+      setGridShuffled([...activeLetters].sort(() => Math.random() - 0.5));
+      setGridCompleted(new Set());
+    }
+  }, [currentStep, activeLetters, step.type]);
 
   // Generate pairs for the current set review
   const currentSetPairs = useMemo(() => {
@@ -60,7 +63,7 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
     return p;
   }, [activeLetters, step]);
 
-  const currentPair = currentSetPairs[currentPairIndex];
+  const currentPair = currentSetPairs[currentPairIndex] || [];
 
   const handleLetterClick = (letter: string) => {
     if (!letter) return;
@@ -68,6 +71,14 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
     const audio = new Audio(`${(import.meta as any).env.BASE_URL}audio/alphasounds-${letter.toLowerCase()}.mp3`);
     audio.play().catch(() => { });
     setTimeout(() => setClickedLetter(null), 1000);
+
+    if (step.type === "grid") {
+      setGridCompleted(prev => {
+        const next = new Set(prev);
+        next.add(letter);
+        return next;
+      });
+    }
   };
 
   const handleGoBack = () => {
@@ -109,97 +120,117 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-purple-50 dark:bg-none dark:bg-[#0d141c] pb-12">
       {/* Header */}
       <div className="sticky top-0 z-10 bg-white/80 dark:bg-[#0d141c]/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 px-4 py-3">
-        <div className="max-w-lg mx-auto flex items-center gap-3">
+        <div className="max-w-4xl mx-auto flex items-center gap-3">
           <Button variant="ghost" size="sm" onClick={handleGoBack} className="rounded-full"><Home className="w-5 h-5" /></Button>
           <div className="flex-1 text-center">
             <h2 className="text-lg font-bold" style={{ color: accent.primary }}>Alphabet Master</h2>
           </div>
-          {step.type === "review" && (
-            <span className="text-sm font-bold" style={{ color: accent.primary }}>Step {currentStep}</span>
-          )}
+          <span className="text-sm font-bold" style={{ color: accent.primary }}>Step {currentStep + 1}/{STEPS.length}</span>
         </div>
       </div>
 
-      <div className="max-w-2xl mx-auto px-4 py-8">
+      <div className="max-w-4xl mx-auto px-4 py-8">
         <AnimatePresence mode="wait">
-          {step.type === "intro" ? (
-            <motion.div key="intro" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-              <div className="text-center mb-8">
-                <h2 className="text-3xl font-bold mb-2" style={{ color: accent.primary }}>Welcome!</h2>
-                <p className="text-gray-500">Here is the alphabet. Tap any letter to hear its sound, then click Start Learning!</p>
-              </div>
-              <div className="flex flex-col gap-2 sm:gap-3 mb-10 px-2">
-                {QWERTY_ROWS.map((row, rIdx) => (
-                  <div key={rIdx} className="flex justify-center gap-1 sm:gap-2">
-                    {row.map((l) => {
-                      const isVowel = ["A", "E", "I", "O", "U"].includes(l);
-                      const isClicked = clickedLetter === l;
-                      return (
-                        <button
-                          key={l}
-                          onClick={() => handleLetterClick(l)}
-                          className={`relative flex-1 max-w-[3rem] sm:max-w-[4rem] aspect-[4/5] sm:aspect-square rounded-xl sm:rounded-2xl flex flex-col items-center justify-center transition-all shadow-md active:scale-95 cursor-pointer border-b-4 sm:border-b-6 select-none ${isClicked ? "border-b-0 translate-y-[4px] sm:translate-y-[6px]" : ""
-                            }`}
-                          style={{
-                            background: isClicked
-                              ? "linear-gradient(135deg, #FFC800 0%, #FF9600 100%)"
-                              : isVowel
-                                ? "linear-gradient(135deg, #FF6B8A 0%, #FF4B8A 100%)"
-                                : "linear-gradient(135deg, #1CB0F6 0%, #0a8ed4 100%)",
-                            borderColor: isClicked
-                              ? "transparent"
-                              : isVowel
-                                ? "#C82A52"
-                                : "#086CA5",
-                          }}
-                        >
-                          <span className="text-white text-xl sm:text-3xl font-black drop-shadow-sm uppercase">
-                            {l}
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                ))}
-              </div>
-              <div className="text-center">
-                <Button size="lg" onClick={handleStepNext} className="rounded-2xl px-12 py-8 text-xl shadow-xl text-white font-bold" style={{ background: `linear-gradient(135deg, ${accent.primary}, ${accent.dark})` }}>
-                  Start Learning! <ArrowRight className="ml-2" />
-                </Button>
-              </div>
-            </motion.div>
-          ) : step.type === "review" ? (
+          {step.type === "review" ? (
             <motion.div key={`review-${currentStep}`} initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -50 }}>
               <div className="text-center mb-8">
                 <h2 className="text-2xl font-bold" style={{ color: accent.primary }}>Review Phase</h2>
                 <p className="text-gray-500">Listen to these letter sounds</p>
               </div>
-              <div className="flex justify-center gap-6 mb-12">
+              
+              <div className="flex justify-center gap-6 sm:gap-10 mb-12">
                 {currentPair.map((l: string, i: number) => l ? (
-                  <motion.div key={l} initial={{ scale: 0 }} animate={{ scale: 1 }} className="flex-1 max-w-[180px]">
-                    <div onClick={() => handleLetterClick(l)} className="aspect-square rounded-3xl shadow-2xl flex flex-col items-center justify-center cursor-pointer transition-all hover:scale-105 active:scale-95" style={{ background: `linear-gradient(135deg, ${accent.primary}, ${accent.dark})` }}>
-                      <span className="text-white text-7xl font-bold">{l}</span>
-                      <span className="text-white/80 text-4xl">{l.toLowerCase()}</span>
+                  <motion.div key={l} initial={{ scale: 0 }} animate={{ scale: 1 }} className="flex-1 max-w-[160px] sm:max-w-[180px]">
+                    <div 
+                      onClick={() => handleLetterClick(l)} 
+                      className="aspect-square rounded-full shadow-xl flex items-center justify-center cursor-pointer transition-all hover:scale-105 active:scale-95 border-b-[8px] border-[#3c8c01] hover:shadow-2xl" 
+                      style={{ background: `linear-gradient(135deg, ${accent.primary}, ${accent.dark})` }}
+                    >
+                      <div className="flex items-baseline justify-center pb-2">
+                        <span className="text-white text-7xl sm:text-8xl font-black tracking-tight">{l}</span>
+                        <span className="text-white/90 text-5xl sm:text-6xl font-bold tracking-tight">{l.toLowerCase()}</span>
+                      </div>
                     </div>
                   </motion.div>
                 ) : null)}
               </div>
+              
               <div className="flex justify-between items-center max-w-sm mx-auto">
                 <Button variant="outline" onClick={() => setCurrentPairIndex((prev: number) => Math.max(0, prev - 1))} disabled={currentPairIndex === 0}><ArrowLeft className="mr-2" /> Back</Button>
                 {currentPairIndex < currentSetPairs.length - 1 ? (
                   <Button onClick={() => setCurrentPairIndex((prev: number) => prev + 1)}>Next <ArrowRight className="ml-2" /></Button>
-                ) : currentStep < STEPS.length - 1 ? (
+                ) : (
                   <Button
                     onClick={handleStepNext}
                     className="text-white shadow-lg hover:shadow-xl font-bold rounded-xl px-6 py-5 transition-all hover:scale-105 active:scale-95 border-b-4 border-[#3c8c01] cursor-pointer flex items-center justify-center gap-1.5"
                     style={{ background: 'linear-gradient(135deg, #58cc02 0%, #46a302 100%)' }}
                   >
-                    Next Set <ChevronRight className="w-5 h-5" />
+                    Start Grid Eval <ChevronRight className="w-5 h-5" />
                   </Button>
+                )}
+              </div>
+            </motion.div>
+          ) : step.type === "grid" ? (
+            <motion.div key={`grid-${currentStep}`} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }}>
+              <div className="text-center mb-8">
+                <h2 className="text-2xl font-bold" style={{ color: accent.primary }}>Evaluation Grid</h2>
+                <p className="text-gray-500">Tap every letter to hear its sound!</p>
+              </div>
+
+              {/* Grid Layout: Responsive for desktop (6 cols) and phone (4 cols) */}
+              <div className={`grid gap-3 sm:gap-4 mx-auto mb-12 ${gridShuffled.length > 15 ? 'grid-cols-4 sm:grid-cols-6 lg:grid-cols-7' : 'grid-cols-3 sm:grid-cols-4 lg:grid-cols-6'}`}>
+                {gridShuffled.map(l => {
+                  const isDone = gridCompleted.has(l);
+                  const isClicked = clickedLetter === l;
+                  
+                  return (
+                    <button
+                      key={l}
+                      onClick={() => handleLetterClick(l)}
+                      className={`relative aspect-square rounded-2xl flex flex-col items-center justify-center transition-all shadow-md active:scale-95 cursor-pointer select-none ${isClicked ? "border-b-0 translate-y-[4px]" : "border-b-4"} ${isDone ? "opacity-90" : ""}`}
+                      style={{
+                        background: isClicked
+                          ? "linear-gradient(135deg, #FFC800 0%, #FF9600 100%)"
+                          : isDone
+                            ? "linear-gradient(135deg, #58CC02 0%, #46A302 100%)" // completed gets green
+                            : "linear-gradient(135deg, #1CB0F6 0%, #0a8ed4 100%)", // default blue
+                        borderColor: isClicked
+                          ? "transparent"
+                          : isDone
+                            ? "#3c8c01"
+                            : "#086CA5",
+                      }}
+                    >
+                      <span className="text-white text-3xl sm:text-4xl lg:text-5xl font-black drop-shadow-sm uppercase">
+                        {l}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="text-center min-h-[80px]">
+                {gridCompleted.size === gridShuffled.length ? (
+                  currentStep < STEPS.length - 1 ? (
+                    <Button
+                      onClick={handleStepNext}
+                      className="text-white shadow-lg hover:shadow-xl font-bold rounded-xl px-8 py-6 text-lg transition-all hover:scale-105 active:scale-95 border-b-4 border-[#3c8c01] cursor-pointer inline-flex items-center justify-center gap-2"
+                      style={{ background: 'linear-gradient(135deg, #58cc02 0%, #46a302 100%)' }}
+                    >
+                      Continue <ArrowRight className="w-6 h-6" />
+                    </Button>
+                  ) : (
+                    <Button 
+                      onClick={saveFinalProgress} 
+                      className="text-white shadow-lg font-bold rounded-xl px-8 py-6 text-lg inline-flex items-center justify-center gap-2 transition-all hover:scale-105 active:scale-95 border-b-4 border-[#086CA5]" 
+                      style={{ background: '#1CB0F6' }} 
+                      disabled={isSaving}
+                    >
+                      {isSaving ? "Saving..." : "Finish Level!"} <ChevronRight className="w-6 h-6" />
+                    </Button>
+                  )
                 ) : (
-                  <Button onClick={saveFinalProgress} className="text-white shadow-lg font-bold rounded-xl px-6" style={{ background: '#1CB0F6' }} disabled={isSaving}>
-                    {isSaving ? "Saving..." : "Finish Level!"} <ChevronRight className="ml-2" />
-                  </Button>
+                  <p className="text-gray-400 font-medium">Tap {gridShuffled.length - gridCompleted.size} more letters to continue...</p>
                 )}
               </div>
             </motion.div>
