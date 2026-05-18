@@ -128,6 +128,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
   const [completedWords, setCompletedWords] = useState<Set<string>>(new Set());
   const [isSaving, setIsSaving] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
+  const [showCompletionScreen, setShowCompletionScreen] = useState(false);
 
   const playTTS = async (text: string) => {
     const speakText = text.toLowerCase();
@@ -226,7 +227,10 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
           setTimeout(() => {
             setEvaluatingWord(null);
             setShowConfetti(false);
-          }, 1500);
+            if (newCompleted.size >= words.length) {
+              setShowCompletionScreen(true);
+            }
+          }, 2000);
         } else if (bestSimilarity >= 0.5 || matchConsonants(bestMatch, evaluatingWord)) {
           setEvalFeedback(prev => ({ ...prev, [evaluatingWord]: "close" }));
           setShowConfetti(true);
@@ -236,6 +240,9 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
           setTimeout(() => {
             setEvaluatingWord(null);
             setShowConfetti(false);
+            if (newCompleted.size >= words.length) {
+              setShowCompletionScreen(true);
+            }
           }, 2000);
         } else {
           setEvalFeedback(prev => ({ ...prev, [evaluatingWord]: "wrong" }));
@@ -283,7 +290,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
   };
 
   const handleGoBack = () => {
-    if (!allDone) {
+    if (!showCompletionScreen) {
       const confirmExit = window.confirm("Are you sure you want to leave? Your progress will not be saved.");
       if (!confirmExit) return;
     }
@@ -314,14 +321,6 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
 
       {/* Content */}
       <div className="max-w-2xl mx-auto px-4 py-6">
-        <div className="text-center mb-6">
-          <h2 className="text-2xl mb-1" style={{ color: accent.primary }}>
-            Voice Evaluation
-          </h2>
-          <p className="text-gray-500 dark:text-gray-400 text-sm">
-            Practice pronunciation with speech recognition! Say CVC words out loud and get instant feedback.
-          </p>
-        </div>
 
         {!(window as any).SpeechRecognition && !(window as any).webkitSpeechRecognition && (
           <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 text-amber-800 text-sm flex items-center gap-3">
@@ -330,7 +329,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
           </div>
         )}
 
-        {!allDone ? (
+        {!showCompletionScreen ? (
           <AnimatePresence mode="wait">
             <motion.div
               key="list-phase"
@@ -363,7 +362,17 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
                             Heard: {transcript}
                           </div>
                         )}
-                        {isCurrent && !transcript && <motion.div animate={{ opacity: [0.5, 1, 0.5] }} transition={{ repeat: Infinity, duration: 1 }} className="text-pink-500 text-xs font-bold italic mt-1 sm:mt-0">Listening...</motion.div>}
+                        {isCurrent && !transcript && (
+                          <div className="flex items-center gap-2 mt-1 sm:mt-0">
+                            <span className="text-pink-500 text-sm font-bold animate-pulse">Listening...</span>
+                            <div className="flex gap-1 items-center h-5">
+                              <motion.span animate={{ height: [4, 18, 4] }} transition={{ repeat: Infinity, duration: 0.5, ease: "easeInOut" }} className="w-1 bg-pink-500 rounded-full" />
+                              <motion.span animate={{ height: [4, 24, 4] }} transition={{ repeat: Infinity, duration: 0.4, delay: 0.15, ease: "easeInOut" }} className="w-1 bg-pink-500 rounded-full" />
+                              <motion.span animate={{ height: [4, 14, 4] }} transition={{ repeat: Infinity, duration: 0.6, delay: 0.3, ease: "easeInOut" }} className="w-1 bg-pink-500 rounded-full" />
+                              <motion.span animate={{ height: [4, 20, 4] }} transition={{ repeat: Infinity, duration: 0.55, delay: 0.05, ease: "easeInOut" }} className="w-1 bg-pink-500 rounded-full" />
+                            </div>
+                          </div>
+                        )}
                       </div>
 
                       <div className="flex items-center gap-2">
@@ -376,9 +385,17 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
                             }
                           }}
                           disabled={(evaluatingWord !== null && !isCurrent) || isDone}
-                          className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all ${isDone ? 'bg-green-500 text-white shadow-none opacity-50 cursor-default' : isCurrent ? 'bg-red-500 text-white animate-pulse' : 'bg-gradient-to-br from-pink-500 to-rose-500 text-white shadow-md hover:scale-105 active:scale-95'}`}
+                          className={`relative w-12 h-12 rounded-xl flex items-center justify-center transition-all ${isDone ? 'bg-green-500 text-white shadow-none opacity-50 cursor-default' : isCurrent ? 'bg-red-500 text-white shadow-lg' : 'bg-gradient-to-br from-pink-500 to-rose-500 text-white shadow-md hover:scale-105 active:scale-95'}`}
                         >
-                          {isDone ? <CheckCircle2 className="w-6 h-6" /> : isCurrent ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+                          {isCurrent && (
+                            <>
+                              <span className="absolute inset-0 rounded-xl bg-red-500/40 animate-ping" />
+                              <span className="absolute -inset-1 rounded-xl bg-red-500/20 animate-pulse" />
+                            </>
+                          )}
+                          <span className="relative z-10">
+                            {isDone ? <CheckCircle2 className="w-6 h-6" /> : isCurrent ? <MicOff className="w-5 h-5 animate-bounce" /> : <Mic className="w-5 h-5" />}
+                          </span>
                         </button>
                       </div>
                     </div>
