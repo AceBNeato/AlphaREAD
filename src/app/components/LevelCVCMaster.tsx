@@ -37,8 +37,7 @@ export function LevelCVCMaster({ levelId, accent }: LevelCVCMasterProps) {
       { phase: "build", words: chunk2 },
       { phase: "eval", words: chunk2 },
       
-      // 10 last (still a review then eval)
-      { phase: "build", words: [...chunk1, ...chunk2] },
+      // 10 last (eval only)
       { phase: "eval", words: [...chunk1, ...chunk2] }
     ];
   }, []);
