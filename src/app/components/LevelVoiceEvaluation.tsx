@@ -320,12 +320,30 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
 
         currentRecognition.onerror = (event: any) => {
           if (autoSilenceTimeout) clearTimeout(autoSilenceTimeout);
+          // Ignore benign errors — these happen when we call .stop() ourselves or no speech came in
+          if (event.error === 'no-speech' || event.error === 'aborted') {
+            setEvaluatingWord(null);
+            return;
+          }
           console.error("Speech recognition error:", event.error);
           setEvalFeedback(prev => ({ ...prev, [evaluatingWord]: "wrong" }));
           setTimeout(() => {
             setEvalFeedback(prev => ({ ...prev, [evaluatingWord]: null }));
             setEvaluatingWord(null);
           }, 2000);
+        };
+
+        // Fired when recognition session ends (either got a result, timed out, or error)
+        // Without this, the UI stays stuck on "Listening..." forever.
+        currentRecognition.onend = () => {
+          if (autoSilenceTimeout) clearTimeout(autoSilenceTimeout);
+          // Only reset the UI if we're still waiting (no result/feedback set yet)
+          setEvalFeedback(prev => {
+            if (prev[evaluatingWord] === null || prev[evaluatingWord] === undefined) {
+              setEvaluatingWord(null);
+            }
+            return prev;
+          });
         };
 
         try {
@@ -378,7 +396,8 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
         if (b) b.style.height = '6px';
       }
     };
-  }, [evaluatingWord, completedWords]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [evaluatingWord]);
 
   const startRecording = (word: string) => {
     if (evaluatingWord || completedWords.has(word)) return;
