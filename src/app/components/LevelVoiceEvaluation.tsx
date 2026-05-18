@@ -14,7 +14,8 @@ import {
   Volume2,
 } from "lucide-react";
 import { Button } from "./ui/button";
-import { CVC_WORDS, shuffle } from "../data/levels";
+import { CVC_WORDS, shuffle, getPhoneticPronunciation } from "../data/levels";
+import type { SyllablePattern } from "../data/levels";
 import { motion, AnimatePresence } from "motion/react";
 import { supabase } from "../../lib/supabase";
 import { TextToSpeech } from '@capacitor-community/text-to-speech';
@@ -110,6 +111,257 @@ function matchConsonants(word1: string, word2: string): boolean {
   return getConsonants(word1) === getConsonants(word2);
 }
 
+const VOWELS = ["A", "E", "I", "O", "U"];
+
+function getSyllablePattern(syllable: string): "CV" | "VC" | "CVC" | null {
+  const s = syllable.toUpperCase();
+  if (s.length === 2) {
+    if (VOWELS.includes(s[0])) return "VC";
+    return "CV";
+  }
+  if (s.length === 3) return "CVC";
+  return null;
+}
+
+function matchPhoneticSyllable(heard: string, target: string, pattern: "CV" | "VC"): boolean {
+  const h = heard.toUpperCase();
+  const t = target.toUpperCase();
+
+  if (h === t) return true;
+
+  const phoneticTarget = getPhoneticPronunciation(t, pattern).toUpperCase();
+  if (h === phoneticTarget) return true;
+
+  const cvHomophones: Record<string, string[]> = {
+    // B
+    "BA": ["BAH", "BAT", "BAG", "BAD"],
+    "BE": ["BEE", "BAY", "BED"],
+    "BI": ["BEE", "BYE"],
+    "BO": ["BOW", "BOH", "BOX"],
+    "BU": ["BOO", "BUT", "BUG"],
+
+    // C
+    "CA": ["KAH", "CAT", "CAB"],
+    "CO": ["CO", "COH", "COT"],
+    "CU": ["COO", "COP", "CUP"],
+
+    // D
+    "DA": ["DAH", "DAD", "DAY"],
+    "DE": ["DAY", "DEH"],
+    "DI": ["DEE", "DIE", "DIG"],
+    "DO": ["DO", "DOH", "DUE", "DOO", "DEW"],
+    "DU": ["DOO", "DUG"],
+
+    // F
+    "FA": ["FAH", "FAT"],
+    "FI": ["FEE", "FIH"],
+    "FE": ["FEH", "FEE", "FED"],
+    "FO": ["FOH", "FOH", "FOX"],
+    "FU": ["FOO", "FUN"],
+
+    // G
+    "GO": ["GO", "GOH", "GOT"],
+
+    // H
+    "HA": ["HAH", "HAT", "HAD"],
+    "HE": ["HE", "HEH", "HER", "HEAD", "HEE"],
+    "HI": ["HE", "HEE", "HIM", "HERE", "HIGH"],
+    "HO": ["HOH", "HOW", "HOT"],
+    "HU": ["HUH", "HOO", "HUG"],
+
+    // J
+    "JA": ["JA", "JAH", "JAR", "JOB"],
+    "JE": ["JAY", "JEH"],
+    "JI": ["JIH", "GEE", "JEE"],
+    "JO": ["JOE", "JOH"],
+    "JU": ["JEW", "JOO", "JUG"],
+
+    // K
+    "KA": ["CAR", "KAH", "CAT"],
+    "KE": ["KAY", "KEH"],
+    "KI": ["KIH", "KEE"],
+    "KO": ["KOH", "COH"],
+    "KU": ["COH"],
+
+    // L
+    "LA": ["LAH"],
+    "LE": ["LEH"],
+    "LI": ["LEE"],
+    "LO": ["LOH"],
+    "LU": ["LUH"],
+
+    // M
+    "MA": ["MAH", "MAP", "MAN", "MAD"],
+    "ME": ["ME", "MEH", "MY", "MAY", "MEN"],
+    "MI": ["MEE", "MY"],
+    "MU": ["MOO", "MUD"],
+
+    // N
+    "NA": ["NAH", "NAP"],
+    "NE": ["NAY", "NEH", "NET"],
+    "NI": ["KNEE", "NEE"],
+    "NO": ["NO", "NOH", "KNOW", "NEW"],
+    "NU": ["NEW", "NOO"],
+
+    // P
+    "PA": ["PAH", "PAP", "PAD"],
+    "PE": ["PAY", "PEH", "PEN"],
+    "PI": ["PEE", "PIE", "PIN"],
+    "PO": ["PAW", "POH", "POP"],
+    "PU": ["POO", "PUP"],
+
+    // R
+    "RA": ["RAH", "RAY", "RAT"],
+    "RE": ["RAY", "REH", "RED"],
+    "RI": ["REE", "RYE", "RIB"],
+    "RO": ["ROW", "ROH", "ROT"],
+    "RU": ["RUE", "ROO", "RUN"],
+
+    // S
+    "SA": ["SAH", "SAD", "SAY"],
+    "SI": ["SEE", "SIGH", "SIT"],
+    "SO": ["SO", "SOH", "SEW", "SAW"],
+    "SU": ["SUE", "SOO", "SUN"],
+
+    // T
+    "TA": ["TAH", "TOY", "TAP"],
+    "TE": ["TAY", "TEH", "TEN"],
+    "TI": ["TEA", "TEE", "TIE", "TIN"],
+    "TO": ["TO", "TOO", "TWO", "TOH", "TOP"],
+    "TU": ["TOO", "TOH", "TUB"],
+
+    // V
+    "VA": ["VAH", "VAN"],
+    "VE": ["VAY", "VEH", "VET"],
+    "VI": ["VEE", "VIE"],
+    "VO": ["VOW", "VOH"],
+    "VU": ["VOO"],
+
+    // W
+    "WA": ["WAH", "WAY", "WAR"],
+    "WE": ["WE", "WEH", "WAY", "WET", "WEE"],
+    "WI": ["WEE", "WHY", "WIN"],
+    "WO": ["WOE", "WOH"],
+    "WU": ["WOO"],
+
+    // Z
+    "ZA": ["ZAH", "ZAP"],
+    "ZE": ["THE", "SEE", "SAY"],
+    "ZI": ["ZEE"],
+    "ZO": ["ZOO", "ZOH"],
+    "ZU": ["ZOO"]
+  };
+
+  const vcHomophones: Record<string, string[]> = {
+    // A
+    "AB": ["AB", "APP", "UP"],
+    "AC": ["AK", "ACK"],
+    "AD": ["ADD", "AD", "AT"],
+    "AF": ["AF", "OFF", "HALF"],
+    "AG": ["AG", "EGG"],
+    "AK": ["AK", "ACK"],
+    "AL": ["AL", "OWL", "ALL"],
+    "AM": ["AM", "UM", "HAM"],
+    "AN": ["AN", "AND", "UN"],
+    "AP": ["APP", "UP"],
+    "AR": ["ARE", "OUR", "R"],
+    "AS": ["AS", "US", "ASS"],
+    "AT": ["AT", "IT", "HAT"],
+    "AV": ["AV", "HAVE"],
+
+    // E
+    "EB": ["EBB", "IB"],
+    "EC": ["ECK", "EK"],
+    "ED": ["ED", "EDD", "HEAD"],
+    "EF": ["F", "EFF"],
+    "EG": ["EGG", "IGG"],
+    "EK": ["ECK", "EK"],
+    "EL": ["L", "ELL"],
+    "EM": ["M", "EM"],
+    "EN": ["N", "IN", "EN"],
+    "EP": ["EP", "APP"],
+    "ER": ["ERR", "AIR", "ARE"],
+    "ES": ["S", "ESS"],
+    "ET": ["AT", "IT", "ET"],
+    "EV": ["EV", "HAVE"],
+
+    // I
+    "IB": ["IB", "EBB"],
+    "IC": ["ICK"],
+    "ID": ["ID", "IT"],
+    "IF": ["IF"],
+    "IG": ["IG", "EGG"],
+    "IK": ["ICK"],
+    "IL": ["ILL", "L"],
+    "IM": ["I'M", "IM", "IN"],
+    "IN": ["IN", "INN"],
+    "IP": ["IP"],
+    "IR": ["EAR", "ERR"],
+    "IS": ["IS"],
+    "IT": ["IT", "AT"],
+    "IV": ["IV", "IF"],
+
+    // O
+    "OB": ["OB"],
+    "OC": ["OCK"],
+    "OD": ["ODD", "OD"],
+    "OF": ["OF", "OFF"],
+    "OG": ["OG"],
+    "OK": ["OK", "OCK"],
+    "OL": ["ALL", "OL"],
+    "OM": ["OM", "UM"],
+    "ON": ["ON", "UN"],
+    "OP": ["UP", "OP"],
+    "OR": ["OR", "OAR", "OUR"],
+    "OS": ["OS", "US"],
+    "OT": ["OUGHT", "OT"],
+    "OV": ["OF", "OV"],
+
+    // U
+    "UB": ["UB"],
+    "UC": ["UCK"],
+    "UD": ["UD", "ODD"],
+    "UF": ["UF", "OFF"],
+    "UG": ["UG"],
+    "UK": ["UCK"],
+    "UL": ["UL", "ALL"],
+    "UM": ["UM"],
+    "UN": ["UN", "ON"],
+    "UP": ["UP"],
+    "UR": ["ER", "UR"],
+    "US": ["US", "AS"],
+    "UT": ["UT", "AT", "IT"],
+    "UV": ["OF", "UV"]
+  };
+
+  if (cvHomophones[t] && cvHomophones[t].includes(h)) return true;
+  if (vcHomophones[t] && vcHomophones[t].includes(h)) return true;
+
+  if (pattern === "CV") {
+    const targetConsonant = t[0];
+    const targetVowel = t[1];
+    if (h.startsWith(targetConsonant)) {
+      if (targetVowel === "A" && (h.includes("A") || h.includes("AR") || h.includes("AH"))) return true;
+      if (targetVowel === "E" && (h.includes("E") || h.includes("AY") || h.includes("EH"))) return true;
+      if (targetVowel === "I" && (h.includes("EE") || h.includes("I") || h.includes("EA"))) return true;
+      if (targetVowel === "O" && (h.includes("O") || h.includes("OW") || h.includes("OH"))) return true;
+      if (targetVowel === "U" && (h.includes("OO") || h.includes("U") || h.includes("OU"))) return true;
+    }
+  } else if (pattern === "VC") {
+    const targetVowel = t[0];
+    const targetConsonant = t[1];
+    if (h.endsWith(targetConsonant)) {
+      if (targetVowel === "A" && (h.includes("A") || h.includes("AH"))) return true;
+      if (targetVowel === "E" && (h.includes("E") || h.includes("EH"))) return true;
+      if (targetVowel === "I" && (h.includes("I") || h.includes("IH"))) return true;
+      if (targetVowel === "O" && (h.includes("O") || h.includes("OH"))) return true;
+      if (targetVowel === "U" && (h.includes("U") || h.includes("UH"))) return true;
+    }
+  }
+
+  return false;
+}
+
 interface LevelVoiceEvaluationProps {
   levelId: number;
   accent: { primary: string; dark: string; lightBg: string };
@@ -132,7 +384,8 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
   const [showShyTip, setShowShyTip] = useState(false);
 
   const playTTS = async (text: string) => {
-    const speakText = text.toLowerCase();
+    const pattern = getSyllablePattern(text);
+    const speakText = pattern ? getPhoneticPronunciation(text, pattern).toLowerCase() : text.toLowerCase();
     try {
       await TextToSpeech.speak({
         text: speakText,
@@ -166,24 +419,20 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
     let micStream: MediaStream | null = null;
     let animationFrameId: number | null = null;
 
-    const SpeechRecognitionAPI = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-
-    if (evaluatingWord && typeof window !== "undefined") {
+    if (evaluatingWord) {
       // 1. Setup real-time voice visualizer
-      navigator.mediaDevices.getUserMedia({ audio: true })
+      const audioVisualizerElement = document.getElementById("audio-visualizer-container");
+      navigator.mediaDevices.getUserMedia({ audio: true, video: false })
         .then(stream => {
           micStream = stream;
-          const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-          if (AudioContextClass) {
-            audioCtx = new AudioContextClass();
-            analyserNode = audioCtx.createAnalyser();
-            analyserNode.fftSize = 32; // small size for low latency
-            const source = audioCtx.createMediaStreamSource(stream);
-            source.connect(analyserNode);
+          const SpeechRecognitionAPI = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
 
-            if (audioCtx.state === 'suspended') {
-              audioCtx.resume().catch(() => {});
-            }
+          if (SpeechRecognitionAPI) {
+            audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+            const source = audioCtx.createMediaStreamSource(stream);
+            analyserNode = audioCtx.createAnalyser();
+            analyserNode.fftSize = 256;
+            source.connect(analyserNode);
 
             const bufferLength = analyserNode.frequencyBinCount;
             const dataArray = new Uint8Array(bufferLength);
@@ -191,27 +440,31 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
             const checkVolume = () => {
               if (!analyserNode) return;
               analyserNode.getByteFrequencyData(dataArray);
-              
-              let sum = 0;
-              const limit = Math.min(6, bufferLength);
-              for (let i = 0; i < limit; i++) {
-                sum += dataArray[i];
-              }
-              const avg = sum / limit;
-              // Normalize volume and boost it significantly for mic inputs
-              const vol = Math.min(1, avg / 60);
 
-              const b1 = document.getElementById('wave-bar-1');
-              const b2 = document.getElementById('wave-bar-2');
-              const b3 = document.getElementById('wave-bar-3');
-              const b4 = document.getElementById('wave-bar-4');
-              const b5 = document.getElementById('wave-bar-5');
+              // Target human voice frequency range (85Hz to 255Hz)
+              // With 128 bins (256 fftSize) at 44.1kHz, each bin is ~172Hz.
+              // So look at bins 1 to 5 for vocal/lower range.
+              let vocalSum = 0;
+              for (let i = 1; i <= 5; i++) {
+                vocalSum += dataArray[i];
+              }
+              const average = vocalSum / 5;
+
+              // Apply exponential gain scaling to boost quiet/shy voices
+              const rawVol = average / 255;
+              const vol = Math.pow(rawVol, 1.5) * 2.0;
+
+              const b1 = document.getElementById("wave-bar-1");
+              const b2 = document.getElementById("wave-bar-2");
+              const b3 = document.getElementById("wave-bar-3");
+              const b4 = document.getElementById("wave-bar-4");
+              const b5 = document.getElementById("wave-bar-5");
 
               if (b1 && b2 && b3 && b4 && b5) {
-                b1.style.height = `${Math.max(6, vol * 24 + Math.random() * 4 * vol)}px`;
-                b2.style.height = `${Math.max(6, vol * 32 + Math.random() * 6 * vol)}px`;
-                b3.style.height = `${Math.max(6, vol * 40 + Math.random() * 8 * vol)}px`;
-                b4.style.height = `${Math.max(6, vol * 28 + Math.random() * 5 * vol)}px`;
+                b1.style.height = `${Math.max(6, vol * 28 + Math.random() * 4 * vol)}px`;
+                b2.style.height = `${Math.max(6, vol * 44 + Math.random() * 6 * vol)}px`;
+                b3.style.height = `${Math.max(6, vol * 60 + Math.random() * 8 * vol)}px`;
+                b4.style.height = `${Math.max(6, vol * 44 + Math.random() * 6 * vol)}px`;
                 b5.style.height = `${Math.max(6, vol * 20 + Math.random() * 4 * vol)}px`;
               }
 
@@ -225,6 +478,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
         });
 
       // 2. Setup speech recognition
+      const SpeechRecognitionAPI = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
       if (SpeechRecognitionAPI) {
         const SpeechRecognition = SpeechRecognitionAPI;
         currentRecognition = new SpeechRecognition();
@@ -241,15 +495,18 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
           let bestSimilarity = 0;
           let isPerfectMatch = false;
 
+          const targetWord = evaluatingWord || "";
+          const pattern = getSyllablePattern(targetWord);
+
           // Check all alternatives
           for (let i = 0; i < results.length; i++) {
             const raw = results[i].transcript.trim();
             const normalized = normalizeTranscript(raw);
 
             // Get allowed variations
-            const allowedWords = [evaluatingWord];
-            if (HOMOPHONES[evaluatingWord]) {
-              allowedWords.push(...HOMOPHONES[evaluatingWord]);
+            const allowedWords = [targetWord];
+            if (HOMOPHONES[targetWord]) {
+              allowedWords.push(...HOMOPHONES[targetWord]);
             }
 
             const phraseWords = normalized.split(" ");
@@ -261,15 +518,25 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
               }
             }
 
+            // Fallback phonetic matching for CV / VC syllables
+            if (!matchedTarget && pattern && (pattern === "CV" || pattern === "VC")) {
+              for (const word of phraseWords) {
+                if (matchPhoneticSyllable(word, targetWord, pattern)) {
+                  matchedTarget = true;
+                  break;
+                }
+              }
+            }
+
             if (matchedTarget) {
-              bestMatch = evaluatingWord;
+              bestMatch = targetWord;
               bestSimilarity = 1;
               isPerfectMatch = true;
               break;
             }
 
             for (const word of phraseWords) {
-              const similarity = calculateSimilarity(word, evaluatingWord);
+              const similarity = calculateSimilarity(word, targetWord);
               if (similarity > bestSimilarity) {
                 bestSimilarity = similarity;
                 bestMatch = word;
@@ -281,13 +548,13 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
             bestMatch = normalizeTranscript(results[0].transcript.trim());
           }
 
-          setTranscripts(prev => ({ ...prev, [evaluatingWord]: bestMatch }));
+          setTranscripts(prev => ({ ...prev, [targetWord]: bestMatch }));
 
           if (isPerfectMatch || bestSimilarity === 1) {
-            setEvalFeedback(prev => ({ ...prev, [evaluatingWord]: "correct" }));
+            setEvalFeedback(prev => ({ ...prev, [targetWord]: "correct" }));
             setShowConfetti(true);
             const newCompleted = new Set(completedWords);
-            newCompleted.add(evaluatingWord);
+            newCompleted.add(targetWord);
             setCompletedWords(newCompleted);
             setTimeout(() => {
               setEvaluatingWord(null);
@@ -296,23 +563,16 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
                 setShowCompletionScreen(true);
               }
             }, 2000);
-          } else if (bestSimilarity >= 0.5 || matchConsonants(bestMatch, evaluatingWord)) {
-            setEvalFeedback(prev => ({ ...prev, [evaluatingWord]: "close" }));
-            setShowConfetti(true);
-            const newCompleted = new Set(completedWords);
-            newCompleted.add(evaluatingWord);
-            setCompletedWords(newCompleted);
+          } else if (bestSimilarity >= 0.5 || matchConsonants(bestMatch, targetWord)) {
+            setEvalFeedback(prev => ({ ...prev, [targetWord]: "close" }));
             setTimeout(() => {
+              setEvalFeedback(prev => ({ ...prev, [targetWord]: null }));
               setEvaluatingWord(null);
-              setShowConfetti(false);
-              if (newCompleted.size >= words.length) {
-                setShowCompletionScreen(true);
-              }
-            }, 2000);
+            }, 2500);
           } else {
-            setEvalFeedback(prev => ({ ...prev, [evaluatingWord]: "wrong" }));
+            setEvalFeedback(prev => ({ ...prev, [targetWord]: "wrong" }));
             setTimeout(() => {
-              setEvalFeedback(prev => ({ ...prev, [evaluatingWord]: null }));
+              setEvalFeedback(prev => ({ ...prev, [targetWord]: null }));
               setEvaluatingWord(null);
             }, 2500);
           }
@@ -336,7 +596,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
             if (currentRecognition) {
               try {
                 currentRecognition.stop();
-              } catch (e) {}
+              } catch (e) { }
             }
             setEvalFeedback(prev => ({ ...prev, [evaluatingWord]: "wrong" }));
             setTimeout(() => {
@@ -357,12 +617,12 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
       if (audioCtx) {
         try {
           audioCtx.close();
-        } catch (e) {}
+        } catch (e) { }
       }
       if (micStream) {
         try {
           micStream.getTracks().forEach(track => track.stop());
-        } catch (e) {}
+        } catch (e) { }
       }
       if (currentRecognition) {
         try {
@@ -409,7 +669,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
           >
             <Home className="w-5 h-5" />
           </Button>
-          
+
           <h2 className="text-lg font-bold tracking-tight text-center flex-1" style={{ color: accent.primary }}>
             Voice Evaluation
           </h2>
@@ -604,9 +864,9 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
                 }
                 setIsSaving(false);
                 if (onComplete) {
-                   onComplete();
+                  onComplete();
                 } else {
-                   navigate("/levels");
+                  navigate("/levels");
                 }
               }}
               size="lg"
