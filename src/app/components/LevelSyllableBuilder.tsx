@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useNavigate } from "react-router";
 import {
   Home,
@@ -100,6 +100,9 @@ export function LevelSyllableBuilder({
   const [isSaving, setIsSaving] = useState(false);
   const [playingLetter, setPlayingLetter] = useState<string | null>(null);
 
+  const ttsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const successTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   const currentTarget = targets[currentIndex];
   const allDone = completedTargets.size >= targets.length;
   const progress = (completedTargets.size / targets.length) * 100;
@@ -170,15 +173,19 @@ export function LevelSyllableBuilder({
           setShowConfetti(true);
 
           // Add the 1-second delay for the TTS so the final letter sound finishes first
-          setTimeout(() => {
+          if (ttsTimeoutRef.current) clearTimeout(ttsTimeoutRef.current);
+          ttsTimeoutRef.current = setTimeout(() => {
             playTTS(formed);
           }, 1000);
 
           // Give the child 2.5 seconds total to hear the TTS and celebrate before moving on
-          setTimeout(() => {
-            const newCompleted = new Set(completedTargets);
-            newCompleted.add(currentTarget.syllable);
-            setCompletedTargets(newCompleted);
+          if (successTimeoutRef.current) clearTimeout(successTimeoutRef.current);
+          successTimeoutRef.current = setTimeout(() => {
+            setCompletedTargets((prevSet) => {
+              const newCompleted = new Set(prevSet);
+              newCompleted.add(currentTarget.syllable);
+              return newCompleted;
+            });
             setFeedback(null);
             setSelectedLetters([]);
             setShowConfetti(false);
@@ -197,6 +204,26 @@ export function LevelSyllableBuilder({
   };
 
   const goNext = () => {
+    // If they click next while the success animation is playing, skip the wait!
+    if (feedback === "correct") {
+      if (ttsTimeoutRef.current) clearTimeout(ttsTimeoutRef.current);
+      if (successTimeoutRef.current) clearTimeout(successTimeoutRef.current);
+      setCompletedTargets((prevSet) => {
+        const newCompleted = new Set(prevSet);
+        newCompleted.add(currentTarget.syllable);
+        return newCompleted;
+      });
+      setFeedback(null);
+      setSelectedLetters([]);
+      setShowConfetti(false);
+      
+      // Auto advance to next if possible
+      if (currentIndex < targets.length - 1) {
+        setCurrentIndex(currentIndex + 1);
+      }
+      return;
+    }
+
     if (currentIndex < targets.length - 1) {
       if (!completedTargets.has(currentTarget.syllable)) {
         // Move uncompleted target to the end of the array

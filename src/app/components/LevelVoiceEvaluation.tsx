@@ -128,7 +128,6 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
   const [completedWords, setCompletedWords] = useState<Set<string>>(new Set());
   const [isSaving, setIsSaving] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
-  const [speechError, setSpeechError] = useState<string | null>(null);
 
   const playTTS = async (text: string) => {
     const speakText = text.toLowerCase();
@@ -249,21 +248,11 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
 
       currentRecognition.onerror = (event: any) => {
         console.error("Speech recognition error:", event.error);
-        if (event.error === "network") {
-          setSpeechError("Connection interrupted! Google speech servers might be blocked by Brave Shields or a local network firewall. If you are using Brave, please turn OFF Shields for this site!");
-        } else if (event.error === "not-allowed") {
-          setSpeechError("Microphone access blocked! Please click the lock icon 🔒 next to the web address and choose 'Allow' for Microphone.");
-        } else if (event.error === "no-speech") {
-          // Normal timeout, no alert needed
-        } else {
-          setSpeechError(`Voice recognition stopped: ${event.error}. Please tap the mic to try again.`);
-        }
-
         setEvalFeedback(prev => ({ ...prev, [evaluatingWord]: "wrong" }));
         setTimeout(() => {
           setEvalFeedback(prev => ({ ...prev, [evaluatingWord]: null }));
           setEvaluatingWord(null);
-        }, event.error === "no-speech" ? 1000 : 4000);
+        }, 2000);
       };
 
       try {
@@ -288,7 +277,6 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
 
   const startRecording = (word: string) => {
     if (evaluatingWord || completedWords.has(word)) return;
-    setSpeechError(null);
     setEvaluatingWord(word);
     setEvalFeedback(prev => ({ ...prev, [word]: null }));
     setTranscripts(prev => ({ ...prev, [word]: "" }));
@@ -340,26 +328,6 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
             <AlertCircle className="w-5 h-5 flex-shrink-0" />
             <p>Your browser doesn't support the Voice Recognition API. Please use Chrome or a modern mobile browser.</p>
           </div>
-        )}
-
-        {speechError && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-red-50 dark:bg-red-950/20 border-2 border-red-200 dark:border-red-900/30 rounded-3xl p-4 mb-6 text-red-600 dark:text-red-400 text-sm flex items-start gap-3 shadow-sm"
-          >
-            <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
-            <div className="flex-1">
-              <h4 className="font-bold mb-1">Voice Recognition Error</h4>
-              <p>{speechError}</p>
-            </div>
-            <button
-              onClick={() => setSpeechError(null)}
-              className="text-xs font-bold px-3 py-1 rounded-full border border-red-300 dark:border-red-800 text-red-500 hover:bg-red-100 dark:hover:bg-red-950/50 cursor-pointer"
-            >
-              Dismiss
-            </button>
-          </motion.div>
         )}
 
         {!allDone ? (
