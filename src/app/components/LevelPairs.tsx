@@ -187,7 +187,7 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
                     <button
                       key={l}
                       onClick={() => handleLetterClick(l)}
-                      className={`relative aspect-square rounded-full flex flex-col items-center justify-center transition-all shadow-xl active:scale-95 cursor-pointer select-none ${isClicked ? "border-b-0 translate-y-[8px]" : "border-b-[8px]"} ${isDone ? "opacity-90" : "hover:scale-105 hover:shadow-2xl"}`}
+                      className={`relative aspect-square rounded-2xl flex flex-col items-center justify-center transition-all shadow-md active:scale-95 cursor-pointer select-none ${isClicked ? "border-b-0 translate-y-[4px]" : "border-b-4"} ${isDone ? "opacity-90" : ""}`}
                       style={{
                         background: isClicked
                           ? "linear-gradient(135deg, #FFC800 0%, #FF9600 100%)"
@@ -201,10 +201,9 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
                             : "#086CA5",
                       }}
                     >
-                      <div className="flex items-baseline justify-center pb-1 sm:pb-2">
-                        <span className="text-white text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight">{l}</span>
-                        <span className="text-white/90 text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight ml-0.5">{l.toLowerCase()}</span>
-                      </div>
+                      <span className="text-white text-3xl sm:text-4xl lg:text-5xl font-black drop-shadow-sm uppercase">
+                        {l}
+                      </span>
                     </button>
                   );
                 })}
