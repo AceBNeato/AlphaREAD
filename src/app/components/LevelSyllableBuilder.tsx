@@ -380,6 +380,18 @@ export function LevelSyllableBuilder({
 
             {!allDone ? (
               <>
+                {/* Progress Bar */}
+                <div className="w-full h-3 bg-gray-200/80 dark:bg-gray-800 rounded-full overflow-hidden mb-6 shadow-inner border border-gray-100 dark:border-gray-700/30">
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${progress}%` }}
+                    transition={{ duration: 0.4, ease: "easeOut" }}
+                    className="h-full rounded-full"
+                    style={{
+                      background: `linear-gradient(90deg, ${accent.primary}, ${accent.dark})`,
+                    }}
+                  />
+                </div>
                 {/* Current Target Card */}
                 <AnimatePresence mode="wait">
                   <motion.div

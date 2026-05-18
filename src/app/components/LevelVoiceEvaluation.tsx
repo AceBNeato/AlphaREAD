@@ -129,6 +129,8 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
   const [isSaving, setIsSaving] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
   const [showCompletionScreen, setShowCompletionScreen] = useState(false);
+  const [showShyTip, setShowShyTip] = useState(false);
+  const [audioVolume, setAudioVolume] = useState(0);
 
   const playTTS = async (text: string) => {
     const speakText = text.toLowerCase();
@@ -156,139 +158,191 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
   const progress = (completedWords.size / words.length) * 100;
   const allDone = completedWords.size >= words.length;
 
-  // Initialize speech recognition dynamically when a word is selected
+  // Initialize speech recognition and real-time visualizer dynamically
   useEffect(() => {
     let currentRecognition: any = null;
     let autoSilenceTimeout: NodeJS.Timeout | null = null;
+    let audioCtx: AudioContext | null = null;
+    let analyserNode: AnalyserNode | null = null;
+    let micStream: MediaStream | null = null;
+    let animationFrameId: number | null = null;
+
     const SpeechRecognitionAPI = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
 
-    if (evaluatingWord && typeof window !== "undefined" && SpeechRecognitionAPI) {
-      const SpeechRecognition = SpeechRecognitionAPI;
-      currentRecognition = new SpeechRecognition();
+    if (evaluatingWord && typeof window !== "undefined") {
+      // 1. Setup real-time voice visualizer
+      navigator.mediaDevices.getUserMedia({ audio: true })
+        .then(stream => {
+          micStream = stream;
+          const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+          if (AudioContextClass) {
+            audioCtx = new AudioContextClass();
+            analyserNode = audioCtx.createAnalyser();
+            analyserNode.fftSize = 32; // small size for low latency
+            const source = audioCtx.createMediaStreamSource(stream);
+            source.connect(analyserNode);
 
-      currentRecognition.continuous = false;
-      currentRecognition.interimResults = false;
-      currentRecognition.lang = "en-US";
-      currentRecognition.maxAlternatives = 3;
+            const bufferLength = analyserNode.frequencyBinCount;
+            const dataArray = new Uint8Array(bufferLength);
 
-      currentRecognition.onresult = (event: any) => {
-        if (autoSilenceTimeout) clearTimeout(autoSilenceTimeout);
-        const results = event.results[0];
-        let bestMatch = "";
-        let bestSimilarity = 0;
-        let isPerfectMatch = false;
-
-        // Check all alternatives
-        for (let i = 0; i < results.length; i++) {
-          const raw = results[i].transcript.trim();
-          const normalized = normalizeTranscript(raw);
-
-          // Get allowed variations
-          const allowedWords = [evaluatingWord];
-          if (HOMOPHONES[evaluatingWord]) {
-            allowedWords.push(...HOMOPHONES[evaluatingWord]);
+            const checkVolume = () => {
+              if (!analyserNode) return;
+              analyserNode.getByteFrequencyData(dataArray);
+              let sum = 0;
+              for (let i = 0; i < bufferLength; i++) {
+                sum += dataArray[i];
+              }
+              const average = sum / bufferLength;
+              setAudioVolume(average);
+              animationFrameId = requestAnimationFrame(checkVolume);
+            };
+            animationFrameId = requestAnimationFrame(checkVolume);
           }
+        })
+        .catch(err => {
+          console.warn("Failed to initialize live voice visualizer:", err);
+        });
 
-          const phraseWords = normalized.split(" ");
-          let matchedTarget = false;
-          for (const target of allowedWords) {
-            if (normalized === target || phraseWords.includes(target)) {
-              matchedTarget = true;
+      // 2. Setup speech recognition
+      if (SpeechRecognitionAPI) {
+        const SpeechRecognition = SpeechRecognitionAPI;
+        currentRecognition = new SpeechRecognition();
+
+        currentRecognition.continuous = false;
+        currentRecognition.interimResults = false;
+        currentRecognition.lang = "en-US";
+        currentRecognition.maxAlternatives = 3;
+
+        currentRecognition.onresult = (event: any) => {
+          if (autoSilenceTimeout) clearTimeout(autoSilenceTimeout);
+          const results = event.results[0];
+          let bestMatch = "";
+          let bestSimilarity = 0;
+          let isPerfectMatch = false;
+
+          // Check all alternatives
+          for (let i = 0; i < results.length; i++) {
+            const raw = results[i].transcript.trim();
+            const normalized = normalizeTranscript(raw);
+
+            // Get allowed variations
+            const allowedWords = [evaluatingWord];
+            if (HOMOPHONES[evaluatingWord]) {
+              allowedWords.push(...HOMOPHONES[evaluatingWord]);
+            }
+
+            const phraseWords = normalized.split(" ");
+            let matchedTarget = false;
+            for (const target of allowedWords) {
+              if (normalized === target || phraseWords.includes(target)) {
+                matchedTarget = true;
+                break;
+              }
+            }
+
+            if (matchedTarget) {
+              bestMatch = evaluatingWord;
+              bestSimilarity = 1;
+              isPerfectMatch = true;
               break;
             }
-          }
 
-          if (matchedTarget) {
-            bestMatch = evaluatingWord;
-            bestSimilarity = 1;
-            isPerfectMatch = true;
-            break;
-          }
-
-          for (const word of phraseWords) {
-            const similarity = calculateSimilarity(word, evaluatingWord);
-            if (similarity > bestSimilarity) {
-              bestSimilarity = similarity;
-              bestMatch = word;
+            for (const word of phraseWords) {
+              const similarity = calculateSimilarity(word, evaluatingWord);
+              if (similarity > bestSimilarity) {
+                bestSimilarity = similarity;
+                bestMatch = word;
+              }
             }
           }
-        }
 
-        if (!bestMatch) {
-          bestMatch = normalizeTranscript(results[0].transcript.trim());
-        }
+          if (!bestMatch) {
+            bestMatch = normalizeTranscript(results[0].transcript.trim());
+          }
 
-        setTranscripts(prev => ({ ...prev, [evaluatingWord]: bestMatch }));
+          setTranscripts(prev => ({ ...prev, [evaluatingWord]: bestMatch }));
 
-        if (isPerfectMatch || bestSimilarity === 1) {
-          setEvalFeedback(prev => ({ ...prev, [evaluatingWord]: "correct" }));
-          setShowConfetti(true);
-          const newCompleted = new Set(completedWords);
-          newCompleted.add(evaluatingWord);
-          setCompletedWords(newCompleted);
-          setTimeout(() => {
-            setEvaluatingWord(null);
-            setShowConfetti(false);
-            if (newCompleted.size >= words.length) {
-              setShowCompletionScreen(true);
-            }
-          }, 2000);
-        } else if (bestSimilarity >= 0.5 || matchConsonants(bestMatch, evaluatingWord)) {
-          setEvalFeedback(prev => ({ ...prev, [evaluatingWord]: "close" }));
-          setShowConfetti(true);
-          const newCompleted = new Set(completedWords);
-          newCompleted.add(evaluatingWord);
-          setCompletedWords(newCompleted);
-          setTimeout(() => {
-            setEvaluatingWord(null);
-            setShowConfetti(false);
-            if (newCompleted.size >= words.length) {
-              setShowCompletionScreen(true);
-            }
-          }, 2000);
-        } else {
+          if (isPerfectMatch || bestSimilarity === 1) {
+            setEvalFeedback(prev => ({ ...prev, [evaluatingWord]: "correct" }));
+            setShowConfetti(true);
+            const newCompleted = new Set(completedWords);
+            newCompleted.add(evaluatingWord);
+            setCompletedWords(newCompleted);
+            setTimeout(() => {
+              setEvaluatingWord(null);
+              setShowConfetti(false);
+              if (newCompleted.size >= words.length) {
+                setShowCompletionScreen(true);
+              }
+            }, 2000);
+          } else if (bestSimilarity >= 0.5 || matchConsonants(bestMatch, evaluatingWord)) {
+            setEvalFeedback(prev => ({ ...prev, [evaluatingWord]: "close" }));
+            setShowConfetti(true);
+            const newCompleted = new Set(completedWords);
+            newCompleted.add(evaluatingWord);
+            setCompletedWords(newCompleted);
+            setTimeout(() => {
+              setEvaluatingWord(null);
+              setShowConfetti(false);
+              if (newCompleted.size >= words.length) {
+                setShowCompletionScreen(true);
+              }
+            }, 2000);
+          } else {
+            setEvalFeedback(prev => ({ ...prev, [evaluatingWord]: "wrong" }));
+            setTimeout(() => {
+              setEvalFeedback(prev => ({ ...prev, [evaluatingWord]: null }));
+              setEvaluatingWord(null);
+            }, 2500);
+          }
+        };
+
+        currentRecognition.onerror = (event: any) => {
+          if (autoSilenceTimeout) clearTimeout(autoSilenceTimeout);
+          console.error("Speech recognition error:", event.error);
           setEvalFeedback(prev => ({ ...prev, [evaluatingWord]: "wrong" }));
           setTimeout(() => {
             setEvalFeedback(prev => ({ ...prev, [evaluatingWord]: null }));
             setEvaluatingWord(null);
-          }, 2500);
-        }
-      };
+          }, 2000);
+        };
 
-      currentRecognition.onerror = (event: any) => {
-        if (autoSilenceTimeout) clearTimeout(autoSilenceTimeout);
-        console.error("Speech recognition error:", event.error);
-        setEvalFeedback(prev => ({ ...prev, [evaluatingWord]: "wrong" }));
-        setTimeout(() => {
-          setEvalFeedback(prev => ({ ...prev, [evaluatingWord]: null }));
+        try {
+          currentRecognition.start();
+          // Start 5-second auto-silence timeout if no speech is detected at all
+          autoSilenceTimeout = setTimeout(() => {
+            console.warn("[Speech] Auto-silence: No speech detected in 5s. Stopping microphone.");
+            if (currentRecognition) {
+              try {
+                currentRecognition.stop();
+              } catch (e) {}
+            }
+            setEvalFeedback(prev => ({ ...prev, [evaluatingWord]: "wrong" }));
+            setTimeout(() => {
+              setEvalFeedback(prev => ({ ...prev, [evaluatingWord]: null }));
+              setEvaluatingWord(null);
+            }, 1500);
+          }, 5000);
+        } catch (error) {
+          console.error("Error starting recognition:", error);
           setEvaluatingWord(null);
-        }, 2000);
-      };
-
-      try {
-        currentRecognition.start();
-        // Start 5-second auto-silence timeout if no speech is detected at all
-        autoSilenceTimeout = setTimeout(() => {
-          console.warn("[Speech] Auto-silence: No speech detected in 5s. Stopping microphone.");
-          if (currentRecognition) {
-            try {
-              currentRecognition.stop();
-            } catch (e) {}
-          }
-          setEvalFeedback(prev => ({ ...prev, [evaluatingWord]: "wrong" }));
-          setTimeout(() => {
-            setEvalFeedback(prev => ({ ...prev, [evaluatingWord]: null }));
-            setEvaluatingWord(null);
-          }, 1500);
-        }, 5000);
-      } catch (error) {
-        console.error("Error starting recognition:", error);
-        setEvaluatingWord(null);
+        }
       }
     }
 
     return () => {
       if (autoSilenceTimeout) clearTimeout(autoSilenceTimeout);
+      if (animationFrameId) cancelAnimationFrame(animationFrameId);
+      if (audioCtx) {
+        try {
+          audioCtx.close();
+        } catch (e) {}
+      }
+      if (micStream) {
+        try {
+          micStream.getTracks().forEach(track => track.stop());
+        } catch (e) {}
+      }
       if (currentRecognition) {
         try {
           currentRecognition.stop();
@@ -297,6 +351,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
           currentRecognition.onend = null;
         } catch (e) { }
       }
+      setAudioVolume(0); // reset visualizer level
     };
   }, [evaluatingWord, completedWords]);
 
@@ -320,7 +375,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
       <Confetti active={showConfetti} />
       {/* Header */}
       <div className="sticky top-0 z-10 bg-white/80 dark:bg-[#0d141c]/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 px-4 py-3">
-        <div className="max-w-2xl mx-auto flex items-center gap-3">
+        <div className="max-w-2xl mx-auto flex items-center justify-between gap-3">
           <Button
             variant="ghost"
             size="sm"
@@ -329,11 +384,20 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
           >
             <Home className="w-5 h-5" />
           </Button>
-          <div className="flex-1 text-center pr-8">
-            <h2 className="text-lg font-bold tracking-tight" style={{ color: accent.primary }}>
-              Voice Evaluation
-            </h2>
-          </div>
+          
+          <h2 className="text-lg font-bold tracking-tight text-center flex-1" style={{ color: accent.primary }}>
+            Voice Evaluation
+          </h2>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowShyTip(true)}
+            className="rounded-full flex items-center gap-1.5 border-pink-200 dark:border-gray-700 hover:bg-pink-50 dark:hover:bg-pink-900/20 text-pink-500 font-medium text-xs px-3 py-1.5 shadow-sm"
+          >
+            <span>🗣️</span>
+            <span className="hidden sm:inline">Shy Learner?</span>
+          </Button>
         </div>
       </div>
 
@@ -348,84 +412,100 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
         )}
 
         {!showCompletionScreen ? (
-          <AnimatePresence mode="wait">
-            <motion.div
-              key="list-phase"
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              transition={{ duration: 0.3 }}
-              className="text-center mb-8"
-            >
-              <div className="space-y-3 bg-white/50 dark:bg-gray-800/50 p-4 rounded-3xl backdrop-blur-sm border-2 border-dashed border-gray-200 dark:border-gray-700 max-h-[60vh] overflow-y-auto">
-                {words.map((w) => {
-                  const isDone = completedWords.has(w);
-                  const isCurrent = evaluatingWord === w;
-                  const feedback = evalFeedback[w];
-                  const transcript = transcripts[w];
+          <>
+            {/* Progress Bar */}
+            <div className="w-full h-3 bg-gray-200/80 dark:bg-gray-800 rounded-full overflow-hidden mb-6 shadow-inner border border-gray-100 dark:border-gray-700/30">
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${progress}%` }}
+                transition={{ duration: 0.4, ease: "easeOut" }}
+                className="h-full rounded-full"
+                style={{
+                  background: `linear-gradient(90deg, ${accent.primary}, ${accent.dark})`,
+                }}
+              />
+            </div>
 
-                  return (
-                    <div key={w} className={`flex items-center justify-between p-4 rounded-2xl transition-all ${isDone ? 'bg-green-50 dark:bg-green-900/20' : 'bg-white dark:bg-gray-800'} shadow-sm border-2 ${isCurrent ? 'border-pink-400' : isDone ? 'border-green-200' : 'border-transparent'}`}>
-                      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
-                        <span className="text-3xl font-bold w-20 text-left tracking-widest uppercase" style={{ color: isDone ? '#58CC02' : accent.primary }}>{w}</span>
-                        {feedback === 'correct' && <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="text-green-500 flex items-center gap-1 text-sm font-bold"><CheckCircle2 className="w-4 h-4" /> Correct!</motion.div>}
-                        {feedback === 'close' && <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="text-blue-500 flex items-center gap-1 text-sm font-bold"><Sparkles className="w-4 h-4" /> Close enough!</motion.div>}
-                        {feedback === 'wrong' && (
-                          <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} className={`flex items-center justify-center gap-1 font-bold text-sm text-red-500`}>
-                            <AlertCircle className="w-4 h-4" /> Try again!
-                          </motion.div>
-                        )}
-                        {isCurrent && transcript && (
-                          <div className="p-1 bg-gray-200 rounded text-[10px] font-mono text-gray-700 mt-1 sm:mt-0">
-                            Heard: {transcript}
-                          </div>
-                        )}
-                        {isCurrent && !transcript && (
-                          <div className="flex items-center gap-2 mt-1 sm:mt-0">
-                            <span className="text-pink-500 text-sm font-bold animate-pulse">Listening...</span>
-                            <div className="flex gap-1 items-center h-5">
-                              <motion.span animate={{ height: [4, 18, 4] }} transition={{ repeat: Infinity, duration: 0.5, ease: "easeInOut" }} className="w-1 bg-pink-500 rounded-full" />
-                              <motion.span animate={{ height: [4, 24, 4] }} transition={{ repeat: Infinity, duration: 0.4, delay: 0.15, ease: "easeInOut" }} className="w-1 bg-pink-500 rounded-full" />
-                              <motion.span animate={{ height: [4, 14, 4] }} transition={{ repeat: Infinity, duration: 0.6, delay: 0.3, ease: "easeInOut" }} className="w-1 bg-pink-500 rounded-full" />
-                              <motion.span animate={{ height: [4, 20, 4] }} transition={{ repeat: Infinity, duration: 0.55, delay: 0.05, ease: "easeInOut" }} className="w-1 bg-pink-500 rounded-full" />
-                            </div>
-                          </div>
-                        )}
-                      </div>
+            <AnimatePresence mode="wait">
+              <motion.div
+                key="list-phase"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                transition={{ duration: 0.3 }}
+                className="text-center mb-8"
+              >
+                <div className="space-y-3 bg-white/50 dark:bg-gray-800/50 p-4 rounded-3xl backdrop-blur-sm border-2 border-dashed border-gray-200 dark:border-gray-700 max-h-[60vh] overflow-y-auto">
+                  {words.map((w) => {
+                    const isDone = completedWords.has(w);
+                    const isCurrent = evaluatingWord === w;
+                    const feedback = evalFeedback[w];
+                    const transcript = transcripts[w];
 
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => {
-                            if (isCurrent) {
-                              setEvaluatingWord(null);
-                            } else {
-                              startRecording(w);
-                            }
-                          }}
-                          disabled={(evaluatingWord !== null && !isCurrent) || isDone}
-                          className={`relative w-12 h-12 rounded-xl flex items-center justify-center transition-all ${isDone ? 'bg-green-500 text-white shadow-none opacity-50 cursor-default' : isCurrent ? 'bg-red-500 text-white shadow-lg' : 'bg-gradient-to-br from-pink-500 to-rose-500 text-white shadow-md hover:scale-105 active:scale-95'}`}
-                        >
-                          {isCurrent && (
-                            <>
-                              <span className="absolute inset-0 rounded-xl bg-red-500/40 animate-ping" />
-                              <span className="absolute -inset-1 rounded-xl bg-red-500/20 animate-pulse" />
-                            </>
+                    return (
+                      <div key={w} className={`flex items-center justify-between p-4 rounded-2xl transition-all ${isDone ? 'bg-green-50 dark:bg-green-900/20' : 'bg-white dark:bg-gray-800'} shadow-sm border-2 ${isCurrent ? 'border-pink-400' : isDone ? 'border-green-200' : 'border-transparent'}`}>
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
+                          <span className="text-3xl font-bold w-20 text-left tracking-widest uppercase" style={{ color: isDone ? '#58CC02' : accent.primary }}>{w}</span>
+                          {feedback === 'correct' && <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="text-green-500 flex items-center gap-1 text-sm font-bold"><CheckCircle2 className="w-4 h-4" /> Correct!</motion.div>}
+                          {feedback === 'close' && <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="text-blue-500 flex items-center gap-1 text-sm font-bold"><Sparkles className="w-4 h-4" /> Close enough!</motion.div>}
+                          {feedback === 'wrong' && (
+                            <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} className={`flex items-center justify-center gap-1 font-bold text-sm text-red-500`}>
+                              <AlertCircle className="w-4 h-4" /> Try again!
+                            </motion.div>
                           )}
-                          <span className="relative z-10">
-                            {isDone ? <CheckCircle2 className="w-6 h-6" /> : isCurrent ? <MicOff className="w-5 h-5 animate-bounce" /> : <Mic className="w-5 h-5" />}
-                          </span>
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+                          {isCurrent && transcript && (
+                            <div className="p-1 bg-gray-200 rounded text-[10px] font-mono text-gray-700 mt-1 sm:mt-0">
+                              Heard: {transcript}
+                            </div>
+                          )}
+                          {isCurrent && !transcript && (
+                            <div className="flex items-center gap-2 mt-1 sm:mt-0">
+                              <span className="text-pink-500 text-sm font-bold animate-pulse">Listening...</span>
+                              <div className="flex gap-1 items-center h-8 justify-center min-w-[50px]">
+                                <div className="w-1.5 bg-pink-500 rounded-full transition-all duration-75" style={{ height: `${Math.max(6, (audioVolume / 255) * 28)}px` }} />
+                                <div className="w-1.5 bg-pink-400 rounded-full transition-all duration-75" style={{ height: `${Math.max(6, (audioVolume / 255) * 36)}px` }} />
+                                <div className="w-1.5 bg-pink-500 rounded-full transition-all duration-75" style={{ height: `${Math.max(6, (audioVolume / 255) * 42)}px` }} />
+                                <div className="w-1.5 bg-pink-400 rounded-full transition-all duration-75" style={{ height: `${Math.max(6, (audioVolume / 255) * 32)}px` }} />
+                                <div className="w-1.5 bg-pink-500 rounded-full transition-all duration-75" style={{ height: `${Math.max(6, (audioVolume / 255) * 24)}px` }} />
+                              </div>
+                            </div>
+                          )}
+                        </div>
 
-              <div className="mt-8 text-center text-sm text-gray-500 dark:text-gray-400 italic">
-                Click the mic next to each word to practice its pronunciation
-              </div>
-            </motion.div>
-          </AnimatePresence>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => {
+                              if (isCurrent) {
+                                setEvaluatingWord(null);
+                              } else {
+                                startRecording(w);
+                              }
+                            }}
+                            disabled={(evaluatingWord !== null && !isCurrent) || isDone}
+                            className={`relative w-12 h-12 rounded-xl flex items-center justify-center transition-all ${isDone ? 'bg-green-500 text-white shadow-none opacity-50 cursor-default' : isCurrent ? 'bg-red-500 text-white shadow-lg' : 'bg-gradient-to-br from-pink-500 to-rose-500 text-white shadow-md hover:scale-105 active:scale-95'}`}
+                          >
+                            {isCurrent && (
+                              <>
+                                <span className="absolute inset-0 rounded-xl bg-red-500/40 animate-ping" />
+                                <span className="absolute -inset-1 rounded-xl bg-red-500/20 animate-pulse" />
+                              </>
+                            )}
+                            <span className="relative z-10">
+                              {isDone ? <CheckCircle2 className="w-6 h-6" /> : isCurrent ? <MicOff className="w-5 h-5 animate-bounce" /> : <Mic className="w-5 h-5" />}
+                            </span>
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="mt-8 text-center text-sm text-gray-500 dark:text-gray-400 italic">
+                  Click the mic next to each word to practice its pronunciation
+                </div>
+              </motion.div>
+            </AnimatePresence>
+          </>
         ) : (
           /* All Done */
           <motion.div
@@ -516,6 +596,46 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
           </motion.div>
         )}
       </div>
+
+      {/* Shy Mode Tips Modal Overlay */}
+      <AnimatePresence>
+        {showShyTip && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white dark:bg-gray-800 rounded-3xl p-6 max-w-sm w-full shadow-2xl border-2 border-pink-200 dark:border-gray-700 text-center"
+            >
+              <span className="text-4xl">🗣️✨</span>
+              <h3 className="text-xl font-bold mt-3 mb-2 text-pink-500">Shy Learner Tips</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed mb-6">
+                If your child is speaking softly or feeling a bit shy, try these simple tips to boost voice recognition:
+              </p>
+              <div className="text-left space-y-3.5 text-sm text-gray-600 dark:text-gray-300 mb-6">
+                <div className="flex gap-2.5">
+                  <span className="text-base">📣</span>
+                  <span><strong>Speak Closer:</strong> Gently show them how to speak directly into the microphone at the bottom of the device.</span>
+                </div>
+                <div className="flex gap-2.5">
+                  <span className="text-base">👐</span>
+                  <span><strong>Cup the Mic:</strong> Cup your hands around the microphone port to act as a megaphone, focusing their soft voice into the sensor.</span>
+                </div>
+                <div className="flex gap-2.5">
+                  <span className="text-base">⚙️</span>
+                  <span><strong>Microphone Boost:</strong> Try raising your device's physical microphone gain in system sound settings.</span>
+                </div>
+              </div>
+              <Button
+                onClick={() => setShowShyTip(false)}
+                className="w-full bg-gradient-to-br from-pink-500 to-rose-500 text-white font-bold rounded-2xl py-3 border-b-4 border-black/20"
+              >
+                Got it!
+              </Button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

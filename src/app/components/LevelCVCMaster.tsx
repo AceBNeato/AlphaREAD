@@ -20,38 +20,26 @@ interface GameStep {
 export function LevelCVCMaster({ levelId, accent }: LevelCVCMasterProps) {
   const navigate = useNavigate();
 
-  // Dynamically generate a single random pool of 15 CVC words each time the level starts!
+  // Dynamically generate a single random pool of 10 CVC words each time the level starts!
   const STEPS: GameStep[] = useMemo(() => {
-    const randomWords = shuffle([...CVC_WORDS]).slice(0, 15);
+    const randomWords = shuffle([...CVC_WORDS]).slice(0, 10);
     
-    // Break into manageable chunks of 3 for the scaffolding loop
-    const chunk1 = randomWords.slice(0, 3);
-    const chunk2 = randomWords.slice(3, 6);
-    const chunk3 = randomWords.slice(6, 9);
-    const chunk4 = randomWords.slice(9, 12);
-    const chunk5 = randomWords.slice(12, 15);
+    // Break into chunks of 5 words
+    const chunk1 = randomWords.slice(0, 5);
+    const chunk2 = randomWords.slice(5, 10);
 
     return [
+      // 5 first
       { phase: "build", words: chunk1 },
       { phase: "eval", words: chunk1 },
       
+      // 5 next
       { phase: "build", words: chunk2 },
       { phase: "eval", words: chunk2 },
       
-      // Milestone 1: Evaluate the first 6 random words!
-      { phase: "milestone", words: [...chunk1, ...chunk2] },
-      
-      { phase: "build", words: chunk3 },
-      { phase: "eval", words: chunk3 },
-      
-      { phase: "build", words: chunk4 },
-      { phase: "eval", words: chunk4 },
-  
-      { phase: "build", words: chunk5 },
-      { phase: "eval", words: chunk5 },
-      
-      // Milestone 2: Evaluate the last 9 random words!
-      { phase: "milestone", words: [...chunk3, ...chunk4, ...chunk5] }
+      // 10 last (still a review then eval)
+      { phase: "build", words: [...chunk1, ...chunk2] },
+      { phase: "eval", words: [...chunk1, ...chunk2] }
     ];
   }, []);
 
@@ -71,8 +59,8 @@ export function LevelCVCMaster({ levelId, accent }: LevelCVCMasterProps) {
         if (profileStr) {
           const profile = JSON.parse(profileStr);
           if (profile.id) {
-            // Give them a perfect score (15 words)
-            await supabase.from("progress").insert({ student_id: profile.id, level_id: levelId, score: 15 });
+            // Give them a perfect score (10 words)
+            await supabase.from("progress").insert({ student_id: profile.id, level_id: levelId, score: 10 });
           }
         }
         const completedLevels = JSON.parse(localStorage.getItem("completedLevels") || "[]");
