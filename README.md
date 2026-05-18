@@ -41,18 +41,24 @@ This project uses Capacitor to build Android APKs.
    ```
 
 5. **Build web assets and APK** (run all together every time you make changes):
-   cd ..
+  
+   echo 'export JAVA_HOME="/c/Program Files/Java/jdk-21.0.10"' >> ~/.bashrc
+   echo 'export PATH="$JAVA_HOME/bin:$PATH"' >> ~/.bashrc
+   source ~/.bashrc
+   
    npm run build
    npx cap sync android 
    cd android
    ./gradlew assembleDebug
-   adb install -r app/build/outputs/apk/debug/app-debug.apk
+   cd ..
+   npx cap run android
 
    APK will be at: `android/app/build/outputs/apk/debug/app-debug.apk`
 
    > **Important:** `npm run build` compiles your code, `cap sync` copies it into the Android project, and Gradle packages it into the `.apk`. All three steps are needed — skipping Gradle means the APK on your phone is still the old one.
 
-### Wireless Debugging (Install APK on Phone)
+### Wireless Debugging (Install APK
+ on Phone)
 
 > **One-time setup:** Add `adb` to your Git Bash PATH permanently:
 > ```bash

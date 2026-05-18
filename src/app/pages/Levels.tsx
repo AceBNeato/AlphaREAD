@@ -4,12 +4,10 @@ import {
   Trophy,
   Home,
   Sparkles,
-  Music,
   Layers,
   Puzzle,
-  Shapes,
-  Brain,
   Mic,
+  Brain,
 } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { levels } from "../data/levels";
@@ -34,44 +32,20 @@ const levelColors = [
     light: "#fff2d4",
     text: "#FF9600",
   },
-  {
-    bg: "from-[#CE82FF] to-[#a855f7]",
-    border: "border-[#CE82FF]",
-    light: "#f3e8ff",
-    text: "#CE82FF",
-  },
-  {
-    bg: "from-[#FF4B8A] to-[#e0336e]",
-    border: "border-[#FF4B8A]",
-    light: "#ffe4ef",
-    text: "#FF4B8A",
-  },
-  {
-    bg: "from-[#7C3AED] to-[#6d28d9]",
-    border: "border-[#7C3AED]",
-    light: "#f3e8ff",
-    text: "#7C3AED",
-  },
 ];
 
-const levelIcons = [Layers, Music, Puzzle, Shapes, Brain, Mic];
+const levelIcons = [Layers, Puzzle, Brain];
 
 const levelDescriptions = [
-  "Learn all 26 letters in shuffled pairs. Review each letter's uppercase and lowercase form.",
-  "Explore all 26 letters on a QWERTY keyboard layout. Tap each letter to review!",
-  "Build VC (Vowel + Consonant) syllables! Click letters in order to form patterns like AB, IM, OT. 65 total combinations randomized each time!",
-  "Build CV (Consonant + Vowel) syllables! Click letters in order to form patterns like BA, MI, TO. 65 total combinations randomized each time!",
-  "Build CVC (Consonant-Vowel-Consonant) words! Click letters in order to form words like BAT, MUG, TIP. 65 total words randomized each time!",
-  "Practice pronunciation with speech recognition! Say CVC words out loud and get instant feedback.",
+  "Learn all 26 letters in shuffled pairs. Review each letter's uppercase and lowercase form, then practice saying them!",
+  "Build syllables! 2.1 — VC (Vowel + Consonant) like AB, IM, OT. 2.2 — CV (Consonant + Vowel) like BA, MI, TO.",
+  "The ultimate challenge! Build CVC words (like BAT, SUN, DOG) and then use the AI to practice your pronunciation.",
 ];
 
 const levelTags = [
-  ["Letter Pairs", "26 Letters", "Review"],
-  ["Tap & Review", "26 Letters", "QWERTY"],
-  ["VC Pattern", "65 Syllables", "Interactive"],
-  ["CV Pattern", "65 Syllables", "Interactive"],
-  ["CVC Pattern", "65 Words", "Challenge"],
-  ["Voice Recognition", "CVC Words", "Speech Practice"],
+  ["Review", "Voice Eval", "26 Letters"],
+  ["VC Pattern", "CV Pattern", "Interactive"],
+  ["Build Words", "AI Recognition", "Challenge"],
 ];
 
 export default function Levels() {
@@ -90,7 +64,7 @@ export default function Levels() {
   const totalProgress = (completedCount / levels.length) * 100;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#e8f9f0] to-[#f0fdf4] dark:from-gray-900 dark:to-gray-800">
+    <div className="min-h-screen bg-gradient-to-b from-[#e8f9f0] to-[#f0fdf4] dark:bg-none dark:bg-[#0d141c]">
       <div className="max-w-5xl mx-auto px-4 py-8">
         {/* Top Bar */}
         <div className="flex items-center justify-between mb-8">

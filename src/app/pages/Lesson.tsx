@@ -4,6 +4,8 @@ import { levels } from "../data/levels";
 import { LevelPairs } from "../components/LevelPairs";
 import { LevelSounds } from "../components/LevelSounds";
 import { LevelSyllableBuilder } from "../components/LevelSyllableBuilder";
+import { LevelSyllablesMaster } from "../components/LevelSyllablesMaster";
+import { LevelCVCMaster } from "../components/LevelCVCMaster";
 import { LevelVoiceEvaluation } from "../components/LevelVoiceEvaluation";
 
 const levelAccents = [
@@ -24,7 +26,7 @@ export default function Lesson() {
 
   if (!level) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50 dark:from-gray-900 dark:to-gray-800">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50 dark:bg-none dark:bg-[#0d141c]">
         <div className="text-center">
           <h2 className="text-2xl text-gray-800 dark:text-gray-100 mb-4">
             Level not found
@@ -35,19 +37,18 @@ export default function Lesson() {
     );
   }
 
+  // Logic for Level 3: Combined CVC Master
+  if (level.type === "combined-cvc") {
+    return <LevelCVCMaster levelId={level.id} accent={accent} />;
+  }
+
   switch (level.type) {
     case "pairs":
       return <LevelPairs levelId={level.id} accent={accent} />;
     case "sounds":
       return <LevelSounds levelId={level.id} accent={accent} />;
     case "syllable-builder":
-      return (
-        <LevelSyllableBuilder
-          levelId={level.id}
-          patterns={level.patterns || ["CV"]}
-          accent={accent}
-        />
-      );
+      return <LevelSyllablesMaster levelId={level.id} accent={accent} />;
     case "voice-evaluation":
       return <LevelVoiceEvaluation levelId={level.id} accent={accent} />;
     default:

@@ -11,11 +11,14 @@ import {
   MicOff,
   RotateCcw,
   AlertCircle,
+  Volume2,
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { CVC_WORDS, shuffle } from "../data/levels";
 import { motion, AnimatePresence } from "motion/react";
 import { supabase } from "../../lib/supabase";
+import { TextToSpeech } from '@capacitor-community/text-to-speech';
+import { Confetti } from "./ui/Confetti";
 
 const DIGIT_MAP: Record<string, string> = {
   "0": "ZERO", "1": "ONE", "2": "TWO", "3": "THREE", "4": "FOUR",
@@ -95,38 +98,61 @@ function normalizeTranscript(text: string): string {
   return text
     .toUpperCase()
     .replace(/[.,!?]/g, "")
+    .trim()
     .split(/\s+/)
     .map(w => DIGIT_MAP[w] || w)
     .join(" ");
 }
 
+// Check if consonants (start and end) match, even if the middle vowel is different
+function matchConsonants(word1: string, word2: string): boolean {
+  const getConsonants = (w: string) => w.replace(/[AEIOU]/g, "");
+  return getConsonants(word1) === getConsonants(word2);
+}
+
 interface LevelVoiceEvaluationProps {
   levelId: number;
   accent: { primary: string; dark: string; lightBg: string };
+  customWords?: string[];
+  isSubPhase?: boolean;
+  onComplete?: () => void;
 }
 
-export function LevelVoiceEvaluation({ levelId, accent }: LevelVoiceEvaluationProps) {
+export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase, onComplete }: LevelVoiceEvaluationProps) {
   const navigate = useNavigate();
-  const [words, setWords] = useState<string[]>(() => shuffle(CVC_WORDS).slice(0, 10));
+  const [words] = useState<string[]>(() => customWords ? customWords : shuffle(CVC_WORDS).slice(0, 10));
 
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [isListening, setIsListening] = useState(false);
-  const [transcript, setTranscript] = useState("");
-  const [feedback, setFeedback] = useState<"correct" | "close" | "wrong" | null>(null);
+  const [evaluatingWord, setEvaluatingWord] = useState<string | null>(null);
+  const [evalFeedback, setEvalFeedback] = useState<Record<string, "correct" | "close" | "wrong" | null>>({});
+  const [transcripts, setTranscripts] = useState<Record<string, string>>({});
   const [completedWords, setCompletedWords] = useState<Set<string>>(new Set());
-  const [recognition, setRecognition] = useState<any>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [showConfetti, setShowConfetti] = useState(false);
 
-  const currentWord = words[currentIndex];
+  const playTTS = async (text: string) => {
+    try {
+      await TextToSpeech.speak({
+        text: text.toLowerCase(),
+        lang: 'en-US',
+        rate: 0.85,
+        pitch: 1.0,
+        volume: 1.0,
+        category: 'ambient',
+      });
+    } catch (e) {
+      console.error('[TTS] Error speaking via Capacitor:', e);
+    }
+  };
+
   const progress = (completedWords.size / words.length) * 100;
   const allDone = completedWords.size >= words.length;
 
-  // Initialize speech recognition
+  // Initialize speech recognition dynamically when a word is selected
   useEffect(() => {
     let currentRecognition: any = null;
     const SpeechRecognitionAPI = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
 
-    if (typeof window !== "undefined" && SpeechRecognitionAPI) {
+    if (evaluatingWord && typeof window !== "undefined" && SpeechRecognitionAPI) {
       const SpeechRecognition = SpeechRecognitionAPI;
       currentRecognition = new SpeechRecognition();
 
@@ -146,33 +172,30 @@ export function LevelVoiceEvaluation({ levelId, accent }: LevelVoiceEvaluationPr
           const raw = results[i].transcript.trim();
           const normalized = normalizeTranscript(raw);
 
-          // Get allowed variations (the actual word + any known homophones)
-          const allowedWords = [currentWord];
-          if (HOMOPHONES[currentWord]) {
-            allowedWords.push(...HOMOPHONES[currentWord]);
+          // Get allowed variations
+          const allowedWords = [evaluatingWord];
+          if (HOMOPHONES[evaluatingWord]) {
+            allowedWords.push(...HOMOPHONES[evaluatingWord]);
           }
 
-          // Strict check: Exact match OR the specific word is separated by spaces
-          const words = normalized.split(" ");
-
+          const phraseWords = normalized.split(" ");
           let matchedTarget = false;
           for (const target of allowedWords) {
-            if (normalized === target || words.includes(target)) {
+            if (normalized === target || phraseWords.includes(target)) {
               matchedTarget = true;
               break;
             }
           }
 
           if (matchedTarget) {
-            bestMatch = currentWord; // Display the correct spelling in UI, even if they said a homophone
+            bestMatch = evaluatingWord;
             bestSimilarity = 1;
             isPerfectMatch = true;
             break;
           }
 
-          // Fuzzy match check
-          for (const word of words) {
-            const similarity = calculateSimilarity(word, currentWord);
+          for (const word of phraseWords) {
+            const similarity = calculateSimilarity(word, evaluatingWord);
             if (similarity > bestSimilarity) {
               bestSimilarity = similarity;
               bestMatch = word;
@@ -184,47 +207,54 @@ export function LevelVoiceEvaluation({ levelId, accent }: LevelVoiceEvaluationPr
           bestMatch = normalizeTranscript(results[0].transcript.trim());
         }
 
-        setTranscript(bestMatch);
-        setIsListening(false);
+        setTranscripts(prev => ({ ...prev, [evaluatingWord]: bestMatch }));
 
         if (isPerfectMatch || bestSimilarity === 1) {
-          setFeedback("correct");
+          setEvalFeedback(prev => ({ ...prev, [evaluatingWord]: "correct" }));
+          setShowConfetti(true);
+          const newCompleted = new Set(completedWords);
+          newCompleted.add(evaluatingWord);
+          setCompletedWords(newCompleted);
           setTimeout(() => {
-            const newCompleted = new Set(completedWords);
-            newCompleted.add(currentWord);
-            setCompletedWords(newCompleted);
-            setFeedback(null);
-            setTranscript("");
+            setEvaluatingWord(null);
+            setShowConfetti(false);
           }, 1500);
-        } else if (bestSimilarity >= 0.66 && hasSameVowels(bestMatch, currentWord)) {
-          // At least 66% similar BUT MUST HAVE EXACT SAME VOWELS (rejects TEEN for TIN)
-          setFeedback("close");
+        } else if (bestSimilarity >= 0.5 || matchConsonants(bestMatch, evaluatingWord)) {
+          setEvalFeedback(prev => ({ ...prev, [evaluatingWord]: "close" }));
+          setShowConfetti(true);
+          const newCompleted = new Set(completedWords);
+          newCompleted.add(evaluatingWord);
+          setCompletedWords(newCompleted);
           setTimeout(() => {
-            const newCompleted = new Set(completedWords);
-            newCompleted.add(currentWord);
-            setCompletedWords(newCompleted);
-            setFeedback(null);
-            setTranscript("");
+            setEvaluatingWord(null);
+            setShowConfetti(false);
           }, 2000);
         } else {
-          setFeedback("wrong");
+          setEvalFeedback(prev => ({ ...prev, [evaluatingWord]: "wrong" }));
+          setTimeout(() => {
+            setEvalFeedback(prev => ({ ...prev, [evaluatingWord]: null }));
+            setEvaluatingWord(null);
+          }, 2500);
         }
       };
 
       currentRecognition.onerror = (event: any) => {
         console.error("Speech recognition error:", event.error);
-        setIsListening(false);
-        setFeedback("wrong");
+        setEvalFeedback(prev => ({ ...prev, [evaluatingWord]: "wrong" }));
+        setTimeout(() => {
+          setEvalFeedback(prev => ({ ...prev, [evaluatingWord]: null }));
+          setEvaluatingWord(null);
+        }, 2000);
       };
 
-      currentRecognition.onend = () => {
-        setIsListening(false);
-      };
-
-      setRecognition(currentRecognition);
+      try {
+        currentRecognition.start();
+      } catch (error) {
+        console.error("Error starting recognition:", error);
+        setEvaluatingWord(null);
+      }
     }
 
-    // Cleanup function to prevent zombie microphone instances when skipping words
     return () => {
       if (currentRecognition) {
         try {
@@ -235,62 +265,13 @@ export function LevelVoiceEvaluation({ levelId, accent }: LevelVoiceEvaluationPr
         } catch (e) { }
       }
     };
-  }, [currentIndex, currentWord, completedWords, feedback === null]);
+  }, [evaluatingWord, completedWords]);
 
-  const handleTryAgain = () => {
-    if (recognition) {
-      try { recognition.stop(); } catch (e) {}
-    }
-    setFeedback(null);
-    setTranscript("");
-    setIsListening(false);
-  };
-
-  const startListening = () => {
-    if (recognition && !isListening && !feedback) {
-      setTranscript("");
-      setIsListening(true);
-      try {
-        recognition.start();
-      } catch (error) {
-        console.error("Error starting recognition:", error);
-        setIsListening(false);
-      }
-    }
-  };
-
-  const stopListening = () => {
-    if (recognition && isListening) {
-      recognition.stop();
-      setIsListening(false);
-    }
-  };
-
-  const goNext = () => {
-    if (currentIndex < words.length - 1) {
-      if (!completedWords.has(currentWord)) {
-        // Move uncompleted word to the end of the array
-        setWords((prev) => {
-          const newWords = [...prev];
-          const skipped = newWords.splice(currentIndex, 1)[0];
-          newWords.push(skipped);
-          return newWords;
-        });
-        // Index stays the same to show the next word in the newly shifted array
-      } else {
-        setCurrentIndex(currentIndex + 1);
-      }
-      setTranscript("");
-      setFeedback(null);
-    }
-  };
-
-  const goPrev = () => {
-    if (currentIndex > 0) {
-      setCurrentIndex(currentIndex - 1);
-      setTranscript("");
-      setFeedback(null);
-    }
+  const startRecording = (word: string) => {
+    if (evaluatingWord || completedWords.has(word)) return;
+    setEvaluatingWord(word);
+    setEvalFeedback(prev => ({ ...prev, [word]: null }));
+    setTranscripts(prev => ({ ...prev, [word]: "" }));
   };
 
   const handleGoBack = () => {
@@ -302,9 +283,10 @@ export function LevelVoiceEvaluation({ levelId, accent }: LevelVoiceEvaluationPr
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-gray-900 dark:via-gray-850 dark:to-gray-800">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:bg-none dark:bg-[#0d141c]">
+      <Confetti active={showConfetti} />
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 px-4 py-3">
+      <div className="sticky top-0 z-10 bg-white/80 dark:bg-[#0d141c]/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 px-4 py-3">
         <div className="max-w-2xl mx-auto flex items-center gap-3">
           <Button
             variant="ghost"
@@ -314,19 +296,11 @@ export function LevelVoiceEvaluation({ levelId, accent }: LevelVoiceEvaluationPr
           >
             <Home className="w-5 h-5" />
           </Button>
-          <div className="flex-1">
-            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 overflow-hidden">
-              <motion.div
-                className="h-full rounded-full"
-                style={{ background: accent.primary }}
-                animate={{ width: `${progress}%` }}
-                transition={{ duration: 0.3 }}
-              />
-            </div>
+          <div className="flex-1 text-center pr-8">
+            <h2 className="text-lg font-bold tracking-tight" style={{ color: accent.primary }}>
+              Voice Evaluation
+            </h2>
           </div>
-          <span className="text-sm" style={{ color: accent.primary }}>
-            {completedWords.size}/{words.length}
-          </span>
         </div>
       </div>
 
@@ -341,19 +315,6 @@ export function LevelVoiceEvaluation({ levelId, accent }: LevelVoiceEvaluationPr
           </p>
         </div>
 
-        {/* Tags */}
-        <div className="flex justify-center gap-2 mb-6 flex-wrap">
-          {["Voice Recognition", "CVC Words", "Speech Practice"].map((tag) => (
-            <span
-              key={tag}
-              className="text-xs px-3 py-1 rounded-full text-white"
-              style={{ background: accent.primary }}
-            >
-              {tag}
-            </span>
-          ))}
-        </div>
-
         {!(window as any).SpeechRecognition && !(window as any).webkitSpeechRecognition && (
           <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 text-amber-800 text-sm flex items-center gap-3">
             <AlertCircle className="w-5 h-5 flex-shrink-0" />
@@ -362,189 +323,66 @@ export function LevelVoiceEvaluation({ levelId, accent }: LevelVoiceEvaluationPr
         )}
 
         {!allDone ? (
-          <>
-            {/* Current Word Card */}
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={currentIndex}
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                transition={{ duration: 0.3 }}
-                className="text-center mb-8"
-              >
-                <div className="mb-4 text-sm text-gray-500 dark:text-gray-400">
-                  Word {currentIndex + 1} of {words.length}
-                </div>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key="list-phase"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              transition={{ duration: 0.3 }}
+              className="text-center mb-8"
+            >
+              <div className="space-y-3 bg-white/50 dark:bg-gray-800/50 p-4 rounded-3xl backdrop-blur-sm border-2 border-dashed border-gray-200 dark:border-gray-700 max-h-[60vh] overflow-y-auto">
+                {words.map((w) => {
+                  const isDone = completedWords.has(w);
+                  const isCurrent = evaluatingWord === w;
+                  const feedback = evalFeedback[w];
+                  const transcript = transcripts[w];
 
-                <div
-                  className={`inline-flex flex-col items-center gap-4 px-12 py-8 rounded-3xl shadow-xl mb-6 transition-all ${feedback === "correct" || feedback === "close"
-                    ? "bg-gradient-to-br from-green-100 to-green-50 dark:from-green-900/30 dark:to-green-800/20 ring-4 ring-green-500"
-                    : feedback === "wrong"
-                      ? "bg-gradient-to-br from-red-100 to-red-50 dark:from-red-900/30 dark:to-red-800/20 ring-4 ring-red-500"
-                      : "bg-white dark:bg-gray-800"
-                    }`}
-                >
-                  {/* Display Word (Clickable Letters) */}
-                  <div className="flex gap-2">
-                    {currentWord.split("").map((letter, i) => (
-                      <button
-                        key={i}
-                        onClick={() => {
-                          const audio = new Audio(`/audio/alphasounds-${letter.toLowerCase()}.mp3`);
-                          audio.play().catch(() => { });
-                        }}
-                        className="text-7xl tracking-wider hover:scale-110 active:scale-95 transition-transform cursor-pointer"
-                        style={{ color: accent.primary }}
-                        disabled={!!feedback || isListening}
-                      >
-                        {letter}
-                      </button>
-                    ))}
-                  </div>
+                  return (
+                    <div key={w} className={`flex items-center justify-between p-4 rounded-2xl transition-all ${isDone ? 'bg-green-50 dark:bg-green-900/20' : 'bg-white dark:bg-gray-800'} shadow-sm border-2 ${isCurrent ? 'border-pink-400' : isDone ? 'border-green-200' : 'border-transparent'}`}>
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
+                        <span className="text-3xl font-bold w-20 text-left tracking-widest uppercase" style={{ color: isDone ? '#58CC02' : accent.primary }}>{w}</span>
+                        {feedback === 'correct' && <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="text-green-500 flex items-center gap-1 text-sm font-bold"><CheckCircle2 className="w-4 h-4" /> Correct!</motion.div>}
+                        {feedback === 'close' && <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="text-blue-500 flex items-center gap-1 text-sm font-bold"><Sparkles className="w-4 h-4" /> Close enough!</motion.div>}
+                        {feedback === 'wrong' && (
+                          <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} className={`flex items-center justify-center gap-1 font-bold text-sm text-red-500`}>
+                            <AlertCircle className="w-4 h-4" /> Try again!
+                          </motion.div>
+                        )}
+                        {isCurrent && transcript && (
+                          <div className="p-1 bg-gray-200 rounded text-[10px] font-mono text-gray-700 mt-1 sm:mt-0">
+                            Heard: {transcript}
+                          </div>
+                        )}
+                        {isCurrent && !transcript && <motion.div animate={{ opacity: [0.5, 1, 0.5] }} transition={{ repeat: Infinity, duration: 1 }} className="text-pink-500 text-xs font-bold italic mt-1 sm:mt-0">Listening...</motion.div>}
+                      </div>
 
-                  {/* Microphone Button */}
-                  {!completedWords.has(currentWord) && feedback !== "wrong" && (
-                    <button
-                      onClick={isListening ? stopListening : startListening}
-                      disabled={!!feedback}
-                      className={`px-8 py-4 rounded-3xl flex items-center gap-3 transition-all ${isListening
-                        ? "bg-gradient-to-br from-red-500 to-red-600 scale-105 animate-pulse"
-                        : feedback
-                          ? "bg-gray-300 dark:bg-gray-600"
-                          : "bg-gradient-to-br from-[#FF4B8A] to-[#e0336e] hover:scale-105 shadow-lg"
-                        }`}
-                    >
-                      {isListening ? (
-                        <>
-                          <MicOff className="w-8 h-8 text-white" />
-                          <span className="text-white font-bold text-lg">Listening...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Mic className="w-8 h-8 text-white" />
-                          <span className="text-white font-bold text-lg">Tap to Start</span>
-                        </>
-                      )}
-                    </button>
-                  )}
-
-                  {/* Status Text */}
-                  <div className="min-h-[2rem] flex flex-col items-center">
-                    {transcript && !feedback && !isListening && (
-                      <p className="text-gray-600 dark:text-gray-400">
-                        You said: {transcript}
-                      </p>
-                    )}
-                    {feedback === "correct" && (
-                      <motion.div
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        className="flex items-center gap-2 text-green-600 dark:text-green-400"
-                      >
-                        <CheckCircle2 className="w-6 h-6" />
-                        <span className="text-lg">Perfect! "{currentWord}"</span>
-                      </motion.div>
-                    )}
-                    {feedback === "close" && (
-                      <motion.div
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        className="flex items-center gap-2 text-green-500 dark:text-green-400"
-                      >
-                        <CheckCircle2 className="w-6 h-6" />
-                        <span className="text-lg">Close enough! (Heard: {transcript})</span>
-                      </motion.div>
-                    )}
-                    {feedback === "wrong" && (
-                      <motion.div
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        className="flex flex-col items-center gap-4 text-red-600 dark:text-red-400"
-                      >
-                        <div className="flex items-center gap-2">
-                          <XCircle className="w-6 h-6" />
-                          <span className="text-lg text-center">
-                            Oops! You said: <br />
-                            <b className="text-2xl mt-1 block">"{transcript || "nothing"}"</b>
-                          </span>
-                        </div>
-                        <Button
-                          onClick={handleTryAgain}
-                          variant="outline"
-                          size="lg"
-                          className="mt-2 border-red-500 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full px-8"
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => {
+                            if (isCurrent) {
+                              setEvaluatingWord(null);
+                            } else {
+                              startRecording(w);
+                            }
+                          }}
+                          disabled={(evaluatingWord !== null && !isCurrent) || isDone}
+                          className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all ${isDone ? 'bg-green-500 text-white shadow-none opacity-50 cursor-default' : isCurrent ? 'bg-red-500 text-white animate-pulse' : 'bg-gradient-to-br from-pink-500 to-rose-500 text-white shadow-md hover:scale-105 active:scale-95'}`}
                         >
-                          <RotateCcw className="w-5 h-5 mr-2" />
-                          Try Again
-                        </Button>
-                      </motion.div>
-                    )}
-                  </div>
-
-                  {/* Completed Badge */}
-                  {completedWords.has(currentWord) && (
-                    <motion.div
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      className="flex items-center gap-2 text-[#58CC02]"
-                    >
-                      <CheckCircle2 className="w-5 h-5" />
-                      <span>Completed!</span>
-                    </motion.div>
-                  )}
-                </div>
-              </motion.div>
-            </AnimatePresence>
-
-            {/* Navigation */}
-            <div className="flex justify-between items-center mb-6">
-              <Button
-                onClick={goPrev}
-                disabled={currentIndex === 0 || isListening || feedback === "correct" || feedback === "close"}
-                variant="outline"
-                size="lg"
-                className="rounded-xl px-6 py-5 border-2 disabled:opacity-30"
-                style={{ borderColor: accent.primary, color: accent.primary }}
-              >
-                <ArrowLeft className="w-5 h-5 mr-1" />
-                Back
-              </Button>
-              <Button
-                onClick={goNext}
-                disabled={currentIndex === words.length - 1 || isListening || feedback === "correct" || feedback === "close"}
-                variant="outline"
-                size="lg"
-                className="rounded-xl px-6 py-5 border-2 disabled:opacity-30"
-                style={{ borderColor: accent.primary, color: accent.primary }}
-              >
-                Next
-                <ArrowRight className="w-5 h-5 ml-1" />
-              </Button>
-            </div>
-
-            {/* Completed Words */}
-            {completedWords.size > 0 && (
-              <div className="mt-6">
-                <p className="text-sm text-gray-500 dark:text-gray-400 mb-2 text-center">
-                  Completed words:
-                </p>
-                <div className="flex flex-wrap justify-center gap-2">
-                  {Array.from(completedWords).map((word, i) => (
-                    <span
-                      key={i}
-                      className="px-4 py-2 rounded-full text-white text-sm"
-                      style={{
-                        background: `linear-gradient(135deg, ${accent.primary}, ${accent.dark})`,
-                      }}
-                    >
-                      {word} ✓
-                    </span>
-                  ))}
-                </div>
+                          {isDone ? <CheckCircle2 className="w-6 h-6" /> : isCurrent ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-            )}
-          </>
+
+              <div className="mt-8 text-center text-sm text-gray-500 dark:text-gray-400 italic">
+                Click the mic next to each word to practice its pronunciation
+              </div>
+            </motion.div>
+          </AnimatePresence>
         ) : (
           /* All Done */
           <motion.div
@@ -565,22 +403,30 @@ export function LevelVoiceEvaluation({ levelId, accent }: LevelVoiceEvaluationPr
             <p className="text-gray-500 dark:text-gray-400 mb-4">
               You completed {words.length} out of {words.length} words correctly!
             </p>
-            <div className="flex flex-wrap justify-center gap-2 mb-8">
+            <div className="flex flex-wrap justify-center gap-3 mb-8">
               {words.map((word, i) => (
-                <span
+                <motion.button
                   key={i}
-                  className="px-4 py-2 rounded-full text-white text-lg"
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => playTTS(word)}
+                  className="px-4 py-2.5 rounded-full text-white text-lg font-bold flex items-center gap-2 shadow-md cursor-pointer transition-all hover:brightness-105 active:brightness-95 border-b-4 border-black/20"
                   style={{
                     background: `linear-gradient(135deg, ${accent.primary}, ${accent.dark})`,
                   }}
                 >
-                  {word}
-                </span>
+                  <Volume2 className="w-5 h-5 text-white/90" />
+                  <span>{word}</span>
+                </motion.button>
               ))}
             </div>
             <Button
               disabled={isSaving}
               onClick={async () => {
+                if (isSubPhase) {
+                  if (onComplete) onComplete();
+                  return;
+                }
+
                 setIsSaving(true);
                 try {
                   const profileStr = localStorage.getItem("userProfile");
@@ -609,7 +455,11 @@ export function LevelVoiceEvaluation({ levelId, accent }: LevelVoiceEvaluationPr
                   );
                 }
                 setIsSaving(false);
-                navigate("/levels");
+                if (onComplete) {
+                   onComplete();
+                } else {
+                   navigate("/levels");
+                }
               }}
               size="lg"
               className="rounded-xl px-8 py-6 text-lg text-white"
@@ -617,8 +467,8 @@ export function LevelVoiceEvaluation({ levelId, accent }: LevelVoiceEvaluationPr
                 background: `linear-gradient(135deg, ${accent.primary} 0%, ${accent.dark} 100%)`,
               }}
             >
-              <Home className="w-5 h-5 mr-2" />
-              {isSaving ? "Saving..." : "Back to Levels"}
+              {onComplete ? <ArrowRight className="w-5 h-5 mr-2" /> : <Home className="w-5 h-5 mr-2" />}
+              {isSaving ? "Saving..." : onComplete ? (isSubPhase ? "Next Challenge" : "Next Phase") : "Back to Levels"}
             </Button>
           </motion.div>
         )}

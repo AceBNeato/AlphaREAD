@@ -3,6 +3,8 @@ import { useNavigate } from "react-router";
 import { supabase } from "../../lib/supabase";
 import { KeyRound, Loader2, ShieldCheck, Lock } from "lucide-react";
 import { Button } from "../components/ui/button";
+import { generateUUID } from "../utils/uuid";
+
 
 export default function Activation() {
   const navigate = useNavigate();
@@ -46,7 +48,7 @@ export default function Activation() {
       // Check device lock
       let localDeviceId = localStorage.getItem("activated_device_id");
       if (!localDeviceId) {
-        localDeviceId = crypto.randomUUID();
+        localDeviceId = generateUUID();
         localStorage.setItem("activated_device_id", localDeviceId);
       }
 
@@ -88,7 +90,7 @@ export default function Activation() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800 flex flex-col items-center justify-center p-6 relative">
+    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-indigo-50 dark:bg-none dark:bg-[#0d141c] flex flex-col items-center justify-center p-6 relative">
       
       {/* --- SPLASH SCREEN --- */}
       {showSplash ? (

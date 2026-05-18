@@ -4,7 +4,7 @@ export interface Letter {
   image: string;
 }
 
-export type LevelType = "pairs" | "sounds" | "syllable-builder" | "voice-evaluation";
+export type LevelType = "pairs" | "sounds" | "syllable-builder" | "voice-evaluation" | "combined-cvc";
 export type SyllablePattern = "CV" | "VC" | "CVC";
 
 export interface Level {
@@ -237,7 +237,7 @@ export const levels: Level[] = [
   {
     id: 1,
     title: "Alphabet Master",
-    subtitle: "Complete alphabet review and evaluation",
+    subtitle: "Alphabet review and voice evaluation",
     type: "pairs",
     letters: allLetters,
     locked: false,
@@ -245,39 +245,20 @@ export const levels: Level[] = [
   },
   {
     id: 2,
-    title: "VC Builder",
-    subtitle: "Build Vowel + Consonant syllables",
+    title: "Syllable Builder",
+    subtitle: "Build VC & CV syllables (2.1 & 2.2)",
     type: "syllable-builder",
-    patterns: ["VC"],
+    patterns: ["VC", "CV"],
     letters: allLetters,
     locked: true,
     completed: false,
   },
   {
     id: 3,
-    title: "CV Builder",
-    subtitle: "Build Consonant + Vowel syllables",
-    type: "syllable-builder",
-    patterns: ["CV"],
-    letters: allLetters,
-    locked: true,
-    completed: false,
-  },
-  {
-    id: 4,
     title: "CVC Master",
-    subtitle: "Build 3-letter CVC words",
-    type: "syllable-builder",
+    subtitle: "Build & Pronounce CVC words",
+    type: "combined-cvc",
     patterns: ["CVC"],
-    letters: allLetters,
-    locked: true,
-    completed: false,
-  },
-  {
-    id: 5,
-    title: "Voice Evaluation",
-    subtitle: "Practice pronunciation with speech recognition",
-    type: "voice-evaluation",
     letters: allLetters,
     locked: true,
     completed: false,

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { Home, Sparkles, Mic, CheckCircle2, AlertCircle, PlayCircle, ChevronRight, MicOff } from "lucide-react";
 import { Button } from "./ui/button";
@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { getLetterPhonetic } from "../data/levels";
 import { supabase } from "../../lib/supabase";
 import { comparePhonemes } from "../utils/audio";
+import { voskService } from "../utils/vosk";
 
 // QWERTY keyboard layout
 const QWERTY_ROWS = [
@@ -23,13 +24,13 @@ interface LevelSoundsProps {
 
 export function LevelSounds({ levelId, accent }: LevelSoundsProps) {
   const navigate = useNavigate();
-  
+
   // Logic states
   const [shuffledLetters] = useState(() => [...ALL_LETTERS].sort(() => Math.random() - 0.5));
   const [currentSetIdx, setCurrentSetIdx] = useState(0); // 0, 1, 2, 3
   const [phase, setPhase] = useState<"review" | "eval">("review");
   const [reviewedLetters, setReviewedLetters] = useState<Set<string>>(new Set());
-  
+
   // Eval states
   const [evalIndex, setEvalIndex] = useState(0);
   const [isRecording, setIsRecording] = useState(false);
@@ -40,8 +41,10 @@ export function LevelSounds({ levelId, accent }: LevelSoundsProps) {
   const [clickedLetter, setClickedLetter] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
+  const [lastHeard, setLastHeard] = useState<string | null>(null);
+
   const setSizes = [6, 7, 6, 7];
-  
+
   const getLettersForCurrentSet = () => {
     const start = setSizes.slice(0, currentSetIdx).reduce((a, b) => a + b, 0);
     const end = start + setSizes[currentSetIdx];
@@ -59,12 +62,12 @@ export function LevelSounds({ levelId, accent }: LevelSoundsProps) {
 
   const handleLetterClick = (letter: string) => {
     if (phase !== "review") return;
-    
+
     setClickedLetter(letter);
     setReviewedLetters(prev => new Set(prev).add(letter));
 
-    const audio = new Audio(`/audio/alphasounds-${letter.toLowerCase()}.mp3`);
-    audio.play().catch(() => {});
+    const audio = new Audio(`${(import.meta as any).env.BASE_URL}audio/alphasounds-${letter.toLowerCase()}.mp3`);
+    audio.play().catch(() => { });
 
     setTimeout(() => {
       setClickedLetter(null);
@@ -87,11 +90,15 @@ export function LevelSounds({ levelId, accent }: LevelSoundsProps) {
       recorder.onstop = async () => {
         const blob = new Blob(chunks, { type: "audio/webm" });
         setIsProcessing(true);
-        const { isMatch } = await comparePhonemes(
-          blob,
-          `/audio/alphasounds-${currentEvalLetter.toLowerCase()}.mp3`
+        setLastHeard("Thinking...");
+
+        const { isMatch, recognized } = await voskService.recognizeLetter(
+          currentEvalLetter,
+          blob
         );
-        
+
+        setLastHeard(recognized);
+
         if (isMatch) {
           setEvalFeedback("correct");
           setTimeout(() => {
@@ -129,7 +136,7 @@ export function LevelSounds({ levelId, accent }: LevelSoundsProps) {
   useEffect(() => {
     return () => {
       if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-        try { mediaRecorder.stop(); } catch(e) {}
+        try { mediaRecorder.stop(); } catch (e) { }
       }
       // Stop the stream tracks manually to release hardware
       if (mediaRecorder?.stream) {
@@ -164,7 +171,7 @@ export function LevelSounds({ levelId, accent }: LevelSoundsProps) {
           });
         }
       }
-      
+
       const completedLevels = JSON.parse(localStorage.getItem("completedLevels") || "[]");
       if (!completedLevels.includes(levelId)) {
         completedLevels.push(levelId);
@@ -179,8 +186,8 @@ export function LevelSounds({ levelId, accent }: LevelSoundsProps) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-cyan-50 to-indigo-50 dark:from-gray-900 dark:via-gray-850 dark:to-gray-800 pb-12">
-      <div className="sticky top-0 z-10 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 px-4 py-3">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-cyan-50 to-indigo-50 dark:bg-none dark:bg-[#0d141c] pb-12">
+      <div className="sticky top-0 z-10 bg-white/80 dark:bg-[#0d141c]/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 px-4 py-3">
         <div className="max-w-2xl mx-auto flex items-center gap-3">
           <Button variant="ghost" size="sm" onClick={handleGoBack} className="rounded-full"><Home className="w-5 h-5" /></Button>
           <div className="flex-1 text-center">
@@ -231,7 +238,7 @@ export function LevelSounds({ levelId, accent }: LevelSoundsProps) {
               <div className="text-center">
                 <div className="text-8xl font-bold mb-4" style={{ color: accent.primary }}>{currentEvalLetter}</div>
                 <div className="flex justify-center gap-4 mb-8">
-                  <Button variant="outline" onClick={() => { const audio = new Audio(`/audio/alphasounds-${currentEvalLetter.toLowerCase()}.mp3`); audio.play(); }} className="rounded-full h-12 w-12 p-0"><PlayCircle className="w-6 h-6 text-blue-500" /></Button>
+                  <Button variant="outline" onClick={() => { const audio = new Audio(`${(import.meta as any).env.BASE_URL}audio/alphasounds-${currentEvalLetter.toLowerCase()}.mp3`); audio.play(); }} className="rounded-full h-12 w-12 p-0"><PlayCircle className="w-6 h-6 text-blue-500" /></Button>
                 </div>
                 <div className="flex justify-center mb-8">
                   <button
@@ -263,6 +270,12 @@ export function LevelSounds({ levelId, accent }: LevelSoundsProps) {
                   <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className={`flex items-center justify-center gap-2 font-bold text-lg mb-4 ${evalFeedback === 'correct' ? 'text-green-500' : 'text-red-500'}`}>
                     {evalFeedback === 'correct' ? <><CheckCircle2 /> Correct!</> : <><AlertCircle /> Try again!</>}
                   </motion.div>
+                )}
+                {lastHeard && (
+                  <div className="mb-4 p-3 bg-gray-100 dark:bg-gray-700 rounded-xl text-sm font-mono text-gray-600 dark:text-gray-300">
+                    <span className="font-semibold text-xs uppercase tracking-wider block mb-1">Heard:</span>
+                    {lastHeard}
+                  </div>
                 )}
                 <div className="text-gray-400 text-sm">Letter {evalIndex + 1} of {currentEvalLetters.length}</div>
               </div>
