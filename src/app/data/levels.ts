@@ -59,21 +59,60 @@ export const CONSONANTS = allLetters
 // Simple consonants for elementary levels (easier sounds)
 const SIMPLE_CONSONANTS = ["B", "C", "D", "F", "G", "H", "L", "M", "N", "P", "R", "S", "T"];
 
-// Simple CV syllables for elementary (Level 4) - uses only simple consonants
-export const SIMPLE_CV_SYLLABLES: string[] = [];
-for (const c of SIMPLE_CONSONANTS) {
-  for (const v of VOWELS) {
-    SIMPLE_CV_SYLLABLES.push(`${c}${v}`);
-  }
-}
+// Curated CV syllables from the teacher's worksheet (83 total).
+// Organized by consonant A→Z, then vowel A, E, I, O, U.
+// Note: C only uses CA, CO, CU because CE≡SE and CI≡SI in English phonics.
+export const SIMPLE_CV_SYLLABLES: string[] = [
+  // B
+  "BA", "BE", "BI", "BO", "BU",
+  // C (only hard-C sounds — CE and CI are phonetically identical to SE/SI)
+  "CA", "CO", "CU",
+  // D
+  "DA", "DE", "DI", "DO", "DU",
+  // F
+  "FA", "FE", "FI", "FO", "FU",
+  // H
+  "HA", "HE", "HI", "HO", "HU",
+  // J
+  "JA", "JE", "JI", "JO", "JU",
+  // K
+  "KA", "KE", "KI", "KO", "KU",
+  // L
+  "LA", "LE", "LI", "LO", "LU",
+  // M
+  "MA", "ME", "MI", "MO", "MU",
+  // N
+  "NA", "NE", "NI", "NO", "NU",
+  // P
+  "PA", "PE", "PI", "PO", "PU",
+  // R
+  "RA", "RE", "RI", "RO", "RU",
+  // S
+  "SA", "SE", "SI", "SO", "SU",
+  // T
+  "TA", "TE", "TI", "TO", "TU",
+  // V
+  "VA", "VE", "VI", "VO", "VU",
+  // W
+  "WA", "WE", "WI", "WO", "WU",
+  // Z
+  "ZA", "ZE", "ZI", "ZO", "ZU",
+];
 
-// Simple VC syllables for elementary (Level 3) - uses only simple consonants
-export const SIMPLE_VC_SYLLABLES: string[] = [];
-for (const v of VOWELS) {
-  for (const c of SIMPLE_CONSONANTS) {
-    SIMPLE_VC_SYLLABLES.push(`${v}${c}`);
-  }
-}
+// Curated VC syllables from the teacher's worksheet (58 total).
+// Organized by vowel (A, E, I, O, U) then consonant alphabetically.
+export const SIMPLE_VC_SYLLABLES: string[] = [
+  // A + consonant (13)
+  "AB", "AD", "AF", "AG", "AK", "AL", "AM", "AN", "AP", "AR", "AS", "AT", "AV",
+  // E + consonant (11)
+  "EB", "ED", "EG", "EK", "EL", "EM", "EN", "EP", "ER", "ES", "ET",
+  // I + consonant (11)
+  "IB", "ID", "IG", "IK", "IL", "IM", "IN", "IP", "IR", "IS", "IT",
+  // O + consonant (12)
+  "OB", "OD", "OF", "OG", "OK", "OL", "OM", "ON", "OP", "OR", "OS", "OT",
+  // U + consonant (11)
+  "UB", "UD", "UG", "UK", "UL", "UM", "UN", "UP", "UR", "US", "UT",
+];
 
 // Generate all possible CV syllables (Consonant + Vowel)
 // 19 consonants * 5 vowels = 95 combinations

@@ -22,6 +22,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { supabase } from "../../lib/supabase";
 import { TextToSpeech } from '@capacitor-community/text-to-speech';
 import { Confetti } from "./ui/Confetti";
+import { getPhoneticPronunciation } from "../data/levels";
 
 interface LevelSyllableBuilderProps {
   levelId: number;
@@ -108,29 +109,22 @@ export function LevelSyllableBuilder({
   const progress = (completedTargets.size / targets.length) * 100;
   const slotCount = currentTarget ? currentTarget.letters.length : 2;
 
-  const getPhoneticText = (text: string) => {
-    const lower = text.toLowerCase();
-    // Specific hardcoded exceptions for syllables that TTS notoriously struggles with
-    const map: Record<string, string> = {
-      "oc": "ock",
-      "ic": "ick",
-      "ac": "ack",
-      "ec": "eck",
-      "uc": "uck",
-    };
-    if (map[lower]) return map[lower];
-
-    // Fallback logic for Vowel-Consonant (VC) pairs: 
-    // Double the consonant so the native TTS reads it phonetically instead of as an acronym (e.g. "ab" -> "abb")
-    if (lower.length === 2 && VOWELS.includes(lower[0].toUpperCase()) && CONSONANTS.includes(lower[1].toUpperCase())) {
-      return lower + lower[1];
-    }
-
-    return lower;
+  /**
+   * Returns the phonetically correct TTS string for a syllable.
+   * Uses the existing CV_PHONETICS / VC_PHONETICS maps from levels.ts so that:
+   *   - "PI" → "Pee"  (not "pie")
+   *   - "BA" → "Bah"  (not "ba")
+   *   - "AB" → "Ab"   (not "ab" read as letter name "Ay-Bee")
+   *   - "IT" → "It"   (correct)
+   */
+  const getPhoneticText = (text: string, pattern: SyllablePattern): string => {
+    const upper = text.toUpperCase();
+    const phonetic = getPhoneticPronunciation(upper, pattern);
+    return phonetic !== upper ? phonetic : text.toLowerCase();
   };
 
-  const playTTS = async (text: string) => {
-    const phoneticText = getPhoneticText(text);
+  const playTTS = async (text: string, pattern: SyllablePattern) => {
+    const phoneticText = getPhoneticText(text, pattern);
     try {
       await TextToSpeech.speak({
         text: phoneticText,
@@ -138,7 +132,7 @@ export function LevelSyllableBuilder({
         rate: 0.85,
         pitch: 1.0,
         volume: 1.0,
-        category: 'ambient', // Allows audio to play even if device is on silent/vibrate
+        category: 'ambient',
       });
     } catch (e) {
       console.warn('[TTS] Capacitor failed, falling back to Web Speech API:', e);
@@ -175,7 +169,7 @@ export function LevelSyllableBuilder({
           // Add the 1-second delay for the TTS so the final letter sound finishes first
           if (ttsTimeoutRef.current) clearTimeout(ttsTimeoutRef.current);
           ttsTimeoutRef.current = setTimeout(() => {
-            playTTS(formed);
+            playTTS(formed, currentTarget.pattern);
           }, 1000);
 
           // Give the child 2.5 seconds total to hear the TTS and celebrate before moving on
@@ -216,7 +210,7 @@ export function LevelSyllableBuilder({
       setFeedback(null);
       setSelectedLetters([]);
       setShowConfetti(false);
-      
+
       // Auto advance to next if possible
       if (currentIndex < targets.length - 1) {
         setCurrentIndex(currentIndex + 1);

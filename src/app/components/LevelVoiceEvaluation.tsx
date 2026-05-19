@@ -14,11 +14,12 @@ import {
   Volume2,
 } from "lucide-react";
 import { Button } from "./ui/button";
-import { CVC_WORDS, shuffle } from "../data/levels";
+import { CVC_WORDS, shuffle, getPhoneticPronunciation } from "../data/levels";
 import { motion, AnimatePresence } from "motion/react";
 import { supabase } from "../../lib/supabase";
 import { TextToSpeech } from '@capacitor-community/text-to-speech';
 import { Confetti } from "./ui/Confetti";
+import { evaluateSyllable, isSyllableTarget } from "../utils/PhonemeEvaluator";
 
 const DIGIT_MAP: Record<string, string> = {
   "0": "ZERO", "1": "ONE", "2": "TWO", "3": "THREE", "4": "FOUR",
@@ -136,7 +137,17 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
   const isIOS = useMemo(() => /iPhone|iPad|iPod/i.test(navigator.userAgent), []);
 
   const playTTS = async (text: string) => {
-    const speakText = text.toLowerCase();
+    // For CV/VC syllables, look up the phonetically correct TTS string
+    // so "PI" says "Pee", "BA" says "Bah", "AB" says "Ab" — not the letter names.
+    let speakText = text.toLowerCase();
+    if (isSyllableTarget(text)) {
+      const upper = text.toUpperCase();
+      // Determine pattern: first char consonant = CV, else VC
+      const VOWELS = ["A", "E", "I", "O", "U"];
+      const pattern = VOWELS.includes(upper[0]) ? "VC" : "CV";
+      const phonetic = getPhoneticPronunciation(upper, pattern as any);
+      if (phonetic !== upper) speakText = phonetic;
+    }
     try {
       await TextToSpeech.speak({
         text: speakText,
@@ -238,21 +249,67 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
         currentRecognition.continuous = false;
         currentRecognition.interimResults = false;
         currentRecognition.lang = "en-US";
-        currentRecognition.maxAlternatives = 3;
+        currentRecognition.maxAlternatives = 5; // More alternatives = better phoneme coverage
 
         currentRecognition.onresult = (event: any) => {
           if (autoSilenceTimeout) clearTimeout(autoSilenceTimeout);
           const results = event.results[0];
+
+          // Collect all transcript alternatives from the recognition engine
+          const allTranscripts: string[] = [];
+          for (let i = 0; i < results.length; i++) {
+            allTranscripts.push(results[i].transcript.trim());
+          }
+          const primaryTranscript = allTranscripts[0] || "";
+          setTranscripts(prev => ({ ...prev, [evaluatingWord]: primaryTranscript }));
+
+          // ── PATH A: CV / VC Syllable (Level 2) ──────────────────────────────
+          // Uses PhonemeEvaluator for accurate vowel-class checking.
+          // This prevents the browser from autocorrecting "PI" → "PIE", etc.
+          if (isSyllableTarget(evaluatingWord)) {
+            const phonemeResult = evaluateSyllable(evaluatingWord, allTranscripts);
+
+            if (phonemeResult === "correct") {
+              setEvalFeedback(prev => ({ ...prev, [evaluatingWord]: "correct" }));
+              setShowConfetti(true);
+              const newCompleted = new Set(completedWords);
+              newCompleted.add(evaluatingWord);
+              setCompletedWords(newCompleted);
+              setTimeout(() => {
+                setEvaluatingWord(null);
+                setShowConfetti(false);
+                if (newCompleted.size >= words.length) setShowCompletionScreen(true);
+              }, 2000);
+            } else if (phonemeResult === "close") {
+              setEvalFeedback(prev => ({ ...prev, [evaluatingWord]: "close" }));
+              setShowConfetti(true);
+              const newCompleted = new Set(completedWords);
+              newCompleted.add(evaluatingWord);
+              setCompletedWords(newCompleted);
+              setTimeout(() => {
+                setEvaluatingWord(null);
+                setShowConfetti(false);
+                if (newCompleted.size >= words.length) setShowCompletionScreen(true);
+              }, 2000);
+            } else {
+              setEvalFeedback(prev => ({ ...prev, [evaluatingWord]: "wrong" }));
+              setTimeout(() => {
+                setEvalFeedback(prev => ({ ...prev, [evaluatingWord]: null }));
+                setEvaluatingWord(null);
+              }, 2500);
+            }
+            return; // Done — do not fall through to CVC path
+          }
+
+          // ── PATH B: CVC Word (Level 3) — Original fuzzy evaluator ──────────
           let bestMatch = "";
           let bestSimilarity = 0;
           let isPerfectMatch = false;
 
-          // Check all alternatives
           for (let i = 0; i < results.length; i++) {
             const raw = results[i].transcript.trim();
             const normalized = normalizeTranscript(raw);
 
-            // Get allowed variations
             const allowedWords = [evaluatingWord];
             if (HOMOPHONES[evaluatingWord]) {
               allowedWords.push(...HOMOPHONES[evaluatingWord]);
