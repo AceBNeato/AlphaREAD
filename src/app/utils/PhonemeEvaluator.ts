@@ -173,6 +173,12 @@ function evaluateVC(target: string, transcripts: string[]): "correct" | "close" 
     const words = normalizeText(raw).split(/\s+/);
 
     for (const word of words) {
+      // Specific exception for "UN": SpeechRecognition often mishears "un" as "on".
+      // If the target is "UN" and the word is "on", we accept it.
+      if (target === "UN" && word === "on") {
+        return "correct";
+      }
+
       // 1. Check rejected vowel patterns
       if (rejectedVowels.some(rv => word.startsWith(rv))) {
         vowelRejected = true;

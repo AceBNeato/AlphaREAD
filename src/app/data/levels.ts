@@ -185,8 +185,8 @@ export const CVC_WORDS = [
 // Phonetic pronunciation for CV patterns (consonant + vowel sounds blended)
 const CV_PHONETICS: Record<string, string> = {
   // A vowel
-  "BA": "Bah", "CA": "Kah", "DA": "Dah", "FA": "Fah", "GA": "Gah",
-  "HA": "Hah", "JA": "Jah", "KA": "Kah", "LA": "Lah", "MA": "Mah",
+  "BA": "Bah", "CA": "Ka", "DA": "Dah", "FA": "Fah", "GA": "Gah",
+  "HA": "Hah", "JA": "Jah", "KA": "Ka", "LA": "Lah", "MA": "Mah",
   "NA": "Nah", "PA": "Pah", "QA": "Kwah", "RA": "Rah", "SA": "Sah",
   "TA": "Tah", "VA": "Vah", "WA": "Wah", "XA": "Zah", "YA": "Yah", "ZA": "Zah",
 
@@ -242,9 +242,9 @@ const VC_PHONETICS: Record<string, string> = {
   "OT": "Ot", "OV": "Ov", "OW": "Ow", "OX": "Ox", "OY": "Oy", "OZ": "Oz",
 
   // U + consonants
-  "UB": "Ub", "UC": "Uk", "UD": "Ud", "UF": "Uf", "UG": "Ug",
-  "UH": "Uh", "UJ": "Uj", "UK": "Uk", "UL": "Ul", "UM": "Um",
-  "UN": "Un", "UP": "Up", "UQ": "Uk", "UR": "Ur", "US": "Us",
+  "UB": "Ub", "UC": "Uk", "UD": "Ud", "UF": "Uf", "UG": "ugh",
+  "UH": "Uh", "UJ": "Uj", "UK": "Uk", "UL": "Ul", "UM": "uhmm",
+  "UN": "uhn", "UP": "Up", "UQ": "Uk", "UR": "Ur", "US": "Us",
   "UT": "Ut", "UV": "Uv", "UW": "Uw", "UX": "Ux", "UY": "Uy", "UZ": "Uz",
 };
 
