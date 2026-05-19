@@ -81,8 +81,21 @@ const SYLLABLE_EXCEPTIONS: Record<string, string[]> = {
   "UL": ["all", "ul"],     // 'all' /ɔːl/ ≈ 'ul' in some accents
   "UR": ["are", "er", "r"], // 'are' /ɑːr/ ≈ 'ur' /ɜːr/
   "AS": ["ass"],            // same phoneme, different spelling
+  "UT": ["at"],
+  "IR": ["ear"],
+  "OD": ["add"],
+  "AP": ["app", "up"],
+  "EL": ["l"],
+  "EK": ["eck", "ek"],
+  "IB": ["eve"],
+  "UB": ["abb", "ubb"],
+  "EM": ["m"],
+
   // CV exceptions
   "JI": ["g", "gee"],      // SpeechRecognition sometimes hears J as G
+  "LO": ["law"],
+  "TU": ["tah", "ta"],
+  "FI": ["fee"],
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
