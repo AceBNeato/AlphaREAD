@@ -184,68 +184,60 @@ export const CVC_WORDS = [
 
 // Phonetic pronunciation for CV patterns (consonant + vowel sounds blended)
 const CV_PHONETICS: Record<string, string> = {
-  // A vowel
-  "BA": "Bah", "CA": "Ka", "DA": "Dah", "FA": "Fah", "GA": "Gah",
-  "HA": "Hah", "JA": "Jah", "KA": "Ka", "LA": "Lah", "MA": "Mah",
-  "NA": "Nah", "PA": "Pah", "QA": "Kwah", "RA": "Rah", "SA": "Sah",
-  "TA": "Tah", "VA": "Vah", "WA": "Wah", "XA": "Zah", "YA": "Yah", "ZA": "Zah",
+  // A vowel (17)
+  "BA": "Bah", "CA": "Ka", "DA": "Dah", "FA": "Fah", "HA": "Hah",
+  "JA": "Jah", "KA": "Ka", "LA": "Lah", "MA": "Mah", "NA": "Nah",
+  "PA": "Pah", "RA": "Rah", "SA": "Sah", "TA": "Tah", "VA": "Vah",
+  "WA": "Wah", "ZA": "Zah",
 
-  // E vowel
-  "BE": "Beh", "CE": "Seh", "DE": "Deh", "FE": "Feh", "GE": "Jeh",
-  "HE": "Heh", "JE": "Jeh", "KE": "Keh", "LE": "Leh", "ME": "Meh",
-  "NE": "Neh", "PE": "Peh", "QE": "Kweh", "RE": "Reh", "SE": "Seh",
-  "TE": "teh", "VE": "Veh", "WE": "Weh", "XE": "Zeh", "YE": "Yeh", "ZE": "Zeh",
+  // E vowel (16 - note CE is excluded)
+  "BE": "Beh", "DE": "deh", "FE": "feh", "HE": "Heh", "JE": "jeh",
+  "KE": "Keh", "LE": "Leh", "ME": "Meh", "NE": "Neh", "PE": "peh",
+  "RE": "Reh", "SE": "seh", "TE": "teh", "VE": "Veh", "WE": "Weh",
+  "ZE": "Zeh",
 
-  // I vowel
-  "BI": "Bee", "CI": "See", "DI": "Dee", "FI": "Fee", "GI": "Jee",
-  "HI": "Hee", "JI": "Jee", "KI": "Kee", "LI": "Lee", "MI": "Mee",
-  "NI": "Nee", "PI": "Pee", "QI": "Kwee", "RI": "Ree", "SI": "See",
-  "TI": "Tee", "VI": "Vee", "WI": "Wee", "XI": "Zee", "YI": "Yee", "ZI": "Zee",
+  // I vowel (16 - note CI is excluded)
+  "BI": "Bee", "DI": "Dee", "FI": "Fee", "HI": "Hee", "JI": "Jee",
+  "KI": "Kee", "LI": "Lee", "MI": "Mee", "NI": "Nee", "PI": "Pee",
+  "RI": "Ree", "SI": "See", "TI": "Tee", "VI": "Vee", "WI": "Wee",
+  "ZI": "Zee",
 
-  // O vowel
-  "BO": "Boh", "CO": "Koh", "DO": "Doh", "FO": "Foh", "GO": "Goh",
-  "HO": "Hoh", "JO": "Joh", "KO": "Koh", "LO": "Loh", "MO": "Moh",
-  "NO": "Noh", "PO": "Poh", "QO": "Kwoh", "RO": "Roh", "SO": "Soh",
-  "TO": "toe", "VO": "Voh", "WO": "Woh", "XO": "Zoh", "YO": "Yoh", "ZO": "Zoh",
+  // O vowel (17)
+  "BO": "Boh", "CO": "Koh", "DO": "Doh", "FO": "foh", "HO": "Hoh",
+  "JO": "Joh", "KO": "Koh", "LO": "Loh", "MO": "moh", "NO": "Noh",
+  "PO": "Poh", "RO": "Roh", "SO": "soh", "TO": "toe", "VO": "Voh",
+  "WO": "Woh", "ZO": "zoh",
 
-  // U vowel
-  "BU": "Boo", "CU": "Kuh", "DU": "Doo", "FU": "Foo", "GU": "Goo",
-  "HU": "Hoo", "JU": "Joo", "KU": "Koo", "LU": "Loo", "MU": "Moo",
-  "NU": "Noo", "PU": "Poo", "QU": "Kwoo", "RU": "Roo", "SU": "Soo",
-  "TU": "tuh", "VU": "Voo", "WU": "Woo", "XU": "Zoo", "YU": "Yoo", "ZU": "Zoo",
+  // U vowel (17)
+  "BU": "buh", "CU": "coh", "DU": "duh", "FU": "fuh", "HU": "huh",
+  "JU": "juh", "KU": "kuh", "LU": "luh", "MU": "muh", "NU": "nuh",
+  "PU": "Puh", "RU": "ruh", "SU": "suh", "TU": "tuh", "VU": "vuh",
+  "WU": "wuh", "ZU": "zuh",
 };
 
 // Phonetic pronunciation for VC patterns (vowel + consonant sounds blended)
 const VC_PHONETICS: Record<string, string> = {
-  // A + consonants
-  "AB": "ahb", "AC": "Ak", "AD": "Ad", "AF": "Af", "AG": "Ag",
-  "AH": "Ah", "AJ": "Aj", "AK": "Ak", "AL": "Al", "AM": "Am",
-  "AN": "An", "AP": "app", "AQ": "Ak", "AR": "Ar", "AS": "As",
-  "AT": "At", "AV": "Av", "AW": "Aw", "AX": "Ax", "AY": "Ay", "AZ": "Az",
+  // A + consonants (13)
+  "AB": "ahb", "AD": "ad", "AF": "af", "AG": "ag", "AK": "ak",
+  "AL": "al", "AM": "am", "AN": "an", "AP": "app", "AR": "ar",
+  "AS": "as", "AT": "at", "AV": "av",
 
-  // E + consonants
-  "EB": "ehb", "EC": "eck", "ED": "Ed", "EF": "Ef", "EG": "egg",
-  "EH": "Eh", "EJ": "Ej", "EK": "eck", "EL": "ell", "EM": "Em",
-  "EN": "En", "EP": "Ep", "EQ": "Ek", "ER": "Er", "ES": "Es",
-  "ET": "ett", "EV": "Ev", "EW": "Ew", "EX": "Ex", "EY": "Ey", "EZ": "Ez",
+  // E + consonants (11)
+  "EB": "ehb", "ED": "ed", "EG": "egg", "EK": "eck", "EL": "ell",
+  "EM": "em", "EN": "en", "EP": "ep", "ER": "er", "ES": "ess", "ET": "ett",
 
-  // I + consonants
-  "IB": "eeb", "IC": "Ik", "ID": "Id", "IF": "If", "IG": "Ig",
-  "IH": "Ih", "IJ": "Ij", "IK": "Ik", "IL": "Il", "IM": "Im",
-  "IN": "In", "IP": "Ip", "IQ": "Ik", "IR": "ear", "IS": "Is",
-  "IT": "It", "IV": "Iv", "IW": "Iw", "IX": "Ix", "IY": "Iy", "IZ": "Iz",
+  // I + consonants (11)
+  "IB": "ib", "ID": "eed", "IG": "ig", "IK": "ik", "IL": "il",
+  "IM": "im", "IN": "in", "IP": "ip", "IR": "ear", "IS": "is", "IT": "it",
 
-  // O + consonants
-  "OB": "Ob", "OC": "Ok", "OD": "odd", "OF": "Of", "OG": "Og",
-  "OH": "Oh", "OJ": "Oj", "OK": "Ok", "OL": "Ol", "OM": "Om",
-  "ON": "On", "OP": "Op", "OQ": "Ok", "OR": "Or", "OS": "Os",
-  "OT": "Ot", "OV": "Ov", "OW": "Ow", "OX": "Ox", "OY": "Oy", "OZ": "Oz",
+  // O + consonants (12)
+  "OB": "ob", "OD": "odd", "OF": "of", "OG": "og", "OK": "ock",
+  "OL": "ol", "OM": "om", "ON": "on", "OP": "op", "OR": "or",
+  "OS": "os", "OT": "ot",
 
-  // U + consonants
-  "UB": "ubb", "UC": "Uk", "UD": "Ud", "UF": "Uf", "UG": "ugh",
-  "UH": "Uh", "UJ": "Uj", "UK": "uck", "UL": "ull", "UM": "uhmm",
-  "UN": "uhn", "UP": "Up", "UQ": "Uk", "UR": "uhrr", "US": "Us",
-  "UT": "utt", "UV": "Uv", "UW": "Uw", "UX": "Ux", "UY": "Uy", "UZ": "Uz",
+  // U + consonants (11)
+  "UB": "ubb", "UD": "ud", "UG": "ugh", "UK": "uck", "UL": "ull",
+  "UM": "uhmm", "UN": "uhn", "UP": "up", "UR": "uhrr", "US": "us", "UT": "utt",
 };
 
 // Get phonetic pronunciation for a syllable

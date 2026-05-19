@@ -90,12 +90,32 @@ const SYLLABLE_EXCEPTIONS: Record<string, string[]> = {
   "IB": ["eve", "ib", "ihb", "eeb"],
   "UB": ["abb", "ubb", "ab", "ub"],
   "EM": ["m", "em", "emm"],
+  "ID": ["eed", "id"],
+  "UM": ["uhm", "um", "uhmm"],
 
   // CV exceptions
   "JI": ["g", "gee", "ji"],
   "LO": ["law", "lo", "loh"],
   "TU": ["tah", "tuh", "ta", "tu"],
   "FI": ["fee", "fi"],
+  "PE": ["peh", "pe"],
+  "SE": ["seh", "se"],
+  "ZO": ["zoh", "zo"],
+  "SO": ["soh", "so"],
+  "KU": ["kuh", "ku", "cuh", "cu"],
+  "MO": ["moh", "mo"],
+  "JE": ["jeh", "je"],
+  "DE": ["deh", "de"],
+  "MU": ["muh", "mu", "ma"],
+  "BU": ["buh", "bu", "bah", "ba", "boh", "bo"],
+  "SU": ["suh", "su", "sah", "sa"],
+  "FE": ["feh", "fe"],
+  "HU": ["huh", "hu", "hah", "ha"],
+  "NU": ["nuh", "nu", "nah", "na"],
+  "CU": ["coh", "co", "cu"],
+  "WU": ["wuh", "wu"],
+  "JU": ["juh", "ju"],
+  "FO": ["foh", "fo"],
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
