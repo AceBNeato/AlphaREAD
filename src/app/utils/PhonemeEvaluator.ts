@@ -77,25 +77,25 @@ const CONSONANT_SOUNDS: Record<string, string[]> = {
 
 const SYLLABLE_EXCEPTIONS: Record<string, string[]> = {
   // VC exceptions
-  "ES": ["s"],              // child may only voice the /s/ part
-  "UL": ["all", "ul"],     // 'all' /ɔːl/ ≈ 'ul' in some accents
-  "UR": ["are", "er", "r"], // 'are' /ɑːr/ ≈ 'ur' /ɜːr/
-  "AS": ["ass"],            // same phoneme, different spelling
-  "UT": ["at"],
-  "IR": ["ear"],
-  "OD": ["add"],
-  "AP": ["app", "up"],
-  "EL": ["l"],
+  "ES": ["s", "es", "ess"],
+  "UL": ["all", "ul", "ull"],
+  "UR": ["are", "er", "r", "ur", "uhr"],
+  "AS": ["ass", "as"],
+  "UT": ["at", "ut", "utt"],
+  "IR": ["ear", "eer", "ir", "ihr"],
+  "OD": ["odd", "add", "od"],
+  "AP": ["app", "ap", "ahp"],
+  "EL": ["l", "el", "ell"],
   "EK": ["eck", "ek"],
-  "IB": ["eve"],
-  "UB": ["abb", "ubb"],
-  "EM": ["m"],
+  "IB": ["eve", "ib", "ihb", "eeb"],
+  "UB": ["abb", "ubb", "ab", "ub"],
+  "EM": ["m", "em", "emm"],
 
   // CV exceptions
-  "JI": ["g", "gee"],      // SpeechRecognition sometimes hears J as G
-  "LO": ["law"],
-  "TU": ["tah", "ta"],
-  "FI": ["fee"],
+  "JI": ["g", "gee", "ji"],
+  "LO": ["law", "lo", "loh"],
+  "TU": ["tah", "tuh", "ta", "tu"],
+  "FI": ["fee", "fi"],
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
