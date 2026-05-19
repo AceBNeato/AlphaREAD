@@ -436,7 +436,7 @@ export function LevelSyllableBuilder({
                         </span>
                         {(completedTargets.has(currentTarget.syllable) || feedback === "correct") && (
                           <button
-                            onClick={() => playTTS(currentTarget.syllable)}
+                            onClick={() => playTTS(currentTarget.syllable, currentTarget.pattern)}
                             className="ml-4 p-3 bg-blue-100 hover:bg-blue-200 text-blue-600 rounded-full transition-colors active:scale-95 flex-shrink-0 cursor-pointer"
                           >
                             <Volume2 className="w-6 h-6" />
@@ -678,7 +678,7 @@ export function LevelSyllableBuilder({
                     <motion.button
                       key={i}
                       whileTap={{ scale: 0.95 }}
-                      onClick={() => playTTS(t.syllable)}
+                      onClick={() => playTTS(t.syllable, t.pattern)}
                       className="px-4 py-2.5 rounded-full text-white text-lg font-bold flex items-center gap-2 shadow-md cursor-pointer transition-all hover:brightness-105 active:brightness-95 border-b-4 border-black/20"
                       style={{
                         background: `linear-gradient(135deg, ${patternColors[t.pattern]}, ${accent.dark})`,
