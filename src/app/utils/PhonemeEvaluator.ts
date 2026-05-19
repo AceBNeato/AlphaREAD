@@ -66,6 +66,25 @@ const CONSONANT_SOUNDS: Record<string, string[]> = {
   Z: ["z"],
 };
 
+// ─── Per-Syllable Exceptions ──────────────────────────────────────────────────
+//
+// Some syllables are frequently misheared by SpeechRecognition in ways that are
+// phonetically close enough to count as correct. List them here explicitly so
+// the evaluator accepts them without changing the displayed result.
+//
+// Key   = target syllable (uppercase)
+// Value = extra transcripts to accept as CORRECT (lowercase)
+
+const SYLLABLE_EXCEPTIONS: Record<string, string[]> = {
+  // VC exceptions
+  "ES": ["s"],              // child may only voice the /s/ part
+  "UL": ["all", "ul"],     // 'all' /ɔːl/ ≈ 'ul' in some accents
+  "UR": ["are", "er", "r"], // 'are' /ɑːr/ ≈ 'ur' /ɜːr/
+  "AS": ["ass"],            // same phoneme, different spelling
+  // CV exceptions
+  "JI": ["g", "gee"],      // SpeechRecognition sometimes hears J as G
+};
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function normalizeText(text: string): string {
@@ -224,10 +243,18 @@ export type PhonemeResult = "correct" | "close" | "wrong";
 export function evaluateSyllable(target: string, transcripts: string[]): PhonemeResult {
   const upper = target.toUpperCase();
 
+  // Check per-syllable exceptions first — these always win as "correct"
+  const exceptions = SYLLABLE_EXCEPTIONS[upper];
+  if (exceptions) {
+    for (const raw of transcripts) {
+      const words = normalizeText(raw).split(/\s+/);
+      if (words.some(w => exceptions.includes(w))) return "correct";
+    }
+  }
+
   if (isCVSyllable(upper)) return evaluateCV(upper, transcripts);
   if (isVCSyllable(upper)) return evaluateVC(upper, transcripts);
 
-  // Fallback: not a 2-letter syllable — caller should use the standard CVC evaluator
   return "wrong";
 }
 

@@ -194,7 +194,7 @@ const CV_PHONETICS: Record<string, string> = {
   "BE": "Beh", "CE": "Seh", "DE": "Deh", "FE": "Feh", "GE": "Jeh",
   "HE": "Heh", "JE": "Jeh", "KE": "Keh", "LE": "Leh", "ME": "Meh",
   "NE": "Neh", "PE": "Peh", "QE": "Kweh", "RE": "Reh", "SE": "Seh",
-  "TE": "Teh", "VE": "Veh", "WE": "Weh", "XE": "Zeh", "YE": "Yeh", "ZE": "Zeh",
+  "TE": "teh", "VE": "Veh", "WE": "Weh", "XE": "Zeh", "YE": "Yeh", "ZE": "Zeh",
 
   // I vowel
   "BI": "Bee", "CI": "See", "DI": "Dee", "FI": "Fee", "GI": "Jee",
@@ -204,12 +204,12 @@ const CV_PHONETICS: Record<string, string> = {
 
   // O vowel
   "BO": "Boh", "CO": "Koh", "DO": "Doh", "FO": "Foh", "GO": "Goh",
-  "HO": "Hoh", "JO": "Joh", "KO": "Koh", "LO": "Loh", "MO": "Moh",
+  "HO": "Hoh", "JO": "Joh", "KO": "Koh", "LO": "loe", "MO": "Moh",
   "NO": "Noh", "PO": "Poh", "QO": "Kwoh", "RO": "Roh", "SO": "Soh",
-  "TO": "Toh", "VO": "Voh", "WO": "Woh", "XO": "Zoh", "YO": "Yoh", "ZO": "Zoh",
+  "TO": "toe", "VO": "Voh", "WO": "Woh", "XO": "Zoh", "YO": "Yoh", "ZO": "Zoh",
 
   // U vowel
-  "BU": "Boo", "CU": "Koo", "DU": "Doo", "FU": "Foo", "GU": "Goo",
+  "BU": "Boo", "CU": "Kuh", "DU": "Doo", "FU": "Foo", "GU": "Goo",
   "HU": "Hoo", "JU": "Joo", "KU": "Koo", "LU": "Loo", "MU": "Moo",
   "NU": "Noo", "PU": "Poo", "QU": "Kwoo", "RU": "Roo", "SU": "Soo",
   "TU": "Too", "VU": "Voo", "WU": "Woo", "XU": "Zoo", "YU": "Yoo", "ZU": "Zoo",
@@ -218,13 +218,13 @@ const CV_PHONETICS: Record<string, string> = {
 // Phonetic pronunciation for VC patterns (vowel + consonant sounds blended)
 const VC_PHONETICS: Record<string, string> = {
   // A + consonants
-  "AB": "Ab", "AC": "Ak", "AD": "Ad", "AF": "Af", "AG": "Ag",
+  "AB": "ahb", "AC": "Ak", "AD": "Ad", "AF": "Af", "AG": "Ag",
   "AH": "Ah", "AJ": "Aj", "AK": "Ak", "AL": "Al", "AM": "Am",
   "AN": "An", "AP": "Ap", "AQ": "Ak", "AR": "Ar", "AS": "As",
   "AT": "At", "AV": "Av", "AW": "Aw", "AX": "Ax", "AY": "Ay", "AZ": "Az",
 
   // E + consonants
-  "EB": "Eb", "EC": "Ek", "ED": "Ed", "EF": "Ef", "EG": "Eg",
+  "EB": "ehb", "EC": "Ek", "ED": "Ed", "EF": "Ef", "EG": "egg",
   "EH": "Eh", "EJ": "Ej", "EK": "Ek", "EL": "El", "EM": "Em",
   "EN": "En", "EP": "Ep", "EQ": "Ek", "ER": "Er", "ES": "Es",
   "ET": "Et", "EV": "Ev", "EW": "Ew", "EX": "Ex", "EY": "Ey", "EZ": "Ez",
@@ -243,8 +243,8 @@ const VC_PHONETICS: Record<string, string> = {
 
   // U + consonants
   "UB": "Ub", "UC": "Uk", "UD": "Ud", "UF": "Uf", "UG": "ugh",
-  "UH": "Uh", "UJ": "Uj", "UK": "Uk", "UL": "Ul", "UM": "uhmm",
-  "UN": "uhn", "UP": "Up", "UQ": "Uk", "UR": "Ur", "US": "Us",
+  "UH": "Uh", "UJ": "Uj", "UK": "uck", "UL": "ull", "UM": "uhmm",
+  "UN": "uhn", "UP": "Up", "UQ": "Uk", "UR": "uhrr", "US": "Us",
   "UT": "Ut", "UV": "Uv", "UW": "Uw", "UX": "Ux", "UY": "Uy", "UZ": "Uz",
 };
 
