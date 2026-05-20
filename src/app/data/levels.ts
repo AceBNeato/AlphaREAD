@@ -220,14 +220,14 @@ const VC_PHONETICS: Record<string, string> = {
   // A + consonants (13)
   "AB": "ahb", "AD": "ad", "AF": "af", "AG": "ag", "AK": "ak",
   "AL": "al", "AM": "am", "AN": "an", "AP": "app", "AR": "ar",
-  "AS": "as", "AT": "at", "AV": "av",
+  "AS": "as", "AT": "at", "AV": "avv",
 
   // E + consonants (11)
   "EB": "ehb", "ED": "ed", "EG": "egg", "EK": "eck", "EL": "ell",
   "EM": "em", "EN": "en", "EP": "ep", "ER": "er", "ES": "ess", "ET": "ett",
 
   // I + consonants (11)
-  "IB": "ib", "ID": "eed", "IG": "ig", "IK": "ik", "IL": "il",
+  "IB": "ib", "ID": "eed", "IG": "igg", "IK": "ick", "IL": "il",
   "IM": "im", "IN": "in", "IP": "ip", "IR": "ear", "IS": "is", "IT": "it",
 
   // O + consonants (12)

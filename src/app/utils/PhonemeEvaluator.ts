@@ -92,6 +92,7 @@ const SYLLABLE_EXCEPTIONS: Record<string, string[]> = {
   "EM": ["m", "em", "emm"],
   "ID": ["eed", "id"],
   "UM": ["uhm", "um", "uhmm"],
+  "EN": ["n", "en", "enn"],
 
   // CV exceptions
   "JI": ["g", "gee", "ji"],
