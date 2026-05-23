@@ -17,7 +17,7 @@ import { Button } from "./ui/button";
 import { CVC_WORDS, shuffle, getPhoneticPronunciation } from "../data/levels";
 import { motion, AnimatePresence } from "motion/react";
 import { supabase } from "../../lib/supabase";
-import { TextToSpeech } from '@capacitor-community/text-to-speech';
+import { kokoroService } from "../utils/kokoro";
 import { Confetti } from "./ui/Confetti";
 import { evaluateSyllable, isSyllableTarget } from "../utils/PhonemeEvaluator";
 
@@ -149,23 +149,9 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
       if (phonetic !== upper) speakText = phonetic;
     }
     try {
-      await TextToSpeech.speak({
-        text: speakText,
-        lang: 'en-US',
-        rate: 0.85,
-        pitch: 1.0,
-        volume: 1.0,
-        category: 'ambient',
-      });
+      await kokoroService.speak(speakText);
     } catch (e) {
-      console.warn('[TTS] Capacitor failed, falling back to Web Speech API:', e);
-      if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-        const utterance = new SpeechSynthesisUtterance(speakText);
-        utterance.lang = 'en-US';
-        utterance.rate = 0.85;
-        window.speechSynthesis.speak(utterance);
-      }
+      console.error('[TTS] Kokoro failed:', e);
     }
   };
 

@@ -218,22 +218,22 @@ const CV_PHONETICS: Record<string, string> = {
 // Phonetic pronunciation for VC patterns (vowel + consonant sounds blended)
 const VC_PHONETICS: Record<string, string> = {
   // A + consonants (13)
-  "AB": "ahb", "AD": "ad", "AF": "af", "AG": "ag", "AK": "ak",
+  "AB": "abb", "AD": "add", "AF": "aff", "AG": "agg", "AK": "ack",
   "AL": "al", "AM": "am", "AN": "an", "AP": "app", "AR": "ar",
-  "AS": "as", "AT": "at", "AV": "avv",
+  "AS": "ass", "AT": "at", "AV": "avv",
 
   // E + consonants (11)
-  "EB": "ehb", "ED": "ed", "EG": "egg", "EK": "eck", "EL": "ell",
-  "EM": "em", "EN": "en", "EP": "ep", "ER": "er", "ES": "ess", "ET": "ett",
+  "EB": "ebb", "ED": "edd", "EG": "egg", "EK": "eck", "EL": "ell",
+  "EM": "em", "EN": "en", "EP": "epp", "ER": "er", "ES": "ess", "ET": "ett",
 
   // I + consonants (11)
-  "IB": "ib", "ID": "eed", "IG": "igg", "IK": "ick", "IL": "il",
-  "IM": "im", "IN": "in", "IP": "ip", "IR": "ear", "IS": "is", "IT": "it",
+  "IB": "ibb", "ID": "idd", "IG": "igg", "IK": "ick", "IL": "ill",
+  "IM": "im", "IN": "in", "IP": "ipp", "IR": "ear", "IS": "iss", "IT": "it",
 
   // O + consonants (12)
-  "OB": "ob", "OD": "odd", "OF": "of", "OG": "og", "OK": "ock",
-  "OL": "ol", "OM": "om", "ON": "on", "OP": "op", "OR": "or",
-  "OS": "os", "OT": "ot",
+  "OB": "obb", "OD": "odd", "OF": "off", "OG": "ogg", "OK": "ock",
+  "OL": "oll", "OM": "om", "ON": "on", "OP": "opp", "OR": "or",
+  "OS": "oss", "OT": "ott",
 
   // U + consonants (11)
   "UB": "ubb", "UD": "ud", "UG": "ugh", "UK": "uck", "UL": "ull",
