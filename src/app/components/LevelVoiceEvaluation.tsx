@@ -17,7 +17,6 @@ import { Button } from "./ui/button";
 import { CVC_WORDS, shuffle, getPhoneticPronunciation } from "../data/levels";
 import { motion, AnimatePresence } from "motion/react";
 import { supabase } from "../../lib/supabase";
-import { kokoroService } from "../utils/kokoro";
 import { Confetti } from "./ui/Confetti";
 import { evaluateSyllable, isSyllableTarget } from "../utils/PhonemeEvaluator";
 
@@ -148,10 +147,11 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
       const phonetic = getPhoneticPronunciation(upper, pattern as any);
       if (phonetic !== upper) speakText = phonetic;
     }
-    try {
-      await kokoroService.speak(speakText);
-    } catch (e) {
-      console.error('[TTS] Kokoro failed:', e);
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(speakText);
+      utterance.rate = 0.9;
+      window.speechSynthesis.speak(utterance);
     }
   };
 

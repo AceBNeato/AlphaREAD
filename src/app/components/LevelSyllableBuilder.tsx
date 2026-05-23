@@ -20,7 +20,6 @@ import {
 } from "../data/levels";
 import { motion, AnimatePresence } from "motion/react";
 import { supabase } from "../../lib/supabase";
-import { kokoroService } from "../utils/kokoro";
 import { Confetti } from "./ui/Confetti";
 import { getPhoneticPronunciation } from "../data/levels";
 
@@ -124,13 +123,12 @@ export function LevelSyllableBuilder({
   };
 
   const playTTS = async (text: string, pattern: SyllablePattern) => {
-    // Kokoro uses advanced phonemization, so we can usually just send the text. 
-    // However, we still use the phonetic hints for the most difficult sounds just in case.
     const phoneticText = getPhoneticText(text, pattern);
-    try {
-      await kokoroService.speak(phoneticText);
-    } catch (e) {
-      console.error('[TTS] Kokoro failed:', e);
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(phoneticText);
+      utterance.rate = 0.9;
+      window.speechSynthesis.speak(utterance);
     }
   };
 
