@@ -5,6 +5,7 @@ import { Sparkles, Trophy, LogOut, Power } from "lucide-react";
 import { ThemeToggle } from "../components/ThemeToggle";
 import { levels } from "../data/levels";
 import { App } from '@capacitor/app';
+import { supabase } from "../../lib/supabase";
 
 interface UserProfile {
   name: string;
@@ -24,12 +25,53 @@ export default function Dashboard() {
       navigate("/");
       return;
     }
-    setProfile(JSON.parse(storedProfile));
+    
+    const parsedProfile = JSON.parse(storedProfile);
+    setProfile(parsedProfile);
 
     const completed = JSON.parse(
       localStorage.getItem("completedLevels") || "[]"
     );
     setCompletedLevels(completed);
+
+    // Validate device lock to prevent duplicate sessions
+    if (parsedProfile.id !== "teacher-preview") {
+      const validateDevice = async () => {
+        // If the device is completely offline, allow them to play the downloaded app
+        if (!navigator.onLine) return;
+
+        const localDeviceId = localStorage.getItem("activated_device_id");
+        if (!localDeviceId) return;
+
+        try {
+          const { data, error } = await supabase
+            .from("profiles")
+            .select("activated_device_id")
+            .eq("id", parsedProfile.id)
+            .single();
+
+          // If there is an error but we are online, it might be a missing record. 
+          // If the data comes back but the device ID doesn't match, it's a security breach.
+          if (error) {
+            // Check if it's just a network error failing to reach supabase despite navigator.onLine being true
+            if (error.message && error.message.includes("fetch")) return;
+          }
+
+          if (data && data.activated_device_id !== localDeviceId) {
+            // Security Breach: The teacher unlocked the device, or another device took it over.
+            // Force logout the current user.
+            localStorage.removeItem("userProfile");
+            localStorage.removeItem("activated_device_id");
+            alert("Your session has expired or your account was unlocked by the teacher.");
+            navigate("/");
+          }
+        } catch (e) {
+          // Network errors shouldn't kick out offline users
+          console.warn("Offline or network issue during security check.");
+        }
+      };
+      validateDevice();
+    }
   }, [navigate]);
 
   if (!profile) return null;
@@ -91,7 +133,13 @@ export default function Dashboard() {
               </div>
             </div>
             <button
-              onClick={() => navigate("/")}
+              onClick={() => {
+                if (profile.id === "teacher-preview") {
+                  navigate("/admin");
+                } else {
+                  navigate("/");
+                }
+              }}
               className="p-3 hover:bg-gray-100 dark:hover:bg-white/10 rounded-2xl transition-colors active:scale-90"
               title="Switch Profile"
             >
@@ -122,10 +170,20 @@ export default function Dashboard() {
             </button>
           </Link>
 
-          {/* Exit App Button */}
+          {/* Exit / Back to Teacher Dashboard Button */}
           <button 
-            onClick={handleExitApp}
-            className="w-full bg-gradient-to-br from-[#FF4B4B] to-[#e0336e] rounded-3xl p-6 shadow-[0_8px_0_#b51e4f] hover:shadow-[0_6px_0_#b51e4f] hover:translate-y-[2px] active:shadow-none active:translate-y-[8px] transition-all flex items-center justify-between group mt-2"
+            onClick={() => {
+              if (profile.id === "teacher-preview") {
+                navigate("/admin");
+              } else {
+                handleExitApp();
+              }
+            }}
+            className={`w-full rounded-3xl p-6 transition-all flex items-center justify-between group mt-2 ${
+              profile.id === "teacher-preview"
+                ? "bg-gradient-to-br from-[#1CB0F6] to-[#0a8ed4] shadow-[0_8px_0_#0979b5] hover:shadow-[0_6px_0_#0979b5]"
+                : "bg-gradient-to-br from-[#FF4B4B] to-[#e0336e] shadow-[0_8px_0_#b51e4f] hover:shadow-[0_6px_0_#b51e4f]"
+            } hover:translate-y-[2px] active:shadow-none active:translate-y-[8px]`}
           >
             <div className="flex items-center gap-5">
               <div className="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-md transition-transform group-hover:scale-110">
@@ -133,10 +191,10 @@ export default function Dashboard() {
               </div>
               <div className="text-left">
                 <h3 className="text-2xl font-black text-white tracking-wide">
-                  Exit App
+                  {profile.id === "teacher-preview" ? "Back to Dashboard" : "Exit App"}
                 </h3>
                 <p className="text-white/80 font-medium">
-                  See you next time!
+                  {profile.id === "teacher-preview" ? "Return to admin panel" : "See you next time!"}
                 </p>
               </div>
             </div>

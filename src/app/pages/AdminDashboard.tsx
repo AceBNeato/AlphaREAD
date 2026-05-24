@@ -115,7 +115,7 @@ export default function AdminDashboard() {
               }} 
               className="flex-1 sm:flex-none bg-indigo-500 hover:bg-indigo-600 text-white"
             >
-              Preview App
+              Open App
             </Button>
             <Button onClick={fetchProfiles} variant="outline" className="flex-1 sm:flex-none">
               Refresh
