@@ -102,6 +102,21 @@ export default function AdminDashboard() {
             <Button onClick={createStudent} className="flex-1 sm:flex-none bg-green-500 hover:bg-green-600 text-white">
               + Add Student
             </Button>
+            <Button 
+              onClick={() => {
+                localStorage.setItem("userProfile", JSON.stringify({
+                  id: "teacher-preview",
+                  name: "Teacher",
+                  avatar: "👨‍🏫",
+                  accent: "PH",
+                  createdAt: new Date().toISOString()
+                }));
+                navigate("/dashboard");
+              }} 
+              className="flex-1 sm:flex-none bg-indigo-500 hover:bg-indigo-600 text-white"
+            >
+              Preview App
+            </Button>
             <Button onClick={fetchProfiles} variant="outline" className="flex-1 sm:flex-none">
               Refresh
             </Button>
