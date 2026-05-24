@@ -112,27 +112,25 @@ export default function Dashboard() {
         </header>
 
         {/* Welcome Profile Card */}
-        <div className="bg-white dark:bg-[#1f2f3d] rounded-[2.5rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.15)] p-6 mb-8 border border-gray-100 dark:border-white/5 transition-all">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-5">
-              <div className="w-16 h-16 rounded-3xl bg-gradient-to-br from-[#1CB0F6] to-[#0a8ed4] shadow-inner flex items-center justify-center text-4xl transform -rotate-6">
-                {profile.avatar}
-              </div>
-              <div>
-                <h2 className="text-xl font-bold text-gray-800 dark:text-white">
-                  {profile.name}
-                </h2>
-                {profile.id !== "teacher-preview" && (
-                  <div className="flex gap-2 mt-1">
-                    <span className="text-xs font-bold text-[#FF9600] bg-[#fff0d4] dark:bg-[#FF9600]/20 px-2 py-1 rounded-lg">
-                      Lvl {currentLevel}
-                    </span>
-                    <span className="text-xs font-bold text-[#58CC02] bg-[#e8f9d4] dark:bg-[#58CC02]/20 px-2 py-1 rounded-lg">
-                      {accuracy}% Acc
-                    </span>
-                  </div>
-                )}
-              </div>
+        <div className="bg-white dark:bg-[#1f2f3d] rounded-[2.5rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.15)] p-6 mb-8 border border-gray-100 dark:border-white/5 transition-all flex justify-center">
+          <div className="flex items-center gap-5">
+            <div className="w-16 h-16 rounded-3xl bg-gradient-to-br from-[#1CB0F6] to-[#0a8ed4] shadow-inner flex items-center justify-center text-4xl transform -rotate-6">
+              {profile.avatar}
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-gray-800 dark:text-white">
+                {profile.name}
+              </h2>
+              {profile.id !== "teacher-preview" && (
+                <div className="flex gap-2 mt-1">
+                  <span className="text-xs font-bold text-[#FF9600] bg-[#fff0d4] dark:bg-[#FF9600]/20 px-2 py-1 rounded-lg">
+                    Lvl {currentLevel}
+                  </span>
+                  <span className="text-xs font-bold text-[#58CC02] bg-[#e8f9d4] dark:bg-[#58CC02]/20 px-2 py-1 rounded-lg">
+                    {accuracy}% Acc
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         </div>
