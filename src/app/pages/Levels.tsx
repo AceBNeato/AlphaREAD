@@ -1,12 +1,10 @@
 import { useState } from "react";
 import { Link } from "react-router";
 import {
-  Trophy,
   Home,
   Sparkles,
   Layers,
   Puzzle,
-  Mic,
   Brain,
 } from "lucide-react";
 import { Button } from "../components/ui/button";
@@ -60,8 +58,7 @@ export default function Levels() {
     }));
   });
 
-  const completedCount = userLevels.filter((level) => level.completed).length;
-  const totalProgress = (completedCount / levels.length) * 100;
+
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#e8f9f0] to-[#f0fdf4] dark:bg-none dark:bg-[#0d141c]">
@@ -94,26 +91,7 @@ export default function Levels() {
           </p>
         </header>
 
-        {/* Progress Overview */}
-        <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-lg p-6 mb-8 border-3 border-[#FFC800]">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-3">
-              <Trophy className="w-6 h-6 text-[#FFC800]" />
-              <span className="text-gray-700 dark:text-gray-200">
-                Your Progress
-              </span>
-            </div>
-            <span className="text-sm text-[#58CC02]">
-              {completedCount} / {levels.length} Levels
-            </span>
-          </div>
-          <div className="relative h-3 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-            <div
-              className="h-full rounded-full bg-[#58CC02] transition-all duration-500"
-              style={{ width: `${totalProgress}%` }}
-            />
-          </div>
-        </div>
+
 
         {/* Level Cards */}
         <div className="space-y-6">
