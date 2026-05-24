@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router";
 import { Button } from "../components/ui/button";
-import { Sparkles, Trophy, LogOut, Power } from "lucide-react";
+import { Sparkles, Trophy, Power } from "lucide-react";
 import { ThemeToggle } from "../components/ThemeToggle";
 import { levels } from "../data/levels";
 import { App } from '@capacitor/app';
@@ -104,7 +104,7 @@ export default function Dashboard() {
                 <span className="text-[#1CB0F6]">GO!</span>
               </h1>
               <p className="text-gray-500 dark:text-[#849baf] font-medium text-sm mt-0.5">
-                Ready to learn, {profile.name}?
+                {profile.id === "teacher-preview" ? "Previewing Student App" : `Ready to learn, ${profile.name}?`}
               </p>
             </div>
           </div>
@@ -122,29 +122,18 @@ export default function Dashboard() {
                 <h2 className="text-xl font-bold text-gray-800 dark:text-white">
                   {profile.name}
                 </h2>
-                <div className="flex gap-2 mt-1">
-                  <span className="text-xs font-bold text-[#FF9600] bg-[#fff0d4] dark:bg-[#FF9600]/20 px-2 py-1 rounded-lg">
-                    Lvl {currentLevel}
-                  </span>
-                  <span className="text-xs font-bold text-[#58CC02] bg-[#e8f9d4] dark:bg-[#58CC02]/20 px-2 py-1 rounded-lg">
-                    {accuracy}% Acc
-                  </span>
-                </div>
+                {profile.id !== "teacher-preview" && (
+                  <div className="flex gap-2 mt-1">
+                    <span className="text-xs font-bold text-[#FF9600] bg-[#fff0d4] dark:bg-[#FF9600]/20 px-2 py-1 rounded-lg">
+                      Lvl {currentLevel}
+                    </span>
+                    <span className="text-xs font-bold text-[#58CC02] bg-[#e8f9d4] dark:bg-[#58CC02]/20 px-2 py-1 rounded-lg">
+                      {accuracy}% Acc
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
-            <button
-              onClick={() => {
-                if (profile.id === "teacher-preview") {
-                  navigate("/admin");
-                } else {
-                  navigate("/");
-                }
-              }}
-              className="p-3 hover:bg-gray-100 dark:hover:bg-white/10 rounded-2xl transition-colors active:scale-90"
-              title="Switch Profile"
-            >
-              <LogOut className="w-6 h-6 text-gray-400 dark:text-gray-300" />
-            </button>
           </div>
         </div>
 
