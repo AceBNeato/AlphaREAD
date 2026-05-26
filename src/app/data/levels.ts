@@ -169,17 +169,15 @@ export function getLetterPhonetic(letter: string): string {
 
 // Real CVC words for kids (Level 5)
 export const CVC_WORDS = [
-  "BAT", "CAT", "HAT", "MAT", "RAT", "SAT", "FAT", "PAT",
-  "BED", "RED", "LED", "FED", "WED",
-  "BIG", "DIG", "FIG", "PIG", "WIG", "JIG",
-  "BOX", "FOX",
-  "BUS", "CUP", "PUP", "SUN", "RUN", "FUN", "BUN", "GUM",
-  "DOG", "LOG", "FOG", "HOG", "JOG",
-  "BAG", "TAG", "RAG", "WAG", "GAG",
-  "PEN", "TEN", "HEN", "MEN", "DEN",
-  "BIN", "FIN", "PIN", "TIN", "WIN",
-  "TOP", "HOP", "MOP", "POP",
-  "COT", "DOT", "GOT", "HOT", "LOT", "NOT", "POT", "ROT",
+  "BAT", "BED", "BET", "BIB", "BIG", "BOX", "BUD", "BUG", "CAN", "CAR", "CAT",
+  "COB", "CUP", "CUT", "DID", "DIG", "DOG", "DOT", "FAN", "FED", "FIT",
+  "FIX", "GAS", "GET", "GOT", "GUM", "GUN", "HAM", "HAT", "HER", "HID",
+  "HIM", "HIP", "HOP", "HOT", "HUG", "HUM", "JAM", "JOG", "KIT", "LAD",
+  "LED", "LET", "LID", "MAD", "MAN", "MEN", "MET", "MID", "MIX", "NAG",
+  "NAP", "NET", "PAD", "PAN", "PEN", "PIN", "POT", "RAG", "RAM", "RAT",
+  "RED", "RID", "RUG", "RUN", "SAG", "SET", "SIN", "SIP", "SIT", "SIX",
+  "SUM", "TAN", "TAX", "TEN", "TIP", "TOP", "TUB", "TUG", "VAN", "VET",
+  "WED", "WET", "WIG", "WIN", "YET"
 ];
 
 // Phonetic pronunciation for CV patterns (consonant + vowel sounds blended)
