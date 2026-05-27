@@ -113,10 +113,11 @@ const SYLLABLE_EXCEPTIONS: Record<string, string[]> = {
   "FE": ["feh", "fe"],
   "HU": ["huh", "hu", "hah", "ha"],
   "NU": ["nuh", "nu", "nah", "na"],
-  "CU": ["coh", "co", "cu"],
+  "CU": ["cuh", "coh", "co", "cu"],
   "WU": ["wuh", "wu"],
   "JU": ["juh", "ju"],
   "FO": ["foh", "fo"],
+  "NI": ["knee", "nee", "ni"],
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -277,7 +278,15 @@ export type PhonemeResult = "correct" | "close" | "wrong";
 export function evaluateSyllable(target: string, transcripts: string[]): PhonemeResult {
   const upper = target.toUpperCase();
 
-  // Check per-syllable exceptions first — these always win as "correct"
+  // 1. Literal Match: If the browser transcribed the exact word (e.g., "it", "me", "am")
+  for (const raw of transcripts) {
+    const text = normalizeText(raw).toUpperCase();
+    if (text === upper || text.split(/\s+/).includes(upper)) {
+      return "correct";
+    }
+  }
+
+  // 2. Check per-syllable exceptions — these always win as "correct"
   const exceptions = SYLLABLE_EXCEPTIONS[upper];
   if (exceptions) {
     for (const raw of transcripts) {

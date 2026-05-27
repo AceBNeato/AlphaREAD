@@ -62,11 +62,11 @@ export default function Activation() {
       if (profile) {
         const parsed = JSON.parse(profile);
         if (parsed.role === "teacher") {
-          navigate("/teacher-dashboard");
+          navigate("/teacher-dashboard", { replace: true });
         } else if (parsed.role === "admin") {
-          navigate("/admin");
+          navigate("/admin", { replace: true });
         } else if (parsed.role === "student") {
-          navigate("/dashboard");
+          navigate("/dashboard", { replace: true });
         }
       }
     }, 2200);
@@ -157,7 +157,7 @@ export default function Activation() {
           createdAt: student.created_at
         }));
 
-        navigate("/dashboard");
+        navigate("/dashboard", { replace: true });
       } catch (err: any) {
         setError(err.message || "Student login failed.");
       } finally {
@@ -221,7 +221,7 @@ export default function Activation() {
         createdAt: teacher.created_at
       }));
 
-      navigate("/teacher-dashboard");
+      navigate("/teacher-dashboard", { replace: true });
     } catch (err: any) {
       setError(err.message || "Verification failed.");
       setTeacherPin("");

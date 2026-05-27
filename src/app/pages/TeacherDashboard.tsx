@@ -42,12 +42,12 @@ export default function TeacherDashboard() {
   useEffect(() => {
     const profileStr = localStorage.getItem("userProfile");
     if (!profileStr) {
-      navigate("/");
+      navigate("/", { replace: true });
       return;
     }
     const profile = JSON.parse(profileStr);
     if (profile.role !== "teacher") {
-      navigate("/");
+      navigate("/", { replace: true });
       return;
     }
     setTeacherProfile(profile);
@@ -64,7 +64,7 @@ export default function TeacherDashboard() {
       if (error && (error.code === "PGRST116" || error.details?.includes("Results contain 0 rows"))) {
         localStorage.removeItem("userProfile");
         alert("Your teacher account has been deleted by an administrator.");
-        navigate("/");
+        navigate("/", { replace: true });
       }
     };
     verifyAccount();
@@ -200,7 +200,7 @@ export default function TeacherDashboard() {
 
   const handleLogout = () => {
     localStorage.removeItem("userProfile");
-    navigate("/");
+    navigate("/", { replace: true });
   };
 
   const handleOpenApp = () => {
@@ -212,7 +212,7 @@ export default function TeacherDashboard() {
       role: "teacher-preview",
       returnTo: "/teacher-dashboard"
     }));
-    navigate("/dashboard");
+    navigate("/dashboard", { replace: true });
   };
 
   return (

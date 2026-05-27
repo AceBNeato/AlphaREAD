@@ -24,7 +24,7 @@ export default function Dashboard() {
   useEffect(() => {
     const storedProfile = localStorage.getItem("userProfile");
     if (!storedProfile) {
-      navigate("/");
+      navigate("/", { replace: true });
       return;
     }
     
@@ -63,7 +63,7 @@ export default function Dashboard() {
               localStorage.removeItem("userProfile");
               localStorage.removeItem("activated_device_id");
               alert("Your account has been deleted or deactivated by an administrator.");
-              navigate("/");
+              navigate("/", { replace: true });
               return;
             }
           }
@@ -74,7 +74,7 @@ export default function Dashboard() {
             localStorage.removeItem("userProfile");
             localStorage.removeItem("activated_device_id");
             alert("Your session has expired or your account was unlocked by the teacher.");
-            navigate("/");
+            navigate("/", { replace: true });
           }
         } catch (e) {
           // Network errors shouldn't kick out offline users

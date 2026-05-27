@@ -54,7 +54,7 @@ export default function AdminLogin() {
           role: "admin",
           createdAt: admin.created_at
         }));
-        navigate("/admin");
+        navigate("/admin", { replace: true });
       } else {
         throw new Error("Incorrect Admin PIN.");
       }

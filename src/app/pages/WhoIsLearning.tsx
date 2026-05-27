@@ -28,7 +28,7 @@ export default function WhoIsLearning() {
   }, []);
 
   const handleSelectProfile = () => {
-    navigate("/dashboard");
+    navigate("/dashboard", { replace: true });
   };
 
   const handleSettingsClick = () => {

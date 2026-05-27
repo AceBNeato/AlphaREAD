@@ -31,7 +31,7 @@ export default function Settings() {
   useEffect(() => {
     const storedProfile = localStorage.getItem("userProfile");
     if (!storedProfile) {
-      navigate("/");
+      navigate("/", { replace: true });
       return;
     }
     const profileData = JSON.parse(storedProfile);

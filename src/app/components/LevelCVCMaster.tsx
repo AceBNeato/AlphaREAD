@@ -52,38 +52,14 @@ export function LevelCVCMaster({ levelId, accent }: LevelCVCMasterProps) {
       setCurrentStep(prev => prev + 1);
     } else {
       // Game Over, all completed!
-      setIsSaving(true);
-      try {
-        const profileStr = localStorage.getItem("userProfile");
-        if (profileStr) {
-          const profile = JSON.parse(profileStr);
-          if (profile.id) {
-            // Give them a perfect score (10 words)
-            await supabase.from("progress").insert({ student_id: profile.id, level_id: levelId, score: 10 });
-          }
-        }
-        const completedLevels = JSON.parse(localStorage.getItem("completedLevels") || "[]");
-        if (!completedLevels.includes(levelId)) {
-          completedLevels.push(levelId);
-          localStorage.setItem("completedLevels", JSON.stringify(completedLevels));
-        }
-        navigate("/levels");
-      } catch (err) {
-        console.error("Progress save failed:", err);
-      } finally {
-        setIsSaving(false);
+      const completedLevels = JSON.parse(localStorage.getItem("completedLevels") || "[]");
+      if (!completedLevels.includes(levelId)) {
+        completedLevels.push(levelId);
+        localStorage.setItem("completedLevels", JSON.stringify(completedLevels));
       }
+      navigate("/levels");
     }
   };
-
-  if (isSaving) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-indigo-50 to-pink-50">
-        <div className="w-16 h-16 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mb-4" />
-        <h2 className="text-xl font-bold text-gray-800">Saving your fantastic progress!</h2>
-      </div>
-    );
-  }
 
   // Phase: CVC Builder
   if (step.phase === "build") {

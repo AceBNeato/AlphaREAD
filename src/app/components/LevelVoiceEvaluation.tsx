@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router";
 import {
   Mic,
@@ -20,97 +20,10 @@ import { motion, AnimatePresence } from "motion/react";
 import { supabase } from "../../lib/supabase";
 import { Confetti } from "./ui/Confetti";
 import { evaluateSyllable, isSyllableTarget } from "../utils/PhonemeEvaluator";
+import { useAudioVisualizer } from "../hooks/useAudioVisualizer";
 
-const DIGIT_MAP: Record<string, string> = {
-  "0": "ZERO", "1": "ONE", "2": "TWO", "3": "THREE", "4": "FOUR",
-  "5": "FIVE", "6": "SIX", "7": "SEVEN", "8": "EIGHT", "9": "NINE", "10": "TEN"
-};
-
-// Map words that the API frequently misunderstands because they sound identical or extremely similar
-// This covers true homophones, names, and vowel-elongation mistakes (like BIN -> BEAN) for all 64 words.
-const HOMOPHONES: Record<string, string[]> = {
-  // A Vowels
-  "BAT": ["BATT"],
-  "MAT": ["MATT"],
-  "PAT": ["PATT"],
-
-  // E Vowels
-  "RED": ["READ"],
-  "LED": ["LEAD"],
-  "PEN": ["PEEN", "PENN"],
-  "DEN": ["DEEN", "DENE", "THEN"],
-  "MEN": ["MEAN"],
-
-  // I Vowels
-  "BIN": ["BEAN"],
-  "TIN": ["TEEN"],
-  "PIN": ["PEEN"],
-  "FIN": ["FEEN", "PHIN"],
-  "WIN": ["WYNN", "WON", "WEEN"],
-  "WIG": ["WHIG", "WEG"],
-
-  // O Vowels
-  "COT": ["CAUGHT"],
-  "NOT": ["KNOT"],
-  "ROT": ["WROUGHT"],
-  "DOG": ["DAWG", "DOOG"],
-
-  // U Vowels
-  "SUN": ["SON", "SAN"],
-  "BUS": ["BUSS", "BASS"],
-  "MUG": ["MOG", "MUGGS"],
-  "RUG": ["RUGGS", "ROG"],
-
-};
-
-// Helper function to calculate Levenshtein distance (Fuzzy Matching)
-function calculateSimilarity(str1: string, str2: string): number {
-  if (str1 === str2) return 1;
-  const len1 = str1.length;
-  const len2 = str2.length;
-  const matrix: number[][] = Array(len2 + 1).fill(null).map(() => Array(len1 + 1).fill(null));
-
-  for (let i = 0; i <= len1; i++) matrix[0][i] = i;
-  for (let j = 0; j <= len2; j++) matrix[j][0] = j;
-
-  for (let j = 1; j <= len2; j++) {
-    for (let i = 1; i <= len1; i++) {
-      const indicator = str1[i - 1] === str2[j - 1] ? 0 : 1;
-      matrix[j][i] = Math.min(
-        matrix[j][i - 1] + 1,
-        matrix[j - 1][i] + 1,
-        matrix[j - 1][i - 1] + indicator
-      );
-    }
-  }
-  const distance = matrix[len2][len1];
-  const maxLen = Math.max(len1, len2);
-  return maxLen === 0 ? 1 : (maxLen - distance) / maxLen;
-}
-
-// Strict vowel check to ensure CVC words aren't falsely marked "close" if the vowel changes (e.g. TIN vs TEEN)
-function hasSameVowels(word1: string, word2: string): boolean {
-  const getVowels = (w: string) => w.replace(/[^AEIOU]/g, "");
-  return getVowels(word1) === getVowels(word2);
-}
-
-function normalizeTranscript(text: string): string {
-  // Remove punctuation and map numbers to words
-  return text
-    .toUpperCase()
-    .replace(/[.,!?]/g, "")
-    .trim()
-    .split(/\s+/)
-    .map(w => DIGIT_MAP[w] || w)
-    .join(" ");
-}
-
-// Check if consonants (start and end) match, even if the middle vowel is different
-function matchConsonants(word1: string, word2: string): boolean {
-  const getConsonants = (w: string) => w.replace(/[AEIOU]/g, "");
-  return getConsonants(word1) === getConsonants(word2);
-}
-
+import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
+import { useVoskRecognition } from "../hooks/useVoskRecognition";
 interface LevelVoiceEvaluationProps {
   levelId: number;
   accent: { primary: string; dark: string; lightBg: string };
@@ -194,331 +107,93 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
   const progress = (completedWords.size / words.length) * 100;
   const allDone = completedWords.size >= words.length;
 
-  // Initialize speech recognition and real-time visualizer dynamically
-  useEffect(() => {
-    let currentRecognition: any = null;
-    let autoSilenceTimeout: NodeJS.Timeout | null = null;
-    let audioCtx: AudioContext | null = null;
-    let analyserNode: AnalyserNode | null = null;
-    let micStream: MediaStream | null = null;
-    let animationFrameId: number | null = null;
+  useAudioVisualizer(isMobile, !!evaluatingWord);
 
-    const SpeechRecognitionAPI = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+  const isVoskMode = levelId === 2;
 
-    if (evaluatingWord && typeof window !== "undefined") {
-      // 1. Setup real-time voice visualizer (DESKTOP ONLY)
-      // On mobile, getUserMedia conflicts with SpeechRecognition mic access and breaks recognition.
-      if (!isMobile) {
-        navigator.mediaDevices.getUserMedia({ audio: true })
-          .then(stream => {
-            micStream = stream;
-            const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-            if (AudioContextClass) {
-              audioCtx = new AudioContextClass();
-              analyserNode = audioCtx.createAnalyser();
-              analyserNode.fftSize = 32;
-              const source = audioCtx.createMediaStreamSource(stream);
-              source.connect(analyserNode);
-
-              if (audioCtx.state === 'suspended') {
-                audioCtx.resume().catch(() => { });
-              }
-
-              const bufferLength = analyserNode.frequencyBinCount;
-              const dataArray = new Uint8Array(bufferLength);
-
-              const checkVolume = () => {
-                if (!analyserNode) return;
-                analyserNode.getByteFrequencyData(dataArray);
-
-                let sum = 0;
-                const limit = Math.min(6, bufferLength);
-                for (let i = 0; i < limit; i++) {
-                  sum += dataArray[i];
-                }
-                const avg = sum / limit;
-                const vol = Math.min(1, avg / 60);
-
-                const b1 = document.getElementById('wave-bar-1');
-                const b2 = document.getElementById('wave-bar-2');
-                const b3 = document.getElementById('wave-bar-3');
-                const b4 = document.getElementById('wave-bar-4');
-                const b5 = document.getElementById('wave-bar-5');
-
-                if (b1 && b2 && b3 && b4 && b5) {
-                  b1.style.height = `${Math.max(6, vol * 24 + Math.random() * 4 * vol)}px`;
-                  b2.style.height = `${Math.max(6, vol * 32 + Math.random() * 6 * vol)}px`;
-                  b3.style.height = `${Math.max(6, vol * 40 + Math.random() * 8 * vol)}px`;
-                  b4.style.height = `${Math.max(6, vol * 28 + Math.random() * 5 * vol)}px`;
-                  b5.style.height = `${Math.max(6, vol * 20 + Math.random() * 4 * vol)}px`;
-                }
-
-                animationFrameId = requestAnimationFrame(checkVolume);
-              };
-              animationFrameId = requestAnimationFrame(checkVolume);
+  const handleResult = useCallback((word: string, status: "correct" | "close" | "wrong" | null, transcript: string) => {
+    setTranscripts(prev => ({ ...prev, [word]: transcript }));
+    setEvalFeedback(prev => ({ ...prev, [word]: status }));
+    
+    if (status === "correct" || status === "close") {
+      setShowConfetti(true);
+      const newCompleted = new Set(completedWords);
+      newCompleted.add(word);
+      setCompletedWords(newCompleted);
+      
+      setTimeout(() => {
+        safeSetEvaluatingWordNull();
+        setShowConfetti(false);
+        if (newCompleted.size >= words.length) {
+          setShowCompletionScreen(true);
+        } else {
+          setWordsIndex(prev => {
+            let nextIdx = prev + 1;
+            while (nextIdx < words.length && newCompleted.has(words[nextIdx])) {
+              nextIdx++;
             }
-          })
-          .catch(err => {
-            console.warn("Failed to initialize live voice visualizer:", err);
+            return Math.min(words.length - 1, nextIdx);
           });
-      }
-
-      // 2. Setup speech recognition
-      if (SpeechRecognitionAPI) {
-        const SpeechRecognition = SpeechRecognitionAPI;
-        currentRecognition = new SpeechRecognition();
-
-        currentRecognition.continuous = false;
-        currentRecognition.interimResults = false;
-        currentRecognition.lang = "en-US";
-        currentRecognition.maxAlternatives = 5; // More alternatives = better phoneme coverage
-
-        currentRecognition.onresult = (event: any) => {
-          if (autoSilenceTimeout) clearTimeout(autoSilenceTimeout);
-          const results = event.results[0];
-
-          // Collect all transcript alternatives from the recognition engine
-          const allTranscripts: string[] = [];
-          for (let i = 0; i < results.length; i++) {
-            allTranscripts.push(results[i].transcript.trim());
-          }
-          const primaryTranscript = allTranscripts[0] || "";
-          setTranscripts(prev => ({ ...prev, [evaluatingWord]: primaryTranscript }));
-
-          // ── PATH A: CV / VC Syllable (Level 2) ──────────────────────────────
-          // Uses PhonemeEvaluator for accurate vowel-class checking.
-          // This prevents the browser from autocorrecting "PI" → "PIE", etc.
-          if (isSyllableTarget(evaluatingWord)) {
-            const phonemeResult = evaluateSyllable(evaluatingWord, allTranscripts);
-
-            if (phonemeResult === "correct") {
-              setEvalFeedback(prev => ({ ...prev, [evaluatingWord]: "correct" }));
-              setShowConfetti(true);
-              const newCompleted = new Set(completedWords);
-              newCompleted.add(evaluatingWord);
-              setCompletedWords(newCompleted);
-              setTimeout(() => {
-                safeSetEvaluatingWordNull();
-                setShowConfetti(false);
-                if (newCompleted.size >= words.length) {
-                  setShowCompletionScreen(true);
-                } else {
-                  setWordsIndex(prev => {
-                    let nextIdx = prev + 1;
-                    while (nextIdx < words.length && newCompleted.has(words[nextIdx])) {
-                      nextIdx++;
-                    }
-                    return Math.min(words.length - 1, nextIdx);
-                  });
-                }
-              }, 2000);
-            } else if (phonemeResult === "close") {
-              setEvalFeedback(prev => ({ ...prev, [evaluatingWord]: "close" }));
-              setShowConfetti(true);
-              const newCompleted = new Set(completedWords);
-              newCompleted.add(evaluatingWord);
-              setCompletedWords(newCompleted);
-              setTimeout(() => {
-                safeSetEvaluatingWordNull();
-                setShowConfetti(false);
-                if (newCompleted.size >= words.length) {
-                  setShowCompletionScreen(true);
-                } else {
-                  setWordsIndex(prev => {
-                    let nextIdx = prev + 1;
-                    while (nextIdx < words.length && newCompleted.has(words[nextIdx])) {
-                      nextIdx++;
-                    }
-                    return Math.min(words.length - 1, nextIdx);
-                  });
-                }
-              }, 2000);
-            } else {
-              setEvalFeedback(prev => ({ ...prev, [evaluatingWord]: "wrong" }));
-              setTimeout(() => {
-                setEvalFeedback(prev => ({ ...prev, [evaluatingWord]: null }));
-                safeSetEvaluatingWordNull();
-              }, 2500);
-            }
-            return; // Done — do not fall through to CVC path
-          }
-
-          // ── PATH B: CVC Word (Level 3) — Original fuzzy evaluator ──────────
-          let bestMatch = "";
-          let bestSimilarity = 0;
-          let isPerfectMatch = false;
-
-          for (let i = 0; i < results.length; i++) {
-            const raw = results[i].transcript.trim();
-            const normalized = normalizeTranscript(raw);
-
-            const allowedWords = [evaluatingWord];
-            if (HOMOPHONES[evaluatingWord]) {
-              allowedWords.push(...HOMOPHONES[evaluatingWord]);
-            }
-
-            const phraseWords = normalized.split(" ");
-            let matchedTarget = false;
-            for (const target of allowedWords) {
-              if (normalized === target || phraseWords.includes(target)) {
-                matchedTarget = true;
-                break;
-              }
-            }
-
-            if (matchedTarget) {
-              bestMatch = evaluatingWord;
-              bestSimilarity = 1;
-              isPerfectMatch = true;
-              break;
-            }
-
-            for (const word of phraseWords) {
-              const similarity = calculateSimilarity(word, evaluatingWord);
-              if (similarity > bestSimilarity) {
-                bestSimilarity = similarity;
-                bestMatch = word;
-              }
-            }
-          }
-
-          if (!bestMatch) {
-            bestMatch = normalizeTranscript(results[0].transcript.trim());
-          }
-
-          setTranscripts(prev => ({ ...prev, [evaluatingWord]: bestMatch }));
-
-          if (isPerfectMatch || bestSimilarity === 1) {
-            setEvalFeedback(prev => ({ ...prev, [evaluatingWord]: "correct" }));
-            setShowConfetti(true);
-            const newCompleted = new Set(completedWords);
-            newCompleted.add(evaluatingWord);
-            setCompletedWords(newCompleted);
-            setTimeout(() => {
-              safeSetEvaluatingWordNull();
-              setShowConfetti(false);
-              if (newCompleted.size >= words.length) {
-                setShowCompletionScreen(true);
-              } else {
-                setWordsIndex(prev => {
-                  let nextIdx = prev + 1;
-                  while (nextIdx < words.length && newCompleted.has(words[nextIdx])) {
-                    nextIdx++;
-                  }
-                  return Math.min(words.length - 1, nextIdx);
-                });
-              }
-            }, 2000);
-          } else if (bestSimilarity >= 0.5 || matchConsonants(bestMatch, evaluatingWord)) {
-            setEvalFeedback(prev => ({ ...prev, [evaluatingWord]: "close" }));
-            setShowConfetti(true);
-            const newCompleted = new Set(completedWords);
-            newCompleted.add(evaluatingWord);
-            setCompletedWords(newCompleted);
-            setTimeout(() => {
-              safeSetEvaluatingWordNull();
-              setShowConfetti(false);
-              if (newCompleted.size >= words.length) {
-                setShowCompletionScreen(true);
-              } else {
-                setWordsIndex(prev => {
-                  let nextIdx = prev + 1;
-                  while (nextIdx < words.length && newCompleted.has(words[nextIdx])) {
-                    nextIdx++;
-                  }
-                  return Math.min(words.length - 1, nextIdx);
-                });
-              }
-            }, 2000);
-          } else {
-            setEvalFeedback(prev => ({ ...prev, [evaluatingWord]: "wrong" }));
-            setTimeout(() => {
-              setEvalFeedback(prev => ({ ...prev, [evaluatingWord]: null }));
-              safeSetEvaluatingWordNull();
-            }, 2500);
-          }
-        };
-
-        currentRecognition.onerror = (event: any) => {
-          if (autoSilenceTimeout) clearTimeout(autoSilenceTimeout);
-          // Ignore benign errors — these happen when we call .stop() ourselves or no speech came in
-          if (event.error === 'no-speech' || event.error === 'aborted') {
-            safeSetEvaluatingWordNull();
-            return;
-          }
-          console.error("Speech recognition error:", event.error);
-          setEvalFeedback(prev => ({ ...prev, [evaluatingWord]: "wrong" }));
-          setTimeout(() => {
-            setEvalFeedback(prev => ({ ...prev, [evaluatingWord]: null }));
-            safeSetEvaluatingWordNull();
-          }, 2000);
-        };
-
-        // Fired when recognition session ends (either got a result, timed out, or error)
-        // Without this, the UI stays stuck on "Listening..." forever.
-        currentRecognition.onend = () => {
-          if (autoSilenceTimeout) clearTimeout(autoSilenceTimeout);
-          // Only reset the UI if we're still waiting (no result/feedback set yet)
-          setEvalFeedback(prev => {
-            if (prev[evaluatingWord] === null || prev[evaluatingWord] === undefined) {
-              safeSetEvaluatingWordNull();
-            }
-            return prev;
-          });
-        };
-
-        try {
-          currentRecognition.start();
-          // Start 5-second auto-silence timeout if no speech is detected at all
-          autoSilenceTimeout = setTimeout(() => {
-            console.warn("[Speech] Auto-silence: No speech detected in 5s. Stopping microphone.");
-            if (currentRecognition) {
-              try {
-                currentRecognition.stop();
-              } catch (e) { }
-            }
-            setEvalFeedback(prev => ({ ...prev, [evaluatingWord]: "wrong" }));
-            setTimeout(() => {
-              setEvalFeedback(prev => ({ ...prev, [evaluatingWord]: null }));
-              safeSetEvaluatingWordNull();
-            }, 1500);
-          }, 5000);
-        } catch (error) {
-          console.error("Error starting recognition:", error);
-          safeSetEvaluatingWordNull();
         }
-      }
+      }, 2000);
+    } else if (status === "wrong") {
+      setTimeout(() => {
+        setEvalFeedback(prev => ({ ...prev, [word]: null }));
+        safeSetEvaluatingWordNull();
+      }, 2500);
     }
+  }, [completedWords, words.length]);
 
-    return () => {
-      if (autoSilenceTimeout) clearTimeout(autoSilenceTimeout);
-      if (animationFrameId) cancelAnimationFrame(animationFrameId);
-      if (audioCtx) {
-        try {
-          audioCtx.close();
-        } catch (e) { }
+  const handleError = useCallback(() => {
+    setEvalFeedback(prev => {
+      if (evaluatingWord && (prev[evaluatingWord] === null || prev[evaluatingWord] === undefined)) {
+        safeSetEvaluatingWordNull();
       }
-      if (micStream) {
-        try {
-          micStream.getTracks().forEach(track => track.stop());
-        } catch (e) { }
-      }
-      if (currentRecognition) {
-        try {
-          currentRecognition.stop();
-          currentRecognition.onresult = null;
-          currentRecognition.onerror = null;
-          currentRecognition.onend = null;
-        } catch (e) { }
-      }
-      // reset visualizer level
-      for (let i = 1; i <= 5; i++) {
-        const b = document.getElementById(`wave-bar-${i}`);
-        if (b) b.style.height = '6px';
-      }
-    };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+      return prev;
+    });
   }, [evaluatingWord]);
+
+  const handleSilence = useCallback(() => {
+    if (!evaluatingWord) return;
+    setEvalFeedback(prev => ({ ...prev, [evaluatingWord]: "wrong" }));
+    setTimeout(() => {
+      setEvalFeedback(prev => ({ ...prev, [evaluatingWord]: null }));
+      safeSetEvaluatingWordNull();
+    }, 1500);
+  }, [evaluatingWord]);
+
+  // Standard Web Speech API (Level 3+)
+  useSpeechRecognition({
+    evaluatingWord,
+    enabled: !isVoskMode,
+    onResult: handleResult,
+    onError: handleError,
+    onSilenceTimeout: handleSilence
+  });
+
+  // Vosk Engine (Level 2 Offline Phonetics)
+  const { startVoskRecognition, stopVoskRecognition } = useVoskRecognition({
+    onResult: (text) => {
+      if (!evaluatingWord) return;
+      const phonemeResult = evaluateSyllable(evaluatingWord, [text]);
+      handleResult(evaluatingWord, phonemeResult, text);
+    },
+    onError: handleError
+  });
+
+  useEffect(() => {
+    if (isVoskMode && evaluatingWord) {
+      startVoskRecognition();
+      // Auto-silence timeout for Vosk (5 seconds)
+      const timer = setTimeout(() => {
+        stopVoskRecognition();
+        handleSilence();
+      }, 5000);
+      return () => clearTimeout(timer);
+    } else if (isVoskMode && !evaluatingWord) {
+      stopVoskRecognition();
+    }
+  }, [evaluatingWord, isVoskMode, startVoskRecognition, stopVoskRecognition, handleSilence]);
 
   const safeSetEvaluatingWordNull = () => {
     setEvaluatingWord(null);
@@ -768,57 +443,53 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
                 </motion.button>
               ))}
             </div>
-            <Button
-              disabled={isSaving}
-              onClick={async () => {
-                if (isSubPhase) {
-                  if (onComplete) onComplete();
-                  return;
-                }
-
-                setIsSaving(true);
-                try {
-                  const profileStr = localStorage.getItem("userProfile");
-                  if (profileStr) {
-                    const profile = JSON.parse(profileStr);
-                    if (profile.id) {
-                      await supabase.from("progress").insert({
-                        student_id: profile.id,
-                        level_id: levelId,
-                        score: words.length
-                      });
-                    }
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-8 w-full px-4">
+              <Button
+                variant="outline"
+                size="lg"
+                onClick={() => {
+                  handleReset();
+                  setShowCompletionScreen(false);
+                }}
+                className="rounded-xl px-8 py-6 text-lg border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 w-full sm:w-auto"
+              >
+                <RotateCcw className="w-5 h-5 mr-2" />
+                Retry
+              </Button>
+              <Button
+                onClick={() => {
+                  if (isSubPhase) {
+                    if (onComplete) onComplete();
+                    return;
                   }
-                } catch (err) {
-                  console.error("Error saving progress:", err);
-                }
 
-                const completedLevels = JSON.parse(
-                  localStorage.getItem("completedLevels") || "[]"
-                );
-                if (!completedLevels.includes(levelId)) {
-                  completedLevels.push(levelId);
-                  localStorage.setItem(
-                    "completedLevels",
-                    JSON.stringify(completedLevels)
+                  const completedLevels = JSON.parse(
+                    localStorage.getItem("completedLevels") || "[]"
                   );
-                }
-                setIsSaving(false);
-                if (onComplete) {
-                  onComplete();
-                } else {
-                  navigate("/levels");
-                }
-              }}
-              size="lg"
-              className="rounded-xl px-8 py-6 text-lg text-white"
-              style={{
-                background: `linear-gradient(135deg, ${accent.primary} 0%, ${accent.dark} 100%)`,
-              }}
-            >
-              {onComplete ? <ArrowRight className="w-5 h-5 mr-2" /> : <Home className="w-5 h-5 mr-2" />}
-              {isSaving ? "Saving..." : onComplete ? (isSubPhase ? "Next Challenge" : "Next Phase") : "Back to Levels"}
-            </Button>
+                  if (!completedLevels.includes(levelId)) {
+                    completedLevels.push(levelId);
+                    localStorage.setItem(
+                      "completedLevels",
+                      JSON.stringify(completedLevels)
+                    );
+                  }
+                  
+                  if (onComplete) {
+                    onComplete();
+                  } else {
+                    navigate("/levels");
+                  }
+                }}
+                size="lg"
+                className="rounded-xl px-8 py-6 text-lg text-white w-full sm:w-auto"
+                style={{
+                  background: `linear-gradient(135deg, ${accent.primary} 0%, ${accent.dark} 100%)`,
+                }}
+              >
+                {onComplete ? <ArrowRight className="w-5 h-5 mr-2" /> : <Home className="w-5 h-5 mr-2" />}
+                {onComplete ? (isSubPhase ? "Next Challenge" : "Next Phase") : "Back to Levels"}
+              </Button>
+            </div>
           </motion.div>
         )}
       </div>
