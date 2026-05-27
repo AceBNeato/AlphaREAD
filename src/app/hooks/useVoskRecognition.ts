@@ -3,10 +3,11 @@ import { createModel } from "vosk-browser";
 
 interface UseVoskProps {
   onResult?: (text: string) => void;
+  onPartialResult?: (text: string) => void;
   onError?: (err: any) => void;
 }
 
-export function useVoskRecognition({ onResult, onError }: UseVoskProps = {}) {
+export function useVoskRecognition({ onResult, onPartialResult, onError }: UseVoskProps = {}) {
   const [isVoskReady, setIsVoskReady] = useState(false);
   
   const modelRef = useRef<any>(null);
@@ -18,12 +19,14 @@ export function useVoskRecognition({ onResult, onError }: UseVoskProps = {}) {
 
   // Store callbacks in refs to avoid infinite re-renders
   const onResultRef = useRef(onResult);
+  const onPartialResultRef = useRef(onPartialResult);
   const onErrorRef = useRef(onError);
 
   useEffect(() => {
     onResultRef.current = onResult;
+    onPartialResultRef.current = onPartialResult;
     onErrorRef.current = onError;
-  }, [onResult, onError]);
+  }, [onResult, onPartialResult, onError]);
 
   // Initialize Vosk Model (Done once)
   useEffect(() => {
@@ -32,7 +35,9 @@ export function useVoskRecognition({ onResult, onError }: UseVoskProps = {}) {
     const initVosk = async () => {
       try {
         console.log("[Vosk] Loading Local Model...");
-        const model = await createModel("/models/vosk-model-small-en-us-0.15.tar.gz");
+        const baseUrl = (import.meta as any).env.BASE_URL || "/";
+        const modelPath = `${baseUrl}models/vosk-model-small-en-us-0.15.tar.gz`.replace('//', '/');
+        const model = await createModel(modelPath);
         if (isMounted) {
           modelRef.current = model;
           setIsVoskReady(true);
@@ -93,47 +98,57 @@ export function useVoskRecognition({ onResult, onError }: UseVoskProps = {}) {
     isListeningRef.current = true;
     
     try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error("Microphone access is blocked. Please ensure you are using HTTPS or localhost.");
+      }
+
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
       mediaStreamRef.current = stream;
       
-      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
       audioContextRef.current = audioContext;
       
       const source = audioContext.createMediaStreamSource(stream);
       
-      recognizerRef.current = new modelRef.current.KaldiRecognizer(16000);
+      // Pass the actual sample rate to the recognizer
+      recognizerRef.current = new modelRef.current.KaldiRecognizer(audioContext.sampleRate);
+      
+      // Listen to async events from the Vosk Web Worker
+      recognizerRef.current.on("result", (message: any) => {
+        if (message.result && message.result.text && onResultRef.current) {
+          onResultRef.current(message.result.text);
+          stopVoskRecognition(); // Stop once we get a final match
+        }
+      });
+      
+      recognizerRef.current.on("partialresult", (message: any) => {
+        if (message.result && message.result.partial && onPartialResultRef.current) {
+          onPartialResultRef.current(message.result.partial);
+        }
+      });
       
       const processor = audioContext.createScriptProcessor(4096, 1, 1);
       processorRef.current = processor;
       
       processor.onaudioprocess = (e) => {
         if (!recognizerRef.current || !isListeningRef.current) return;
-        
-        const inputData = e.inputBuffer.getChannelData(0);
-        const pcmData = new Int16Array(inputData.length);
-        for (let i = 0; i < inputData.length; i++) {
-          const s = Math.max(-1, Math.min(1, inputData[i]));
-          pcmData[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
-        }
-        
-        const isUtteranceEnd = recognizerRef.current.acceptWaveform(pcmData);
-        if (isUtteranceEnd) {
-          const result = recognizerRef.current.result();
-          if (result.text && onResultRef.current) {
-            onResultRef.current(result.text);
-            stopVoskRecognition(); // Auto-stop on utterance end
-          }
-        } else {
-          // You could also hook into partial results if you want visual feedback,
-          // but we won't stop the recognition here.
+        try {
+          // vosk-browser automatically converts the AudioBuffer
+          recognizerRef.current.acceptWaveform(e.inputBuffer);
+        } catch (err) {
+          console.error("Vosk acceptWaveform error:", err);
         }
       };
       
       source.connect(processor);
       processor.connect(audioContext.destination);
       
-    } catch (err) {
+    } catch (err: any) {
       console.error("[Vosk] Microphone access error:", err);
+      // If it's a critical error like missing HTTPS, alert the user
+      if (err.message && err.message.includes("HTTPS")) {
+        alert("Microphone Error: " + err.message);
+      }
       isListeningRef.current = false;
       if (onErrorRef.current) onErrorRef.current(err);
     }

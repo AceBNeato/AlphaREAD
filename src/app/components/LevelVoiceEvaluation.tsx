@@ -178,6 +178,15 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
       const phonemeResult = evaluateSyllable(evaluatingWord, [text]);
       handleResult(evaluatingWord, phonemeResult, text);
     },
+    onPartialResult: (text) => {
+      if (!evaluatingWord || !text) return;
+      const phonemeResult = evaluateSyllable(evaluatingWord, [text]);
+      // Only act on partials if they are correct! This drastically speeds up recognition.
+      if (phonemeResult === "correct") {
+        handleResult(evaluatingWord, phonemeResult, text);
+        stopVoskRecognition();
+      }
+    },
     onError: handleError
   });
 
