@@ -19,7 +19,9 @@ import {
   Smartphone,
   Calendar,
   Lock,
-  Plus
+  Plus,
+  Search,
+  Filter
 } from "lucide-react";
 import { Button } from "../components/ui/button";
 
@@ -35,6 +37,10 @@ export default function AdminDashboard() {
 
   // Visibility of access codes/PINs
   const [visibleCodes, setVisibleCodes] = useState<Set<string>>(new Set());
+
+  // Search and Filter
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
 
   // CRUD for Teachers
   const [isCreatingTeacher, setIsCreatingTeacher] = useState(false);
@@ -391,61 +397,104 @@ export default function AdminDashboard() {
             {/* ── TAB 1: TEACHER CRUD ── */}
             {activeTab === "teachers" && (
               <div>
-                <div className="flex items-center justify-between mb-4">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
                   <h2 className="text-xl font-bold flex items-center gap-2">
                     <GraduationCap className="w-5 h-5 text-blue-400" />
                     System Teachers ({teachers.length})
                   </h2>
-                  <Button
-                    onClick={() => {
-                      const randomPin = Math.floor(100000 + Math.random() * 900000).toString();
-                      setTeacherPin(randomPin);
-                      setIsCreatingTeacher(true);
-                    }}
-                    className="bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl flex items-center gap-1.5"
-                  >
-                    <Plus className="w-4 h-4" /> Add Teacher
-                  </Button>
+                  <div className="flex items-center gap-2 w-full sm:w-auto relative">
+                    <div className="relative flex-1 sm:w-48 md:w-64">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <input 
+                        type="text" 
+                        placeholder="Search teachers..." 
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full pl-9 pr-4 py-2 bg-gray-900 border border-gray-800 rounded-xl text-sm text-white focus:border-blue-500 outline-none transition-colors"
+                      />
+                    </div>
+                    
+                    <div>
+                      <Button 
+                        variant="outline" 
+                        onClick={() => setIsFilterOpen(!isFilterOpen)}
+                        className="border-gray-800 text-gray-400 hover:text-white px-3"
+                      >
+                        <Filter className="w-4 h-4" />
+                      </Button>
+                      
+                      {isFilterOpen && activeTab === "teachers" && (
+                        <div className="absolute right-0 top-full mt-2 w-48 bg-gray-900 border border-gray-700 rounded-xl shadow-2xl p-2 z-20 animate-in fade-in slide-in-from-top-2">
+                          <div className="text-xs font-bold text-gray-500 uppercase px-2 py-1.5 mb-1">Filter View</div>
+                          <button onClick={() => setIsFilterOpen(false)} className="w-full text-left px-3 py-2 text-sm text-white hover:bg-gray-800 rounded-lg transition-colors">All Teachers</button>
+                          <button onClick={() => setIsFilterOpen(false)} className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:bg-gray-800 rounded-lg transition-colors">Recently Added</button>
+                        </div>
+                      )}
+                    </div>
+
+                    <Button
+                      onClick={() => {
+                        const randomPin = Math.floor(100000 + Math.random() * 900000).toString();
+                        setTeacherPin(randomPin);
+                        setIsCreatingTeacher(true);
+                      }}
+                      className="bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl flex items-center gap-1.5 whitespace-nowrap"
+                    >
+                      <Plus className="w-4 h-4" /> Add Teacher
+                    </Button>
+                  </div>
                 </div>
 
                 {isCreatingTeacher && (
-                  <form onSubmit={handleCreateTeacher} className="bg-gray-900 border border-gray-800 rounded-3xl p-6 mb-6 max-w-lg">
-                    <h3 className="text-lg font-bold text-white mb-4">Register New Teacher</h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-                      <div>
-                        <label className="block text-xs text-gray-400 font-bold mb-1.5">Alias/Name</label>
+                  <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <form onSubmit={handleCreateTeacher} className="bg-gray-900 border border-gray-700 rounded-3xl p-6 sm:p-8 max-w-md w-full relative animate-in zoom-in duration-200 shadow-2xl">
+                      <button 
+                        type="button"
+                        onClick={() => setIsCreatingTeacher(false)}
+                        className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors"
+                      >
+                        <X className="w-6 h-6" />
+                      </button>
+                      <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+                        <UserPlus className="w-5 h-5 text-blue-400" />
+                        Register New Teacher
+                      </h3>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                        <div>
+                          <label className="block text-xs text-gray-400 font-bold mb-1.5">Alias/Name</label>
+                          <input
+                            type="text" required placeholder="e.g. Teacher Sarah"
+                            value={teacherAlias} onChange={(e) => setTeacherAlias(e.target.value)}
+                            className="w-full px-4 py-3 bg-gray-950 border border-gray-800 rounded-xl text-white outline-none focus:border-blue-500 transition-colors"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-gray-400 font-bold mb-1.5">Email</label>
+                          <input
+                            type="email" required placeholder="sarah@school.com"
+                            value={teacherEmail} onChange={(e) => setTeacherEmail(e.target.value)}
+                            className="w-full px-4 py-3 bg-gray-950 border border-gray-800 rounded-xl text-white outline-none focus:border-blue-500 transition-colors"
+                          />
+                        </div>
+                      </div>
+                      <div className="mb-6">
+                        <label className="block text-xs text-gray-400 font-bold mb-1.5 flex items-center justify-between">
+                          <span>Auto-Generated 6-Digit PIN</span>
+                          <span className="text-[10px] text-blue-400 bg-blue-900/30 px-2 py-0.5 rounded-md">Read Only</span>
+                        </label>
                         <input
-                          type="text" required placeholder="e.g. Teacher Sarah"
-                          value={teacherAlias} onChange={(e) => setTeacherAlias(e.target.value)}
-                          className="w-full px-3 py-2 bg-gray-950 border border-gray-800 rounded-xl text-white outline-none focus:border-blue-500"
+                          type="text" required maxLength={6}
+                          value={teacherPin}
+                          readOnly
+                          className="w-full px-4 py-3 bg-gray-950 border border-gray-800 rounded-xl text-blue-400 outline-none font-mono tracking-widest text-center cursor-not-allowed opacity-80"
                         />
                       </div>
-                      <div>
-                        <label className="block text-xs text-gray-400 font-bold mb-1.5">Email</label>
-                        <input
-                          type="email" required placeholder="sarah@school.com"
-                          value={teacherEmail} onChange={(e) => setTeacherEmail(e.target.value)}
-                          className="w-full px-3 py-2 bg-gray-950 border border-gray-800 rounded-xl text-white outline-none focus:border-blue-500"
-                        />
+                      <div className="flex gap-3">
+                        <Button type="button" variant="outline" onClick={() => setIsCreatingTeacher(false)} className="border-gray-700 hover:bg-gray-800 text-gray-300 flex-1 py-3 transition-colors">Cancel</Button>
+                        <Button type="submit" className="bg-blue-600 hover:bg-blue-500 text-white flex-1 py-3">Register Teacher</Button>
                       </div>
-                    </div>
-                    <div className="mb-6">
-                      <label className="block text-xs text-gray-400 font-bold mb-1.5 flex items-center justify-between">
-                        <span>Auto-Generated 6-Digit PIN</span>
-                        <span className="text-[10px] text-blue-400 bg-blue-900/30 px-2 py-0.5 rounded-md">Read Only</span>
-                      </label>
-                      <input
-                        type="text" required maxLength={6}
-                        value={teacherPin}
-                        readOnly
-                        className="w-full px-3 py-2 bg-gray-900 border border-gray-800 rounded-xl text-blue-400 outline-none font-mono tracking-widest text-center cursor-not-allowed"
-                      />
-                    </div>
-                    <div className="flex gap-2">
-                      <Button type="submit" className="bg-blue-600 hover:bg-blue-500 text-white flex-1">Register</Button>
-                      <Button type="button" variant="outline" onClick={() => setIsCreatingTeacher(false)} className="border-gray-800 text-gray-400 flex-1">Cancel</Button>
-                    </div>
-                  </form>
+                    </form>
+                  </div>
                 )}
 
                 <div className="bg-gray-900 border border-gray-850 rounded-3xl overflow-hidden shadow-2xl">
@@ -465,7 +514,12 @@ export default function AdminDashboard() {
                             <td colSpan={4} className="py-8 px-6 text-center text-gray-500">No teachers registered yet.</td>
                           </tr>
                         ) : (
-                          teachers.map((teacher) => {
+                          teachers
+                            .filter(t => 
+                              (t.alias || "").toLowerCase().includes(searchQuery.toLowerCase()) || 
+                              (t.email || "").toLowerCase().includes(searchQuery.toLowerCase())
+                            )
+                            .map((teacher) => {
                             const isEditing = editingTeacherId === teacher.id;
                             const isCodeVisible = visibleCodes.has(teacher.id);
 
@@ -559,67 +613,111 @@ export default function AdminDashboard() {
             {/* ── TAB 2: STUDENT CRUD ── */}
             {activeTab === "students" && (
               <div>
-                <div className="flex items-center justify-between mb-4">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
                   <h2 className="text-xl font-bold flex items-center gap-2">
                     <Users className="w-5 h-5 text-blue-400" />
                     All System Students ({students.length})
                   </h2>
-                  <Button
-                    onClick={() => setIsCreatingStudent(true)}
-                    className="bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl flex items-center gap-1.5"
-                  >
-                    <Plus className="w-4 h-4" /> Add Student
-                  </Button>
+                  
+                  <div className="flex items-center gap-2 w-full sm:w-auto relative">
+                    <div className="relative flex-1 sm:w-48 md:w-64">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <input 
+                        type="text" 
+                        placeholder="Search students..." 
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full pl-9 pr-4 py-2 bg-gray-900 border border-gray-800 rounded-xl text-sm text-white focus:border-blue-500 outline-none transition-colors"
+                      />
+                    </div>
+                    
+                    <div>
+                      <Button 
+                        variant="outline" 
+                        onClick={() => setIsFilterOpen(!isFilterOpen)}
+                        className="border-gray-800 text-gray-400 hover:text-white px-3"
+                      >
+                        <Filter className="w-4 h-4" />
+                      </Button>
+                      
+                      {isFilterOpen && activeTab === "students" && (
+                        <div className="absolute right-0 top-full mt-2 w-48 bg-gray-900 border border-gray-700 rounded-xl shadow-2xl p-2 z-20 animate-in fade-in slide-in-from-top-2">
+                          <div className="text-xs font-bold text-gray-500 uppercase px-2 py-1.5 mb-1">Filter View</div>
+                          <button onClick={() => setIsFilterOpen(false)} className="w-full text-left px-3 py-2 text-sm text-white hover:bg-gray-800 rounded-lg transition-colors">All Students</button>
+                          <button onClick={() => setIsFilterOpen(false)} className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:bg-gray-800 rounded-lg transition-colors">Recently Added</button>
+                        </div>
+                      )}
+                    </div>
+
+                    <Button
+                      onClick={() => setIsCreatingStudent(true)}
+                      className="bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl flex items-center gap-1.5 whitespace-nowrap"
+                    >
+                      <Plus className="w-4 h-4" /> Add Student
+                    </Button>
+                  </div>
                 </div>
 
                 {isCreatingStudent && (
-                  <form onSubmit={handleCreateStudent} className="bg-gray-900 border border-gray-800 rounded-3xl p-6 mb-6 max-w-lg">
-                    <h3 className="text-lg font-bold text-white mb-4">Register New Student</h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-                      <div>
-                        <label className="block text-xs text-gray-400 font-bold mb-1.5">First Name</label>
-                        <input
-                          type="text" required placeholder="e.g. John"
-                          value={studentFirstName} onChange={(e) => setStudentFirstName(e.target.value)}
-                          className="w-full px-3 py-2 bg-gray-950 border border-gray-800 rounded-xl text-white outline-none focus:border-blue-500"
-                        />
+                  <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <form onSubmit={handleCreateStudent} className="bg-gray-900 border border-gray-700 rounded-3xl p-6 sm:p-8 max-w-md w-full relative animate-in zoom-in duration-200 shadow-2xl">
+                      <button 
+                        type="button"
+                        onClick={() => setIsCreatingStudent(false)}
+                        className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors"
+                      >
+                        <X className="w-6 h-6" />
+                      </button>
+                      <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+                        <UserPlus className="w-5 h-5 text-blue-400" />
+                        Register New Student
+                      </h3>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                        <div>
+                          <label className="block text-xs text-gray-400 font-bold mb-1.5">First Name</label>
+                          <input
+                            type="text" required placeholder="e.g. John"
+                            value={studentFirstName} onChange={(e) => setStudentFirstName(e.target.value)}
+                            className="w-full px-4 py-3 bg-gray-950 border border-gray-800 rounded-xl text-white outline-none focus:border-blue-500 transition-colors"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-gray-400 font-bold mb-1.5">Last Name</label>
+                          <input
+                            type="text" required placeholder="e.g. Doe"
+                            value={studentLastName} onChange={(e) => setStudentLastName(e.target.value)}
+                            className="w-full px-4 py-3 bg-gray-950 border border-gray-800 rounded-xl text-white outline-none focus:border-blue-500 transition-colors"
+                          />
+                        </div>
                       </div>
-                      <div>
-                        <label className="block text-xs text-gray-400 font-bold mb-1.5">Last Name</label>
-                        <input
-                          type="text" required placeholder="e.g. Doe"
-                          value={studentLastName} onChange={(e) => setStudentLastName(e.target.value)}
-                          className="w-full px-3 py-2 bg-gray-950 border border-gray-800 rounded-xl text-white outline-none focus:border-blue-500"
-                        />
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                        <div>
+                          <label className="block text-xs text-gray-400 font-bold mb-1.5">Class Code (e.g. A1)</label>
+                          <input
+                            type="text" required placeholder="e.g. A1"
+                            value={studentClassCode} onChange={(e) => setStudentClassCode(e.target.value)}
+                            className="w-full px-4 py-3 bg-gray-950 border border-gray-800 rounded-xl text-white outline-none focus:border-blue-500 font-mono uppercase transition-colors"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-gray-400 font-bold mb-1.5">Assigned Teacher</label>
+                          <select
+                            value={studentTeacherId} onChange={(e) => setStudentTeacherId(e.target.value)}
+                            className="w-full px-4 py-3 bg-gray-950 border border-gray-800 rounded-xl text-white outline-none focus:border-blue-500 transition-colors appearance-none"
+                          >
+                            <option value="">-- No Teacher --</option>
+                            {teachers.map(t => (
+                              <option key={t.id} value={t.id}>{t.alias}</option>
+                            ))}
+                          </select>
+                        </div>
                       </div>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-                      <div>
-                        <label className="block text-xs text-gray-400 font-bold mb-1.5">Class Code (e.g. A1, B3)</label>
-                        <input
-                          type="text" required placeholder="e.g. A1"
-                          value={studentClassCode} onChange={(e) => setStudentClassCode(e.target.value)}
-                          className="w-full px-3 py-2 bg-gray-950 border border-gray-800 rounded-xl text-white outline-none focus:border-blue-500 font-mono uppercase"
-                        />
+                      <div className="flex gap-3">
+                        <Button type="button" variant="outline" onClick={() => setIsCreatingStudent(false)} className="border-gray-700 hover:bg-gray-800 text-gray-300 flex-1 py-3 transition-colors">Cancel</Button>
+                        <Button type="submit" className="bg-blue-600 hover:bg-blue-500 text-white flex-1 py-3">Register Student</Button>
                       </div>
-                      <div>
-                        <label className="block text-xs text-gray-400 font-bold mb-1.5">Assigned Teacher</label>
-                        <select
-                          value={studentTeacherId} onChange={(e) => setStudentTeacherId(e.target.value)}
-                          className="w-full px-3 py-2 bg-gray-950 border border-gray-800 rounded-xl text-white outline-none focus:border-blue-500"
-                        >
-                          <option value="">-- No Teacher Assigned --</option>
-                          {teachers.map(t => (
-                            <option key={t.id} value={t.id}>{t.alias}</option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button type="submit" className="bg-blue-600 hover:bg-blue-500 text-white flex-1">Register</Button>
-                      <Button type="button" variant="outline" onClick={() => setIsCreatingStudent(false)} className="border-gray-800 text-gray-400 flex-1">Cancel</Button>
-                    </div>
-                  </form>
+                    </form>
+                  </div>
                 )}
 
                 <div className="bg-gray-900 border border-gray-850 rounded-3xl overflow-hidden shadow-2xl">
@@ -641,7 +739,13 @@ export default function AdminDashboard() {
                             <td colSpan={6} className="py-8 px-6 text-center text-gray-500">No students registered yet.</td>
                           </tr>
                         ) : (
-                          students.map((student) => {
+                          students
+                            .filter(s => 
+                              (s.first_name || "").toLowerCase().includes(searchQuery.toLowerCase()) || 
+                              (s.last_name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+                              (s.class_code || "").toLowerCase().includes(searchQuery.toLowerCase())
+                            )
+                            .map((student) => {
                             const isEditing = editingStudentId === student.id;
                             const isCodeVisible = visibleCodes.has(student.id);
                             const linkedTeacher = teachers.find(t => t.id === student.teacher_id);
