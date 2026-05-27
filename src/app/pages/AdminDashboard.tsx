@@ -397,7 +397,11 @@ export default function AdminDashboard() {
                     System Teachers ({teachers.length})
                   </h2>
                   <Button
-                    onClick={() => setIsCreatingTeacher(true)}
+                    onClick={() => {
+                      const randomPin = Math.floor(100000 + Math.random() * 900000).toString();
+                      setTeacherPin(randomPin);
+                      setIsCreatingTeacher(true);
+                    }}
                     className="bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl flex items-center gap-1.5"
                   >
                     <Plus className="w-4 h-4" /> Add Teacher
@@ -426,11 +430,15 @@ export default function AdminDashboard() {
                       </div>
                     </div>
                     <div className="mb-6">
-                      <label className="block text-xs text-gray-400 font-bold mb-1.5">Starting 6-Digit PIN</label>
+                      <label className="block text-xs text-gray-400 font-bold mb-1.5 flex items-center justify-between">
+                        <span>Auto-Generated 6-Digit PIN</span>
+                        <span className="text-[10px] text-blue-400 bg-blue-900/30 px-2 py-0.5 rounded-md">Read Only</span>
+                      </label>
                       <input
-                        type="text" required maxLength={6} placeholder="e.g. 123456"
-                        value={teacherPin} onChange={(e) => setTeacherPin(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                        className="w-full px-3 py-2 bg-gray-950 border border-gray-800 rounded-xl text-white outline-none focus:border-blue-500 font-mono tracking-widest text-center"
+                        type="text" required maxLength={6}
+                        value={teacherPin}
+                        readOnly
+                        className="w-full px-3 py-2 bg-gray-900 border border-gray-800 rounded-xl text-blue-400 outline-none font-mono tracking-widest text-center cursor-not-allowed"
                       />
                     </div>
                     <div className="flex gap-2">
