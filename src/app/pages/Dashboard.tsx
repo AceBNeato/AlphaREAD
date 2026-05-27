@@ -112,21 +112,24 @@ export default function Dashboard() {
         </header>
 
         {/* Welcome Profile Card */}
-        <div className="bg-white dark:bg-[#1f2f3d] rounded-[2.5rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.15)] p-6 mb-8 border border-gray-100 dark:border-white/5 transition-all flex justify-center">
+        <div className="bg-white dark:bg-[#1f2f3d] rounded-[2.5rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.15)] p-6 mb-8 border border-gray-100 dark:border-white/5 transition-all">
           <div className="flex items-center gap-5">
-            <div className="w-16 h-16 rounded-3xl bg-gradient-to-br from-[#1CB0F6] to-[#0a8ed4] shadow-inner flex items-center justify-center text-4xl transform -rotate-6">
-              {profile.avatar}
+            <div className="w-16 h-16 rounded-3xl bg-gradient-to-br from-[#1CB0F6] to-[#0a8ed4] shadow-inner flex items-center justify-center text-4xl transform -rotate-6 flex-shrink-0">
+              {profile.avatar || "🦉"}
             </div>
             <div>
-              <h2 className="text-xl font-bold text-gray-800 dark:text-white">
+              <span className="text-[10px] uppercase font-bold tracking-widest text-[#1CB0F6] block mb-0.5">
+                {profile.id === "teacher-preview" || (profile as any).role === "teacher-preview" ? "Teacher Mode" : "Student Mode"}
+              </span>
+              <h2 className="text-xl font-bold text-gray-800 dark:text-white leading-tight">
                 {profile.name}
               </h2>
-              {profile.id !== "teacher-preview" && (
-                <div className="flex gap-2 mt-1">
-                  <span className="text-xs font-bold text-[#FF9600] bg-[#fff0d4] dark:bg-[#FF9600]/20 px-2 py-1 rounded-lg">
-                    Lvl {currentLevel}
+              {profile.id !== "teacher-preview" && (profile as any).role !== "teacher-preview" && (
+                <div className="flex gap-2 mt-1.5">
+                  <span className="text-xs font-bold text-[#FF9600] bg-[#fff0d4] dark:bg-[#FF9600]/20 px-2 py-0.5 rounded-lg">
+                    Lesson {currentLevel}
                   </span>
-                  <span className="text-xs font-bold text-[#58CC02] bg-[#e8f9d4] dark:bg-[#58CC02]/20 px-2 py-1 rounded-lg">
+                  <span className="text-xs font-bold text-[#58CC02] bg-[#e8f9d4] dark:bg-[#58CC02]/20 px-2 py-0.5 rounded-lg">
                     {accuracy}% Acc
                   </span>
                 </div>
@@ -140,17 +143,17 @@ export default function Dashboard() {
           
           {/* All Levels Button */}
           <Link to="/levels" className="block outline-none">
-            <button className="w-full bg-gradient-to-br from-[#58CC02] to-[#46a302] rounded-3xl p-6 shadow-[0_8px_0_#3d8c02] hover:shadow-[0_6px_0_#3d8c02] hover:translate-y-[2px] active:shadow-none active:translate-y-[8px] transition-all flex items-center justify-between group">
+            <button className="w-full bg-gradient-to-br from-[#58CC02] to-[#46a302] rounded-3xl p-6 shadow-[0_8px_0_#3d8c02] hover:shadow-[0_6px_0_#3d8c02] hover:translate-y-[2px] active:shadow-none active:translate-y-[8px] transition-all flex items-center justify-between group cursor-pointer">
               <div className="flex items-center gap-5">
                 <div className="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-md transition-transform group-hover:scale-110">
                   <Trophy className="w-8 h-8 text-white" fill="white" />
                 </div>
                 <div className="text-left">
                   <h3 className="text-2xl font-black text-white tracking-wide">
-                    All Levels
+                    All Lessons
                   </h3>
                   <p className="text-white/80 font-medium">
-                    {levels.length} levels to master
+                    {levels.length} lessons to master
                   </p>
                 </div>
               </div>
@@ -160,14 +163,22 @@ export default function Dashboard() {
           {/* Exit / Back to Teacher Dashboard Button */}
           <button 
             onClick={() => {
-              if (profile.id === "teacher-preview") {
-                navigate("/admin");
+              const returnTo = (profile as any).returnTo;
+              if (returnTo) {
+                if (returnTo === "/admin") {
+                  localStorage.setItem("userProfile", JSON.stringify({ role: "admin", name: "Admin" }));
+                } else if (returnTo === "/teacher-dashboard") {
+                  localStorage.setItem("userProfile", JSON.stringify({ id: (profile as any).teacherId || "teacher", role: "teacher", name: profile.name }));
+                }
+                navigate(returnTo);
+              } else if (profile.id === "teacher-preview" || (profile as any).role === "teacher-preview") {
+                navigate("/teacher-dashboard");
               } else {
                 handleExitApp();
               }
             }}
-            className={`w-full rounded-3xl p-6 transition-all flex items-center justify-between group mt-2 ${
-              profile.id === "teacher-preview"
+            className={`w-full rounded-3xl p-6 transition-all flex items-center justify-between group mt-2 cursor-pointer ${
+              profile.id === "teacher-preview" || (profile as any).role === "teacher-preview"
                 ? "bg-gradient-to-br from-[#1CB0F6] to-[#0a8ed4] shadow-[0_8px_0_#0979b5] hover:shadow-[0_6px_0_#0979b5]"
                 : "bg-gradient-to-br from-[#FF4B4B] to-[#e0336e] shadow-[0_8px_0_#b51e4f] hover:shadow-[0_6px_0_#b51e4f]"
             } hover:translate-y-[2px] active:shadow-none active:translate-y-[8px]`}
@@ -178,10 +189,10 @@ export default function Dashboard() {
               </div>
               <div className="text-left">
                 <h3 className="text-2xl font-black text-white tracking-wide">
-                  {profile.id === "teacher-preview" ? "Back to Dashboard" : "Exit App"}
+                  {profile.id === "teacher-preview" || (profile as any).role === "teacher-preview" ? "Open Dashboard" : "Exit App"}
                 </h3>
                 <p className="text-white/80 font-medium">
-                  {profile.id === "teacher-preview" ? "Return to admin panel" : "See you next time!"}
+                  {profile.id === "teacher-preview" || (profile as any).role === "teacher-preview" ? "Back to dashboard" : "See you next time!"}
                 </p>
               </div>
             </div>

@@ -87,13 +87,11 @@ export default function Levels() {
             </h1>
           </div>
           <p className="text-gray-600 dark:text-gray-400">
-            Master the alphabet through {levels.length} fun, progressive levels!
+            Master the alphabet through {levels.length} fun, progressive lessons!
           </p>
         </header>
 
-
-
-        {/* Level Cards */}
+        {/* Lesson Cards */}
         <div className="space-y-6">
           {userLevels.map((level, index) => {
             const colors = levelColors[index % levelColors.length];
@@ -114,7 +112,7 @@ export default function Levels() {
                     </div>
                     <div className="flex-1">
                       <h3 className="text-xl text-gray-800 dark:text-gray-100 mb-1">
-                        Level {level.id}: {level.title}
+                        Lesson {level.id}: {level.title}
                       </h3>
                       <p className="text-sm text-gray-500 dark:text-gray-400">
                         {level.subtitle}

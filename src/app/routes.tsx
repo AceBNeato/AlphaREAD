@@ -7,6 +7,7 @@ import Lesson from "./pages/Lesson";
 import Settings from "./pages/Settings";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminLogin from "./pages/AdminLogin";
+import TeacherDashboard from "./pages/TeacherDashboard";
 import { BackButtonHandler } from "./components/BackButtonHandler";
 
 function RootLayout() {
@@ -53,6 +54,10 @@ export const router = createHashRouter([
       {
         path: "/admin",
         Component: AdminDashboard,
+      },
+      {
+        path: "/teacher-dashboard",
+        Component: TeacherDashboard,
       },
       {
         path: "*",

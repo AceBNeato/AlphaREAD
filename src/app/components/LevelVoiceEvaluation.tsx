@@ -12,6 +12,7 @@ import {
   RotateCcw,
   AlertCircle,
   Volume2,
+  Shuffle,
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { CVC_WORDS, shuffle, getPhoneticPronunciation } from "../data/levels";
@@ -120,12 +121,14 @@ interface LevelVoiceEvaluationProps {
 
 export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase, onComplete }: LevelVoiceEvaluationProps) {
   const navigate = useNavigate();
-  const [words] = useState<string[]>(() => customWords ? customWords : shuffle(CVC_WORDS).slice(0, 10));
+  const [words, setWords] = useState<string[]>(() => customWords ? customWords : shuffle(CVC_WORDS).slice(0, 10));
 
   const [evaluatingWord, setEvaluatingWord] = useState<string | null>(null);
   const [evalFeedback, setEvalFeedback] = useState<Record<string, "correct" | "close" | "wrong" | null>>({});
   const [transcripts, setTranscripts] = useState<Record<string, string>>({});
   const [completedWords, setCompletedWords] = useState<Set<string>>(new Set());
+  const [wordsIndex, setWordsIndex] = useState(0);
+  const [isMicResetting, setIsMicResetting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
   const [showCompletionScreen, setShowCompletionScreen] = useState(false);
@@ -134,6 +137,39 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
   // Detect mobile — on phones we skip getUserMedia to avoid mic conflict with SpeechRecognition
   const isMobile = useMemo(() => /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent), []);
   const isIOS = useMemo(() => /iPhone|iPad|iPod/i.test(navigator.userAgent), []);
+
+  const handleShuffle = () => {
+    setWords(shuffle([...words]));
+    setCompletedWords(new Set());
+    setWordsIndex(0);
+    setEvalFeedback({});
+    setTranscripts({});
+    setEvaluatingWord(null);
+  };
+
+  const handleReset = () => {
+    setCompletedWords(new Set());
+    setWordsIndex(0);
+    setEvalFeedback({});
+    setTranscripts({});
+    setEvaluatingWord(null);
+  };
+
+  const handleNext = () => {
+    const currentWord = words[wordsIndex];
+    if (currentWord) {
+      setCompletedWords(prev => {
+        const next = new Set(prev);
+        next.add(currentWord);
+        return next;
+      });
+    }
+    if (wordsIndex < words.length - 1) {
+      setWordsIndex(prev => prev + 1);
+    } else {
+      setShowCompletionScreen(true);
+    }
+  };
 
   const playTTS = async (text: string) => {
     // For CV/VC syllables, look up the phonetically correct TTS string
@@ -262,9 +298,19 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
               newCompleted.add(evaluatingWord);
               setCompletedWords(newCompleted);
               setTimeout(() => {
-                setEvaluatingWord(null);
+                safeSetEvaluatingWordNull();
                 setShowConfetti(false);
-                if (newCompleted.size >= words.length) setShowCompletionScreen(true);
+                if (newCompleted.size >= words.length) {
+                  setShowCompletionScreen(true);
+                } else {
+                  setWordsIndex(prev => {
+                    let nextIdx = prev + 1;
+                    while (nextIdx < words.length && newCompleted.has(words[nextIdx])) {
+                      nextIdx++;
+                    }
+                    return Math.min(words.length - 1, nextIdx);
+                  });
+                }
               }, 2000);
             } else if (phonemeResult === "close") {
               setEvalFeedback(prev => ({ ...prev, [evaluatingWord]: "close" }));
@@ -273,15 +319,25 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
               newCompleted.add(evaluatingWord);
               setCompletedWords(newCompleted);
               setTimeout(() => {
-                setEvaluatingWord(null);
+                safeSetEvaluatingWordNull();
                 setShowConfetti(false);
-                if (newCompleted.size >= words.length) setShowCompletionScreen(true);
+                if (newCompleted.size >= words.length) {
+                  setShowCompletionScreen(true);
+                } else {
+                  setWordsIndex(prev => {
+                    let nextIdx = prev + 1;
+                    while (nextIdx < words.length && newCompleted.has(words[nextIdx])) {
+                      nextIdx++;
+                    }
+                    return Math.min(words.length - 1, nextIdx);
+                  });
+                }
               }, 2000);
             } else {
               setEvalFeedback(prev => ({ ...prev, [evaluatingWord]: "wrong" }));
               setTimeout(() => {
                 setEvalFeedback(prev => ({ ...prev, [evaluatingWord]: null }));
-                setEvaluatingWord(null);
+                safeSetEvaluatingWordNull();
               }, 2500);
             }
             return; // Done — do not fall through to CVC path
@@ -339,10 +395,18 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
             newCompleted.add(evaluatingWord);
             setCompletedWords(newCompleted);
             setTimeout(() => {
-              setEvaluatingWord(null);
+              safeSetEvaluatingWordNull();
               setShowConfetti(false);
               if (newCompleted.size >= words.length) {
                 setShowCompletionScreen(true);
+              } else {
+                setWordsIndex(prev => {
+                  let nextIdx = prev + 1;
+                  while (nextIdx < words.length && newCompleted.has(words[nextIdx])) {
+                    nextIdx++;
+                  }
+                  return Math.min(words.length - 1, nextIdx);
+                });
               }
             }, 2000);
           } else if (bestSimilarity >= 0.5 || matchConsonants(bestMatch, evaluatingWord)) {
@@ -352,17 +416,25 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
             newCompleted.add(evaluatingWord);
             setCompletedWords(newCompleted);
             setTimeout(() => {
-              setEvaluatingWord(null);
+              safeSetEvaluatingWordNull();
               setShowConfetti(false);
               if (newCompleted.size >= words.length) {
                 setShowCompletionScreen(true);
+              } else {
+                setWordsIndex(prev => {
+                  let nextIdx = prev + 1;
+                  while (nextIdx < words.length && newCompleted.has(words[nextIdx])) {
+                    nextIdx++;
+                  }
+                  return Math.min(words.length - 1, nextIdx);
+                });
               }
             }, 2000);
           } else {
             setEvalFeedback(prev => ({ ...prev, [evaluatingWord]: "wrong" }));
             setTimeout(() => {
               setEvalFeedback(prev => ({ ...prev, [evaluatingWord]: null }));
-              setEvaluatingWord(null);
+              safeSetEvaluatingWordNull();
             }, 2500);
           }
         };
@@ -371,14 +443,14 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
           if (autoSilenceTimeout) clearTimeout(autoSilenceTimeout);
           // Ignore benign errors — these happen when we call .stop() ourselves or no speech came in
           if (event.error === 'no-speech' || event.error === 'aborted') {
-            setEvaluatingWord(null);
+            safeSetEvaluatingWordNull();
             return;
           }
           console.error("Speech recognition error:", event.error);
           setEvalFeedback(prev => ({ ...prev, [evaluatingWord]: "wrong" }));
           setTimeout(() => {
             setEvalFeedback(prev => ({ ...prev, [evaluatingWord]: null }));
-            setEvaluatingWord(null);
+            safeSetEvaluatingWordNull();
           }, 2000);
         };
 
@@ -389,7 +461,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
           // Only reset the UI if we're still waiting (no result/feedback set yet)
           setEvalFeedback(prev => {
             if (prev[evaluatingWord] === null || prev[evaluatingWord] === undefined) {
-              setEvaluatingWord(null);
+              safeSetEvaluatingWordNull();
             }
             return prev;
           });
@@ -408,12 +480,12 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
             setEvalFeedback(prev => ({ ...prev, [evaluatingWord]: "wrong" }));
             setTimeout(() => {
               setEvalFeedback(prev => ({ ...prev, [evaluatingWord]: null }));
-              setEvaluatingWord(null);
+              safeSetEvaluatingWordNull();
             }, 1500);
           }, 5000);
         } catch (error) {
           console.error("Error starting recognition:", error);
-          setEvaluatingWord(null);
+          safeSetEvaluatingWordNull();
         }
       }
     }
@@ -448,8 +520,14 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [evaluatingWord]);
 
+  const safeSetEvaluatingWordNull = () => {
+    setEvaluatingWord(null);
+    setIsMicResetting(true);
+    setTimeout(() => setIsMicResetting(false), 400);
+  };
+
   const startRecording = (word: string) => {
-    if (evaluatingWord || completedWords.has(word)) return;
+    if (evaluatingWord || completedWords.has(word) || isMicResetting) return;
     setEvaluatingWord(word);
     setEvalFeedback(prev => ({ ...prev, [word]: null }));
     setTranscripts(prev => ({ ...prev, [word]: "" }));
@@ -527,6 +605,35 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
               />
             </div>
 
+            {/* Teacher Controls Row */}
+            <div className="flex justify-center gap-3 mb-6">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleShuffle}
+                className="flex items-center gap-1.5 border-indigo-300 text-indigo-600 hover:bg-indigo-50 dark:border-indigo-700 dark:text-indigo-400 dark:hover:bg-indigo-900/20"
+              >
+                <Shuffle className="w-4 h-4" /> Shuffle
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleReset}
+                className="flex items-center gap-1.5 border-amber-300 text-amber-600 hover:bg-amber-50 dark:border-amber-700 dark:text-amber-400"
+              >
+                <RotateCcw className="w-4 h-4" /> Reset
+              </Button>
+              <Button
+                size="sm"
+                onClick={handleNext}
+                disabled={completedWords.size >= words.length}
+                className="flex items-center gap-1.5 text-white shadow-md active:scale-95"
+                style={{ background: `linear-gradient(135deg, ${accent.primary}, ${accent.dark})` }}
+              >
+                Next <ArrowRight className="w-4 h-4" />
+              </Button>
+            </div>
+
             <AnimatePresence mode="wait">
               <motion.div
                 key="list-phase"
@@ -537,16 +644,20 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
                 className="text-center mb-8"
               >
                 <div className="space-y-3 bg-white/50 dark:bg-gray-800/50 p-4 rounded-3xl backdrop-blur-sm border-2 border-dashed border-gray-200 dark:border-gray-700 max-h-[60vh] overflow-y-auto">
-                  {words.map((w) => {
+                  {words.map((w, idx) => {
                     const isDone = completedWords.has(w);
                     const isCurrent = evaluatingWord === w;
+                    const isIndexMatch = idx === wordsIndex;
                     const feedback = evalFeedback[w];
                     const transcript = transcripts[w];
 
                     return (
-                      <div key={w} className={`flex items-center justify-between p-4 rounded-2xl transition-all ${isDone ? 'bg-green-50 dark:bg-green-900/20' : 'bg-white dark:bg-gray-800'} shadow-sm border-2 ${isCurrent ? 'border-pink-400' : isDone ? 'border-green-200' : 'border-transparent'}`}>
+                      <div key={w} className={`flex items-center justify-between p-4 rounded-2xl transition-all ${isDone ? 'bg-green-50 dark:bg-green-900/20' : 'bg-white dark:bg-gray-800'} shadow-sm border-2 ${isCurrent ? 'border-pink-400 shadow-md' : isIndexMatch ? 'border-indigo-400 bg-indigo-50/20 dark:bg-indigo-950/10' : isDone ? 'border-green-200' : 'border-transparent'}`}>
                         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
-                          <span className="text-3xl font-bold w-20 text-left tracking-widest uppercase" style={{ color: isDone ? '#58CC02' : accent.primary }}>{w}</span>
+                          <span className="text-3xl font-bold w-20 text-left tracking-widest uppercase flex items-center gap-1.5" style={{ color: isDone ? '#58CC02' : accent.primary }}>
+                            {w}
+                            {isIndexMatch && !isDone && <span className="w-2 h-2 rounded-full bg-indigo-500 animate-ping" />}
+                          </span>
                           {feedback === 'correct' && <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="text-green-500 flex items-center gap-1 text-sm font-bold"><CheckCircle2 className="w-4 h-4" /> Correct!</motion.div>}
                           {feedback === 'close' && <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="text-blue-500 flex items-center gap-1 text-sm font-bold"><Sparkles className="w-4 h-4" /> Close enough!</motion.div>}
                           {feedback === 'wrong' && (
@@ -591,13 +702,13 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
                           <button
                             onClick={() => {
                               if (isCurrent) {
-                                setEvaluatingWord(null);
+                                safeSetEvaluatingWordNull();
                               } else {
                                 startRecording(w);
                               }
                             }}
-                            disabled={(evaluatingWord !== null && !isCurrent) || isDone}
-                            className={`relative w-12 h-12 rounded-xl flex items-center justify-center transition-all ${isDone ? 'bg-green-500 text-white shadow-none opacity-50 cursor-default' : isCurrent ? 'bg-red-500 text-white shadow-lg' : 'bg-gradient-to-br from-pink-500 to-rose-500 text-white shadow-md hover:scale-105 active:scale-95'}`}
+                            disabled={(evaluatingWord !== null && !isCurrent) || isDone || isMicResetting}
+                            className={`relative w-12 h-12 rounded-xl flex items-center justify-center transition-all ${isDone ? 'bg-green-500 text-white shadow-none opacity-50 cursor-default' : isCurrent ? 'bg-red-500 text-white shadow-lg' : isMicResetting ? 'bg-gray-300 dark:bg-gray-700 text-gray-400 cursor-not-allowed' : 'bg-gradient-to-br from-pink-500 to-rose-500 text-white shadow-md hover:scale-105 active:scale-95'}`}
                           >
                             {isCurrent && (
                               <>

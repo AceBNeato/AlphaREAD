@@ -118,57 +118,24 @@ export function LevelSyllablesMaster({ levelId, accent }: LevelSyllablesMasterPr
             </Button>
             <div className="flex-1 text-center pr-8">
               <h2 className="text-lg font-bold tracking-tight" style={{ color: accent.primary }}>
-                Level 2: Syllable Master
+                Lesson 2: Syllable Master
               </h2>
             </div>
           </div>
         </div>
 
         {/* Content Picker */}
-        <div className="max-w-md mx-auto px-6 py-10 flex-1 flex flex-col justify-center w-full">
+        <div className="max-w-2xl mx-auto px-4 py-10 flex-1 flex flex-col justify-center w-full">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-black mb-2 text-gray-800 dark:text-gray-100">
               Syllable Mode
             </h1>
             <p className="text-gray-500 dark:text-gray-400">
-              Choose which sub-level you want to practice first! Complete both to unlock the next level.
+              Choose which sub-level you want to practice first! Complete both to unlock the next lesson.
             </p>
           </div>
 
-          <div className="space-y-4">
-            {/* CV Selection Card */}
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => {
-                setSelectedSubLevel("CV");
-                setCurrentStepIndex(0);
-              }}
-              className="w-full text-left p-6 rounded-3xl border-3 bg-white dark:bg-gray-800/80 shadow-md hover:shadow-lg transition-all flex items-center gap-4 relative overflow-hidden cursor-pointer"
-              style={{ borderColor: "#FF9600" }}
-            >
-              <div
-                className="w-14 h-14 rounded-2xl flex items-center justify-center text-white flex-shrink-0"
-                style={{ background: "linear-gradient(135deg, #FF9600 0%, #d47e02 100%)" }}
-              >
-                <span className="text-xl font-bold">2.1</span>
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <h3 className="text-lg font-black text-[#FF9600]">
-                    Consonant + Vowel (CV)
-                  </h3>
-                  {isCVDone && (
-                    <CheckCircle2 className="w-5 h-5 text-[#58CC02] flex-shrink-0" />
-                  )}
-                </div>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  Build and pronounce syllables like <span className="font-bold">BA, MI, TO</span>
-                </p>
-              </div>
-              <Play className="w-5 h-5 text-[#FF9600] flex-shrink-0 ml-2" />
-            </motion.button>
-
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
             {/* VC Selection Card */}
             <motion.button
               whileHover={{ scale: 1.02 }}
@@ -177,29 +144,60 @@ export function LevelSyllablesMaster({ levelId, accent }: LevelSyllablesMasterPr
                 setSelectedSubLevel("VC");
                 setCurrentStepIndex(0);
               }}
-              className="w-full text-left p-6 rounded-3xl border-3 bg-white dark:bg-gray-800/80 shadow-md hover:shadow-lg transition-all flex items-center gap-4 relative overflow-hidden cursor-pointer"
+              className="w-full text-left p-8 sm:p-10 rounded-[2.5rem] border-3 bg-white dark:bg-gray-800/80 shadow-lg hover:shadow-xl transition-all flex flex-col sm:flex-row items-center sm:items-start gap-6 relative overflow-hidden cursor-pointer"
               style={{ borderColor: "#CE82FF" }}
             >
               <div
-                className="w-14 h-14 rounded-2xl flex items-center justify-center text-white flex-shrink-0"
+                className="w-16 h-16 rounded-2xl flex items-center justify-center text-white flex-shrink-0"
                 style={{ background: "linear-gradient(135deg, #CE82FF 0%, #a25be0 100%)" }}
               >
-                <span className="text-xl font-bold">2.2</span>
+                <span className="text-2xl font-black">2.1</span>
               </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <h3 className="text-lg font-black text-[#CE82FF]">
+              <div className="flex-1 min-w-0 text-center sm:text-left">
+                <div className="flex flex-col sm:flex-row items-center gap-2">
+                  <h3 className="text-xl font-black text-[#CE82FF]">
                     Vowel + Consonant (VC)
                   </h3>
                   {isVCDone && (
                     <CheckCircle2 className="w-5 h-5 text-[#58CC02] flex-shrink-0" />
                   )}
                 </div>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
                   Build and pronounce syllables like <span className="font-bold">AB, IM, OT</span>
                 </p>
               </div>
-              <Play className="w-5 h-5 text-[#CE82FF] flex-shrink-0 ml-2" />
+            </motion.button>
+
+            {/* CV Selection Card */}
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => {
+                setSelectedSubLevel("CV");
+                setCurrentStepIndex(0);
+              }}
+              className="w-full text-left p-8 sm:p-10 rounded-[2.5rem] border-3 bg-white dark:bg-gray-800/80 shadow-lg hover:shadow-xl transition-all flex flex-col sm:flex-row items-center sm:items-start gap-6 relative overflow-hidden cursor-pointer"
+              style={{ borderColor: "#FF9600" }}
+            >
+              <div
+                className="w-16 h-16 rounded-2xl flex items-center justify-center text-white flex-shrink-0"
+                style={{ background: "linear-gradient(135deg, #FF9600 0%, #d47e02 100%)" }}
+              >
+                <span className="text-2xl font-black">2.2</span>
+              </div>
+              <div className="flex-1 min-w-0 text-center sm:text-left">
+                <div className="flex flex-col sm:flex-row items-center gap-2">
+                  <h3 className="text-xl font-black text-[#FF9600]">
+                    Consonant + Vowel (CV)
+                  </h3>
+                  {isCVDone && (
+                    <CheckCircle2 className="w-5 h-5 text-[#58CC02] flex-shrink-0" />
+                  )}
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                  Build and pronounce syllables like <span className="font-bold">BA, MI, TO</span>
+                </p>
+              </div>
             </motion.button>
           </div>
         </div>

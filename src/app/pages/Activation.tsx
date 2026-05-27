@@ -1,191 +1,383 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router";
 import { supabase } from "../../lib/supabase";
-import { KeyRound, Loader2, ShieldCheck, Lock } from "lucide-react";
-import { Button } from "../components/ui/button";
+import { 
+  KeyRound, 
+  Mail, 
+  Loader2, 
+  GraduationCap, 
+  BookOpen, 
+  Eye, 
+  EyeOff, 
+  ArrowLeft,
+  Sparkles,
+  Smartphone,
+  ChevronRight,
+  ShieldCheck,
+  CheckCircle2,
+  X
+} from "lucide-react";
 import { generateUUID } from "../utils/uuid";
-
+import { Button } from "../components/ui/button";
 
 export default function Activation() {
   const navigate = useNavigate();
-  const [code, setCode] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
 
-  // Splash screen delay and auto-redirect
+  // Unified input state
+  const [userInput, setUserInput] = useState("");
+  const [isEmail, setIsEmail] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  // Teacher passwordless flow states
+  const [pinSent, setPinSent] = useState(false);
+  const [demoPin, setDemoPin] = useState("");
+  const [teacherPin, setTeacherPin] = useState("");
+  const [showPin, setShowPin] = useState(false);
+
+  // Detect email vs student code dynamically
+  useEffect(() => {
+    setIsEmail(userInput.includes("@"));
+    setError("");
+  }, [userInput]);
+
+  // Global key listener for Admin: Ctrl + Alt + A
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    if (e.ctrlKey && e.altKey && e.key.toLowerCase() === "a") {
+      navigate("/admin-login");
+    }
+  }, [navigate]);
+
+  useEffect(() => {
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [handleKeyDown]);
+
+  // Splash screen transition on load
   useEffect(() => {
     const timer = setTimeout(() => {
       setShowSplash(false);
       const profile = localStorage.getItem("userProfile");
       if (profile) {
-        navigate("/dashboard");
+        const parsed = JSON.parse(profile);
+        if (parsed.role === "teacher") {
+          navigate("/teacher-dashboard");
+        } else if (parsed.role === "admin") {
+          navigate("/admin");
+        } else if (parsed.role === "student") {
+          navigate("/dashboard");
+        }
       }
-    }, 2500); // Show splash for 2.5 seconds
-
+    }, 2200);
     return () => clearTimeout(timer);
   }, [navigate]);
 
-  const handleActivate = async (e: React.FormEvent) => {
+  // ── Unified Submit Handler ──
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!code.trim()) return;
+    if (!userInput.trim()) return;
+
+    setLoading(true);
+    setError("");
+
+    if (isEmail) {
+      // ── Teacher Path ──
+      try {
+        const emailClean = userInput.trim().toLowerCase();
+        // Check if teacher exists in profiles
+        const { data: teacher, error: dbError } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("email", emailClean)
+          .eq("role", "teacher")
+          .maybeSingle();
+
+        if (dbError || !teacher) {
+          throw new Error("No teacher account found with that email. Ask your Administrator.");
+        }
+
+        // Generate a random 6-digit PIN
+        const generatedPin = Math.floor(100000 + Math.random() * 900000).toString();
+        
+        // Save the PIN to the teacher's profile in Supabase
+        const { error: updateError } = await supabase
+          .from("profiles")
+          .update({ pin_hash: generatedPin })
+          .eq("id", teacher.id);
+
+        if (updateError) throw updateError;
+
+        setDemoPin(generatedPin);
+        setPinSent(true);
+      } catch (err: any) {
+        setError(err.message || "Teacher lookup failed.");
+      } finally {
+        setLoading(false);
+      }
+    } else {
+      // ── Student Path ──
+      try {
+        const studentCodeClean = userInput.trim().toUpperCase();
+        const { data: student, error: dbError } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("student_code", studentCodeClean)
+          .eq("role", "student")
+          .maybeSingle();
+
+        if (dbError || !student) {
+          throw new Error("Invalid Student Access Code. Please ask your teacher.");
+        }
+
+        // Device Binding check
+        let localDeviceId = localStorage.getItem("activated_device_id");
+        if (!localDeviceId) {
+          localDeviceId = generateUUID();
+          localStorage.setItem("activated_device_id", localDeviceId);
+        }
+
+        if (student.activated_device_id && student.activated_device_id !== localDeviceId) {
+          throw new Error("This access code is locked to another active device.");
+        }
+
+        // Bind device if not yet bound
+        if (!student.activated_device_id) {
+          await supabase
+            .from("profiles")
+            .update({ activated_device_id: localDeviceId })
+            .eq("id", student.id);
+        }
+
+        localStorage.setItem("userProfile", JSON.stringify({
+          id: student.id,
+          name: student.first_name,
+          avatar: student.avatar || "👦",
+          role: "student",
+          createdAt: student.created_at
+        }));
+
+        navigate("/dashboard");
+      } catch (err: any) {
+        setError(err.message || "Student login failed.");
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
+  // ── Verification for Teacher PIN ──
+  const handleVerifyTeacherPin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (teacherPin.length !== 6) return;
 
     setLoading(true);
     setError("");
 
     try {
-      // Look up the student code in the profiles table
-      const { data, error: dbError } = await supabase
+      const emailClean = userInput.trim().toLowerCase();
+      const { data: teacher, error: dbError } = await supabase
         .from("profiles")
         .select("*")
-        .eq("student_code", code.trim().toUpperCase())
-        .single();
+        .eq("email", emailClean)
+        .eq("role", "teacher")
+        .maybeSingle();
 
-      if (dbError || !data) {
-        throw new Error("Invalid activation code.");
+      if (dbError || !teacher) {
+        throw new Error("Teacher record not found.");
       }
 
-      // Check device lock
-      let localDeviceId = localStorage.getItem("activated_device_id");
-      if (!localDeviceId) {
-        localDeviceId = generateUUID();
-        localStorage.setItem("activated_device_id", localDeviceId);
+      if (teacher.pin_hash !== teacherPin) {
+        throw new Error("Incorrect 6-digit Security PIN.");
       }
 
-      if (data.activated_device_id) {
-        // If the profile already has an activated_device_id, check if it matches
-        if (data.activated_device_id !== localDeviceId) {
-          throw new Error("This code has already been used on another device.");
-        }
-      } else {
-        // First time use: lock the code to this device
-        const { error: updateError } = await supabase
-          .from("profiles")
-          .update({ activated_device_id: localDeviceId })
-          .eq("id", data.id);
+      // Log teacher in
+      localStorage.setItem("userProfile", JSON.stringify({
+        id: teacher.id,
+        name: teacher.alias || teacher.first_name || "Teacher",
+        avatar: "👩‍🏫",
+        role: "teacher",
+        createdAt: teacher.created_at
+      }));
 
-        if (updateError) {
-          console.error("Error locking device", updateError);
-        }
-      }
-
-      // Success! Save the profile locally
-      const profile = {
-        id: data.id,
-        name: data.first_name,
-        avatar: data.avatar || "👦",
-        accent: "PH", // Hardcoded to Filipino English for all students
-        createdAt: data.created_at,
-      };
-      
-      localStorage.setItem("userProfile", JSON.stringify(profile));
-      navigate("/dashboard");
-      
+      navigate("/teacher-dashboard");
     } catch (err: any) {
-      setError(err.message || "Invalid code. Please check with your teacher.");
-      setCode("");
+      setError(err.message || "Verification failed.");
+      setTeacherPin("");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-indigo-50 dark:bg-none dark:bg-[#0d141c] flex flex-col items-center justify-center p-6 relative">
-      
-      {/* --- SPLASH SCREEN --- */}
+    <div className="min-h-screen bg-gray-950 flex flex-col items-center justify-center p-4 sm:p-6 relative overflow-hidden text-gray-100">
+      {/* Dynamic Background glow blobs */}
+      <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-[#58CC02]/5 rounded-full blur-[140px] pointer-events-none" />
+      <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-[#1CB0F6]/5 rounded-full blur-[140px] pointer-events-none" />
+
+      {/* ── SPLASH SCREEN ── */}
       {showSplash ? (
-        <div className="flex flex-col items-center justify-center animate-in fade-in zoom-in duration-700">
-          <div className="relative mb-6">
-            <div className="absolute inset-0 bg-[#58CC02] rounded-full blur-2xl opacity-40 animate-pulse"></div>
-            <div className="w-32 h-32 bg-white dark:bg-gray-800 rounded-[2rem] shadow-2xl flex items-center justify-center relative z-10 transform rotate-12 hover:rotate-0 transition-transform duration-500 border-4 border-white dark:border-gray-700">
-              <span className="text-6xl">🦉</span>
+        <div className="flex flex-col items-center justify-center gap-6 animate-in fade-in zoom-in duration-700">
+          <div className="relative">
+            <div className="absolute inset-0 bg-[#58CC02] rounded-[2rem] blur-3xl opacity-20 animate-pulse" />
+            <div className="w-28 h-28 bg-gray-900 rounded-[2.2rem] shadow-2xl flex items-center justify-center relative z-10 border border-gray-800">
+              <span className="text-6xl select-none">🦉</span>
             </div>
           </div>
-          
-          <h1 className="text-4xl font-extrabold tracking-tight mb-2 text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-[#58CC02]">
-            Commsforedu
-          </h1>
-          <p className="text-gray-500 dark:text-gray-400 font-medium tracking-wide">
-            Learn • Grow • Succeed
-          </p>
-          
-          <div className="mt-12 flex gap-2">
-            <div className="w-3 h-3 bg-blue-500 rounded-full animate-bounce"></div>
-            <div className="w-3 h-3 bg-indigo-500 rounded-full animate-bounce" style={{ animationDelay: "0.15s" }}></div>
-            <div className="w-3 h-3 bg-[#58CC02] rounded-full animate-bounce" style={{ animationDelay: "0.3s" }}></div>
+          <div className="text-center">
+            <h1 className="text-4xl font-black tracking-tight">
+              <span className="text-[#58CC02]">Alphabet</span>
+              <span className="text-[#1CB0F6]">GO!</span>
+            </h1>
+            <p className="text-gray-500 mt-1 font-medium">Learn • Grow • Succeed</p>
+          </div>
+          <div className="flex gap-2 mt-4">
+            {[0, 0.15, 0.3].map((delay, i) => (
+              <div
+                key={i}
+                className="w-2.5 h-2.5 rounded-full bg-[#58CC02] animate-bounce"
+                style={{ animationDelay: `${delay}s` }}
+              />
+            ))}
           </div>
         </div>
       ) : (
-        /* --- ACTIVATION GATE --- */
-        <div className="w-full flex flex-col items-center animate-in fade-in slide-in-from-bottom-8 duration-700">
-          {/* Hidden Teacher Login Button (Top Right) */}
-          <div className="absolute top-6 right-6 z-50">
-        <Button 
-          variant="ghost" 
-          onClick={() => navigate("/admin-login")}
-          className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-        >
-          <Lock className="w-5 h-5" />
-        </Button>
-      </div>
-
-      <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl p-10 max-w-md w-full text-center relative overflow-hidden">
-        
-        {/* Decorative background element */}
-        <div className="absolute -top-24 -right-24 w-48 h-48 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
-        <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-indigo-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
-
-        <div className="relative z-10">
-          <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg">
-            <ShieldCheck className="w-12 h-12 text-white" />
-          </div>
+        /* ── UNIFIED DARK ENTRY PORTAL ── */
+        <div className="w-full max-w-md flex flex-col items-center gap-6 animate-in fade-in slide-in-from-bottom-6 duration-500 relative z-10">
           
-          <h2 className="text-3xl font-bold mb-2 text-gray-800 dark:text-gray-100">
-            App Activation
-          </h2>
-          <p className="text-gray-500 dark:text-gray-400 mb-8">
-            Enter the secure Student Code provided by your teacher to unlock the app.
+          <div className="text-center mb-2">
+            <div className="w-20 h-20 mx-auto mb-4 bg-gray-900 border border-gray-800 rounded-3xl flex items-center justify-center shadow-xl">
+              <span className="text-4.5xl select-none">🦉</span>
+            </div>
+            <h1 className="text-3xl font-black">
+              <span className="text-[#58CC02]">Alphabet</span>
+              <span className="text-[#1CB0F6]">GO!</span>
+            </h1>
+            <p className="text-gray-400 text-sm mt-1.5 font-medium">Enter your Student Code or Teacher Email</p>
+          </div>
+
+          <div className="w-full bg-gray-900 border border-gray-800 rounded-3xl p-6 sm:p-8 shadow-2xl relative overflow-hidden">
+            
+            {!pinSent ? (
+              /* Step 1: Input Code or Email */
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div>
+                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Access Portal</label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      required
+                      value={userInput}
+                      onChange={(e) => setUserInput(e.target.value)}
+                      placeholder="e.g. AB3X9P or name@school.com"
+                      className="w-full px-4 py-4 rounded-2xl bg-gray-950 border border-gray-800 focus:border-indigo-500 text-white outline-none transition-colors text-center text-lg font-semibold tracking-wider placeholder-gray-700"
+                    />
+                  </div>
+                </div>
+
+                {error && (
+                  <p className="text-red-400 text-sm text-center font-semibold bg-red-950/20 border border-red-900/30 py-2.5 rounded-xl animate-shake">
+                    {error}
+                  </p>
+                )}
+
+                <Button
+                  type="submit"
+                  disabled={loading || !userInput.trim()}
+                  className={`w-full py-4 text-base font-bold rounded-2xl transition-all flex items-center justify-center gap-2 shadow-lg ${
+                    isEmail 
+                      ? "bg-indigo-600 hover:bg-indigo-500 text-white" 
+                      : "bg-[#58CC02] hover:bg-[#49a802] text-white"
+                  }`}
+                >
+                  {loading ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : isEmail ? (
+                    <>
+                      <GraduationCap className="w-5 h-5" /> Request Security PIN
+                    </>
+                  ) : (
+                    <>
+                      <BookOpen className="w-5 h-5" /> Launch Student App
+                    </>
+                  )}
+                </Button>
+              </form>
+            ) : (
+              /* Step 2: Teacher Input PIN */
+              <form onSubmit={handleVerifyTeacherPin} className="space-y-6 animate-in slide-in-from-right duration-300">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPinSent(false);
+                    setDemoPin("");
+                    setTeacherPin("");
+                  }}
+                  className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-white mb-2 transition-colors"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" /> Back to portal
+                </button>
+
+                <div>
+                  <h3 className="text-lg font-bold text-white mb-1">Enter Security PIN</h3>
+                  <p className="text-xs text-gray-400 leading-relaxed mb-4">
+                    We generated a passwordless login PIN and sent it to <span className="text-indigo-400 font-semibold">{userInput}</span>.
+                  </p>
+                </div>
+
+                {/* Simulated Email Notification Popup inside App */}
+                {demoPin && (
+                  <div className="bg-indigo-950/40 border border-indigo-900/50 p-4 rounded-2xl relative text-xs leading-relaxed text-indigo-300 animate-bounce">
+                    <span className="font-bold text-white block mb-1">📨 Security PIN Delivered!</span>
+                    For testing purposes, your magic 6-digit PIN is: <code className="text-white font-bold bg-indigo-900/60 px-1.5 py-0.5 rounded font-mono text-sm tracking-wider">{demoPin}</code>
+                  </div>
+                )}
+
+                <div className="relative">
+                  <KeyRound className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                  <input
+                    type={showPin ? "text" : "password"}
+                    pattern="[0-9]*"
+                    inputMode="numeric"
+                    maxLength={6}
+                    required
+                    value={teacherPin}
+                    onChange={(e) => setTeacherPin(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                    placeholder="Enter 6-digit PIN"
+                    className="w-full pl-10 pr-10 py-3.5 rounded-2xl bg-gray-950 border border-gray-800 focus:border-indigo-500 text-white font-mono tracking-widest text-center text-xl outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPin(!showPin)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300"
+                  >
+                    {showPin ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+
+                {error && (
+                  <p className="text-red-400 text-sm text-center font-semibold bg-red-950/20 border border-red-900/30 py-2 rounded-xl">
+                    {error}
+                  </p>
+                )}
+
+                <Button
+                  type="submit"
+                  disabled={loading || teacherPin.length !== 6}
+                  className="w-full py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-indigo-950/30"
+                >
+                  {loading && <Loader2 className="w-5 h-5 animate-spin" />}
+                  Verify PIN & Access
+                </Button>
+              </form>
+            )}
+          </div>
+
+          <p className="text-xs text-gray-600 select-none">
+            Admin? Press <kbd className="px-1.5 py-0.5 bg-gray-900 rounded border border-gray-800 text-gray-400 font-mono text-[10px]">Ctrl+Alt+A</kbd>
           </p>
 
-          <form onSubmit={handleActivate} className="flex flex-col gap-6">
-            <div>
-              <div className="relative">
-                <KeyRound className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-6 h-6" />
-                <input
-                  type="text"
-                  value={code}
-                  onChange={(e) => setCode(e.target.value.toUpperCase())}
-                  placeholder="e.g. ABC-123"
-                  className={`w-full text-center text-2xl tracking-widest pl-12 pr-4 py-4 border-2 rounded-2xl outline-none transition-colors uppercase ${
-                    error 
-                      ? "border-red-500 bg-red-50 text-red-500 placeholder-red-300" 
-                      : "border-gray-200 dark:border-gray-700 dark:bg-gray-900 dark:text-white focus:border-blue-500"
-                  }`}
-                  autoFocus
-                />
-              </div>
-              {error && (
-                <p className="text-red-500 text-sm mt-3 font-medium animate-bounce">{error}</p>
-              )}
-            </div>
-
-            <Button
-              type="submit"
-              disabled={loading || !code.trim()}
-              size="lg"
-              className="w-full py-6 text-xl rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2"
-            >
-              {loading && <Loader2 className="w-5 h-5 animate-spin" />}
-              {loading ? "Verifying..." : "Unlock App"}
-            </Button>
-          </form>
         </div>
-      </div>
-      
-      <p className="mt-8 text-sm text-gray-400 dark:text-gray-500">
-        Unauthorized access is prohibited.
-      </p>
-    </div>
       )}
     </div>
   );
