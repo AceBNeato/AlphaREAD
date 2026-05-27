@@ -82,7 +82,7 @@ export default function AdminLogin() {
         <div className="w-18 h-18 mx-auto mb-6 rounded-2xl bg-blue-500/10 flex items-center justify-center border border-blue-500/20">
           <Lock className="w-8 h-8 text-blue-400 animate-pulse" />
         </div>
-        
+
         <h2 className="text-2xl font-black text-white mb-2">
           Admin Access
         </h2>
@@ -101,11 +101,10 @@ export default function AdminLogin() {
               onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 6))}
               placeholder="••••••"
               autoFocus
-              className={`w-full text-center text-4xl font-mono tracking-[0.25em] p-4 bg-gray-950 border-2 rounded-2xl outline-none transition-colors text-white ${
-                error 
-                  ? "border-red-500 text-red-500 focus:border-red-500" 
+              className={`w-full text-center text-4xl font-mono tracking-[0.25em] p-4 bg-gray-950 border-2 rounded-2xl outline-none transition-colors text-white ${error
+                  ? "border-red-500 text-red-500 focus:border-red-500"
                   : "border-gray-800 focus:border-blue-500"
-              }`}
+                }`}
             />
             <button
               type="button"

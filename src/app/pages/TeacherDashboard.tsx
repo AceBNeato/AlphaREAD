@@ -52,6 +52,22 @@ export default function TeacherDashboard() {
     }
     setTeacherProfile(profile);
     fetchStudents(profile.id);
+
+    // Verify teacher account still exists
+    const verifyAccount = async () => {
+      const { error } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("id", profile.id)
+        .single();
+        
+      if (error && (error.code === "PGRST116" || error.details?.includes("Results contain 0 rows"))) {
+        localStorage.removeItem("userProfile");
+        alert("Your teacher account has been deleted by an administrator.");
+        navigate("/");
+      }
+    };
+    verifyAccount();
   }, [navigate]);
 
   const fetchStudents = async (teacherId: string) => {

@@ -176,6 +176,15 @@ export default function Activation() {
 
     try {
       const emailClean = userInput.trim().toLowerCase();
+      
+      // Brute-force check
+      const attemptsKey = `lockout_${emailClean}`;
+      const lockoutData = JSON.parse(localStorage.getItem(attemptsKey) || '{"attempts": 0, "lockedUntil": null}');
+      
+      if (lockoutData.lockedUntil && new Date(lockoutData.lockedUntil) > new Date()) {
+        throw new Error(`Account is locked. Try again after ${new Date(lockoutData.lockedUntil).toLocaleTimeString()}`);
+      }
+
       const { data: teacher, error: dbError } = await supabase
         .from("profiles")
         .select("*")
@@ -188,8 +197,20 @@ export default function Activation() {
       }
 
       if (teacher.pin_hash !== teacherPin) {
-        throw new Error("Incorrect 6-digit Security PIN.");
+        lockoutData.attempts += 1;
+        if (lockoutData.attempts >= 5) {
+          const lockedUntil = new Date(new Date().getTime() + 15 * 60000); // 15 mins
+          lockoutData.lockedUntil = lockedUntil.toISOString();
+          localStorage.setItem(attemptsKey, JSON.stringify(lockoutData));
+          throw new Error(`Too many failed attempts. Account locked until ${lockedUntil.toLocaleTimeString()}`);
+        } else {
+          localStorage.setItem(attemptsKey, JSON.stringify(lockoutData));
+          throw new Error(`Incorrect 6-digit Security PIN. Attempts remaining: ${5 - lockoutData.attempts}`);
+        }
       }
+
+      // Reset attempts on success
+      localStorage.removeItem(attemptsKey);
 
       // Log teacher in
       localStorage.setItem("userProfile", JSON.stringify({

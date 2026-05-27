@@ -21,7 +21,8 @@ import {
   Lock,
   Plus,
   Search,
-  Filter
+  Filter,
+  RefreshCw
 } from "lucide-react";
 import { Button } from "../components/ui/button";
 
@@ -85,14 +86,21 @@ export default function AdminDashboard() {
     fetchData();
   }, [navigate]);
 
-  const fetchData = async () => {
-    setLoading(true);
+  const fetchData = async (silent = false) => {
+    if (!silent) setLoading(true);
     // Fetch Admin profile
     const { data: admin } = await supabase
       .from("profiles")
       .select("*")
       .eq("role", "admin")
       .maybeSingle();
+      
+    if (!admin) {
+      localStorage.removeItem("userProfile");
+      alert("Admin access has been revoked or deleted.");
+      navigate("/");
+      return;
+    }
     setAdminProfile(admin);
 
     // Fetch Teachers
@@ -112,7 +120,7 @@ export default function AdminDashboard() {
       .order("last_name", { ascending: true });
     setStudents(studentsData || []);
 
-    setLoading(false);
+    if (!silent) setLoading(false);
   };
 
   // ── TEACHER CRUD ──
@@ -139,7 +147,7 @@ export default function AdminDashboard() {
       setTeacherEmail("");
       setTeacherAlias("");
       setTeacherPin("");
-      fetchData();
+      fetchData(true);
     } catch (err: any) {
       alert(`Failed to register teacher: ${err.message}`);
     }
@@ -169,7 +177,7 @@ export default function AdminDashboard() {
       alert("Failed to update teacher profile.");
     } else {
       setEditingTeacherId(null);
-      fetchData();
+      fetchData(true);
     }
   };
 
@@ -183,7 +191,7 @@ export default function AdminDashboard() {
     if (error) {
       alert("Failed to delete teacher.");
     } else {
-      fetchData();
+      fetchData(true);
     }
   };
 
@@ -214,7 +222,7 @@ export default function AdminDashboard() {
       setStudentLastName("");
       setStudentClassCode("A1");
       setStudentTeacherId("");
-      fetchData();
+      fetchData(true);
     } catch (err: any) {
       alert(`Failed to register student: ${err.message}`);
     }
@@ -245,7 +253,7 @@ export default function AdminDashboard() {
       alert("Failed to update student profile.");
     } else {
       setEditingStudentId(null);
-      fetchData();
+      fetchData(true);
     }
   };
 
@@ -256,7 +264,7 @@ export default function AdminDashboard() {
     if (error) {
       alert("Failed to delete student.");
     } else {
-      fetchData();
+      fetchData(true);
     }
   };
 
@@ -272,7 +280,7 @@ export default function AdminDashboard() {
       alert("Failed to unlock device.");
     } else {
       alert("Device binding cleared successfully!");
-      fetchData();
+      fetchData(true);
     }
   };
 
@@ -309,7 +317,7 @@ export default function AdminDashboard() {
     } else {
       setAdminPinSuccess("Admin PIN updated successfully!");
       setNewAdminPin("");
-      fetchData();
+      fetchData(true);
     }
   };
 
@@ -344,6 +352,14 @@ export default function AdminDashboard() {
             </div>
           </div>
           <div className="flex gap-2">
+            <Button
+              onClick={() => fetchData()}
+              variant="outline"
+              className="border-gray-800 hover:bg-gray-850 text-gray-300 font-bold px-3 py-2 rounded-xl flex items-center gap-2"
+              title="Refresh Data"
+            >
+              <RefreshCw className="w-4 h-4" />
+            </Button>
             <Button
               onClick={() => {
                 localStorage.removeItem("userProfile");

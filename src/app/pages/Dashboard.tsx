@@ -8,9 +8,11 @@ import { App } from '@capacitor/app';
 import { supabase } from "../../lib/supabase";
 
 interface UserProfile {
+  id: string;
   name: string;
   avatar: string;
-  accent: string;
+  accent?: string;
+  role?: string;
   createdAt: string;
 }
 
@@ -55,6 +57,15 @@ export default function Dashboard() {
           if (error) {
             // Check if it's just a network error failing to reach supabase despite navigator.onLine being true
             if (error.message && error.message.includes("fetch")) return;
+            
+            // If the error means "No rows found" (PGRST116), the account was deleted!
+            if (error.code === "PGRST116" || error.details?.includes("Results contain 0 rows")) {
+              localStorage.removeItem("userProfile");
+              localStorage.removeItem("activated_device_id");
+              alert("Your account has been deleted or deactivated by an administrator.");
+              navigate("/");
+              return;
+            }
           }
 
           if (data && data.activated_device_id !== localDeviceId) {
