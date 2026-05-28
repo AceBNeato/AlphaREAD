@@ -113,7 +113,7 @@ const SYLLABLE_EXCEPTIONS: Record<string, string[]> = {
   "FE": ["feh", "fe"],
   "HU": ["huh", "hu", "hah", "ha"],
   "NU": ["nuh", "nu", "nah", "na"],
-  "CU": ["cuh", "coh", "co", "cu"],
+  "CU": ["cah", "coh", "co", "cu"],
   "WU": ["wuh", "wu"],
   "JU": ["juh", "ju"],
   "FO": ["foh", "fo"],
