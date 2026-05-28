@@ -65,8 +65,8 @@ export function TeacherManager({ teachers, onRefresh }: TeacherManagerProps) {
       if (error) throw error;
 
       // Simulate sending email by opening the user's default mail client prefilled with credentials
-      const subject = encodeURIComponent("Your Commsforedu Teacher Access PIN");
-      const body = encodeURIComponent(`Hello ${teacherAlias.trim()},\n\nYou have been added as a teacher to Commsforedu.\n\nYour login email is: ${teacherEmail.trim().toLowerCase()}\nYour access PIN is: ${teacherPin}\n\nPlease keep this secure.\n\nBest,\nAdmin`);
+      const subject = encodeURIComponent("Your Alphabet GO Teacher Access PIN");
+      const body = encodeURIComponent(`Hello ${teacherAlias.trim()},\n\nYou have been added as a teacher to Alphabet GO.\n\nYour login email is: ${teacherEmail.trim().toLowerCase()}\nYour access PIN is: ${teacherPin}\n\nPlease keep this secure.\n\nBest,\nAdmin`);
       window.open(`mailto:${teacherEmail.trim().toLowerCase()}?subject=${subject}&body=${body}`, "_blank");
 
       setIsCreatingTeacher(false);
