@@ -4,6 +4,25 @@ import { pipeline, env } from "@xenova/transformers";
 // Use huggingface directly for phoneme model
 env.allowLocalModels = false;
 
+// Fast downsampler for Wav2Vec2 (requires 16kHz)
+function resampleTo16k(audioData: Float32Array, origSampleRate: number): Float32Array {
+  if (origSampleRate === 16000) return audioData;
+  const ratio = origSampleRate / 16000;
+  const newLength = Math.round(audioData.length / ratio);
+  const result = new Float32Array(newLength);
+  for (let i = 0; i < newLength; i++) {
+    let sum = 0;
+    const start = Math.floor(i * ratio);
+    const end = Math.min(Math.ceil((i + 1) * ratio), audioData.length);
+    let count = end - start;
+    for (let j = start; j < end; j++) {
+      sum += audioData[j];
+    }
+    result[i] = count > 0 ? sum / count : 0;
+  }
+  return result;
+}
+
 interface UseVoskProps {
   onResult?: (text: string, context?: any) => void;
   onPartialResult?: (text: string) => void;
@@ -76,9 +95,14 @@ export function useVoskRecognition({ onResult, onPartialResult, onError }: UseVo
     audioChunksRef.current = []; // Clear for next time
     
     try {
-      console.log("[Wav2Vec2] Running transcription on audio length:", totalLength);
+      const sampleRate = audioContextRef.current?.sampleRate || 16000;
+      console.log(`[Wav2Vec2] Captured ${totalLength} samples at ${sampleRate}Hz`);
+      
+      const resampledData = resampleTo16k(audioData, sampleRate);
+      console.log(`[Wav2Vec2] Resampled to ${resampledData.length} samples at 16000Hz`);
+      
       // Run the model (returns raw IPA phonemes)
-      const output = await transcriberRef.current(audioData);
+      const output = await transcriberRef.current(resampledData);
       const text = output.text;
       console.log("[Wav2Vec2] Recognized phonemes:", text);
       
@@ -131,8 +155,8 @@ export function useVoskRecognition({ onResult, onPartialResult, onError }: UseVo
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
       mediaStreamRef.current = stream;
       
-      // Wav2Vec2 requires exactly 16000Hz sample rate
-      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
+      // Allow the browser to use its native hardware sample rate to prevent crashes
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
       audioContextRef.current = audioContext;
       
       const source = audioContext.createMediaStreamSource(stream);
