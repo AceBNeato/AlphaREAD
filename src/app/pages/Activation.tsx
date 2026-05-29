@@ -1,14 +1,14 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router";
 import { supabase } from "../../lib/supabase";
-import { 
-  KeyRound, 
-  Mail, 
-  Loader2, 
-  GraduationCap, 
-  BookOpen, 
-  Eye, 
-  EyeOff, 
+import {
+  KeyRound,
+  Mail,
+  Loader2,
+  GraduationCap,
+  BookOpen,
+  Eye,
+  EyeOff,
   ArrowLeft,
   Sparkles,
   Smartphone,
@@ -17,8 +17,10 @@ import {
   CheckCircle2,
   X
 } from "lucide-react";
-import { generateUUID } from "../utils/uuid";
 import { Button } from "../components/ui/button";
+import { pipeline, env } from "@xenova/transformers";
+
+env.allowLocalModels = false;
 
 export default function Activation() {
   const navigate = useNavigate();
@@ -54,23 +56,60 @@ export default function Activation() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [handleKeyDown]);
 
-  // Splash screen transition on load
+  const [isPreloading, setIsPreloading] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState(0);
+
+  // Splash screen transition and AI preload
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setShowSplash(false);
-      const profile = localStorage.getItem("userProfile");
-      if (profile) {
-        const parsed = JSON.parse(profile);
-        if (parsed.role === "teacher") {
-          navigate("/teacher-dashboard", { replace: true });
-        } else if (parsed.role === "admin") {
-          navigate("/admin", { replace: true });
-        } else if (parsed.role === "student") {
-          navigate("/dashboard", { replace: true });
+    let isMounted = true;
+    
+    const checkAndDownloadModel = async () => {
+      try {
+        const cached = localStorage.getItem("wav2vec2_cached");
+        if (cached !== "true") {
+          setIsPreloading(true);
+          await pipeline("automatic-speech-recognition", "Xenova/wav2vec2-lv-60-espeak-cv-ft", {
+            progress_callback: (info: any) => {
+              if (info.status === "progress" && isMounted) {
+                setDownloadProgress(Math.round(info.progress));
+              }
+            }
+          });
+          localStorage.setItem("wav2vec2_cached", "true");
+        }
+      } catch (e) {
+        console.error("Failed to preload AI model:", e);
+      } finally {
+        if (isMounted) {
+          setIsPreloading(false);
+          finishSplash();
         }
       }
-    }, 2200);
-    return () => clearTimeout(timer);
+    };
+
+    const finishSplash = () => {
+      setTimeout(() => {
+        if (!isMounted) return;
+        setShowSplash(false);
+        const profile = localStorage.getItem("userProfile");
+        if (profile) {
+          const parsed = JSON.parse(profile);
+          if (parsed.role === "teacher") {
+            navigate("/teacher-dashboard", { replace: true });
+          } else if (parsed.role === "admin") {
+            navigate("/admin", { replace: true });
+          } else if (parsed.role === "student") {
+            navigate("/dashboard", { replace: true });
+          }
+        }
+      }, 1000); // brief pause after download or 1s if already cached
+    };
+
+    checkAndDownloadModel();
+
+    return () => {
+      isMounted = false;
+    };
   }, [navigate]);
 
   // ── Unified Submit Handler ──
@@ -99,7 +138,7 @@ export default function Activation() {
 
         // Generate a random 6-digit PIN
         const generatedPin = Math.floor(100000 + Math.random() * 900000).toString();
-        
+
         // Save the PIN to the teacher's profile in Supabase
         const { error: updateError } = await supabase
           .from("profiles")
@@ -176,11 +215,11 @@ export default function Activation() {
 
     try {
       const emailClean = userInput.trim().toLowerCase();
-      
+
       // Brute-force check
       const attemptsKey = `lockout_${emailClean}`;
       const lockoutData = JSON.parse(localStorage.getItem(attemptsKey) || '{"attempts": 0, "lockedUntil": null}');
-      
+
       if (lockoutData.lockedUntil && new Date(lockoutData.lockedUntil) > new Date()) {
         throw new Error(`Account is locked. Try again after ${new Date(lockoutData.lockedUntil).toLocaleTimeString()}`);
       }
@@ -238,34 +277,53 @@ export default function Activation() {
 
       {/* ── SPLASH SCREEN ── */}
       {showSplash ? (
-        <div className="flex flex-col items-center justify-center gap-6 animate-in fade-in zoom-in duration-700">
+        <div className="flex flex-col items-center justify-center gap-6 animate-in fade-in zoom-in duration-700 w-full max-w-sm px-6">
           <div className="relative">
             <div className="absolute inset-0 bg-[#58CC02] rounded-[2rem] blur-3xl opacity-20 animate-pulse" />
             <div className="w-28 h-28 bg-gray-900 rounded-[2.2rem] shadow-2xl flex items-center justify-center relative z-10 border border-gray-800">
               <span className="text-6xl select-none">🦉</span>
             </div>
           </div>
-          <div className="text-center">
-            <h1 className="text-4xl font-black tracking-tight">
+          <div className="text-center w-full">
+            <h1 className="text-4xl font-black tracking-tight mb-2">
               <span className="text-[#58CC02]">Alphabet</span>
               <span className="text-[#1CB0F6]">GO!</span>
             </h1>
-            <p className="text-gray-500 mt-1 font-medium">Learn • Grow • Succeed</p>
-          </div>
-          <div className="flex gap-2 mt-4">
-            {[0, 0.15, 0.3].map((delay, i) => (
-              <div
-                key={i}
-                className="w-2.5 h-2.5 rounded-full bg-[#58CC02] animate-bounce"
-                style={{ animationDelay: `${delay}s` }}
-              />
-            ))}
+            
+            {isPreloading ? (
+              <div className="mt-8 bg-gray-900/80 p-5 rounded-2xl border border-gray-800 shadow-xl backdrop-blur-sm">
+                <p className="text-[#1CB0F6] font-bold text-sm mb-3">Downloading Offline AI Brain...</p>
+                <div className="w-full h-2 bg-gray-800 rounded-full overflow-hidden mb-2">
+                  <div 
+                    className="h-full bg-gradient-to-r from-[#1CB0F6] to-[#0a8ed4] transition-all duration-300"
+                    style={{ width: `${downloadProgress}%` }}
+                  />
+                </div>
+                <div className="flex justify-between items-center mt-2">
+                  <span className="text-xs text-gray-500 font-medium">This only happens once</span>
+                  <span className="text-xs font-mono text-[#1CB0F6] font-bold">{downloadProgress}%</span>
+                </div>
+              </div>
+            ) : (
+              <>
+                <p className="text-gray-500 mt-1 font-medium">Learn • Grow • Succeed</p>
+                <div className="flex justify-center gap-2 mt-4">
+                  {[0, 0.15, 0.3].map((delay, i) => (
+                    <div
+                      key={i}
+                      className="w-2.5 h-2.5 rounded-full bg-[#58CC02] animate-bounce"
+                      style={{ animationDelay: `${delay}s` }}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
           </div>
         </div>
       ) : (
         /* ── UNIFIED DARK ENTRY PORTAL ── */
         <div className="w-full max-w-md flex flex-col items-center gap-6 animate-in fade-in slide-in-from-bottom-6 duration-500 relative z-10">
-          
+
           <div className="text-center mb-2">
             <div className="w-20 h-20 mx-auto mb-4 bg-gray-900 border border-gray-800 rounded-3xl flex items-center justify-center shadow-xl">
               <span className="text-4.5xl select-none">🦉</span>
@@ -278,7 +336,7 @@ export default function Activation() {
           </div>
 
           <div className="w-full bg-gray-900 border border-gray-800 rounded-3xl p-6 sm:p-8 shadow-2xl relative overflow-hidden">
-            
+
             {!pinSent ? (
               /* Step 1: Input Code or Email */
               <form onSubmit={handleSubmit} className="space-y-6">
@@ -305,11 +363,10 @@ export default function Activation() {
                 <Button
                   type="submit"
                   disabled={loading || !userInput.trim()}
-                  className={`w-full py-4 text-base font-bold rounded-2xl transition-all flex items-center justify-center gap-2 shadow-lg ${
-                    isEmail 
-                      ? "bg-indigo-600 hover:bg-indigo-500 text-white" 
-                      : "bg-[#58CC02] hover:bg-[#49a802] text-white"
-                  }`}
+                  className={`w-full py-4 text-base font-bold rounded-2xl transition-all flex items-center justify-center gap-2 shadow-lg ${isEmail
+                    ? "bg-indigo-600 hover:bg-indigo-500 text-white"
+                    : "bg-[#58CC02] hover:bg-[#49a802] text-white"
+                    }`}
                 >
                   {loading ? (
                     <Loader2 className="w-5 h-5 animate-spin" />
