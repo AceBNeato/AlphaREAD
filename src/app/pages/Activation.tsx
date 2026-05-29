@@ -63,7 +63,7 @@ export default function Activation() {
   // Splash screen transition and AI preload
   useEffect(() => {
     let isMounted = true;
-    
+
     const checkAndDownloadModel = async () => {
       try {
         const cached = localStorage.getItem("wav2vec2_cached");
@@ -290,12 +290,12 @@ export default function Activation() {
               <span className="text-[#58CC02]">Alphabet</span>
               <span className="text-[#1CB0F6]">GO!</span>
             </h1>
-            
+
             {isPreloading ? (
               <div className="mt-8 bg-gray-900/80 p-5 rounded-2xl border border-gray-800 shadow-xl backdrop-blur-sm">
                 <p className="text-[#1CB0F6] font-bold text-sm mb-3">Downloading Offline AI Brain...</p>
                 <div className="w-full h-2 bg-gray-800 rounded-full overflow-hidden mb-2">
-                  <div 
+                  <div
                     className="h-full bg-gradient-to-r from-[#1CB0F6] to-[#0a8ed4] transition-all duration-300"
                     style={{ width: `${downloadProgress}%` }}
                   />

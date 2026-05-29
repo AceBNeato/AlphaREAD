@@ -5,7 +5,7 @@ import { pipeline, env } from "@xenova/transformers";
 env.allowLocalModels = false;
 
 interface UseVoskProps {
-  onResult?: (text: string) => void;
+  onResult?: (text: string, context?: any) => void;
   onPartialResult?: (text: string) => void;
   onError?: (err: any) => void;
 }
@@ -18,6 +18,7 @@ export function useVoskRecognition({ onResult, onPartialResult, onError }: UseVo
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const processorRef = useRef<ScriptProcessorNode | null>(null);
   const isListeningRef = useRef(false);
+  const contextRef = useRef<any>(null);
   
   // We accumulate audio chunks into this array while recording
   const audioChunksRef = useRef<Float32Array[]>([]);
@@ -82,7 +83,7 @@ export function useVoskRecognition({ onResult, onPartialResult, onError }: UseVo
       console.log("[Wav2Vec2] Recognized phonemes:", text);
       
       if (text && onResultRef.current) {
-        onResultRef.current(text);
+        onResultRef.current(text, contextRef.current);
       }
     } catch (e) {
       console.error("[Wav2Vec2] Transcription error:", e);
@@ -107,7 +108,7 @@ export function useVoskRecognition({ onResult, onPartialResult, onError }: UseVo
     runTranscription();
   }, []);
 
-  const startVoskRecognition = useCallback(async (grammar?: string[]) => {
+  const startVoskRecognition = useCallback(async (grammar?: string[], context?: any) => {
     if (!isVoskReady || !transcriberRef.current) {
       console.warn("[Wav2Vec2] Model not ready yet.");
       if (onErrorRef.current) onErrorRef.current("Model not ready");
@@ -119,6 +120,7 @@ export function useVoskRecognition({ onResult, onPartialResult, onError }: UseVo
     }
     
     isListeningRef.current = true;
+    contextRef.current = context;
     audioChunksRef.current = []; // Reset chunks
     
     try {

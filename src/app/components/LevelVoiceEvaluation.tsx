@@ -42,6 +42,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
   const [completedWords, setCompletedWords] = useState<Set<string>>(new Set());
   const [wordsIndex, setWordsIndex] = useState(0);
   const [isMicResetting, setIsMicResetting] = useState(false);
+  const [processingWord, setProcessingWord] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
   const [showCompletionScreen, setShowCompletionScreen] = useState(false);
@@ -121,6 +122,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
       newCompleted.add(word);
       setCompletedWords(newCompleted);
       
+      setProcessingWord(null);
       setTimeout(() => {
         safeSetEvaluatingWordNull();
         setShowConfetti(false);
@@ -137,6 +139,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
         }
       }, 2000);
     } else if (status === "wrong") {
+      setProcessingWord(null);
       setTimeout(() => {
         setEvalFeedback(prev => ({ ...prev, [word]: null }));
         safeSetEvaluatingWordNull();
@@ -153,11 +156,13 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
     });
   }, [evaluatingWord]);
 
-  const handleSilence = useCallback(() => {
-    if (!evaluatingWord) return;
-    setEvalFeedback(prev => ({ ...prev, [evaluatingWord]: "wrong" }));
+  const handleSilence = useCallback((wordToUse?: string) => {
+    const targetWord = wordToUse || evaluatingWord;
+    if (!targetWord) return;
+    setEvalFeedback(prev => ({ ...prev, [targetWord]: "wrong" }));
+    setProcessingWord(null);
     setTimeout(() => {
-      setEvalFeedback(prev => ({ ...prev, [evaluatingWord]: null }));
+      setEvalFeedback(prev => ({ ...prev, [targetWord]: null }));
       safeSetEvaluatingWordNull();
     }, 1500);
   }, [evaluatingWord]);
@@ -171,21 +176,19 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
     onSilenceTimeout: handleSilence
   });
 
-  // Vosk Engine (Level 2 Offline Phonetics)
+  // Vosk/Wav2Vec2 Engine (Level 2 Offline Phonetics)
   const { startVoskRecognition, stopVoskRecognition } = useVoskRecognition({
-    onResult: (text) => {
-      if (!evaluatingWord) return;
-      const phonemeResult = evaluateSyllable(evaluatingWord, [text]);
-      handleResult(evaluatingWord, phonemeResult, text);
-    },
-    onPartialResult: (text) => {
-      if (!evaluatingWord || !text) return;
-      const phonemeResult = evaluateSyllable(evaluatingWord, [text]);
-      // Only act on partials if they are correct! This drastically speeds up recognition.
-      if (phonemeResult === "correct") {
-        handleResult(evaluatingWord, phonemeResult, text);
-        stopVoskRecognition();
+    onResult: (text, contextWord) => {
+      const wordToEvaluate = contextWord || evaluatingWord;
+      if (!wordToEvaluate) return;
+      
+      if (!text || text.trim() === "") {
+        handleSilence(wordToEvaluate);
+        return;
       }
+      
+      const phonemeResult = evaluateSyllable(wordToEvaluate, [text]);
+      handleResult(wordToEvaluate, phonemeResult, text);
     },
     onError: handleError
   });
@@ -195,14 +198,17 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
       // Build a constrained grammar so Vosk only returns valid phonetic sounds
       // for this syllable — prevents hallucinating words like "eric" or "eg".
       const grammar = buildVoskGrammar(evaluatingWord);
-      startVoskRecognition(grammar);
-      // Auto-silence timeout for Vosk (5 seconds)
+      startVoskRecognition(grammar, evaluatingWord);
+      
+      // Auto-silence timeout (5 seconds)
       const timer = setTimeout(() => {
+        setProcessingWord(evaluatingWord);
         stopVoskRecognition();
-        handleSilence();
+        safeSetEvaluatingWordNull(); // Reset UI state so it shows processing
       }, 5000);
+      
       return () => clearTimeout(timer);
-    } else if (isVoskMode && !evaluatingWord) {
+    } else if (isVoskMode && !evaluatingWord && !processingWord) {
       stopVoskRecognition();
     }
   }, [evaluatingWord, isVoskMode, startVoskRecognition, stopVoskRecognition, handleSilence]);
@@ -357,7 +363,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
                               Heard: {transcript}
                             </div>
                           )}
-                          {isCurrent && !transcript && (
+                          {isCurrent && !transcript && !processingWord && (
                             <div className="flex items-center gap-2 mt-1 sm:mt-0">
                               <span className="text-pink-500 text-sm font-bold animate-pulse">Listening...</span>
                               <div className="flex gap-1 items-center h-8 justify-center min-w-[50px]">
@@ -383,19 +389,27 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
                               </div>
                             </div>
                           )}
+                          {processingWord === w && (
+                            <div className="flex items-center gap-2 mt-1 sm:mt-0 text-indigo-500">
+                              <span className="text-sm font-bold animate-pulse">Thinking...</span>
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            </div>
+                          )}
                         </div>
 
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() => {
                               if (isCurrent) {
+                                setProcessingWord(w);
+                                stopVoskRecognition();
                                 safeSetEvaluatingWordNull();
                               } else {
                                 startRecording(w);
                               }
                             }}
-                            disabled={(evaluatingWord !== null && !isCurrent) || isDone || isMicResetting}
-                            className={`relative w-12 h-12 rounded-xl flex items-center justify-center transition-all ${isDone ? 'bg-green-500 text-white shadow-none opacity-50 cursor-default' : isCurrent ? 'bg-red-500 text-white shadow-lg' : isMicResetting ? 'bg-gray-300 dark:bg-gray-700 text-gray-400 cursor-not-allowed' : 'bg-gradient-to-br from-pink-500 to-rose-500 text-white shadow-md hover:scale-105 active:scale-95'}`}
+                            disabled={(evaluatingWord !== null && !isCurrent) || isDone || isMicResetting || processingWord === w}
+                            className={`relative w-12 h-12 rounded-xl flex items-center justify-center transition-all ${isDone ? 'bg-green-500 text-white shadow-none opacity-50 cursor-default' : isCurrent ? 'bg-red-500 text-white shadow-lg' : isMicResetting || processingWord === w ? 'bg-gray-300 dark:bg-gray-700 text-gray-400 cursor-not-allowed' : 'bg-gradient-to-br from-pink-500 to-rose-500 text-white shadow-md hover:scale-105 active:scale-95'}`}
                           >
                             {isCurrent && (
                               <>
