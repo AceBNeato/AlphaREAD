@@ -1,5 +1,8 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { createModel } from "vosk-browser";
+import { pipeline, env } from "@xenova/transformers";
+
+// Use huggingface directly for phoneme model
+env.allowLocalModels = false;
 
 interface UseVoskProps {
   onResult?: (text: string) => void;
@@ -10,12 +13,14 @@ interface UseVoskProps {
 export function useVoskRecognition({ onResult, onPartialResult, onError }: UseVoskProps = {}) {
   const [isVoskReady, setIsVoskReady] = useState(false);
   
-  const modelRef = useRef<any>(null);
-  const recognizerRef = useRef<any>(null);
+  const transcriberRef = useRef<any>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const processorRef = useRef<ScriptProcessorNode | null>(null);
   const isListeningRef = useRef(false);
+  
+  // We accumulate audio chunks into this array while recording
+  const audioChunksRef = useRef<Float32Array[]>([]);
 
   // Store callbacks in refs to avoid infinite re-renders
   const onResultRef = useRef(onResult);
@@ -28,35 +33,61 @@ export function useVoskRecognition({ onResult, onPartialResult, onError }: UseVo
     onErrorRef.current = onError;
   }, [onResult, onPartialResult, onError]);
 
-  // Initialize Vosk Model (Done once)
+  // Initialize model
   useEffect(() => {
     let isMounted = true;
     
-    const initVosk = async () => {
+    const initWav2Vec2 = async () => {
       try {
-        console.log("[Vosk] Loading Local Model...");
-        const baseUrl = (import.meta as any).env.BASE_URL || "/";
-        const modelPath = `${baseUrl}models/vosk-model-small-en-us-0.15.tar.gz`.replace('//', '/');
-        const model = await createModel(modelPath);
+        console.log("[Wav2Vec2] Loading Phoneme Model...");
+        const transcriber = await pipeline("automatic-speech-recognition", "Xenova/wav2vec2-lv-60-espeak-cv-ft");
         if (isMounted) {
-          modelRef.current = model;
+          transcriberRef.current = transcriber;
           setIsVoskReady(true);
-          console.log("[Vosk] Model Ready!");
+          console.log("[Wav2Vec2] Model Ready!");
         }
       } catch (err) {
-        console.error("[Vosk] Initialization Error:", err);
+        console.error("[Wav2Vec2] Initialization Error:", err);
       }
     };
     
-    initVosk();
+    // Only init if it was already preloaded by Dashboard
+    if (localStorage.getItem("wav2vec2_cached") === "true") {
+      initWav2Vec2();
+    }
     
     return () => {
       isMounted = false;
-      if (modelRef.current) {
-        modelRef.current.terminate();
-      }
     };
   }, []);
+
+  const runTranscription = async () => {
+    if (!transcriberRef.current || audioChunksRef.current.length === 0) return;
+    
+    // Concatenate all audio chunks
+    const totalLength = audioChunksRef.current.reduce((acc, chunk) => acc + chunk.length, 0);
+    const audioData = new Float32Array(totalLength);
+    let offset = 0;
+    for (const chunk of audioChunksRef.current) {
+      audioData.set(chunk, offset);
+      offset += chunk.length;
+    }
+    audioChunksRef.current = []; // Clear for next time
+    
+    try {
+      console.log("[Wav2Vec2] Running transcription on audio length:", totalLength);
+      // Run the model (returns raw IPA phonemes)
+      const output = await transcriberRef.current(audioData);
+      const text = output.text;
+      console.log("[Wav2Vec2] Recognized phonemes:", text);
+      
+      if (text && onResultRef.current) {
+        onResultRef.current(text);
+      }
+    } catch (e) {
+      console.error("[Wav2Vec2] Transcription error:", e);
+    }
+  };
 
   const stopVoskRecognition = useCallback(() => {
     if (!isListeningRef.current) return;
@@ -71,31 +102,14 @@ export function useVoskRecognition({ onResult, onPartialResult, onError }: UseVo
     if (mediaStreamRef.current) {
       mediaStreamRef.current.getTracks().forEach(track => track.stop());
     }
-    if (recognizerRef.current) {
-      try {
-        const finalResult = recognizerRef.current.finalResult();
-        if (finalResult.text && onResultRef.current) {
-          onResultRef.current(finalResult.text);
-        }
-        recognizerRef.current.free();
-      } catch (e) {
-        console.error(e);
-      }
-      recognizerRef.current = null;
-    }
+    
+    // Now that recording stopped, run the model on the accumulated audio
+    runTranscription();
   }, []);
 
-  /**
-   * Start recognition.
-   * @param grammar  Optional array of words/phrases Vosk is allowed to return.
-   *                 Pass the phonetic variants of the target syllable so Vosk
-   *                 cannot hallucinate unrelated English words (e.g. "eric", "eg").
-   *                 Example: ["eck", "ek", "eg", "[unk]"]
-   *                 Always include "[unk]" so Vosk has a fallback for silence.
-   */
   const startVoskRecognition = useCallback(async (grammar?: string[]) => {
-    if (!isVoskReady || !modelRef.current) {
-      console.warn("[Vosk] Model not ready yet.");
+    if (!isVoskReady || !transcriberRef.current) {
+      console.warn("[Wav2Vec2] Model not ready yet.");
       if (onErrorRef.current) onErrorRef.current("Model not ready");
       return;
     }
@@ -103,7 +117,9 @@ export function useVoskRecognition({ onResult, onPartialResult, onError }: UseVo
     if (isListeningRef.current) {
       stopVoskRecognition();
     }
+    
     isListeningRef.current = true;
+    audioChunksRef.current = []; // Reset chunks
     
     try {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -113,58 +129,27 @@ export function useVoskRecognition({ onResult, onPartialResult, onError }: UseVo
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
       mediaStreamRef.current = stream;
       
-      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      // Wav2Vec2 requires exactly 16000Hz sample rate
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
       audioContextRef.current = audioContext;
       
       const source = audioContext.createMediaStreamSource(stream);
-      
-      // Build grammar JSON string — if provided, Vosk only returns words from this list.
-      // This prevents hallucination of random English words for non-word phonemes.
-      const grammarJson = grammar && grammar.length > 0
-        ? JSON.stringify(grammar)
-        : undefined;
-      
-      if (grammarJson) {
-        console.log("[Vosk] Using grammar constraint:", grammarJson);
-      }
-
-      // Pass the actual sample rate + optional grammar to the recognizer
-      recognizerRef.current = new modelRef.current.KaldiRecognizer(
-        audioContext.sampleRate,
-        grammarJson
-      );
-      
-      // Listen to async events from the Vosk Web Worker
-      recognizerRef.current.on("result", (message: any) => {
-        if (message.result && message.result.text && onResultRef.current) {
-          onResultRef.current(message.result.text);
-          stopVoskRecognition();
-        }
-      });
-      
-      recognizerRef.current.on("partialresult", (message: any) => {
-        if (message.result && message.result.partial && onPartialResultRef.current) {
-          onPartialResultRef.current(message.result.partial);
-        }
-      });
       
       const processor = audioContext.createScriptProcessor(4096, 1, 1);
       processorRef.current = processor;
       
       processor.onaudioprocess = (e) => {
-        if (!recognizerRef.current || !isListeningRef.current) return;
-        try {
-          recognizerRef.current.acceptWaveform(e.inputBuffer);
-        } catch (err) {
-          console.error("Vosk acceptWaveform error:", err);
-        }
+        if (!isListeningRef.current) return;
+        // Copy the Float32Array to avoid it being mutated by the browser
+        const inputData = e.inputBuffer.getChannelData(0);
+        audioChunksRef.current.push(new Float32Array(inputData));
       };
       
       source.connect(processor);
       processor.connect(audioContext.destination);
       
     } catch (err: any) {
-      console.error("[Vosk] Microphone access error:", err);
+      console.error("[Wav2Vec2] Microphone access error:", err);
       if (err.message && err.message.includes("HTTPS")) {
         alert("Microphone Error: " + err.message);
       }

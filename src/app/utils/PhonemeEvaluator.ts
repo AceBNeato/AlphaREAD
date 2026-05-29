@@ -24,45 +24,45 @@
 //   U = /ʌ/ or /uː/(as in "cup" or "moon")
 
 const VOWEL_ACCEPTED: Record<string, string[]> = {
-  A: ["a", "ah", "aa", "aah", "aw", "uh"],   // /æ/ /ɑ/
-  E: ["e", "eh", "ay", "ae"],                  // /ɛ/ (browser often hears 'E' as 'ay')
-  I: ["i", "ih", "ee", "e", "ie"],             // /ɪ/ or /iː/ — both OK for letter I
-  O: ["o", "oh", "aw", "oa", "awe", "or"],    // /ɒ/ or /oʊ/
-  U: ["u", "uh", "oo", "ooh", "ew"],          // /ʌ/ or /uː/
+  A: ["a", "ah", "aa", "aah", "aw", "uh", "æ", "ɑ", "aɪ", "ɔ"],
+  E: ["e", "eh", "ay", "ae", "ɛ", "eɪ", "ə"],
+  I: ["i", "ih", "ee", "e", "ie", "ɪ", "iː", "i"],
+  O: ["o", "oh", "aw", "oa", "awe", "or", "ɒ", "oʊ", "o"],
+  U: ["u", "uh", "oo", "ooh", "ew", "ʌ", "uː", "u", "ʊ"],
 };
 
 // These are WRONG phoneme transcriptions — diphthongs or entirely different vowels
 const VOWEL_REJECTED: Record<string, string[]> = {
-  A: ["ay", "ai", "ace", "ei", "ey", "ate"],  // Long A → wrong
-  E: ["ee", "ey", "ea"],                       // Long E → wrong for short E target
+  A: ["ay", "ai", "ace", "ei", "ey", "ate"],
+  E: ["ee", "ey", "ea"],
   I: ["eye", "ai", "aye", "igh", "pie", "bye", "die", "lie", "tie", "fie", "vie", "pie"],
-  O: ["ow", "ou", "oe"],                       // diphthong OW → wrong
-  U: [],                                        // U is rarely confused badly
+  O: ["ow", "ou", "oe"],
+  U: [],
 };
 
 // ─── Consonant Sound Groups ───────────────────────────────────────────────────
 //
-// Maps each consonant letter to how it typically appears in a SpeechRecognition transcript.
+// Maps each consonant letter to how it typically appears in a SpeechRecognition transcript or IPA.
 
 const CONSONANT_SOUNDS: Record<string, string[]> = {
   B: ["b"],
-  C: ["k", "c", "s"],   // C sounds like K (cat) or S (cell)
+  C: ["k", "c", "s"],
   D: ["d"],
   F: ["f", "ph"],
-  G: ["g"],
+  G: ["g", "ɡ"],
   H: ["h"],
-  J: ["j", "dj"],
+  J: ["j", "dj", "dʒ", "ʒ"],
   K: ["k", "c"],
   L: ["l"],
   M: ["m"],
-  N: ["n"],
+  N: ["n", "ŋ"],
   P: ["p"],
-  R: ["r"],
-  S: ["s"],
+  R: ["r", "ɹ"],
+  S: ["s", "ʃ"],
   T: ["t"],
   V: ["v"],
   W: ["w"],
-  Y: ["y"],
+  Y: ["y", "j"],
   Z: ["z"],
 };
 
@@ -169,7 +169,14 @@ function evaluateCV(target: string, transcripts: string[]): "correct" | "close" 
 
   for (const raw of transcripts) {
     // Check multiple words in the transcript (browser sometimes adds filler)
-    const words = normalizeText(raw).split(/\s+/);
+    const normalized = normalizeText(raw);
+    const words = normalized.split(/\s+/);
+    
+    // Wav2Vec2 outputs phonemes with spaces (e.g. "b æ"). 
+    // We add the space-stripped version to evaluate it as a single phonetic unit.
+    if (words.length > 1) {
+      words.push(normalized.replace(/\s+/g, ""));
+    }
 
     for (const word of words) {
       // 1. Check for rejected diphthong sounds first
@@ -224,7 +231,15 @@ function evaluateVC(target: string, transcripts: string[]): "correct" | "close" 
   let vowelRejected = false;
 
   for (const raw of transcripts) {
-    const words = normalizeText(raw).split(/\s+/);
+    // Check multiple words in the transcript (browser sometimes adds filler)
+    const normalized = normalizeText(raw);
+    const words = normalized.split(/\s+/);
+    
+    // Wav2Vec2 outputs phonemes with spaces (e.g. "b æ"). 
+    // We add the space-stripped version to evaluate it as a single phonetic unit.
+    if (words.length > 1) {
+      words.push(normalized.replace(/\s+/g, ""));
+    }
 
     for (const word of words) {
       // Specific exception for "UN": SpeechRecognition often mishears "un" as "on".

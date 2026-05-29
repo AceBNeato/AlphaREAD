@@ -6,6 +6,10 @@ import { ThemeToggle } from "../components/ThemeToggle";
 import { levels } from "../data/levels";
 import { App } from '@capacitor/app';
 import { supabase } from "../../lib/supabase";
+import { pipeline, env } from "@xenova/transformers";
+
+// Disable local models, fetch directly from Hugging Face
+env.allowLocalModels = false;
 
 interface UserProfile {
   id: string;
@@ -20,6 +24,11 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [completedLevels, setCompletedLevels] = useState<number[]>([]);
+  
+  // Model Preload State
+  const [isPreloading, setIsPreloading] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState(0);
+  const [modelReady, setModelReady] = useState(false);
 
   useEffect(() => {
     const storedProfile = localStorage.getItem("userProfile");
@@ -83,7 +92,43 @@ export default function Dashboard() {
       };
       validateDevice();
     }
+
+    // Check if the AI model is already cached/ready
+    const checkModelCache = async () => {
+      try {
+        const cached = localStorage.getItem("wav2vec2_cached");
+        if (cached === "true") {
+          setModelReady(true);
+        }
+      } catch (e) {
+        console.error("Cache check failed:", e);
+      }
+    };
+    checkModelCache();
+
   }, [navigate]);
+
+  const handleStartPreload = async () => {
+    setIsPreloading(true);
+    try {
+      await pipeline("automatic-speech-recognition", "Xenova/wav2vec2-lv-60-espeak-cv-ft", {
+        progress_callback: (info: any) => {
+          if (info.status === "progress") {
+            setDownloadProgress(Math.round(info.progress));
+          } else if (info.status === "done") {
+            setDownloadProgress(100);
+          }
+        }
+      });
+      localStorage.setItem("wav2vec2_cached", "true");
+      setModelReady(true);
+    } catch (err) {
+      console.error("Failed to preload model:", err);
+      alert("Failed to download voice AI model. Please check your internet connection.");
+    } finally {
+      setIsPreloading(false);
+    }
+  };
 
   if (!profile) return null;
 
@@ -99,6 +144,46 @@ export default function Dashboard() {
   const accuracy = completedLevels.length > 0
     ? Math.round((completedLevels.length / levels.length) * 100)
     : 0;
+
+  if (!modelReady && !isPreloading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-[#e8f9f0] to-[#f0fdf4] dark:bg-none dark:bg-[#0d141c] flex items-center justify-center p-6 transition-colors duration-300">
+        <div className="bg-white dark:bg-[#1f2f3d] p-8 rounded-[2.5rem] shadow-2xl max-w-sm w-full text-center border-2 border-green-200 dark:border-green-900/30">
+          <Sparkles className="w-16 h-16 text-[#58CC02] mx-auto mb-6" />
+          <h2 className="text-2xl font-black mb-4">Set Up Voice AI</h2>
+          <p className="text-gray-600 dark:text-gray-300 mb-8 text-sm leading-relaxed">
+            Alphabet GO requires a one-time download of the phonics AI model (~140MB). This allows the app to grade pronunciation 100% offline later.
+          </p>
+          <Button 
+            onClick={handleStartPreload}
+            className="w-full bg-[#58CC02] hover:bg-[#46a302] text-white font-bold text-lg rounded-2xl py-6 shadow-[0_6px_0_#3d8c02] active:translate-y-[6px] active:shadow-none"
+          >
+            Download Now
+          </Button>
+          <p className="text-xs text-gray-400 mt-4">Please connect to Wi-Fi.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (isPreloading && !modelReady) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-[#e8f9f0] to-[#f0fdf4] dark:bg-none dark:bg-[#0d141c] flex items-center justify-center p-6 transition-colors duration-300">
+        <div className="bg-white dark:bg-[#1f2f3d] p-8 rounded-[2.5rem] shadow-2xl max-w-sm w-full text-center border-2 border-[#1CB0F6]/30">
+          <div className="w-16 h-16 border-4 border-[#1CB0F6] border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
+          <h2 className="text-xl font-bold mb-4">Downloading AI Brain...</h2>
+          <div className="w-full h-4 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden mb-2 shadow-inner">
+            <div 
+              className="h-full bg-gradient-to-r from-[#1CB0F6] to-[#0a8ed4] transition-all duration-300 rounded-full"
+              style={{ width: `${downloadProgress}%` }}
+            />
+          </div>
+          <p className="font-mono text-sm text-[#1CB0F6] font-bold">{downloadProgress}%</p>
+          <p className="text-xs text-gray-500 mt-6">This only happens once. Keep the app open.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#e8f9f0] to-[#f0fdf4] dark:bg-none dark:bg-[#0d141c] transition-colors duration-300">
