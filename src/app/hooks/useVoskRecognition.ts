@@ -85,7 +85,15 @@ export function useVoskRecognition({ onResult, onPartialResult, onError }: UseVo
     }
   }, []);
 
-  const startVoskRecognition = useCallback(async () => {
+  /**
+   * Start recognition.
+   * @param grammar  Optional array of words/phrases Vosk is allowed to return.
+   *                 Pass the phonetic variants of the target syllable so Vosk
+   *                 cannot hallucinate unrelated English words (e.g. "eric", "eg").
+   *                 Example: ["eck", "ek", "eg", "[unk]"]
+   *                 Always include "[unk]" so Vosk has a fallback for silence.
+   */
+  const startVoskRecognition = useCallback(async (grammar?: string[]) => {
     if (!isVoskReady || !modelRef.current) {
       console.warn("[Vosk] Model not ready yet.");
       if (onErrorRef.current) onErrorRef.current("Model not ready");
@@ -110,14 +118,27 @@ export function useVoskRecognition({ onResult, onPartialResult, onError }: UseVo
       
       const source = audioContext.createMediaStreamSource(stream);
       
-      // Pass the actual sample rate to the recognizer
-      recognizerRef.current = new modelRef.current.KaldiRecognizer(audioContext.sampleRate);
+      // Build grammar JSON string — if provided, Vosk only returns words from this list.
+      // This prevents hallucination of random English words for non-word phonemes.
+      const grammarJson = grammar && grammar.length > 0
+        ? JSON.stringify(grammar)
+        : undefined;
+      
+      if (grammarJson) {
+        console.log("[Vosk] Using grammar constraint:", grammarJson);
+      }
+
+      // Pass the actual sample rate + optional grammar to the recognizer
+      recognizerRef.current = new modelRef.current.KaldiRecognizer(
+        audioContext.sampleRate,
+        grammarJson
+      );
       
       // Listen to async events from the Vosk Web Worker
       recognizerRef.current.on("result", (message: any) => {
         if (message.result && message.result.text && onResultRef.current) {
           onResultRef.current(message.result.text);
-          stopVoskRecognition(); // Stop once we get a final match
+          stopVoskRecognition();
         }
       });
       
@@ -133,7 +154,6 @@ export function useVoskRecognition({ onResult, onPartialResult, onError }: UseVo
       processor.onaudioprocess = (e) => {
         if (!recognizerRef.current || !isListeningRef.current) return;
         try {
-          // vosk-browser automatically converts the AudioBuffer
           recognizerRef.current.acceptWaveform(e.inputBuffer);
         } catch (err) {
           console.error("Vosk acceptWaveform error:", err);
@@ -145,7 +165,6 @@ export function useVoskRecognition({ onResult, onPartialResult, onError }: UseVo
       
     } catch (err: any) {
       console.error("[Vosk] Microphone access error:", err);
-      // If it's a critical error like missing HTTPS, alert the user
       if (err.message && err.message.includes("HTTPS")) {
         alert("Microphone Error: " + err.message);
       }

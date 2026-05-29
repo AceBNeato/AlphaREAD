@@ -91,7 +91,7 @@ const SYLLABLE_EXCEPTIONS: Record<string, string[]> = {
   "UB": ["abb", "ubb", "ab", "ub"],
   "EM": ["m", "em", "emm"],
   "ID": ["eed", "id"],
-  "UM": ["uhm", "um", "uhmm"],
+  "UM": ["om", "um", "uhmm"],
   "EN": ["n", "en", "enn"],
 
   // CV exceptions
@@ -102,14 +102,14 @@ const SYLLABLE_EXCEPTIONS: Record<string, string[]> = {
   "PE": ["peh", "pe"],
   "SE": ["seh", "se"],
   "ZO": ["zoh", "zo"],
-  "SO": ["soh", "so"],
-  "KU": ["kuh", "ku", "cuh", "cu"],
-  "MO": ["moh", "mo"],
+  "SO": ["saw", "soh", "so"],
+  "KU": ["kaw", "kuh", "ku", "cuh", "cu"],
+  "MO": ["maw", "moh", "mo"],
   "JE": ["jeh", "je"],
   "DE": ["deh", "de"],
-  "MU": ["muh", "mu", "ma"],
-  "BU": ["buh", "bu", "bah", "ba", "boh", "bo"],
-  "SU": ["suh", "su", "sah", "sa"],
+  "MU": ["mah", "muh", "mu", "ma"],
+  "BU": ["baw", "buh", "bu", "bah", "ba", "boh", "bo"],
+  "SU": ["sah", "suh", "su", "sah", "sa"],
   "FE": ["feh", "fe"],
   "HU": ["huh", "hu", "hah", "ha"],
   "NU": ["nuh", "nu", "nah", "na"],
@@ -307,4 +307,60 @@ export function evaluateSyllable(target: string, transcripts: string[]): Phoneme
  */
 export function isSyllableTarget(target: string): boolean {
   return isCVSyllable(target.toUpperCase()) || isVCSyllable(target.toUpperCase());
+}
+
+/**
+ * Builds a Vosk grammar constraint list for the given syllable target.
+ *
+ * Vosk's KaldiRecognizer accepts a `grammar` JSON string that restricts
+ * recognition to only words in the list. By passing the phonetic variants
+ * of a syllable (e.g. "eck", "ek" for "EK"), Vosk will stop hallucinating
+ * unrelated English words like "eric", "egg", "eg".
+ *
+ * Always includes "[unk]" as a required fallback for silence/unknown sounds.
+ *
+ * @param target - The 2-letter syllable, e.g. "EK", "BA", "IT"
+ * @returns Array of allowed words to pass as Vosk grammar
+ */
+export function buildVoskGrammar(target: string): string[] {
+  const upper = target.toUpperCase();
+  const grammar = new Set<string>();
+
+  // 1. Always add the syllable itself (lowercase) as a word
+  grammar.add(upper.toLowerCase());
+
+  // 2. Add per-syllable exception words (these are what Vosk is most likely to return)
+  const exceptions = SYLLABLE_EXCEPTIONS[upper] || [];
+  exceptions.forEach(e => grammar.add(e));
+
+  // 3. Add phonetic variants from VOWEL/CONSONANT tables
+  if (isCVSyllable(upper)) {
+    const cLetter = upper[0];
+    const vLetter = upper[1];
+    const cSounds = CONSONANT_SOUNDS[cLetter] || [];
+    const vSounds = VOWEL_ACCEPTED[vLetter] || [];
+    // Combine: each consonant sound prefix + each vowel sound suffix
+    for (const c of cSounds) {
+      grammar.add(c); // bare consonant (e.g. "p" for PI)
+      for (const v of vSounds) {
+        grammar.add(c + v); // e.g. "pee", "pi", "pih"
+      }
+    }
+  } else if (isVCSyllable(upper)) {
+    const vLetter = upper[0];
+    const cLetter = upper[1];
+    const vSounds = VOWEL_ACCEPTED[vLetter] || [];
+    const cSounds = CONSONANT_SOUNDS[cLetter] || [];
+    for (const v of vSounds) {
+      grammar.add(v); // bare vowel (e.g. "ah" for AM)
+      for (const c of cSounds) {
+        grammar.add(v + c); // e.g. "am", "ahm"
+      }
+    }
+  }
+
+  // 4. "[unk]" is required by Vosk grammar mode as the unknown/silence token
+  grammar.add("[unk]");
+
+  return Array.from(grammar);
 }

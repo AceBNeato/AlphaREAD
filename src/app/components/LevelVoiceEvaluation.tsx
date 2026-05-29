@@ -19,7 +19,7 @@ import { CVC_WORDS, shuffle, getPhoneticPronunciation } from "../data/levels";
 import { motion, AnimatePresence } from "motion/react";
 import { supabase } from "../../lib/supabase";
 import { Confetti } from "./ui/Confetti";
-import { evaluateSyllable, isSyllableTarget } from "../utils/PhonemeEvaluator";
+import { evaluateSyllable, isSyllableTarget, buildVoskGrammar } from "../utils/PhonemeEvaluator";
 import { useAudioVisualizer } from "../hooks/useAudioVisualizer";
 
 import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
@@ -192,7 +192,10 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
 
   useEffect(() => {
     if (isVoskMode && evaluatingWord) {
-      startVoskRecognition();
+      // Build a constrained grammar so Vosk only returns valid phonetic sounds
+      // for this syllable — prevents hallucinating words like "eric" or "eg".
+      const grammar = buildVoskGrammar(evaluatingWord);
+      startVoskRecognition(grammar);
       // Auto-silence timeout for Vosk (5 seconds)
       const timer = setTimeout(() => {
         stopVoskRecognition();
