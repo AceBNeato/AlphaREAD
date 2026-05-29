@@ -6,6 +6,7 @@ import { ThemeToggle } from "../components/ThemeToggle";
 import { levels } from "../data/levels";
 import { App } from '@capacitor/app';
 import { supabase } from "../../lib/supabase";
+import { preloadWav2Vec2IntoMemory } from "../hooks/useVoskRecognition";
 
 interface UserProfile {
   id: string;
@@ -22,6 +23,10 @@ export default function Dashboard() {
   const [completedLevels, setCompletedLevels] = useState<number[]>([]);
 
   useEffect(() => {
+    // Silently pre-warm the AI brain into RAM in the background
+    if (localStorage.getItem("wav2vec2_cached") === "true") {
+      preloadWav2Vec2IntoMemory();
+    }
     const storedProfile = localStorage.getItem("userProfile");
     if (!storedProfile) {
       navigate("/", { replace: true });

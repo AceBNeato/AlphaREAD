@@ -23,6 +23,28 @@ function resampleTo16k(audioData: Float32Array, origSampleRate: number): Float32
   return result;
 }
 
+// ─── GLOBAL MODEL CACHE ───
+// We keep the model loaded in a global variable so it doesn't get 
+// garbage collected and cause a 2-second delay every time a user changes routes.
+let globalTranscriber: any = null;
+let isGlobalTranscriberReady = false;
+let isInitializing = false;
+
+export const preloadWav2Vec2IntoMemory = async () => {
+  if (globalTranscriber || isInitializing) return;
+  isInitializing = true;
+  try {
+    console.log("[Wav2Vec2] Loading model into RAM in background...");
+    globalTranscriber = await pipeline("automatic-speech-recognition", "Xenova/wav2vec2-lv-60-espeak-cv-ft");
+    isGlobalTranscriberReady = true;
+    console.log("[Wav2Vec2] Model successfully armed in RAM!");
+  } catch (err) {
+    console.error("[Wav2Vec2] Global Initialization Error:", err);
+  } finally {
+    isInitializing = false;
+  }
+};
+
 interface UseVoskProps {
   onResult?: (text: string, context?: any) => void;
   onPartialResult?: (text: string) => void;
@@ -30,9 +52,9 @@ interface UseVoskProps {
 }
 
 export function useVoskRecognition({ onResult, onPartialResult, onError }: UseVoskProps = {}) {
-  const [isVoskReady, setIsVoskReady] = useState(false);
+  const [isVoskReady, setIsVoskReady] = useState(isGlobalTranscriberReady);
   
-  const transcriberRef = useRef<any>(null);
+  const transcriberRef = useRef<any>(globalTranscriber);
   const audioContextRef = useRef<AudioContext | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const processorRef = useRef<ScriptProcessorNode | null>(null);
@@ -58,22 +80,27 @@ export function useVoskRecognition({ onResult, onPartialResult, onError }: UseVo
     let isMounted = true;
     
     const initWav2Vec2 = async () => {
-      try {
-        console.log("[Wav2Vec2] Loading Phoneme Model...");
-        const transcriber = await pipeline("automatic-speech-recognition", "Xenova/wav2vec2-lv-60-espeak-cv-ft");
-        if (isMounted) {
-          transcriberRef.current = transcriber;
-          setIsVoskReady(true);
-          console.log("[Wav2Vec2] Model Ready!");
-        }
-      } catch (err) {
-        console.error("[Wav2Vec2] Initialization Error:", err);
+      if (!isGlobalTranscriberReady) {
+        await preloadWav2Vec2IntoMemory();
+      }
+      if (isMounted && isGlobalTranscriberReady) {
+        transcriberRef.current = globalTranscriber;
+        setIsVoskReady(true);
       }
     };
     
     // Only init if it was already preloaded by Dashboard
     if (localStorage.getItem("wav2vec2_cached") === "true") {
       initWav2Vec2();
+    } else {
+      // Setup a fast check in case it's currently downloading
+      const interval = setInterval(() => {
+        if (localStorage.getItem("wav2vec2_cached") === "true") {
+          initWav2Vec2();
+          clearInterval(interval);
+        }
+      }, 1000);
+      return () => clearInterval(interval);
     }
     
     return () => {

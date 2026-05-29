@@ -452,9 +452,6 @@ export default function Activation() {
             )}
           </div>
 
-          <p className="text-xs text-gray-600 select-none">
-            Admin? Press <kbd className="px-1.5 py-0.5 bg-gray-900 rounded border border-gray-800 text-gray-400 font-mono text-[10px]">Ctrl+Alt+A</kbd>
-          </p>
 
         </div>
       )}
