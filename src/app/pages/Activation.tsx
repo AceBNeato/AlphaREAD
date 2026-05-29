@@ -18,6 +18,7 @@ import {
   X
 } from "lucide-react";
 import { Button } from "../components/ui/button";
+import { generateUUID } from "../utils/uuid";
 import { pipeline, env } from "@xenova/transformers";
 
 env.allowLocalModels = false;
