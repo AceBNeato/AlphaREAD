@@ -13,6 +13,7 @@ import {
   AlertCircle,
   Volume2,
   Shuffle,
+  Loader2,
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { CVC_WORDS, shuffle, getPhoneticPronunciation } from "../data/levels";
@@ -115,13 +116,13 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
   const handleResult = useCallback((word: string, status: "correct" | "close" | "wrong" | null, transcript: string) => {
     setTranscripts(prev => ({ ...prev, [word]: transcript }));
     setEvalFeedback(prev => ({ ...prev, [word]: status }));
-    
+
     if (status === "correct" || status === "close") {
       setShowConfetti(true);
       const newCompleted = new Set(completedWords);
       newCompleted.add(word);
       setCompletedWords(newCompleted);
-      
+
       setProcessingWord(null);
       setTimeout(() => {
         safeSetEvaluatingWordNull();
@@ -177,16 +178,16 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
   });
 
   // Vosk/Wav2Vec2 Engine (Level 2 Offline Phonetics)
-  const { startVoskRecognition, stopVoskRecognition } = useVoskRecognition({
+  const { startVoskRecognition, stopVoskRecognition, isVoskReady } = useVoskRecognition({
     onResult: (text, contextWord) => {
       const wordToEvaluate = contextWord || evaluatingWord;
       if (!wordToEvaluate) return;
-      
+
       if (!text || text.trim() === "") {
         handleSilence(wordToEvaluate);
         return;
       }
-      
+
       const phonemeResult = evaluateSyllable(wordToEvaluate, [text]);
       handleResult(wordToEvaluate, phonemeResult, text);
     },
@@ -199,14 +200,14 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
       // for this syllable — prevents hallucinating words like "eric" or "eg".
       const grammar = buildVoskGrammar(evaluatingWord);
       startVoskRecognition(grammar, evaluatingWord);
-      
+
       // Auto-silence timeout (5 seconds)
       const timer = setTimeout(() => {
         setProcessingWord(evaluatingWord);
         stopVoskRecognition();
         safeSetEvaluatingWordNull(); // Reset UI state so it shows processing
       }, 5000);
-      
+
       return () => clearTimeout(timer);
     } else if (isVoskMode && !evaluatingWord && !processingWord) {
       stopVoskRecognition();
@@ -220,6 +221,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
   };
 
   const startRecording = (word: string) => {
+    if (isVoskMode && !isVoskReady) return;
     if (evaluatingWord || completedWords.has(word) || isMicResetting) return;
     setEvaluatingWord(word);
     setEvalFeedback(prev => ({ ...prev, [word]: null }));
@@ -408,15 +410,17 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
                                 startRecording(w);
                               }
                             }}
-                            disabled={(evaluatingWord !== null && !isCurrent) || isDone || isMicResetting || processingWord === w}
-                            className={`relative w-12 h-12 rounded-xl flex items-center justify-center transition-all ${isDone ? 'bg-green-500 text-white shadow-none opacity-50 cursor-default' : isCurrent ? 'bg-red-500 text-white shadow-lg' : isMicResetting || processingWord === w ? 'bg-gray-300 dark:bg-gray-700 text-gray-400 cursor-not-allowed' : 'bg-gradient-to-br from-pink-500 to-rose-500 text-white shadow-md hover:scale-105 active:scale-95'}`}
+                            disabled={(evaluatingWord !== null && !isCurrent) || isDone || isMicResetting || processingWord === w || (isVoskMode && !isVoskReady)}
+                            className={`relative w-12 h-12 rounded-xl flex items-center justify-center transition-all ${isDone ? 'bg-green-500 text-white shadow-none opacity-50 cursor-default' : isCurrent ? 'bg-red-500 text-white shadow-lg' : isMicResetting || processingWord === w || (isVoskMode && !isVoskReady) ? 'bg-gray-300 dark:bg-gray-700 text-gray-400 cursor-not-allowed' : 'bg-gradient-to-br from-pink-500 to-rose-500 text-white shadow-md hover:scale-105 active:scale-95'}`}
                           >
-                            {isCurrent && (
+                            {isVoskMode && !isVoskReady && !isDone ? (
+                              <Loader2 className="w-5 h-5 animate-spin text-gray-500" />
+                            ) : isCurrent ? (
                               <>
                                 <span className="absolute inset-0 rounded-xl bg-red-500/40 animate-ping" />
                                 <span className="absolute -inset-1 rounded-xl bg-red-500/20 animate-pulse" />
                               </>
-                            )}
+                            ) : null}
                             <span className="relative z-10">
                               {isDone ? <CheckCircle2 className="w-6 h-6" /> : isCurrent ? <MicOff className="w-5 h-5 animate-bounce" /> : <Mic className="w-5 h-5" />}
                             </span>
@@ -499,7 +503,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
                       JSON.stringify(completedLevels)
                     );
                   }
-                  
+
                   if (onComplete) {
                     onComplete();
                   } else {
