@@ -20,11 +20,10 @@ import { CVC_WORDS, shuffle, getPhoneticPronunciation } from "../data/levels";
 import { motion, AnimatePresence } from "motion/react";
 import { supabase } from "../../lib/supabase";
 import { Confetti } from "./ui/Confetti";
-import { evaluateSyllable, isSyllableTarget, buildVoskGrammar } from "../utils/PhonemeEvaluator";
+import { evaluateSyllable, isSyllableTarget } from "../utils/PhonemeEvaluator";
 import { useAudioVisualizer } from "../hooks/useAudioVisualizer";
-
 import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
-import { useVoskRecognition } from "../hooks/useVoskRecognition";
+
 interface LevelVoiceEvaluationProps {
   levelId: number;
   accent: { primary: string; dark: string; lightBg: string };
@@ -111,8 +110,6 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
 
   useAudioVisualizer(isMobile, !!evaluatingWord);
 
-  const isVoskMode = levelId === 2;
-
   const handleResult = useCallback((word: string, status: "correct" | "close" | "wrong" | null, transcript: string) => {
     setTranscripts(prev => ({ ...prev, [word]: transcript }));
     setEvalFeedback(prev => ({ ...prev, [word]: status }));
@@ -168,51 +165,14 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
     }, 1500);
   }, [evaluatingWord]);
 
-  // Standard Web Speech API (Level 3+)
+  // Standard Web Speech API (All Levels)
   useSpeechRecognition({
     evaluatingWord,
-    enabled: !isVoskMode,
+    enabled: true,
     onResult: handleResult,
     onError: handleError,
     onSilenceTimeout: handleSilence
   });
-
-  // Vosk/Wav2Vec2 Engine (Level 2 Offline Phonetics)
-  const { startVoskRecognition, stopVoskRecognition, isVoskReady } = useVoskRecognition({
-    onResult: (text, contextWord) => {
-      const wordToEvaluate = contextWord || evaluatingWord;
-      if (!wordToEvaluate) return;
-
-      if (!text || text.trim() === "") {
-        handleSilence(wordToEvaluate);
-        return;
-      }
-
-      const phonemeResult = evaluateSyllable(wordToEvaluate, [text]);
-      handleResult(wordToEvaluate, phonemeResult, text);
-    },
-    onError: handleError
-  });
-
-  useEffect(() => {
-    if (isVoskMode && evaluatingWord) {
-      // Build a constrained grammar so Vosk only returns valid phonetic sounds
-      // for this syllable — prevents hallucinating words like "eric" or "eg".
-      const grammar = buildVoskGrammar(evaluatingWord);
-      startVoskRecognition(grammar, evaluatingWord);
-
-      // Auto-silence timeout (5 seconds)
-      const timer = setTimeout(() => {
-        setProcessingWord(evaluatingWord);
-        stopVoskRecognition();
-        safeSetEvaluatingWordNull(); // Reset UI state so it shows processing
-      }, 5000);
-
-      return () => clearTimeout(timer);
-    } else if (isVoskMode && !evaluatingWord && !processingWord) {
-      stopVoskRecognition();
-    }
-  }, [evaluatingWord, isVoskMode, startVoskRecognition, stopVoskRecognition, handleSilence]);
 
   const safeSetEvaluatingWordNull = () => {
     setEvaluatingWord(null);
@@ -221,7 +181,6 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
   };
 
   const startRecording = (word: string) => {
-    if (isVoskMode && !isVoskReady) return;
     if (evaluatingWord || completedWords.has(word) || isMicResetting) return;
     setEvaluatingWord(word);
     setEvalFeedback(prev => ({ ...prev, [word]: null }));
@@ -403,24 +362,20 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
                           <button
                             onClick={() => {
                               if (isCurrent) {
-                                setProcessingWord(w);
-                                stopVoskRecognition();
                                 safeSetEvaluatingWordNull();
                               } else {
                                 startRecording(w);
                               }
                             }}
-                            disabled={(evaluatingWord !== null && !isCurrent) || isDone || isMicResetting || processingWord === w || (isVoskMode && !isVoskReady)}
-                            className={`relative w-12 h-12 rounded-xl flex items-center justify-center transition-all ${isDone ? 'bg-green-500 text-white shadow-none opacity-50 cursor-default' : isCurrent ? 'bg-red-500 text-white shadow-lg' : isMicResetting || processingWord === w || (isVoskMode && !isVoskReady) ? 'bg-gray-300 dark:bg-gray-700 text-gray-400 cursor-not-allowed' : 'bg-gradient-to-br from-pink-500 to-rose-500 text-white shadow-md hover:scale-105 active:scale-95'}`}
+                            disabled={(evaluatingWord !== null && !isCurrent) || isDone || isMicResetting}
+                            className={`relative w-12 h-12 rounded-xl flex items-center justify-center transition-all ${isDone ? 'bg-green-500 text-white shadow-none opacity-50 cursor-default' : isCurrent ? 'bg-red-500 text-white shadow-lg' : isMicResetting ? 'bg-gray-300 dark:bg-gray-700 text-gray-400 cursor-not-allowed' : 'bg-gradient-to-br from-pink-500 to-rose-500 text-white shadow-md hover:scale-105 active:scale-95'}`}
                           >
-                            {isVoskMode && !isVoskReady && !isDone ? (
-                              <Loader2 className="w-5 h-5 animate-spin text-gray-500" />
-                            ) : isCurrent ? (
+                            {isCurrent && (
                               <>
                                 <span className="absolute inset-0 rounded-xl bg-red-500/40 animate-ping" />
                                 <span className="absolute -inset-1 rounded-xl bg-red-500/20 animate-pulse" />
                               </>
-                            ) : null}
+                            )}
                             <span className="relative z-10">
                               {isDone ? <CheckCircle2 className="w-6 h-6" /> : isCurrent ? <MicOff className="w-5 h-5 animate-bounce" /> : <Mic className="w-5 h-5" />}
                             </span>

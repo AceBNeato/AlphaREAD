@@ -19,9 +19,6 @@ import {
 } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { generateUUID } from "../utils/uuid";
-import { pipeline, env } from "@xenova/transformers";
-
-env.allowLocalModels = false;
 
 export default function Activation() {
   const navigate = useNavigate();
@@ -57,56 +54,25 @@ export default function Activation() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [handleKeyDown]);
 
-  const [isPreloading, setIsPreloading] = useState(false);
-  const [downloadProgress, setDownloadProgress] = useState(0);
-
-  // Splash screen transition and AI preload
+  // Splash screen transition
   useEffect(() => {
     let isMounted = true;
-
-    const checkAndDownloadModel = async () => {
-      try {
-        const cached = localStorage.getItem("wav2vec2_cached");
-        if (cached !== "true") {
-          setIsPreloading(true);
-          await pipeline("automatic-speech-recognition", "Xenova/wav2vec2-lv-60-espeak-cv-ft", {
-            progress_callback: (info: any) => {
-              if (info.status === "progress" && isMounted) {
-                setDownloadProgress(Math.round(info.progress));
-              }
-            }
-          });
-          localStorage.setItem("wav2vec2_cached", "true");
-        }
-      } catch (e) {
-        console.error("Failed to preload AI model:", e);
-      } finally {
-        if (isMounted) {
-          setIsPreloading(false);
-          finishSplash();
+    
+    setTimeout(() => {
+      if (!isMounted) return;
+      setShowSplash(false);
+      const profile = localStorage.getItem("userProfile");
+      if (profile) {
+        const parsed = JSON.parse(profile);
+        if (parsed.role === "teacher") {
+          navigate("/teacher-dashboard", { replace: true });
+        } else if (parsed.role === "admin") {
+          navigate("/admin", { replace: true });
+        } else if (parsed.role === "student") {
+          navigate("/dashboard", { replace: true });
         }
       }
-    };
-
-    const finishSplash = () => {
-      setTimeout(() => {
-        if (!isMounted) return;
-        setShowSplash(false);
-        const profile = localStorage.getItem("userProfile");
-        if (profile) {
-          const parsed = JSON.parse(profile);
-          if (parsed.role === "teacher") {
-            navigate("/teacher-dashboard", { replace: true });
-          } else if (parsed.role === "admin") {
-            navigate("/admin", { replace: true });
-          } else if (parsed.role === "student") {
-            navigate("/dashboard", { replace: true });
-          }
-        }
-      }, 1000); // brief pause after download or 1s if already cached
-    };
-
-    checkAndDownloadModel();
+    }, 2500);
 
     return () => {
       isMounted = false;
@@ -290,35 +256,9 @@ export default function Activation() {
               <span className="text-[#58CC02]">Alphabet</span>
               <span className="text-[#1CB0F6]">GO!</span>
             </h1>
-
-            {isPreloading ? (
-              <div className="mt-8 bg-gray-900/80 p-5 rounded-2xl border border-gray-800 shadow-xl backdrop-blur-sm">
-                <p className="text-[#1CB0F6] font-bold text-sm mb-3">Downloading Offline AI Brain...</p>
-                <div className="w-full h-2 bg-gray-800 rounded-full overflow-hidden mb-2">
-                  <div
-                    className="h-full bg-gradient-to-r from-[#1CB0F6] to-[#0a8ed4] transition-all duration-300"
-                    style={{ width: `${downloadProgress}%` }}
-                  />
-                </div>
-                <div className="flex justify-between items-center mt-2">
-                  <span className="text-xs text-gray-500 font-medium">This only happens once</span>
-                  <span className="text-xs font-mono text-[#1CB0F6] font-bold">{downloadProgress}%</span>
-                </div>
-              </div>
-            ) : (
-              <>
-                <p className="text-gray-500 mt-1 font-medium">Learn • Grow • Succeed</p>
-                <div className="flex justify-center gap-2 mt-4">
-                  {[0, 0.15, 0.3].map((delay, i) => (
-                    <div
-                      key={i}
-                      className="w-2.5 h-2.5 rounded-full bg-[#58CC02] animate-bounce"
-                      style={{ animationDelay: `${delay}s` }}
-                    />
-                  ))}
-                </div>
-              </>
-            )}
+            <p className="text-white/80 font-medium tracking-wider mt-4">
+              Empowering Little Voices
+            </p>
           </div>
         </div>
       ) : (

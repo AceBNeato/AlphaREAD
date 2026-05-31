@@ -127,7 +127,14 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, onResult,
       // PATH A: CV / VC Syllable (Level 2)
       if (isSyllableTarget(evaluatingWord)) {
         const phonemeResult = evaluateSyllable(evaluatingWord, allTranscripts);
-        onResult(evaluatingWord, phonemeResult, primaryTranscript);
+        
+        // If the PhonemeEvaluator determined the phonetic sounds match the target,
+        // override Google's English word hallucination (e.g. 'eric' -> 'ek') in the UI.
+        const finalTranscript = (phonemeResult === "correct" || phonemeResult === "close") 
+          ? evaluatingWord.toLowerCase() 
+          : primaryTranscript;
+
+        onResult(evaluatingWord, phonemeResult, finalTranscript);
         return;
       }
 

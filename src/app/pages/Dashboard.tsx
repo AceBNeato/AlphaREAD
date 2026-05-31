@@ -6,7 +6,6 @@ import { ThemeToggle } from "../components/ThemeToggle";
 import { levels } from "../data/levels";
 import { App } from '@capacitor/app';
 import { supabase } from "../../lib/supabase";
-import { preloadWav2Vec2IntoMemory } from "../hooks/useVoskRecognition";
 
 interface UserProfile {
   id: string;
@@ -23,16 +22,12 @@ export default function Dashboard() {
   const [completedLevels, setCompletedLevels] = useState<number[]>([]);
 
   useEffect(() => {
-    // Silently pre-warm the AI brain into RAM in the background
-    if (localStorage.getItem("wav2vec2_cached") === "true") {
-      preloadWav2Vec2IntoMemory();
-    }
     const storedProfile = localStorage.getItem("userProfile");
     if (!storedProfile) {
       navigate("/", { replace: true });
       return;
     }
-    
+
     const parsedProfile = JSON.parse(storedProfile);
     setProfile(parsedProfile);
 
@@ -62,7 +57,7 @@ export default function Dashboard() {
           if (error) {
             // Check if it's just a network error failing to reach supabase despite navigator.onLine being true
             if (error.message && error.message.includes("fetch")) return;
-            
+
             // If the error means "No rows found" (PGRST116), the account was deleted!
             if (error.code === "PGRST116" || error.details?.includes("Results contain 0 rows")) {
               localStorage.removeItem("userProfile");
@@ -157,7 +152,7 @@ export default function Dashboard() {
 
         {/* Main Actions Container */}
         <div className="flex-1 flex flex-col gap-5 justify-center pb-12">
-          
+
           {/* All Levels Button */}
           <Link to="/levels" className="block outline-none">
             <button className="w-full bg-gradient-to-br from-[#58CC02] to-[#46a302] rounded-3xl p-6 shadow-[0_8px_0_#3d8c02] hover:shadow-[0_6px_0_#3d8c02] hover:translate-y-[2px] active:shadow-none active:translate-y-[8px] transition-all flex items-center justify-between group cursor-pointer">
@@ -178,7 +173,7 @@ export default function Dashboard() {
           </Link>
 
           {/* Exit / Back to Teacher Dashboard Button */}
-          <button 
+          <button
             onClick={() => {
               const returnTo = (profile as any).returnTo;
               if (returnTo) {
@@ -194,11 +189,10 @@ export default function Dashboard() {
                 handleExitApp();
               }
             }}
-            className={`w-full rounded-3xl p-6 transition-all flex items-center justify-between group mt-2 cursor-pointer ${
-              profile.id === "teacher-preview" || (profile as any).role === "teacher-preview"
-                ? "bg-gradient-to-br from-[#1CB0F6] to-[#0a8ed4] shadow-[0_8px_0_#0979b5] hover:shadow-[0_6px_0_#0979b5]"
-                : "bg-gradient-to-br from-[#FF4B4B] to-[#e0336e] shadow-[0_8px_0_#b51e4f] hover:shadow-[0_6px_0_#b51e4f]"
-            } hover:translate-y-[2px] active:shadow-none active:translate-y-[8px]`}
+            className={`w-full rounded-3xl p-6 transition-all flex items-center justify-between group mt-2 cursor-pointer ${profile.id === "teacher-preview" || (profile as any).role === "teacher-preview"
+              ? "bg-gradient-to-br from-[#1CB0F6] to-[#0a8ed4] shadow-[0_8px_0_#0979b5] hover:shadow-[0_6px_0_#0979b5]"
+              : "bg-gradient-to-br from-[#FF4B4B] to-[#e0336e] shadow-[0_8px_0_#b51e4f] hover:shadow-[0_6px_0_#b51e4f]"
+              } hover:translate-y-[2px] active:shadow-none active:translate-y-[8px]`}
           >
             <div className="flex items-center gap-5">
               <div className="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-md transition-transform group-hover:scale-110">
