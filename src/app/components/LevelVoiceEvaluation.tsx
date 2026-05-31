@@ -110,6 +110,12 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
 
   useAudioVisualizer(isMobile, !!evaluatingWord);
 
+  const safeSetEvaluatingWordNull = useCallback(() => {
+    setEvaluatingWord(null);
+    setIsMicResetting(true);
+    setTimeout(() => setIsMicResetting(false), 400);
+  }, []);
+
   const handleResult = useCallback((word: string, status: "correct" | "close" | "wrong" | null, transcript: string) => {
     setTranscripts(prev => ({ ...prev, [word]: transcript }));
     setEvalFeedback(prev => ({ ...prev, [word]: status }));
@@ -143,16 +149,13 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
         safeSetEvaluatingWordNull();
       }, 2500);
     }
-  }, [completedWords, words.length]);
+  }, [completedWords, words.length, safeSetEvaluatingWordNull]);
 
   const handleError = useCallback(() => {
-    setEvalFeedback(prev => {
-      if (evaluatingWord && (prev[evaluatingWord] === null || prev[evaluatingWord] === undefined)) {
-        safeSetEvaluatingWordNull();
-      }
-      return prev;
-    });
-  }, [evaluatingWord]);
+    if (evaluatingWord) {
+      safeSetEvaluatingWordNull();
+    }
+  }, [evaluatingWord, safeSetEvaluatingWordNull]);
 
   const handleSilence = useCallback((wordToUse?: string) => {
     const targetWord = wordToUse || evaluatingWord;
@@ -163,7 +166,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
       setEvalFeedback(prev => ({ ...prev, [targetWord]: null }));
       safeSetEvaluatingWordNull();
     }, 1500);
-  }, [evaluatingWord]);
+  }, [evaluatingWord, safeSetEvaluatingWordNull]);
 
   // Standard Web Speech API (All Levels)
   useSpeechRecognition({
@@ -173,12 +176,6 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
     onError: handleError,
     onSilenceTimeout: handleSilence
   });
-
-  const safeSetEvaluatingWordNull = () => {
-    setEvaluatingWord(null);
-    setIsMicResetting(true);
-    setTimeout(() => setIsMicResetting(false), 400);
-  };
 
   const startRecording = (word: string) => {
     if (evaluatingWord || completedWords.has(word) || isMicResetting) return;
