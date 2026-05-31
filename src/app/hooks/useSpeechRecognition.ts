@@ -78,6 +78,8 @@ const HOMOPHONES: Record<string, string[]> = {
 export function useSpeechRecognition({ evaluatingWord, enabled = true, onResult, onSilenceTimeout, onError }: UseSpeechRecognitionProps) {
   const recognitionRef = useRef<any>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  // Guard: prevents onend from firing error fallback after a result was already delivered
+  const resultReceivedRef = useRef(false);
 
   const cleanup = useCallback(() => {
     if (timeoutRef.current) {
@@ -85,10 +87,11 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, onResult,
       timeoutRef.current = null;
     }
     if (recognitionRef.current) {
-      try {
-        recognitionRef.current.stop();
-      } catch (e) {}
+      // Null the ref BEFORE calling stop() so the stale onend callback
+      // doesn't fire and corrupt the next recording session's state.
+      const r = recognitionRef.current;
       recognitionRef.current = null;
+      try { r.stop(); } catch (e) {}
     }
   }, []);
 
@@ -100,13 +103,13 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, onResult,
 
     const SpeechRecognitionAPI = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognitionAPI) {
-      // Browser not supported
       cleanup();
       return;
     }
 
-    const SpeechRecognition = SpeechRecognitionAPI;
-    const recognition = new SpeechRecognition();
+    resultReceivedRef.current = false; // Reset guard for each new recording session
+
+    const recognition = new SpeechRecognitionAPI();
     recognitionRef.current = recognition;
 
     recognition.continuous = false;
@@ -116,6 +119,7 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, onResult,
 
     recognition.onresult = (event: any) => {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      resultReceivedRef.current = true; // Mark that we got a result — onend should do nothing
       const results = event.results[0];
 
       const allTranscripts: string[] = [];
@@ -138,7 +142,7 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, onResult,
         return;
       }
 
-      // PATH B: CVC Word (Level 3)
+      // PATH B: CVC Word (Level 3+)
       let bestMatch = "";
       let bestSimilarity = 0;
       let isPerfectMatch = false;
@@ -192,6 +196,7 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, onResult,
 
     recognition.onerror = (event: any) => {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      if (resultReceivedRef.current) return; // Already handled by onresult
       if (event.error === 'no-speech' || event.error === 'aborted') {
         onError();
         return;
@@ -202,7 +207,11 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, onResult,
 
     recognition.onend = () => {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
-      onError(); // Treat as benign end/error fallback
+      // Only trigger error fallback if we haven't already received a result
+      // and the ref is still current (not cleaned up by a new session starting).
+      if (!resultReceivedRef.current && recognitionRef.current === recognition) {
+        onError();
+      }
     };
 
     try {

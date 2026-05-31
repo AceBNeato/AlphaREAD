@@ -47,7 +47,7 @@ export function TeacherManager({ teachers, onRefresh }: TeacherManagerProps) {
 
   const handleCreateTeacher = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!teacherEmail.trim() || !teacherAlias.trim() || teacherPin.length !== 6) return;
+    if (!teacherEmail.trim() || !teacherAlias.trim() || teacherPin.length !== 7) return;
 
     try {
       const teacherId = crypto.randomUUID();
@@ -66,7 +66,7 @@ export function TeacherManager({ teachers, onRefresh }: TeacherManagerProps) {
 
       // Simulate sending email by opening the user's default mail client prefilled with credentials
       const subject = encodeURIComponent("Your Alphabet GO Teacher Access PIN");
-      const body = encodeURIComponent(`Hello ${teacherAlias.trim()},\n\nYou have been added as a teacher to Alphabet GO.\n\nYour login email is: ${teacherEmail.trim().toLowerCase()}\nYour access PIN is: ${teacherPin}\n\nPlease keep this secure.\n\nBest,\nAdmin`);
+      const body = encodeURIComponent(`Hello ${teacherAlias.trim()},\n\nYou have been added as a teacher to Alphabet GO.\n\nYour login email is: ${teacherEmail.trim().toLowerCase()}\nYour 7-character access PIN is: ${teacherPin}\n\nPlease keep this secure and do not share it.\n\nBest,\nAdmin`);
       window.open(`mailto:${teacherEmail.trim().toLowerCase()}?subject=${subject}&body=${body}`, "_blank");
 
       setIsCreatingTeacher(false);
@@ -87,7 +87,7 @@ export function TeacherManager({ teachers, onRefresh }: TeacherManagerProps) {
   };
 
   const saveTeacherEdit = async (id: string) => {
-    if (!editTeacherEmail.trim() || !editTeacherAlias.trim() || editTeacherPin.length !== 6) return;
+    if (!editTeacherEmail.trim() || !editTeacherAlias.trim() || editTeacherPin.length !== 7) return;
 
     const { error } = await supabase
       .from("profiles")
@@ -160,8 +160,10 @@ export function TeacherManager({ teachers, onRefresh }: TeacherManagerProps) {
 
           <Button
             onClick={() => {
-              const randomPin = Math.floor(100000 + Math.random() * 900000).toString();
-              setTeacherPin(randomPin);
+              // Generate a random 7-char alphanumeric PIN
+              const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+              const pin = Array.from({ length: 7 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
+              setTeacherPin(pin);
               setIsCreatingTeacher(true);
             }}
             className="bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl flex items-center gap-1.5 whitespace-nowrap"
@@ -205,14 +207,24 @@ export function TeacherManager({ teachers, onRefresh }: TeacherManagerProps) {
             </div>
             <div className="mb-6">
               <label className="block text-xs text-gray-400 font-bold mb-1.5 flex items-center justify-between">
-                <span>Auto-Generated 6-Digit PIN</span>
-                <span className="text-[10px] text-blue-400 bg-blue-900/30 px-2 py-0.5 rounded-md">Read Only</span>
+                <span>Security PIN <span className="text-gray-600">(7 characters, set by Admin)</span></span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+                    setTeacherPin(Array.from({ length: 7 }, () => chars[Math.floor(Math.random() * chars.length)]).join(""));
+                  }}
+                  className="text-[10px] text-blue-400 bg-blue-900/30 px-2 py-0.5 rounded-md hover:bg-blue-900/50 transition-colors"
+                >
+                  Regenerate
+                </button>
               </label>
               <input
-                type="text" required maxLength={6}
+                type="text" required maxLength={7}
                 value={teacherPin}
-                readOnly
-                className="w-full px-4 py-3 bg-gray-950 border border-gray-800 rounded-xl text-blue-400 outline-none font-mono tracking-widest text-center cursor-not-allowed opacity-80"
+                onChange={(e) => setTeacherPin(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 7))}
+                className="w-full px-4 py-3 bg-gray-950 border border-gray-800 rounded-xl text-blue-400 outline-none font-mono tracking-widest text-center focus:border-blue-500 transition-colors"
+                placeholder="e.g. A3B7X2K"
               />
             </div>
             <div className="flex gap-3">
@@ -278,12 +290,13 @@ export function TeacherManager({ teachers, onRefresh }: TeacherManagerProps) {
                           <span className="font-mono text-green-400 font-bold tracking-wider">
                             {isEditing ? (
                               <input
-                                type="text" maxLength={6} value={editTeacherPin}
-                                onChange={(e) => setEditTeacherPin(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                                className="px-2 py-1 bg-gray-950 border border-gray-800 rounded text-white font-mono w-24 text-center tracking-widest"
+                                type="text" maxLength={7} value={editTeacherPin}
+                                onChange={(e) => setEditTeacherPin(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 7))}
+                                className="px-2 py-1 bg-gray-950 border border-gray-800 rounded text-white font-mono w-28 text-center tracking-widest"
+                                placeholder="7 chars"
                               />
                             ) : (
-                              isCodeVisible ? teacher.pin_hash : "••••••"
+                              isCodeVisible ? teacher.pin_hash : "•••••••"
                             )}
                           </span>
                           {!isEditing && (

@@ -96,7 +96,7 @@ export default function AdminDashboard() {
   // ── ADMIN SECURITY PIN CHANGE (Once a week restriction) ──
   const handleChangeAdminPin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (newAdminPin.length !== 6) return;
+    if (newAdminPin.length !== 7) return;
     setAdminPinError("");
     setAdminPinSuccess("");
 
@@ -240,18 +240,17 @@ export default function AdminDashboard() {
 
                 <form onSubmit={handleChangeAdminPin} className="space-y-4">
                   <div>
-                    <label className="block text-xs text-gray-400 font-bold uppercase tracking-wider mb-2">New 6-Digit Admin PIN</label>
+                    <label className="block text-xs text-gray-400 font-bold uppercase tracking-wider mb-2">New 7-Character Admin PIN</label>
                     <div className="relative">
                       <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
                       <input
                         type="password"
-                        pattern="[0-9]*"
-                        inputMode="numeric"
-                        maxLength={6}
+                        inputMode="text"
+                        maxLength={7}
                         required
                         value={newAdminPin}
-                        onChange={(e) => setNewAdminPin(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                        placeholder="Enter new 6-digit PIN"
+                        onChange={(e) => setNewAdminPin(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 7))}
+                        placeholder="e.g. A3B7X2K"
                         className="w-full pl-10 pr-4 py-3 bg-gray-950 border border-gray-800 rounded-xl text-white outline-none focus:border-blue-500 font-mono tracking-widest text-center"
                       />
                     </div>
@@ -266,7 +265,7 @@ export default function AdminDashboard() {
 
                   <Button
                     type="submit"
-                    disabled={newAdminPin.length !== 6}
+                    disabled={newAdminPin.length !== 7}
                     className="w-full py-4 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl flex items-center justify-center gap-2"
                   >
                     Update Security PIN

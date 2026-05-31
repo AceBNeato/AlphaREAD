@@ -30,9 +30,8 @@ export default function Activation() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Teacher passwordless flow states
-  const [pinSent, setPinSent] = useState(false);
-  const [demoPin, setDemoPin] = useState("");
+  // Teacher direct PIN login
+  const [teacherStep, setTeacherStep] = useState<"email" | "pin">("email");
   const [teacherPin, setTeacherPin] = useState("");
   const [showPin, setShowPin] = useState(false);
 
@@ -88,13 +87,12 @@ export default function Activation() {
     setError("");
 
     if (isEmail) {
-      // ── Teacher Path ──
+      // ── Teacher Path: Check teacher exists, then go to PIN step ──
       try {
         const emailClean = userInput.trim().toLowerCase();
-        // Check if teacher exists in profiles
         const { data: teacher, error: dbError } = await supabase
           .from("profiles")
-          .select("*")
+          .select("id")
           .eq("email", emailClean)
           .eq("role", "teacher")
           .maybeSingle();
@@ -103,19 +101,7 @@ export default function Activation() {
           throw new Error("No teacher account found with that email. Ask your Administrator.");
         }
 
-        // Generate a random 6-digit PIN
-        const generatedPin = Math.floor(100000 + Math.random() * 900000).toString();
-
-        // Save the PIN to the teacher's profile in Supabase
-        const { error: updateError } = await supabase
-          .from("profiles")
-          .update({ pin_hash: generatedPin })
-          .eq("id", teacher.id);
-
-        if (updateError) throw updateError;
-
-        setDemoPin(generatedPin);
-        setPinSent(true);
+        setTeacherStep("pin");
       } catch (err: any) {
         setError(err.message || "Teacher lookup failed.");
       } finally {
@@ -175,7 +161,7 @@ export default function Activation() {
   // ── Verification for Teacher PIN ──
   const handleVerifyTeacherPin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (teacherPin.length !== 6) return;
+    if (teacherPin.length !== 7) return;
 
     setLoading(true);
     setError("");
@@ -205,13 +191,13 @@ export default function Activation() {
       if (teacher.pin_hash !== teacherPin) {
         lockoutData.attempts += 1;
         if (lockoutData.attempts >= 5) {
-          const lockedUntil = new Date(new Date().getTime() + 15 * 60000); // 15 mins
+          const lockedUntil = new Date(new Date().getTime() + 15 * 60000);
           lockoutData.lockedUntil = lockedUntil.toISOString();
           localStorage.setItem(attemptsKey, JSON.stringify(lockoutData));
           throw new Error(`Too many failed attempts. Account locked until ${lockedUntil.toLocaleTimeString()}`);
         } else {
           localStorage.setItem(attemptsKey, JSON.stringify(lockoutData));
-          throw new Error(`Incorrect 6-digit Security PIN. Attempts remaining: ${5 - lockoutData.attempts}`);
+          throw new Error(`Incorrect Security PIN. Attempts remaining: ${5 - lockoutData.attempts}`);
         }
       }
 
@@ -278,7 +264,7 @@ export default function Activation() {
 
           <div className="w-full bg-gray-900 border border-gray-800 rounded-3xl p-6 sm:p-8 shadow-2xl relative overflow-hidden">
 
-            {!pinSent ? (
+            {teacherStep === "email" ? (
               /* Step 1: Input Code or Email */
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div>
@@ -313,7 +299,7 @@ export default function Activation() {
                     <Loader2 className="w-5 h-5 animate-spin" />
                   ) : isEmail ? (
                     <>
-                      <GraduationCap className="w-5 h-5" /> Request Security PIN
+                      <GraduationCap className="w-5 h-5" /> Continue
                     </>
                   ) : (
                     <>
@@ -323,14 +309,14 @@ export default function Activation() {
                 </Button>
               </form>
             ) : (
-              /* Step 2: Teacher Input PIN */
+              /* Step 2: Teacher enters their admin-set PIN */
               <form onSubmit={handleVerifyTeacherPin} className="space-y-6 animate-in slide-in-from-right duration-300">
                 <button
                   type="button"
                   onClick={() => {
-                    setPinSent(false);
-                    setDemoPin("");
+                    setTeacherStep("email");
                     setTeacherPin("");
+                    setError("");
                   }}
                   className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-white mb-2 transition-colors"
                 >
@@ -338,31 +324,24 @@ export default function Activation() {
                 </button>
 
                 <div>
-                  <h3 className="text-lg font-bold text-white mb-1">Enter Security PIN</h3>
+                  <h3 className="text-lg font-bold text-white mb-1">Enter Your Security PIN</h3>
                   <p className="text-xs text-gray-400 leading-relaxed mb-4">
-                    We generated a passwordless login PIN and sent it to <span className="text-indigo-400 font-semibold">{userInput}</span>.
+                    Enter the 7-character PIN set by your Administrator for{" "}
+                    <span className="text-indigo-400 font-semibold">{userInput}</span>.
                   </p>
                 </div>
-
-                {/* Simulated Email Notification Popup inside App */}
-                {demoPin && (
-                  <div className="bg-indigo-950/40 border border-indigo-900/50 p-4 rounded-2xl relative text-xs leading-relaxed text-indigo-300 animate-bounce">
-                    <span className="font-bold text-white block mb-1">📨 Security PIN Delivered!</span>
-                    For testing purposes, your magic 6-digit PIN is: <code className="text-white font-bold bg-indigo-900/60 px-1.5 py-0.5 rounded font-mono text-sm tracking-wider">{demoPin}</code>
-                  </div>
-                )}
 
                 <div className="relative">
                   <KeyRound className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
                   <input
                     type={showPin ? "text" : "password"}
-                    pattern="[0-9]*"
-                    inputMode="numeric"
-                    maxLength={6}
+                    inputMode="text"
+                    maxLength={7}
                     required
+                    autoFocus
                     value={teacherPin}
-                    onChange={(e) => setTeacherPin(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                    placeholder="Enter 6-digit PIN"
+                    onChange={(e) => setTeacherPin(e.target.value.slice(0, 7))}
+                    placeholder="Enter 7-character PIN"
                     className="w-full pl-10 pr-10 py-3.5 rounded-2xl bg-gray-950 border border-gray-800 focus:border-indigo-500 text-white font-mono tracking-widest text-center text-xl outline-none"
                   />
                   <button
@@ -382,11 +361,11 @@ export default function Activation() {
 
                 <Button
                   type="submit"
-                  disabled={loading || teacherPin.length !== 6}
+                  disabled={loading || teacherPin.length !== 7}
                   className="w-full py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-indigo-950/30"
                 >
                   {loading && <Loader2 className="w-5 h-5 animate-spin" />}
-                  Verify PIN & Access
+                  <ShieldCheck className="w-5 h-5" /> Verify & Access
                 </Button>
               </form>
             )}
