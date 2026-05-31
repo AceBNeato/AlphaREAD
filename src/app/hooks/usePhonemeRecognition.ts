@@ -55,6 +55,8 @@ export function usePhonemeRecognition({ evaluatingWord, enabled = true, onResult
   // Guard flag to prevent duplicate processing
   const isProcessingRef = useRef(false);
   const evaluatingWordRef = useRef(evaluatingWord);
+  // Store the active listener so we can cleanly remove it if the component unmounts
+  const activeWorkerListenerRef = useRef<((e: MessageEvent) => void) | null>(null);
 
   useEffect(() => {
     evaluatingWordRef.current = evaluatingWord;
@@ -107,27 +109,34 @@ export function usePhonemeRecognition({ evaluatingWord, enabled = true, onResult
       if (e.data.type === 'RESULT') {
         globalWorker?.removeEventListener('message', handleMessage);
         
-        // e.g. text: "[b] [a]"
         const rawPhones = e.data.text;
         
+        // The model sometimes outputs IPA wrapped in brackets, e.g. "[b] [a]".
+        // We MUST strip these brackets before sending to PhonemeEvaluator, otherwise it fails to match.
+        const cleanedPhones = rawPhones.replace(/\[|\]|\/|\|/g, '').trim();
+        
         // Evaluate the raw phonemes against the target syllable using the PhonemeEvaluator
-        // We pass the raw string wrapped in an array to match the API
-        const phonemeResult = evaluateSyllable(targetWord, [rawPhones]);
+        const phonemeResult = evaluateSyllable(targetWord, [cleanedPhones]);
         
         // Map UI text
         const finalTranscript = (phonemeResult === "correct" || phonemeResult === "close") 
           ? targetWord.toLowerCase() 
-          : rawPhones.replace(/\[|\]/g, '').trim() || "..."; // clean up [b] [a] to b a
+          : cleanedPhones || "..."; 
 
         onResult(targetWord, phonemeResult, finalTranscript);
         isProcessingRef.current = false;
+        activeWorkerListenerRef.current = null;
       } else if (e.data.type === 'ERROR') {
-        globalWorker?.removeEventListener('message', handleMessage);
+        if (activeWorkerListenerRef.current) {
+          globalWorker?.removeEventListener('message', activeWorkerListenerRef.current);
+          activeWorkerListenerRef.current = null;
+        }
         onError();
         isProcessingRef.current = false;
       }
     };
 
+    activeWorkerListenerRef.current = handleMessage;
     globalWorker.addEventListener('message', handleMessage);
     globalWorker.postMessage({ type: 'RECOGNIZE', audioData: audio16k });
 
@@ -218,6 +227,10 @@ export function usePhonemeRecognition({ evaluatingWord, enabled = true, onResult
       isMounted = false;
       stopMicrophone();
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      if (activeWorkerListenerRef.current && globalWorker) {
+        globalWorker.removeEventListener('message', activeWorkerListenerRef.current);
+        activeWorkerListenerRef.current = null;
+      }
     };
   }, [evaluatingWord, enabled, stopMicrophone, processAudio, onSilenceTimeout, onError]);
 }
