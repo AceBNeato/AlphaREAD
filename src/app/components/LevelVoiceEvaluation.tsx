@@ -23,6 +23,7 @@ import { Confetti } from "./ui/Confetti";
 import { evaluateSyllable, isSyllableTarget } from "../utils/PhonemeEvaluator";
 import { useAudioVisualizer } from "../hooks/useAudioVisualizer";
 import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
+import { usePhonemeRecognition } from "../hooks/usePhonemeRecognition";
 
 interface LevelVoiceEvaluationProps {
   levelId: number;
@@ -168,10 +169,21 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
     }, 1500);
   }, [evaluatingWord, safeSetEvaluatingWordNull]);
 
-  // Standard Web Speech API (All Levels)
+  const isSyllable = evaluatingWord ? isSyllableTarget(evaluatingWord) : false;
+
+  // Dedicated Phonetic Engine for Level 2 (CV / VC syllables)
+  usePhonemeRecognition({
+    evaluatingWord,
+    enabled: !!evaluatingWord && isSyllable,
+    onResult: handleResult,
+    onError: handleError,
+    onSilenceTimeout: handleSilence
+  });
+
+  // Fast Word-Level Engine for Level 3+ (CVC words)
   useSpeechRecognition({
     evaluatingWord,
-    enabled: true,
+    enabled: !!evaluatingWord && !isSyllable,
     onResult: handleResult,
     onError: handleError,
     onSilenceTimeout: handleSilence

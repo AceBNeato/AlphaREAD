@@ -6,6 +6,7 @@ import { ThemeToggle } from "../components/ThemeToggle";
 import { levels } from "../data/levels";
 import { App } from '@capacitor/app';
 import { supabase } from "../../lib/supabase";
+import { preloadPhonemeModel } from "../hooks/usePhonemeRecognition";
 
 interface UserProfile {
   id: string;
@@ -83,6 +84,9 @@ export default function Dashboard() {
       };
       validateDevice();
     }
+
+    // Trigger the silent background download of the phonetic AI model
+    preloadPhonemeModel();
 
   }, [navigate]);
 
