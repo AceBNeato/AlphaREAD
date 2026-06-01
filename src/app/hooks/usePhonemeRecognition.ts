@@ -1,5 +1,9 @@
 import { useEffect, useRef, useCallback, useState } from "react";
-import { evaluateSyllable, isSyllableTarget } from "../utils/PhonemeEvaluator";
+import { pipeline, env } from "@xenova/transformers";
+import { evaluateSyllable } from "../utils/PhonemeEvaluator";
+
+// Use HuggingFace CDN only (no local model files needed)
+env.allowLocalModels = false;
 
 interface UsePhonemeRecognitionProps {
   evaluatingWord: string | null;
@@ -9,32 +13,15 @@ interface UsePhonemeRecognitionProps {
   onError: () => void;
 }
 
+// ─── GLOBAL MODEL CACHE ───────────────────────────────────────────────────────
+// Keep the model in a global variable so it survives React re-renders and
+// route changes without being garbage-collected or re-downloaded.
+let globalTranscriber: any = null;
+let isTranscriberReady = false;
+let isInitializing = false;
 
-// Fast downsampler for Wav2Vec2 (requires 16kHz)
-function resampleTo16k(audioData: Float32Array, origSampleRate: number): Float32Array {
-  if (origSampleRate === 16000) return audioData;
-  const ratio = origSampleRate / 16000;
-  const newLength = Math.round(audioData.length / ratio);
-  const result = new Float32Array(newLength);
-  for (let i = 0; i < newLength; i++) {
-    let sum = 0;
-    const start = Math.floor(i * ratio);
-    const end = Math.min(Math.ceil((i + 1) * ratio), audioData.length);
-    let count = end - start;
-    for (let j = start; j < end; j++) {
-      sum += audioData[j];
-    }
-    result[i] = count > 0 ? sum / count : 0;
-  }
-  return result;
-}
-
-// Global worker instance so it doesn't get destroyed between renders
-let globalWorker: Worker | null = null;
-let isWorkerReady = false;
-
-// Global model loading state - allows any component to subscribe to progress
 export type ModelLoadStatus = 'idle' | 'loading' | 'ready' | 'error';
+
 export const modelLoadState = {
   status: 'idle' as ModelLoadStatus,
   percent: 0,
@@ -50,47 +37,45 @@ export const modelLoadState = {
   }
 };
 
-export function preloadPhonemeModel() {
-  if (globalWorker) return; // Already started
-  if (typeof window === 'undefined') return;
-
+/** Kick off the model download in the background. Safe to call multiple times. */
+export async function preloadPhonemeModel() {
+  if (globalTranscriber || isInitializing) return;
+  isInitializing = true;
   modelLoadState.status = 'loading';
   modelLoadState.percent = 0;
   modelLoadState.notify();
 
-  globalWorker = new Worker(new URL('../workers/phonemeWorker.ts', import.meta.url), { type: 'module' });
-
-  globalWorker.onmessage = (e) => {
-    if (e.data.type === 'READY') {
-      isWorkerReady = true;
-      modelLoadState.status = 'ready';
-      modelLoadState.percent = 100;
-      modelLoadState.notify();
-      console.log("[PhonemeWorker] Model loaded in background.");
-    } else if (e.data.type === 'PROGRESS') {
-      const p = e.data.payload;
-      // p.status is 'progress', p.loaded and p.total come from transformers.js
-      if (p && p.total && p.loaded) {
-        const pct = Math.round((p.loaded / p.total) * 100);
-        modelLoadState.percent = Math.max(modelLoadState.percent, pct);
-        modelLoadState.notify();
+  try {
+    console.log("[Phoneme] Loading Xenova wav2vec2 IPA model...");
+    globalTranscriber = await pipeline(
+      "automatic-speech-recognition",
+      "Xenova/wav2vec2-lv-60-espeak-cv-ft",
+      {
+        quantized: true,
+        progress_callback: (p: any) => {
+          if (p && p.total && p.loaded) {
+            const pct = Math.round((p.loaded / p.total) * 100);
+            modelLoadState.percent = Math.max(modelLoadState.percent, pct);
+            modelLoadState.notify();
+          }
+        }
       }
-    } else if (e.data.type === 'ERROR') {
-      modelLoadState.status = 'error';
-      modelLoadState.notify();
-      console.error("[PhonemeWorker] Failed to load model:", e.data.error);
-    }
-  };
-
-  globalWorker.onerror = () => {
+    );
+    isTranscriberReady = true;
+    modelLoadState.status = 'ready';
+    modelLoadState.percent = 100;
+    modelLoadState.notify();
+    console.log("[Phoneme] Model ready!");
+  } catch (err) {
+    console.error("[Phoneme] Model load error:", err);
     modelLoadState.status = 'error';
     modelLoadState.notify();
-  };
-
-  globalWorker.postMessage({ type: 'PRELOAD' });
+  } finally {
+    isInitializing = false;
+  }
 }
 
-/** React hook to subscribe to model loading state */
+/** React hook — subscribe to real-time model loading state. */
 export function useModelLoadState() {
   const [state, setState] = useState<{ status: ModelLoadStatus; percent: number }>({
     status: modelLoadState.status,
@@ -98,9 +83,7 @@ export function useModelLoadState() {
   });
 
   useEffect(() => {
-    // Sync immediately in case it already changed before mount
     setState({ status: modelLoadState.status, percent: modelLoadState.percent });
-
     return modelLoadState.subscribe(() => {
       setState({ status: modelLoadState.status, percent: modelLoadState.percent });
     });
@@ -109,25 +92,44 @@ export function useModelLoadState() {
   return state;
 }
 
+// ─── Fast downsampler (Wav2Vec2 needs exactly 16kHz) ─────────────────────────
+function resampleTo16k(audioData: Float32Array, origSampleRate: number): Float32Array {
+  if (origSampleRate === 16000) return audioData;
+  const ratio = origSampleRate / 16000;
+  const newLength = Math.round(audioData.length / ratio);
+  const result = new Float32Array(newLength);
+  for (let i = 0; i < newLength; i++) {
+    let sum = 0;
+    const start = Math.floor(i * ratio);
+    const end = Math.min(Math.ceil((i + 1) * ratio), audioData.length);
+    let count = end - start;
+    for (let j = start; j < end; j++) sum += audioData[j];
+    result[i] = count > 0 ? sum / count : 0;
+  }
+  return result;
+}
 
-export function usePhonemeRecognition({ evaluatingWord, enabled = true, onResult, onSilenceTimeout, onError }: UsePhonemeRecognitionProps) {
+// ─── Hook ─────────────────────────────────────────────────────────────────────
+export function usePhonemeRecognition({
+  evaluatingWord,
+  enabled = true,
+  onResult,
+  onSilenceTimeout,
+  onError,
+}: UsePhonemeRecognitionProps) {
   const audioContextRef = useRef<AudioContext | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const processorRef = useRef<ScriptProcessorNode | null>(null);
   const audioChunksRef = useRef<Float32Array[]>([]);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-  
-  // Guard flag to prevent duplicate processing
   const isProcessingRef = useRef(false);
   const evaluatingWordRef = useRef(evaluatingWord);
-  // Store the active listener so we can cleanly remove it if the component unmounts
-  const activeWorkerListenerRef = useRef<((e: MessageEvent) => void) | null>(null);
 
   useEffect(() => {
     evaluatingWordRef.current = evaluatingWord;
   }, [evaluatingWord]);
 
-  // Preload worker if it hasn't been yet
+  // Ensure model starts loading as soon as the hook mounts
   useEffect(() => {
     preloadPhonemeModel();
   }, []);
@@ -139,7 +141,7 @@ export function usePhonemeRecognition({ evaluatingWord, enabled = true, onResult
       processorRef.current = null;
     }
     if (mediaStreamRef.current) {
-      mediaStreamRef.current.getTracks().forEach(track => track.stop());
+      mediaStreamRef.current.getTracks().forEach(t => t.stop());
       mediaStreamRef.current = null;
     }
     if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
@@ -148,16 +150,21 @@ export function usePhonemeRecognition({ evaluatingWord, enabled = true, onResult
     }
   }, []);
 
-  const processAudio = useCallback(async () => {
-    if (isProcessingRef.current || !globalWorker || !evaluatingWordRef.current) return;
+  const processAudio = useCallback(async (sampleRate: number) => {
+    if (isProcessingRef.current || !evaluatingWordRef.current) return;
     isProcessingRef.current = true;
     const targetWord = evaluatingWordRef.current;
 
     stopMicrophone();
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
 
-    // Merge chunks
-    const totalLength = audioChunksRef.current.reduce((acc, chunk) => acc + chunk.length, 0);
+    // Merge all recorded chunks
+    const totalLength = audioChunksRef.current.reduce((acc, c) => acc + c.length, 0);
+    if (totalLength === 0) {
+      isProcessingRef.current = false;
+      onError();
+      return;
+    }
     const merged = new Float32Array(totalLength);
     let offset = 0;
     for (const chunk of audioChunksRef.current) {
@@ -165,46 +172,37 @@ export function usePhonemeRecognition({ evaluatingWord, enabled = true, onResult
       offset += chunk.length;
     }
 
-    // Downsample to 16kHz
-    const sampleRate = audioContextRef.current?.sampleRate || 44100;
     const audio16k = resampleTo16k(merged, sampleRate);
 
-    // One-time message listener for this result
-    const handleMessage = (e: MessageEvent) => {
-      if (e.data.type === 'RESULT') {
-        globalWorker?.removeEventListener('message', handleMessage);
-        
-        const rawPhones = e.data.text;
-        
-        // The model sometimes outputs IPA wrapped in brackets, e.g. "[b] [a]".
-        // We MUST strip these brackets before sending to PhonemeEvaluator, otherwise it fails to match.
-        const cleanedPhones = rawPhones.replace(/\[|\]|\/|\|/g, '').trim();
-        
-        // Evaluate the raw phonemes against the target syllable using the PhonemeEvaluator
-        const phonemeResult = evaluateSyllable(targetWord, [cleanedPhones]);
-        
-        // Map UI text
-        const finalTranscript = (phonemeResult === "correct" || phonemeResult === "close") 
-          ? targetWord.toLowerCase() 
-          : cleanedPhones || "..."; 
-
-        onResult(targetWord, phonemeResult, finalTranscript);
-        isProcessingRef.current = false;
-        activeWorkerListenerRef.current = null;
-      } else if (e.data.type === 'ERROR') {
-        if (activeWorkerListenerRef.current) {
-          globalWorker?.removeEventListener('message', activeWorkerListenerRef.current);
-          activeWorkerListenerRef.current = null;
-        }
-        onError();
-        isProcessingRef.current = false;
+    try {
+      // If model isn't ready yet, wait for it (up to 60s)
+      let waited = 0;
+      while (!isTranscriberReady && waited < 60000) {
+        await new Promise(r => setTimeout(r, 500));
+        waited += 500;
       }
-    };
+      if (!isTranscriberReady || !globalTranscriber) {
+        throw new Error("Model not ready after timeout");
+      }
 
-    activeWorkerListenerRef.current = handleMessage;
-    globalWorker.addEventListener('message', handleMessage);
-    globalWorker.postMessage({ type: 'RECOGNIZE', audioData: audio16k });
+      const output = await globalTranscriber(audio16k);
+      const rawPhones = output.text || "";
 
+      // Strip IPA brackets e.g. "[b] [æ]" → "b æ"
+      const cleanedPhones = rawPhones.replace(/\[|\]|\/|\|/g, '').trim();
+
+      const phonemeResult = evaluateSyllable(targetWord, [cleanedPhones]);
+      const finalTranscript = (phonemeResult === "correct" || phonemeResult === "close")
+        ? targetWord.toLowerCase()
+        : cleanedPhones || "...";
+
+      onResult(targetWord, phonemeResult, finalTranscript);
+    } catch (err) {
+      console.error("[Phoneme] Recognition error:", err);
+      onError();
+    } finally {
+      isProcessingRef.current = false;
+    }
   }, [stopMicrophone, onResult, onError]);
 
   useEffect(() => {
@@ -217,32 +215,26 @@ export function usePhonemeRecognition({ evaluatingWord, enabled = true, onResult
     audioChunksRef.current = [];
     isProcessingRef.current = false;
 
-    navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } })
+    navigator.mediaDevices
+      .getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } })
       .then(stream => {
-        if (!isMounted) {
-          stream.getTracks().forEach(t => t.stop());
-          return;
-        }
+        if (!isMounted) { stream.getTracks().forEach(t => t.stop()); return; }
 
-        const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
-        const context = new AudioContext();
+        const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+        const context = new AudioContextClass();
         const source = context.createMediaStreamSource(stream);
-        
-        // 4096 buffer size is safe for most devices
         const processor = context.createScriptProcessor(4096, 1, 1);
 
-        // Simple VAD (Voice Activity Detection) - Wait for sound, then stop after silence
         let hasHeardSound = false;
         let silenceFrames = 0;
         const SILENCE_THRESHOLD = 0.01;
-        const MAX_SILENCE_FRAMES = 15; // ~1.5 seconds of silence
+        const MAX_SILENCE_FRAMES = 15; // ~1.5s of silence at 4096/44100
 
         processor.onaudioprocess = (e) => {
           if (isProcessingRef.current) return;
           const input = e.inputBuffer.getChannelData(0);
           audioChunksRef.current.push(new Float32Array(input));
 
-          // Check volume
           let sum = 0;
           for (let i = 0; i < input.length; i++) sum += Math.abs(input[i]);
           const avg = sum / input.length;
@@ -254,13 +246,12 @@ export function usePhonemeRecognition({ evaluatingWord, enabled = true, onResult
             silenceFrames++;
           }
 
-          // If we heard sound and then heard silence, or if we hit the hard 4-second limit
           if ((hasHeardSound && silenceFrames > MAX_SILENCE_FRAMES) || audioChunksRef.current.length > 40) {
-            processAudio();
+            processAudio(context.sampleRate);
           }
         };
 
-        // Connect to destination to keep ScriptProcessor alive, but MUTE it to prevent hardware echo loop
+        // Muted GainNode prevents echo feedback loop
         const gainNode = context.createGain();
         gainNode.gain.value = 0;
         source.connect(processor);
@@ -271,18 +262,20 @@ export function usePhonemeRecognition({ evaluatingWord, enabled = true, onResult
         mediaStreamRef.current = stream;
         processorRef.current = processor;
 
+        // Hard 5-second fallback timeout
         timeoutRef.current = setTimeout(() => {
-          if (!hasHeardSound && !isProcessingRef.current) {
-            stopMicrophone();
-            onSilenceTimeout();
-          } else if (!isProcessingRef.current) {
-            processAudio();
+          if (!isProcessingRef.current) {
+            if (!hasHeardSound) {
+              stopMicrophone();
+              onSilenceTimeout();
+            } else {
+              processAudio(context.sampleRate);
+            }
           }
         }, 5000);
-
       })
       .catch(err => {
-        console.error("Microphone access denied:", err);
+        console.error("Mic access error:", err);
         onError();
       });
 
@@ -290,10 +283,6 @@ export function usePhonemeRecognition({ evaluatingWord, enabled = true, onResult
       isMounted = false;
       stopMicrophone();
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
-      if (activeWorkerListenerRef.current && globalWorker) {
-        globalWorker.removeEventListener('message', activeWorkerListenerRef.current);
-        activeWorkerListenerRef.current = null;
-      }
     };
   }, [evaluatingWord, enabled, stopMicrophone, processAudio, onSilenceTimeout, onError]);
 }
