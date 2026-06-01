@@ -5,8 +5,8 @@ env.allowLocalModels = false;
 
 class PhonemePipeline {
   static task: any = 'automatic-speech-recognition';
-  // Pure phonetic model - outputs IPA [p] [a] instead of words
-  static model = 'Xenova/wav2vec2-leoniesg-base-eng-phone';
+  // Verified Xenova IPA phoneme model - outputs e.g. "b æ t" for "bat"
+  static model = 'Xenova/wav2vec2-lv-60-espeak-cv-ft';
   static instance: any = null;
 
   static async getInstance(progress_callback?: Function) {
