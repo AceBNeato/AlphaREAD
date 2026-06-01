@@ -46,6 +46,11 @@ export async function preloadPhonemeModel() {
   modelLoadState.notify();
 
   try {
+    // Force HuggingFace CDN usage securely right before initialization
+    env.allowLocalModels = false;
+    env.allowRemoteModels = true;
+    env.useBrowserCache = true;
+
     console.log("[Phoneme] Loading Xenova wav2vec2 IPA model...");
     globalTranscriber = await pipeline(
       "automatic-speech-recognition",
