@@ -46,15 +46,17 @@ export async function preloadPhonemeModel() {
   modelLoadState.notify();
 
   try {
-    // Force HuggingFace CDN usage securely right before initialization
-    env.allowLocalModels = false;
-    env.allowRemoteModels = true;
+    // Force Local Models ONLY - completely bypass HuggingFace CDN
+    env.allowLocalModels = true;
+    env.allowRemoteModels = false;
     env.useBrowserCache = true;
+    // Specify custom local path if it differs from the default '/models/'
+    env.localModelPath = '/models/';
 
-    console.log("[Phoneme] Loading Xenova wav2vec2 IPA model...");
+    console.log("[Phoneme] Loading local wav2vec2 model from disk...");
     globalTranscriber = await pipeline(
       "automatic-speech-recognition",
-      "Xenova/wav2vec2-lv-60-espeak-cv-ft",
+      "Xenova/wav2vec2-base-960h",
       {
         quantized: true,
         progress_callback: (p: any) => {
