@@ -23,7 +23,7 @@ import { Confetti } from "./ui/Confetti";
 import { evaluateSyllable, isSyllableTarget } from "../utils/PhonemeEvaluator";
 import { useAudioVisualizer } from "../hooks/useAudioVisualizer";
 import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
-import { usePhonemeRecognition } from "../hooks/usePhonemeRecognition";
+import { usePhonemeRecognition, useModelLoadState } from "../hooks/usePhonemeRecognition";
 
 interface LevelVoiceEvaluationProps {
   levelId: number;
@@ -52,6 +52,10 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
   // Detect mobile — on phones we skip getUserMedia to avoid mic conflict with SpeechRecognition
   const isMobile = useMemo(() => /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent), []);
   const isIOS = useMemo(() => /iPhone|iPad|iPod/i.test(navigator.userAgent), []);
+
+  // Detect if this level uses syllables (Level 2) — needs AI model
+  const isSyllableLevel = useMemo(() => customWords ? customWords.some(w => isSyllableTarget(w)) : false, [customWords]);
+  const modelLoad = useModelLoadState();
 
   const handleShuffle = () => {
     setWords(shuffle([...words]));
@@ -207,6 +211,71 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:bg-none dark:bg-[#0d141c]">
       <Confetti active={showConfetti} />
+
+      {/* AI Model Loading Overlay — shown only for syllable levels while model downloads */}
+      <AnimatePresence>
+        {isSyllableLevel && modelLoad.status !== 'ready' && modelLoad.status !== 'idle' && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md"
+          >
+            <motion.div
+              initial={{ scale: 0.85, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.85, opacity: 0 }}
+              transition={{ type: 'spring', stiffness: 260, damping: 22 }}
+              className="bg-white dark:bg-[#1a2535] rounded-3xl shadow-2xl p-8 mx-6 max-w-sm w-full text-center border border-purple-100 dark:border-purple-900"
+            >
+              {/* Animated Brain Icon */}
+              <div className="flex justify-center mb-5">
+                <div className="relative w-20 h-20">
+                  <div className="absolute inset-0 rounded-full bg-purple-500/20 animate-ping" />
+                  <div className="relative w-20 h-20 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center shadow-lg">
+                    <span className="text-3xl">🧠</span>
+                  </div>
+                </div>
+              </div>
+
+              <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-1">
+                Loading AI Model
+              </h2>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">
+                {modelLoad.status === 'error'
+                  ? 'Failed to load the AI model. Please check your connection.'
+                  : 'Preparing the phoneme recognition engine\nfor syllable evaluation…'}
+              </p>
+
+              {/* Progress Bar */}
+              {modelLoad.status !== 'error' && (
+                <div className="w-full">
+                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 overflow-hidden">
+                    <motion.div
+                      className="h-full bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full"
+                      initial={{ width: '5%' }}
+                      animate={{ width: `${Math.max(5, modelLoad.percent)}%` }}
+                      transition={{ duration: 0.4, ease: 'easeOut' }}
+                    />
+                  </div>
+                  <p className="text-xs text-purple-600 dark:text-purple-400 mt-2 font-medium">
+                    {modelLoad.percent > 0 ? `${modelLoad.percent}% downloaded` : 'Connecting…'}
+                  </p>
+                </div>
+              )}
+
+              {modelLoad.status === 'error' && (
+                <button
+                  onClick={() => window.location.reload()}
+                  className="mt-4 px-5 py-2 rounded-xl bg-red-500 text-white text-sm font-semibold hover:bg-red-600 transition-colors"
+                >
+                  Retry
+                </button>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       {/* Header */}
       <div className="sticky top-0 z-10 bg-white/80 dark:bg-[#0d141c]/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 px-4 py-3">
         <div className="max-w-2xl mx-auto flex items-center justify-between gap-3">

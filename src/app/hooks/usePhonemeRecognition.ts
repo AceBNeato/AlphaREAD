@@ -32,18 +32,86 @@ function resampleTo16k(audioData: Float32Array, origSampleRate: number): Float32
   return result;
 }
 
-export function preloadPhonemeModel() {
-  if (!globalWorker && typeof window !== 'undefined') {
-    globalWorker = new Worker(new URL('../workers/phonemeWorker.ts', import.meta.url), { type: 'module' });
-    globalWorker.onmessage = (e) => {
-      if (e.data.type === 'READY') {
-        isWorkerReady = true;
-        console.log("[PhonemeWorker] Model loaded in background.");
-      }
-    };
-    globalWorker.postMessage({ type: 'PRELOAD' });
+// Global worker instance so it doesn't get destroyed between renders
+let globalWorker: Worker | null = null;
+let isWorkerReady = false;
+
+// Global model loading state - allows any component to subscribe to progress
+export type ModelLoadStatus = 'idle' | 'loading' | 'ready' | 'error';
+export const modelLoadState = {
+  status: 'idle' as ModelLoadStatus,
+  percent: 0,
+  listeners: new Set<() => void>(),
+
+  notify() {
+    this.listeners.forEach(fn => fn());
+  },
+
+  subscribe(fn: () => void) {
+    this.listeners.add(fn);
+    return () => this.listeners.delete(fn);
   }
+};
+
+export function preloadPhonemeModel() {
+  if (globalWorker) return; // Already started
+  if (typeof window === 'undefined') return;
+
+  modelLoadState.status = 'loading';
+  modelLoadState.percent = 0;
+  modelLoadState.notify();
+
+  globalWorker = new Worker(new URL('../workers/phonemeWorker.ts', import.meta.url), { type: 'module' });
+
+  globalWorker.onmessage = (e) => {
+    if (e.data.type === 'READY') {
+      isWorkerReady = true;
+      modelLoadState.status = 'ready';
+      modelLoadState.percent = 100;
+      modelLoadState.notify();
+      console.log("[PhonemeWorker] Model loaded in background.");
+    } else if (e.data.type === 'PROGRESS') {
+      const p = e.data.payload;
+      // p.status is 'progress', p.loaded and p.total come from transformers.js
+      if (p && p.total && p.loaded) {
+        const pct = Math.round((p.loaded / p.total) * 100);
+        modelLoadState.percent = Math.max(modelLoadState.percent, pct);
+        modelLoadState.notify();
+      }
+    } else if (e.data.type === 'ERROR') {
+      modelLoadState.status = 'error';
+      modelLoadState.notify();
+      console.error("[PhonemeWorker] Failed to load model:", e.data.error);
+    }
+  };
+
+  globalWorker.onerror = () => {
+    modelLoadState.status = 'error';
+    modelLoadState.notify();
+  };
+
+  globalWorker.postMessage({ type: 'PRELOAD' });
 }
+
+/** React hook to subscribe to model loading state */
+export function useModelLoadState() {
+  const [state, setState] = useState<{ status: ModelLoadStatus; percent: number }>({
+    status: modelLoadState.status,
+    percent: modelLoadState.percent,
+  });
+
+  useEffect(() => {
+    // Sync immediately in case it already changed before mount
+    setState({ status: modelLoadState.status, percent: modelLoadState.percent });
+
+    return modelLoadState.subscribe(() => {
+      setState({ status: modelLoadState.status, percent: modelLoadState.percent });
+    });
+  }, []);
+
+  return state;
+}
+
 
 export function usePhonemeRecognition({ evaluatingWord, enabled = true, onResult, onSilenceTimeout, onError }: UsePhonemeRecognitionProps) {
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -148,12 +216,6 @@ export function usePhonemeRecognition({ evaluatingWord, enabled = true, onResult
       return;
     }
 
-    if (!isWorkerReady) {
-      console.warn("Worker not ready yet. Skipping recording.");
-      onError();
-      return;
-    }
-
     let isMounted = true;
     audioChunksRef.current = [];
     isProcessingRef.current = false;
@@ -201,8 +263,12 @@ export function usePhonemeRecognition({ evaluatingWord, enabled = true, onResult
           }
         };
 
+        // Connect to destination to keep ScriptProcessor alive, but MUTE it to prevent hardware echo loop
+        const gainNode = context.createGain();
+        gainNode.gain.value = 0;
         source.connect(processor);
-        processor.connect(context.destination);
+        processor.connect(gainNode);
+        gainNode.connect(context.destination);
 
         audioContextRef.current = context;
         mediaStreamRef.current = stream;
