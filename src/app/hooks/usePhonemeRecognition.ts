@@ -9,9 +9,6 @@ interface UsePhonemeRecognitionProps {
   onError: () => void;
 }
 
-// Global worker instance so it doesn't get destroyed between renders
-let globalWorker: Worker | null = null;
-let isWorkerReady = false;
 
 // Fast downsampler for Wav2Vec2 (requires 16kHz)
 function resampleTo16k(audioData: Float32Array, origSampleRate: number): Float32Array {
