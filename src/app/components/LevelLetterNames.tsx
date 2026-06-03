@@ -126,10 +126,12 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
       setFeedback("correct");
       setSelectedAnswer(letter);
 
-      // Play success chime
-      const audio = new Audio("https://assets.mixkit.co/active_storage/sfx/2013/2013-84.wav");
-      audio.volume = 0.3;
-      audio.play().catch(() => {});
+      // Play success chime after a short delay so TTS can be heard clearly
+      setTimeout(() => {
+        const audio = new Audio("https://assets.mixkit.co/active_storage/sfx/2013/2013-84.wav");
+        audio.volume = 0.3;
+        audio.play().catch(() => { });
+      }, 400);
 
       setTimeout(() => {
         if (currentIndex < stepQuestions.length - 1) {
@@ -364,13 +366,12 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
                       whileTap={{ scale: isWrong || isCorrect ? 1 : 0.97 }}
                       onClick={() => handleOptionClick(letter)}
                       disabled={isCorrect || isWrong || feedback === "correct"}
-                      className={`aspect-square rounded-3xl flex flex-col items-center justify-center transition-all shadow-md relative border-b-6 select-none font-black text-4xl sm:text-5xl uppercase cursor-pointer ${
-                        isCorrect
-                          ? "bg-green-500 border-green-600 text-white border-b-2 translate-y-[4px] pointer-events-none"
-                          : isWrong
-                            ? "bg-red-500 border-red-600 text-white border-b-2 translate-y-[4px] pointer-events-none opacity-40 animate-shake"
-                            : "bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-100 hover:shadow-lg border-gray-200 dark:border-gray-700"
-                      }`}
+                      className={`aspect-square rounded-3xl flex flex-col items-center justify-center transition-all shadow-md relative border-b-6 select-none font-black text-4xl sm:text-5xl uppercase cursor-pointer ${isCorrect
+                        ? "bg-green-500 border-green-600 text-white border-b-2 translate-y-[4px] pointer-events-none"
+                        : isWrong
+                          ? "bg-red-500 border-red-600 text-white border-b-2 translate-y-[4px] pointer-events-none opacity-40 animate-shake"
+                          : "bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-100 hover:shadow-lg border-gray-200 dark:border-gray-700"
+                        }`}
                     >
                       {letter}
                       <span className="text-sm font-medium opacity-60 normal-case">
