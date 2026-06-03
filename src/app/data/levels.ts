@@ -410,7 +410,7 @@ export function generateSyllableTargets(
 }
 
 export const LETTER_NAMES: Record<string, string> = {
-  "A": "Ey",
+  "A": "Ehy",
   "B": "Bee",
   "C": "Cee",
   "D": "Dee",
