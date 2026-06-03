@@ -49,9 +49,9 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
   const playNameTTS = (letter: string) => {
     if ("speechSynthesis" in window) {
       window.speechSynthesis.cancel();
-      // Most TTS engines pronounce single letters perfectly by their name.
-      // Adding a period forces it to be read as a standalone sentence (e.g., "A." instead of trying to pronounce it as a word).
-      const utterance = new SpeechSynthesisUtterance(`${letter}.`);
+      // Pass the raw letter to the TTS engine so it naturally pronounces its name (e.g., "A") 
+      // instead of trying to read out phonetic spellings like "A-Y".
+      const utterance = new SpeechSynthesisUtterance(letter);
       utterance.rate = 0.85;
       window.speechSynthesis.speak(utterance);
     }
