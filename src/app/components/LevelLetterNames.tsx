@@ -17,51 +17,38 @@ interface Question {
   options: string[];
 }
 
+const STEPS = [
+  { id: 1, type: "review" as const, letters: ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"], title: "Review A-L" },
+  { id: 2, type: "match" as const, letters: ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"], title: "Match A-L", count: 6 },
+  { id: 3, type: "review" as const, letters: ["M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"], title: "Review M-Z" },
+  { id: 4, type: "match" as const, letters: ["M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"], title: "Match M-Z", count: 7 },
+  { id: 5, type: "match" as const, letters: ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"], title: "Final Match A-Z", count: 10 },
+];
+
 export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
   const navigate = useNavigate();
 
-  // Pick 10 representative letters: Vowels + selected Consonants with distinct names
-  const selectedLetters = useMemo(() => {
-    const vowels = ["A", "E", "I", "O", "U"];
-    const consonants = ["B", "C", "D", "G", "J", "K", "P", "T", "V", "Z"];
-    const shuffledConsonants = shuffle(consonants).slice(0, 5);
-    return shuffle([...vowels, ...shuffledConsonants]);
-  }, []);
+  const [currentStep, setCurrentStep] = useState(0);
+  const step = STEPS[currentStep];
 
-  const questions = useMemo<Question[]>(() => {
-    return selectedLetters.map((target) => {
-      // Find 2 distractors from all letters
-      const distractors = allLetters
-        .map((l) => l.letter)
-        .filter((l) => l !== target);
-      const shuffledDistractors = shuffle(distractors).slice(0, 2);
-      const options = shuffle([target, ...shuffledDistractors]);
-      return { targetLetter: target, options };
-    });
-  }, [selectedLetters]);
+  // Review states
+  const [currentPairIndex, setCurrentPairIndex] = useState(0);
+  const [clickedLetter, setClickedLetter] = useState<string | null>(null);
 
-  const [phase, setPhase] = useState<"review" | "quiz">("review");
-  
-  // Review Mode states
-  const [reviewIndex, setReviewIndex] = useState(0);
-  const reviewVowels = ["A", "E", "I", "O", "U"];
-  const currentReviewLetter = reviewVowels[reviewIndex];
-
-  // Quiz Mode states
+  // Match states
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [wrongAnswers, setWrongAnswers] = useState<Set<string>>(new Set());
   const [feedback, setFeedback] = useState<"correct" | "wrong" | null>(null);
+
+  // Global states
   const [showConfetti, setShowConfetti] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  const currentQuestion = questions[currentIndex];
-  const progress = (currentIndex / questions.length) * 100;
-
+  // TTS utility
   const playNameTTS = (letter: string) => {
     if ("speechSynthesis" in window) {
       window.speechSynthesis.cancel();
-      // Speak the letter name using its spelling word to force correct pronounciation
       const name = LETTER_NAMES[letter] || letter;
       const utterance = new SpeechSynthesisUtterance(name);
       utterance.rate = 0.85;
@@ -69,41 +56,92 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
     }
   };
 
-  // Play automatically on review card load or quiz question load
+  // Generate pairs for the review phase of current step
+  const currentSetPairs = useMemo(() => {
+    if (step.type !== "review") return [];
+    const p: [string, string][] = [];
+    for (let i = 0; i < step.letters.length; i += 2) {
+      if (i + 1 < step.letters.length) {
+        p.push([step.letters[i], step.letters[i + 1]]);
+      } else {
+        p.push([step.letters[i], ""]);
+      }
+    }
+    return p;
+  }, [step]);
+
+  const currentPair = currentSetPairs[currentPairIndex] || [];
+
+  // Generate questions for the match phase of current step (persisted per step)
+  const stepQuestions = useMemo<Question[]>(() => {
+    if (step.type !== "match") return [];
+    const shuffledTargets = shuffle([...step.letters]).slice(0, step.count);
+    return shuffledTargets.map((target) => {
+      const distractors = allLetters
+        .map((l) => l.letter)
+        .filter((l) => l !== target);
+      const shuffledDistractors = shuffle(distractors).slice(0, 2);
+      const options = shuffle([target, ...shuffledDistractors]);
+      return { targetLetter: target, options };
+    });
+  }, [currentStep]); // Re-generate only when step advances
+
+  const currentQuestion = stepQuestions[currentIndex];
+  const progress = stepQuestions.length > 0 ? (currentIndex / stepQuestions.length) * 100 : 0;
+
+  // Auto-play review letter name when pair changes
   useEffect(() => {
-    if (phase === "review") {
-      playNameTTS(currentReviewLetter);
-    } else if (phase === "quiz" && currentQuestion) {
-      // Delay slightly for smooth transitions
+    if (step.type === "review" && currentPair[0]) {
       const t = setTimeout(() => {
-        playNameTTS(currentQuestion.targetLetter);
+        playNameTTS(currentPair[0]);
       }, 300);
       return () => clearTimeout(t);
     }
-  }, [phase, reviewIndex, currentIndex, currentQuestion, currentReviewLetter]);
+  }, [currentStep, currentPairIndex, step.type]);
+
+  // Auto-play target name when match question changes
+  useEffect(() => {
+    if (step.type === "match" && currentQuestion) {
+      const t = setTimeout(() => {
+        playNameTTS(currentQuestion.targetLetter);
+      }, 400);
+      return () => clearTimeout(t);
+    }
+  }, [currentStep, currentIndex, currentQuestion, step.type]);
+
+  const handleLetterClick = (letter: string) => {
+    if (!letter) return;
+    setClickedLetter(letter);
+    playNameTTS(letter);
+    setTimeout(() => setClickedLetter(null), 1000);
+  };
 
   const handleOptionClick = (letter: string) => {
-    if (feedback === "correct" || wrongAnswers.has(letter)) return;
+    if (!currentQuestion || feedback === "correct" || wrongAnswers.has(letter)) return;
+
+    // Play the name of the tapped option immediately so they learn what it is!
+    playNameTTS(letter);
 
     if (letter === currentQuestion.targetLetter) {
       setFeedback("correct");
       setSelectedAnswer(letter);
-      
-      // Play a quick success audio chime
+
+      // Play success chime
       const audio = new Audio("https://assets.mixkit.co/active_storage/sfx/2013/2013-84.wav");
       audio.volume = 0.3;
       audio.play().catch(() => {});
 
       setTimeout(() => {
-        if (currentIndex < questions.length - 1) {
+        if (currentIndex < stepQuestions.length - 1) {
           setCurrentIndex((prev) => prev + 1);
           setFeedback(null);
           setSelectedAnswer(null);
           setWrongAnswers(new Set());
         } else {
-          setShowConfetti(true);
+          // Finished this quiz, go to next step
+          handleStepNext();
         }
-      }, 1500);
+      }, 1600);
     } else {
       setFeedback("wrong");
       setWrongAnswers((prev) => {
@@ -114,6 +152,19 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
       setTimeout(() => {
         setFeedback(null);
       }, 800);
+    }
+  };
+
+  const handleStepNext = () => {
+    if (currentStep < STEPS.length - 1) {
+      setCurrentStep((prev) => prev + 1);
+      setCurrentPairIndex(0);
+      setCurrentIndex(0);
+      setFeedback(null);
+      setSelectedAnswer(null);
+      setWrongAnswers(new Set());
+    } else {
+      setShowConfetti(true);
     }
   };
 
@@ -130,10 +181,11 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
       if (profileStr) {
         const profile = JSON.parse(profileStr);
         if (profile.id) {
+          const totalQuestions = STEPS.reduce((sum, s) => sum + (s.count || 0), 0);
           await supabase.from("progress").insert({
             student_id: profile.id,
             level_id: levelId,
-            score: questions.length,
+            score: totalQuestions || 23,
           });
         }
       }
@@ -166,17 +218,16 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
             Lesson 4: Letter Names
           </h2>
           <span className="text-xs font-bold text-gray-500 bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full uppercase">
-            {phase === "review" ? "Review" : `Quiz ${currentIndex + 1}/${questions.length}`}
+            {step.title} ({currentStep + 1}/{STEPS.length})
           </span>
         </div>
       </div>
 
       <div className="max-w-2xl mx-auto px-4 py-6 flex-1 flex flex-col justify-center w-full">
         <AnimatePresence mode="wait">
-          {/* Phase 1: Review Mode */}
-          {phase === "review" && (
+          {!showConfetti && step.type === "review" && (
             <motion.div
-              key="review-phase"
+              key={`review-${currentStep}`}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
@@ -184,59 +235,63 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
             >
               <div className="mb-6">
                 <h1 className="text-3xl font-black text-gray-800 dark:text-gray-100 mb-2">
-                  Meet the Vowel Names!
+                  Meet the Letter Names!
                 </h1>
                 <p className="text-gray-500 dark:text-gray-400 text-sm">
-                  Let's learn that letters have names. Tap the letter below to hear its name!
+                  Letters have names! Tap each letter below to hear how it's named.
                 </p>
               </div>
 
-              {/* Vowel Card */}
-              <motion.div
-                key={currentReviewLetter}
-                initial={{ scale: 0.9, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                onClick={() => playNameTTS(currentReviewLetter)}
-                className="bg-white dark:bg-gray-800 rounded-[2.5rem] border-3 shadow-xl p-8 mb-8 cursor-pointer hover:shadow-2xl hover:scale-[1.02] active:scale-95 transition-all select-none"
-                style={{ borderColor: accent.primary }}
-              >
-                <div className="text-9xl font-black tracking-tight mb-4" style={{ color: accent.primary }}>
-                  {currentReviewLetter}
-                  <span className="text-4xl align-bottom font-medium opacity-60 ml-2">
-                    {currentReviewLetter.toLowerCase()}
-                  </span>
-                </div>
-                <div className="flex items-center justify-center gap-2 text-xl font-bold bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-300 py-3 px-6 rounded-2xl w-fit mx-auto shadow-sm">
-                  <Volume2 className="w-6 h-6 animate-pulse" />
-                  <span>Name: "{LETTER_NAMES[currentReviewLetter]}"</span>
-                </div>
-              </motion.div>
+              {/* Pair Cards */}
+              <div className="flex justify-center gap-6 mb-8">
+                {currentPair.map((l) => l ? (
+                  <motion.div
+                    key={l}
+                    initial={{ scale: 0.9, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    onClick={() => handleLetterClick(l)}
+                    className="flex-1 bg-white dark:bg-gray-800 rounded-[2.5rem] border-3 shadow-xl p-6 cursor-pointer hover:shadow-2xl hover:scale-[1.02] active:scale-95 transition-all select-none"
+                    style={{ borderColor: clickedLetter === l ? '#FF9600' : accent.primary }}
+                  >
+                    <div className="text-8xl font-black tracking-tight mb-4" style={{ color: clickedLetter === l ? '#FF9600' : accent.primary }}>
+                      {l}
+                      <span className="text-3xl align-bottom font-medium opacity-60 ml-2">
+                        {l.toLowerCase()}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-center gap-1.5 text-sm font-bold bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-300 py-2 px-4 rounded-xl w-fit mx-auto shadow-sm">
+                      <Volume2 className="w-4 h-4" />
+                      <span>Name: "{LETTER_NAMES[l]}"</span>
+                    </div>
+                  </motion.div>
+                ) : null)}
+              </div>
 
               {/* Review Pagination Buttons */}
               <div className="flex justify-between items-center gap-4">
                 <Button
                   variant="outline"
                   size="lg"
-                  disabled={reviewIndex === 0}
-                  onClick={() => setReviewIndex(prev => prev - 1)}
+                  disabled={currentPairIndex === 0}
+                  onClick={() => setCurrentPairIndex(prev => prev - 1)}
                   className="rounded-2xl flex-1 py-6 border-2 font-bold"
                 >
                   <ArrowLeft className="w-5 h-5 mr-2" /> Back
                 </Button>
 
-                {reviewIndex < reviewVowels.length - 1 ? (
+                {currentPairIndex < currentSetPairs.length - 1 ? (
                   <Button
                     size="lg"
-                    onClick={() => setReviewIndex(prev => prev + 1)}
+                    onClick={() => setCurrentPairIndex(prev => prev + 1)}
                     className="rounded-2xl flex-1 py-6 font-bold text-white shadow-lg"
                     style={{ background: `linear-gradient(135deg, ${accent.primary}, ${accent.dark})` }}
                   >
-                    Next Vowel <ArrowRight className="w-5 h-5 ml-2" />
+                    Next Letters <ArrowRight className="w-5 h-5 ml-2" />
                   </Button>
                 ) : (
                   <Button
                     size="lg"
-                    onClick={() => setPhase("quiz")}
+                    onClick={handleStepNext}
                     className="rounded-2xl flex-1 py-6 font-bold text-white shadow-lg"
                     style={{ background: "linear-gradient(135deg, #58CC02, #46a302)" }}
                   >
@@ -247,10 +302,9 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
             </motion.div>
           )}
 
-          {/* Phase 2: Quiz matching mode */}
-          {phase === "quiz" && !showConfetti && (
+          {!showConfetti && step.type === "match" && (
             <motion.div
-              key="quiz-phase"
+              key={`match-${currentStep}`}
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 1.05 }}
@@ -274,7 +328,7 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
                   Listen and Match!
                 </h2>
                 <p className="text-gray-500 dark:text-gray-400 text-sm">
-                  Click the speaker to hear the letter's name, then choose the correct letter.
+                  Tap the speaker to hear a letter name, then choose the correct letter.
                 </p>
               </div>
 
@@ -283,7 +337,7 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  onClick={() => playNameTTS(currentQuestion.targetLetter)}
+                  onClick={() => currentQuestion && playNameTTS(currentQuestion.targetLetter)}
                   className="w-32 h-32 rounded-[2rem] flex flex-col items-center justify-center text-white shadow-lg border-b-6 active:translate-y-1 active:border-b-2 cursor-pointer transition-all"
                   style={{
                     background: `linear-gradient(135deg, ${accent.primary}, ${accent.dark})`,
@@ -299,7 +353,7 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
 
               {/* Options grid */}
               <div className="grid grid-cols-3 gap-4 max-w-md mx-auto mb-10">
-                {currentQuestion.options.map((letter) => {
+                {currentQuestion?.options.map((letter) => {
                   const isCorrect = selectedAnswer === letter;
                   const isWrong = wrongAnswers.has(letter);
 
@@ -377,13 +431,13 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
                 Awesome Job!
               </h3>
               <p className="text-gray-600 dark:text-gray-400 mb-8 leading-relaxed">
-                You know the names of the letters! Now you are ready to learn about the <strong>Long Vowels</strong>, where vowels say their names!
+                You know all 26 letter names! Now you are ready to learn about the <strong>Long Vowels</strong>, where vowels say their names!
               </p>
               <Button
                 disabled={isSaving}
                 onClick={handleFinish}
                 size="lg"
-                className="rounded-2xl px-10 py-6 text-lg text-white font-bold w-full shadow-xl"
+                className="rounded-2xl px-10 py-6 text-lg text-white font-bold w-full shadow-xl animate-bounce"
                 style={{
                   background: `linear-gradient(135deg, ${accent.primary} 0%, ${accent.dark} 100%)`,
                 }}
