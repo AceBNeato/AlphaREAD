@@ -7,6 +7,8 @@ import { LevelSyllableBuilder } from "../components/LevelSyllableBuilder";
 import { LevelSyllablesMaster } from "../components/LevelSyllablesMaster";
 import { LevelCVCMaster } from "../components/LevelCVCMaster";
 import { LevelVoiceEvaluation } from "../components/LevelVoiceEvaluation";
+import { LevelLetterNames } from "../components/LevelLetterNames";
+import { LevelLongVowels } from "../components/LevelLongVowels";
 
 const levelAccents = [
   { primary: "#58CC02", dark: "#46a302", lightBg: "#e8f9d4" },
@@ -51,6 +53,10 @@ export default function Lesson() {
       return <LevelSyllablesMaster levelId={level.id} accent={accent} />;
     case "voice-evaluation":
       return <LevelVoiceEvaluation levelId={level.id} accent={accent} />;
+    case "letter-names":
+      return <LevelLetterNames levelId={level.id} accent={accent} />;
+    case "long-vowels":
+      return <LevelLongVowels levelId={level.id} accent={accent} />;
     default:
       return null;
   }

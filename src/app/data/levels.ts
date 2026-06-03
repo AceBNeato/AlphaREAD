@@ -4,7 +4,7 @@ export interface Letter {
   image: string;
 }
 
-export type LevelType = "pairs" | "sounds" | "syllable-builder" | "voice-evaluation" | "combined-cvc";
+export type LevelType = "pairs" | "sounds" | "syllable-builder" | "voice-evaluation" | "combined-cvc" | "letter-names" | "long-vowels";
 export type SyllablePattern = "CV" | "VC" | "CVC";
 
 export interface Level {
@@ -292,6 +292,24 @@ export const levels: Level[] = [
     locked: true,
     completed: false,
   },
+  {
+    id: 4,
+    title: "Letter Names",
+    subtitle: "Say the letter names!",
+    type: "letter-names",
+    letters: allLetters,
+    locked: true,
+    completed: false,
+  },
+  {
+    id: 5,
+    title: "Long Vowels",
+    subtitle: "Say Your Name Vowels",
+    type: "long-vowels",
+    letters: allLetters,
+    locked: true,
+    completed: false,
+  },
 ];
 
 // Helper to shuffle an array
@@ -390,3 +408,188 @@ export function generateSyllableTargets(
 
   return targets;
 }
+
+export const LETTER_NAMES: Record<string, string> = {
+  "A": "Ay",
+  "B": "Bee",
+  "C": "Cee",
+  "D": "Dee",
+  "E": "Ee",
+  "F": "Eff",
+  "G": "Jee",
+  "H": "Aitch",
+  "I": "Eye",
+  "J": "Jay",
+  "K": "Kay",
+  "L": "Ell",
+  "M": "Emm",
+  "N": "Enn",
+  "O": "Oh",
+  "P": "Pee",
+  "Q": "Cue",
+  "R": "Ar",
+  "S": "Ess",
+  "T": "Tee",
+  "U": "You",
+  "V": "Vee",
+  "W": "Double-U",
+  "X": "Ex",
+  "Y": "Wye",
+  "Z": "Zee"
+};
+
+export interface LongVowelWord {
+  word: string;
+  highlights: number[];
+}
+
+export interface LongVowelPattern {
+  name: string;
+  pattern: string;
+  words: LongVowelWord[];
+}
+
+export interface LongVowelVowelData {
+  vowel: string;
+  patterns: LongVowelPattern[];
+}
+
+export const LONG_VOWELS_DATA: LongVowelVowelData[] = [
+  {
+    vowel: "A",
+    patterns: [
+      {
+        name: "Magic E",
+        pattern: "a_e",
+        words: [
+          { word: "care", highlights: [1, 3] },
+          { word: "cake", highlights: [1, 3] },
+          { word: "make", highlights: [1, 3] }
+        ]
+      },
+      {
+        name: "Vowel Team",
+        pattern: "-ai-",
+        words: [
+          { word: "mail", highlights: [1, 2] },
+          { word: "tail", highlights: [1, 2] }
+        ]
+      }
+    ]
+  },
+  {
+    vowel: "E",
+    patterns: [
+      {
+        name: "Vowel Team",
+        pattern: "ee",
+        words: [
+          { word: "tree", highlights: [2, 3] },
+          { word: "bee", highlights: [1, 2] },
+          { word: "feet", highlights: [1, 2] },
+          { word: "seed", highlights: [1, 2] }
+        ]
+      },
+      {
+        name: "Vowel Team",
+        pattern: "ea",
+        words: [
+          { word: "leaf", highlights: [1, 2] },
+          { word: "meat", highlights: [1, 2] },
+          { word: "seat", highlights: [1, 2] },
+          { word: "team", highlights: [1, 2] }
+        ]
+      },
+      {
+        name: "Magic E",
+        pattern: "e_e",
+        words: [
+          { word: "these", highlights: [2, 4] },
+          { word: "pete", highlights: [1, 3] },
+          { word: "theme", highlights: [2, 4] }
+        ]
+      }
+    ]
+  },
+  {
+    vowel: "I",
+    patterns: [
+      {
+        name: "Magic E",
+        pattern: "i_e",
+        words: [
+          { word: "kite", highlights: [1, 3] },
+          { word: "bite", highlights: [1, 3] },
+          { word: "like", highlights: [1, 3] },
+          { word: "bike", highlights: [1, 3] },
+          { word: "time", highlights: [1, 3] }
+        ]
+      },
+      {
+        name: "Vowel Team / Pattern",
+        pattern: "ie / igh",
+        words: [
+          { word: "pie", highlights: [1, 2] },
+          { word: "tie", highlights: [1, 2] },
+          { word: "night", highlights: [1, 2, 3] },
+          { word: "light", highlights: [1, 2, 3] },
+          { word: "high", highlights: [1, 2, 3] }
+        ]
+      }
+    ]
+  },
+  {
+    vowel: "O",
+    patterns: [
+      {
+        name: "Magic E",
+        pattern: "o_e",
+        words: [
+          { word: "bone", highlights: [1, 3] },
+          { word: "cone", highlights: [1, 3] },
+          { word: "home", highlights: [1, 3] },
+          { word: "rope", highlights: [1, 3] },
+          { word: "note", highlights: [1, 3] }
+        ]
+      },
+      {
+        name: "Vowel Team",
+        pattern: "oa",
+        words: [
+          { word: "boat", highlights: [1, 2] },
+          { word: "goat", highlights: [1, 2] },
+          { word: "road", highlights: [1, 2] },
+          { word: "coat", highlights: [1, 2] },
+          { word: "soap", highlights: [1, 2] }
+        ]
+      }
+    ]
+  },
+  {
+    vowel: "U",
+    patterns: [
+      {
+        name: "Magic E",
+        pattern: "u_e",
+        words: [
+          { word: "cute", highlights: [1, 3] },
+          { word: "mute", highlights: [1, 3] },
+          { word: "tube", highlights: [1, 3] },
+          { word: "flute", highlights: [2, 4] },
+          { word: "june", highlights: [1, 3] }
+        ]
+      },
+      {
+        name: "Vowel Team",
+        pattern: "ue / ui",
+        words: [
+          { word: "blue", highlights: [2, 3] },
+          { word: "glue", highlights: [2, 3] },
+          { word: "fruit", highlights: [2, 3] },
+          { word: "juice", highlights: [1, 2, 4] },
+          { word: "suit", highlights: [1, 2] }
+        ]
+      }
+    ]
+  }
+];

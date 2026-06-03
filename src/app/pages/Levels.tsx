@@ -6,6 +6,7 @@ import {
   Layers,
   Puzzle,
   Brain,
+  BookOpen,
 } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { levels } from "../data/levels";
@@ -30,20 +31,36 @@ const levelColors = [
     light: "#fff2d4",
     text: "#FF9600",
   },
+  {
+    bg: "from-[#CE82FF] to-[#a855f7]",
+    border: "border-[#CE82FF]",
+    light: "#f3e8ff",
+    text: "#a855f7",
+  },
+  {
+    bg: "from-[#FF4B8A] to-[#e0336e]",
+    border: "border-[#FF4B8A]",
+    light: "#ffe4ef",
+    text: "#e0336e",
+  },
 ];
 
-const levelIcons = [Layers, Puzzle, Brain];
+const levelIcons = [Layers, Puzzle, Brain, Sparkles, BookOpen];
 
 const levelDescriptions = [
   "Learn all 26 letters in shuffled pairs. Review each letter's uppercase and lowercase form, then practice saying them!",
   "Build syllables! 2.1 — VC (Vowel + Consonant) like AB, IM, OT. 2.2 — CV (Consonant + Vowel) like BA, MI, TO.",
   "The ultimate challenge! Build CVC words (like BAT, SUN, DOG) and then use the AI to practice your pronunciation.",
+  "Transition from letter sounds to letter names! Match the spoken name of a letter (like 'Ay', 'Bee', 'Cee') to its written form.",
+  "Vowels say their names! Learn the key spelling patterns for long vowels: Magic E (a_e) and Vowel Teams (ai).",
 ];
 
 const levelTags = [
   ["Review", "Voice Eval", "26 Letters"],
   ["VC Pattern", "CV Pattern", "Interactive"],
   ["Build Words", "AI Recognition", "Challenge"],
+  ["Letter Names", "Listening Match", "Vowels"],
+  ["Long Vowels", "Spelling Patterns", "Voice Practice"],
 ];
 
 export default function Levels() {
