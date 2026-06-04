@@ -5,7 +5,7 @@ import { Button } from "./ui/button";
 import { motion, AnimatePresence } from "motion/react";
 import { supabase } from "../../lib/supabase";
 import { Confetti } from "./ui/Confetti";
-import { shuffle, allLetters, LETTER_NAMES } from "../data/levels";
+import { shuffle, allLetters, LETTER_NAMES, LETTER_TTS } from "../data/levels";
 
 interface LevelLetterNamesProps {
   levelId: number;
@@ -49,9 +49,9 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
   const playNameTTS = (letter: string) => {
     if ("speechSynthesis" in window) {
       window.speechSynthesis.cancel();
-      // Pass the raw letter to the TTS engine so it naturally pronounces its name (e.g., "A") 
-      // instead of trying to read out phonetic spellings like "A-Y".
-      const utterance = new SpeechSynthesisUtterance(letter);
+      // Use LETTER_TTS to control spoken pronunciation, keeping it separate from UI strings
+      const name = LETTER_TTS[letter] || letter;
+      const utterance = new SpeechSynthesisUtterance(name);
       utterance.rate = 0.85;
       window.speechSynthesis.speak(utterance);
     }

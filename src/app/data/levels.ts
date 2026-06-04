@@ -438,6 +438,35 @@ export const LETTER_NAMES: Record<string, string> = {
   "Z": "Zee"
 };
 
+export const LETTER_TTS: Record<string, string> = {
+  "A": "A",
+  "B": "Bee",
+  "C": "Cee",
+  "D": "Dee",
+  "E": "Ee",
+  "F": "Eff",
+  "G": "Jee",
+  "H": "Aitch",
+  "I": "Eye",
+  "J": "Jay",
+  "K": "Kay",
+  "L": "Ell",
+  "M": "Emm",
+  "N": "Enn",
+  "O": "Oh",
+  "P": "Pee",
+  "Q": "Cue",
+  "R": "Ar",
+  "S": "Ess",
+  "T": "Tee",
+  "U": "You",
+  "V": "Vee",
+  "W": "Double-U",
+  "X": "Ex",
+  "Y": "Wye",
+  "Z": "Zee"
+};
+
 export interface LongVowelWord {
   word: string;
   highlights: number[];
