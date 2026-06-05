@@ -1,12 +1,12 @@
-import { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { useNavigate } from "react-router";
 import { Home, Sparkles, Mic, CheckCircle2, AlertCircle, PlayCircle, ChevronRight, MicOff } from "lucide-react";
 import { Button } from "./ui/button";
 import { motion, AnimatePresence } from "motion/react";
 import { getLetterPhonetic } from "../data/levels";
 import { supabase } from "../../lib/supabase";
-import { comparePhonemes } from "../utils/audio";
-import { voskService } from "../utils/vosk";
+import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
+import { useAudioVisualizer } from "../hooks/useAudioVisualizer";
 
 // QWERTY keyboard layout
 const QWERTY_ROWS = [
@@ -33,15 +33,13 @@ export function LevelSounds({ levelId, accent }: LevelSoundsProps) {
 
   // Eval states
   const [evalIndex, setEvalIndex] = useState(0);
-  const [isRecording, setIsRecording] = useState(false);
   const [evalFeedback, setEvalFeedback] = useState<"correct" | "wrong" | null>(null);
-  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
 
   const [clickedLetter, setClickedLetter] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
   const [lastHeard, setLastHeard] = useState<string | null>(null);
+  const [evaluatingLetter, setEvaluatingLetter] = useState<string | null>(null);
 
   const setSizes = [6, 7, 6, 7];
 
@@ -59,6 +57,50 @@ export function LevelSounds({ levelId, accent }: LevelSoundsProps) {
   const currentEvalLetters = getLettersForCurrentEval();
   const currentSetLetters = getLettersForCurrentSet();
   const currentEvalLetter = currentEvalLetters[evalIndex];
+
+  const isMobile = useMemo(() => /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent), []);
+  useAudioVisualizer(isMobile, !!evaluatingLetter);
+
+  useSpeechRecognition({
+    evaluatingWord: evaluatingLetter,
+    enabled: !!evaluatingLetter,
+    onResult: (target, status, transcript) => {
+      setLastHeard(transcript);
+      const tLower = transcript.toLowerCase();
+      const phonetic = getLetterPhonetic(target).toLowerCase();
+      
+      const isCorrect = status === "correct" || status === "close" || tLower.includes(target.toLowerCase()) || tLower.includes(phonetic);
+
+      if (isCorrect) {
+        setEvalFeedback("correct");
+        setTimeout(() => {
+          if (evalIndex < currentEvalLetters.length - 1) {
+            setEvalIndex(prev => prev + 1);
+            setEvalFeedback(null);
+            setEvaluatingLetter(null);
+          } else {
+            handleSetComplete();
+            setEvaluatingLetter(null);
+          }
+        }, 1500);
+      } else {
+        setEvalFeedback("wrong");
+        setTimeout(() => {
+            setEvalFeedback(null);
+            setEvaluatingLetter(null);
+        }, 2000);
+      }
+    },
+    onError: () => setEvaluatingLetter(null),
+    onSilenceTimeout: () => {
+      setEvalFeedback("wrong");
+      setTimeout(() => {
+          setEvalFeedback(null);
+          setEvaluatingLetter(null);
+      }, 1500);
+    }
+  });
+
 
   const handleLetterClick = (letter: string) => {
     if (phase !== "review") return;
@@ -79,71 +121,6 @@ export function LevelSounds({ levelId, accent }: LevelSoundsProps) {
     if (!confirmExit) return;
     navigate("/levels", { replace: true });
   };
-
-  const startRecording = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const recorder = new MediaRecorder(stream);
-      const chunks: Blob[] = [];
-
-      recorder.ondataavailable = (e) => chunks.push(e.data);
-      recorder.onstop = async () => {
-        const blob = new Blob(chunks, { type: "audio/webm" });
-        setIsProcessing(true);
-        setLastHeard("Thinking...");
-
-        const { isMatch, recognized } = await voskService.recognizeLetter(
-          currentEvalLetter,
-          blob
-        );
-
-        setLastHeard(recognized);
-
-        if (isMatch) {
-          setEvalFeedback("correct");
-          setTimeout(() => {
-            if (evalIndex < currentEvalLetters.length - 1) {
-              setEvalIndex(prev => prev + 1);
-              setEvalFeedback(null);
-            } else {
-              handleSetComplete();
-            }
-          }, 1500);
-        } else {
-          setEvalFeedback("wrong");
-          setTimeout(() => setEvalFeedback(null), 2000);
-        }
-        setIsProcessing(false);
-        stream.getTracks().forEach(track => track.stop());
-      };
-
-      recorder.start();
-      setMediaRecorder(recorder);
-      setIsRecording(true);
-    } catch (error) {
-      console.error("Error accessing microphone:", error);
-    }
-  };
-
-  const stopRecording = () => {
-    if (mediaRecorder && isRecording) {
-      mediaRecorder.stop();
-      setIsRecording(false);
-    }
-  };
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-        try { mediaRecorder.stop(); } catch (e) { }
-      }
-      // Stop the stream tracks manually to release hardware
-      if (mediaRecorder?.stream) {
-        mediaRecorder.stream.getTracks().forEach(track => track.stop());
-      }
-    };
-  }, [mediaRecorder]);
 
   const handleSetComplete = () => {
     if (currentSetIdx < setSizes.length - 1) {
@@ -242,28 +219,14 @@ export function LevelSounds({ levelId, accent }: LevelSoundsProps) {
                 </div>
                 <div className="flex justify-center mb-8">
                   <button
-                    onClick={() => isRecording ? stopRecording() : startRecording()}
-                    disabled={isProcessing}
-                    className={`px-8 py-4 rounded-3xl flex items-center gap-3 transition-all ${isRecording
-                      ? "bg-gradient-to-br from-red-500 to-red-600 scale-105 animate-pulse"
-                      : isProcessing
-                        ? "bg-gray-300 dark:bg-gray-600"
-                        : "bg-gradient-to-br from-[#FF4B8A] to-[#e0336e] hover:scale-105 shadow-lg"
-                      }`}
+                    onClick={() => setEvaluatingLetter(currentEvalLetter)}
+                    disabled={evaluatingLetter !== null || evalFeedback === "correct"}
+                    className={`w-32 h-32 rounded-full flex flex-col items-center justify-center text-white shadow-xl transition-all relative z-10 ${
+                      evaluatingLetter ? "bg-red-500 animate-pulse" : evalFeedback === "correct" ? "bg-green-500" : "bg-blue-500 hover:bg-blue-600 hover:scale-105 active:scale-95"
+                    }`}
                   >
-                    {isProcessing ? (
-                      <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-white"></div>
-                    ) : isRecording ? (
-                      <>
-                        <MicOff className="w-8 h-8 text-white" />
-                        <span className="text-white font-bold text-lg">Listening...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Mic className="w-8 h-8 text-white" />
-                        <span className="text-white font-bold text-lg">Tap to Start</span>
-                      </>
-                    )}
+                    {evaluatingLetter ? <Mic className="w-14 h-14 mb-1" /> : evalFeedback === "correct" ? <CheckCircle2 className="w-14 h-14" /> : <MicOff className="w-14 h-14 mb-1" />}
+                    <span className="text-[12px] uppercase font-bold tracking-widest">{evaluatingLetter ? "Listening" : "Speak"}</span>
                   </button>
                 </div>
                 {evalFeedback && (
@@ -271,7 +234,7 @@ export function LevelSounds({ levelId, accent }: LevelSoundsProps) {
                     {evalFeedback === 'correct' ? <><CheckCircle2 /> Correct!</> : <><AlertCircle /> Try again!</>}
                   </motion.div>
                 )}
-                {lastHeard && (
+                {lastHeard && evaluatingLetter && (
                   <div className="mb-4 p-3 bg-gray-100 dark:bg-gray-700 rounded-xl text-sm font-mono text-gray-600 dark:text-gray-300">
                     <span className="font-semibold text-xs uppercase tracking-wider block mb-1">Heard:</span>
                     {lastHeard}

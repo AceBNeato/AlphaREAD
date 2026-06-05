@@ -142,7 +142,37 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, onResult,
         return;
       }
 
-      // PATH B: CVC Word (Level 3+)
+      // PATH B: Phrase / Sentence
+      const targetUpper = evaluatingWord.toUpperCase().replace(/[.,!?]/g, "");
+      if (targetUpper.includes(" ")) {
+         let matched = false;
+         let bestMatch = "";
+         
+         for (let i = 0; i < results.length; i++) {
+           const raw = results[i].transcript.trim().toUpperCase().replace(/[.,!?]/g, "");
+           
+           const targetWords = targetUpper.split(/\s+/);
+           let matchCount = 0;
+           targetWords.forEach(tw => {
+             if (raw.includes(tw)) matchCount++;
+           });
+           
+           if (matchCount / targetWords.length >= 0.7 || raw.includes(targetUpper)) {
+              matched = true;
+              bestMatch = results[i].transcript.trim();
+              break;
+           }
+         }
+         
+         if (matched) {
+           onResult(evaluatingWord, "correct", bestMatch || primaryTranscript);
+         } else {
+           onResult(evaluatingWord, "wrong", primaryTranscript);
+         }
+         return;
+      }
+
+      // PATH C: CVC Word (Level 3+)
       let bestMatch = "";
       let bestSimilarity = 0;
       let isPerfectMatch = false;

@@ -174,10 +174,43 @@ export const CVC_WORDS = [
   "FIX", "GAS", "GET", "GOT", "GUM", "GUN", "HAM", "HAT", "HER", "HID",
   "HIM", "HIP", "HOP", "HOT", "HUG", "HUM", "JAM", "JOG", "KIT", "LAD",
   "LED", "LET", "LID", "MAD", "MAN", "MEN", "MET", "MID", "MIX", "NAG",
-  "NAP", "NET", "PAD", "PAN", "PEN", "PIN", "POT", "RAG", "RAM", "RAT",
-  "RED", "RID", "RUG", "RUN", "SAG", "SET", "SIN", "SIP", "SIT", "SIX",
-  "SUM", "TAN", "TAX", "TEN", "TIP", "TOP", "TUB", "TUG", "VAN", "VET",
-  "WED", "WET", "WIG", "WIN", "YET"
+  "NAP", "NET", "PAD", "PAN",  "PEN", "HEN", "MEN", "TEN", "BED", "RED", "FED", "LED",
+  "PIG", "DIG", "BIG", "FIG", "PIN", "WIN", "FIN", "BIN",
+  "DOG", "LOG", "FOG", "HOG", "HOT", "POT", "DOT", "COT",
+  "SUN", "RUN", "FUN", "BUN", "BUG", "MUG", "RUG", "HUG",
+];
+
+export const CVC_SENTENCES = [
+  "The car is red.",
+  "Jim ran far.",
+  "Tom is on the bed.",
+  "The cat is on the bed.",
+  "The toy car is red.",
+  "Pam is on the red bed.",
+  "The dog has a red cap.",
+  "The pig ran.",
+  "The man got mad.",
+  "Dan sat on the mat.",
+  "Ben has a big toy car.",
+  "The boy is big.",
+  "The pig got wet.",
+  "Joy has a hen.",
+  "The kid ran to the man.",
+  "It was a big box.",
+  "The fan is on the mat.",
+  "Jon is a big boy.",
+  "Max is on the bus.",
+  "Tim has a red pen.",
+  "The pot is hot.",
+  "Her leg is big.",
+  "A cap is on the box.",
+  "Pam has six cats.",
+  "The fan is red.",
+  "Kim got a big dog.",
+  "Sam has a red pin.",
+  "The cap is on the big bed.",
+  "Jen ran to the bed.",
+  "The big bag is on the mat."
 ];
 
 // Phonetic pronunciation for CV patterns (consonant + vowel sounds blended)
