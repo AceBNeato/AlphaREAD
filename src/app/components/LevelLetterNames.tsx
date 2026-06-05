@@ -1,12 +1,12 @@
 import { useState, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router";
-import { Home, Volume2, ArrowLeft, ArrowRight, Sparkles, CheckCircle2, XCircle, Mic, MicOff, AlertCircle } from "lucide-react";
+import { Home, Volume2, ArrowLeft, ArrowRight, Sparkles, CheckCircle2, XCircle, Mic, MicOff, AlertCircle, Shuffle, RotateCcw, SkipForward } from "lucide-react";
 import { Button } from "./ui/button";
 import { motion, AnimatePresence } from "motion/react";
 import { supabase } from "../../lib/supabase";
 import { Confetti } from "./ui/Confetti";
 import { shuffle, allLetters, LETTER_NAMES, LETTER_TTS } from "../data/levels";
-import { applyMaleVoice } from "../utils/audio";
+
 import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
 import { useAudioVisualizer } from "../hooks/useAudioVisualizer";
 
@@ -65,7 +65,6 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
       const name = LETTER_TTS[letter] || letter;
       const utterance = new SpeechSynthesisUtterance(name);
       utterance.rate = 0.85;
-      applyMaleVoice(utterance);
       window.speechSynthesis.speak(utterance);
     }
   };
@@ -460,22 +459,10 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 1.05 }}
-              className="w-full max-w-md mx-auto flex flex-col items-center"
+              className="w-full max-w-xl mx-auto flex flex-col items-center"
             >
-              <div className="w-full h-3 bg-gray-200/80 dark:bg-gray-800 rounded-full overflow-hidden mb-8 shadow-inner border border-gray-100 dark:border-gray-700/30">
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: `${progress}%` }}
-                  transition={{ duration: 0.3, ease: "easeOut" }}
-                  className="h-full rounded-full"
-                  style={{
-                    background: `linear-gradient(90deg, ${accent.primary}, ${accent.dark})`,
-                  }}
-                />
-              </div>
-
-              <div className="text-center mb-8">
-                <h2 className="text-2xl font-black text-gray-800 dark:text-gray-100 mb-2">
+              <div className="text-center mb-6">
+                <h2 className="text-3xl font-black text-gray-800 dark:text-gray-100 mb-2">
                   Say the Name! 🗣️
                 </h2>
                 <p className="text-gray-500 dark:text-gray-400 text-sm">
@@ -483,50 +470,55 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
                 </p>
               </div>
 
-              <motion.div 
-                className="w-48 h-48 rounded-[3rem] bg-white dark:bg-gray-800 shadow-xl border-4 flex flex-col items-center justify-center mb-10 select-none relative"
+              {/* Controls */}
+              <div className="flex justify-center gap-3 w-full mb-6">
+                <Button variant="outline" size="sm" onClick={() => { setCurrentIndex(0); setFeedback(null); setEvaluatingLetter(null); }} className="rounded-full flex items-center gap-2 border-gray-300">
+                  <Shuffle className="w-4 h-4 text-gray-600" /> Shuffle
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => { setCurrentIndex(0); setFeedback(null); setEvaluatingLetter(null); setVoiceTranscript(""); }} className="rounded-full flex items-center gap-2 border-gray-300">
+                  <RotateCcw className="w-4 h-4 text-gray-600" /> Reset
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => { setEvaluatingLetter(null); setFeedback(null); setVoiceTranscript(""); if (currentIndex < stepQuestions.length - 1) { setCurrentIndex(prev => prev + 1); } else { handleStepNext(); } }} className="rounded-full flex items-center gap-2 border-gray-300">
+                  Skip <SkipForward className="w-4 h-4 text-gray-600" />
+                </Button>
+              </div>
+
+              <motion.div
+                className="w-full min-h-[160px] rounded-[2rem] bg-white dark:bg-gray-800 shadow-xl border-4 flex flex-col items-center justify-center p-8 mb-10 select-none text-center relative"
                 style={{ borderColor: feedback === 'correct' ? '#58CC02' : feedback === 'wrong' ? '#EF4444' : accent.primary }}
               >
-                <span className="text-8xl font-black" style={{ color: accent.primary }}>
+                <span className="text-8xl font-black mb-2" style={{ color: accent.primary }}>
                   {currentQuestion.targetLetter}
                 </span>
-                <span className="text-3xl font-medium opacity-50 absolute bottom-4">
+                <span className="text-3xl font-medium opacity-40">
                   {currentQuestion.targetLetter.toLowerCase()}
                 </span>
+                <Button
+                  onClick={() => playNameTTS(currentQuestion.targetLetter)}
+                  variant="ghost"
+                  className="rounded-full w-12 h-12 shadow-sm bg-gray-50 hover:bg-gray-100 absolute bottom-3 right-3"
+                >
+                  <Volume2 className="w-6 h-6 text-gray-500" />
+                </Button>
               </motion.div>
 
               <button
                 onClick={() => setEvaluatingLetter(currentQuestion.targetLetter)}
                 disabled={evaluatingLetter !== null || feedback === "correct"}
-                className={`w-28 h-28 rounded-full flex flex-col items-center justify-center text-white shadow-xl transition-all relative z-10 ${
-                  evaluatingLetter
-                    ? "bg-red-500 shadow-red-500/50 scale-110 animate-pulse"
-                    : feedback === "correct"
-                    ? "bg-green-500"
-                    : "bg-indigo-500 hover:bg-indigo-600 hover:scale-105 active:scale-95 cursor-pointer"
+                className={`w-32 h-32 rounded-full flex flex-col items-center justify-center text-white shadow-xl transition-all relative z-10 ${
+                  evaluatingLetter ? "bg-red-500 animate-pulse" : feedback === "correct" ? "bg-green-500" : "hover:scale-105 active:scale-95 cursor-pointer"
                 }`}
                 style={{
                   background: !evaluatingLetter && feedback !== "correct" ? `linear-gradient(135deg, ${accent.primary}, ${accent.dark})` : undefined,
                 }}
               >
-                {evaluatingLetter ? (
-                  <Mic className="w-12 h-12 mb-1" />
-                ) : feedback === "correct" ? (
-                  <CheckCircle2 className="w-12 h-12" />
-                ) : (
-                  <MicOff className="w-12 h-12 mb-1" />
-                )}
-                <span className="text-[10px] uppercase font-bold tracking-widest">
-                  {evaluatingLetter ? "Listening" : "Tap to Speak"}
-                </span>
+                {evaluatingLetter ? <Mic className="w-14 h-14 mb-1" /> : feedback === "correct" ? <CheckCircle2 className="w-14 h-14" /> : <MicOff className="w-14 h-14 mb-1" />}
+                <span className="text-[12px] uppercase font-bold tracking-widest">{evaluatingLetter ? "Listening" : "Speak"}</span>
               </button>
 
-              <div className="text-center min-h-[40px] mt-6">
-                {evaluatingLetter && (
-                  <p className="text-rose-500 font-bold text-sm uppercase tracking-widest animate-pulse">
-                    {voiceTranscript ? `Heard: "${voiceTranscript}"` : "Speak Now..."}
-                  </p>
-                )}
+              <div className="text-center min-h-[40px] mt-6 w-full">
+                {evaluatingLetter && <p className="text-rose-500 font-bold text-sm uppercase">Listening...</p>}
+                {voiceTranscript && evaluatingLetter && <p className="text-gray-500 italic mt-2 text-sm">"{voiceTranscript}"</p>}
                 {feedback === "correct" && (
                   <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-[#58CC02] font-bold text-lg">
                     ✨ Perfect pronunciation!
@@ -534,7 +526,7 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
                 )}
                 {feedback === "wrong" && (
                   <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-red-500 font-bold text-lg flex items-center gap-2 justify-center">
-                    <AlertCircle className="w-5 h-5" /> Let's try saying it again!
+                    <AlertCircle className="w-5 h-5" /> Let's try again!
                   </motion.p>
                 )}
               </div>

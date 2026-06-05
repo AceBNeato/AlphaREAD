@@ -7,7 +7,7 @@ import { supabase } from "../../lib/supabase";
 import { Confetti } from "./ui/Confetti";
 import { LONG_VOWELS_DATA, LongVowelWord, LETTER_NAMES, LETTER_TTS, shuffle } from "../data/levels";
 import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
-import { applyMaleVoice } from "../utils/audio";
+
 import { useAudioVisualizer } from "../hooks/useAudioVisualizer";
 
 interface LevelLongVowelsProps {
@@ -84,7 +84,6 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
       const ttsText = text.length === 1 ? (LETTER_TTS[text] || text) : text.toLowerCase();
       const utterance = new SpeechSynthesisUtterance(ttsText);
       utterance.rate = 0.85;
-      applyMaleVoice(utterance);
       window.speechSynthesis.speak(utterance);
     }
   };

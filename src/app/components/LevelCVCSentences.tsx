@@ -7,7 +7,7 @@ import { supabase } from "../../lib/supabase";
 import { Confetti } from "./ui/Confetti";
 import { CVC_SENTENCES } from "../data/levels";
 import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
-import { applyMaleVoice } from "../utils/audio";
+
 import { useAudioVisualizer } from "../hooks/useAudioVisualizer";
 
 interface LevelCVCSentencesProps {
@@ -43,7 +43,6 @@ export function LevelCVCSentences({ levelId, accent }: LevelCVCSentencesProps) {
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.rate = 0.85;
-      applyMaleVoice(utterance);
       window.speechSynthesis.speak(utterance);
     }
   };

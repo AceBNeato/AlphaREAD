@@ -56,6 +56,34 @@ interface UseSpeechRecognitionProps {
 
 // ... (HOMOPHONES block remains) ...
 const HOMOPHONES: Record<string, string[]> = {
+  // Alphabet phonetic homophones
+  "A": ["a", "ay", "hey", "eight"],
+  "B": ["b", "bee", "be"],
+  "C": ["c", "see", "sea", "si"],
+  "D": ["d", "dee"],
+  "E": ["e", "ee"],
+  "F": ["f", "eff", "half"],
+  "G": ["g", "gee"],
+  "H": ["h", "aitch", "hatch", "age"],
+  "I": ["i", "eye", "aye"],
+  "J": ["j", "jay"],
+  "K": ["k", "kay", "okay"],
+  "L": ["l", "el", "ell"],
+  "M": ["m", "em", "emm", "am"],
+  "N": ["n", "en", "enn", "in", "an"],
+  "O": ["o", "oh", "owe"],
+  "P": ["p", "pee", "pea"],
+  "Q": ["q", "cue", "queue"],
+  "R": ["r", "ar", "are", "our"],
+  "S": ["s", "es", "ess", "us", "is"],
+  "T": ["t", "tee", "tea"],
+  "U": ["u", "you", "ewe"],
+  "V": ["v", "vee"],
+  "W": ["w", "double u", "double you", "double-u"],
+  "X": ["x", "ex", "axe"],
+  "Y": ["y", "why", "wife"],
+  "Z": ["z", "zee", "zed", "see"],
+
   // Common CV/VC homophones
   "PI": ["pie", "pee", "p"],
   "ME": ["me", "mee", "m"],
@@ -64,6 +92,7 @@ const HOMOPHONES: Record<string, string[]> = {
   "DO": ["do", "doo", "d"],
   "WE": ["we", "wee", "w"],
   "HE": ["he", "hee", "h"],
+
   // CVC homophones
   "BAT": ["bad", "that", "but"],
   "CAT": ["cut", "cap", "can"],
@@ -95,7 +124,7 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, onResult,
     if (recognitionRef.current) {
       const r = recognitionRef.current;
       recognitionRef.current = null;
-      try { r.stop(); } catch (e) {}
+      try { r.stop(); } catch (e) { }
     }
   }, []);
 
@@ -112,120 +141,150 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, onResult,
     }
 
     resultReceivedRef.current = false;
+    let latestTranscript = ""; // Track the latest thing heard for the timeout fallback
 
     const recognition = new SpeechRecognitionAPI();
     recognitionRef.current = recognition;
 
-    recognition.continuous = false;
-    recognition.interimResults = false;
+    recognition.continuous = true; // Keep mic open!
+    recognition.interimResults = true; // Evaluate as they speak!
     recognition.lang = "en-US";
     recognition.maxAlternatives = 5;
 
     recognition.onresult = (event: any) => {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
       resultReceivedRef.current = true;
-      const results = event.results[0];
 
-      const allTranscripts: string[] = [];
-      for (let i = 0; i < results.length; i++) {
-        allTranscripts.push(results[i].transcript.trim());
-      }
-      const primaryTranscript = allTranscripts[0] || "";
+      let foundCorrect = false;
+      let foundClose = false;
+      let bestStatus: "correct" | "close" | "wrong" = "wrong";
+      let bestTranscript = "";
 
-      // PATH A: CV / VC Syllable
-      if (isSyllableTarget(evaluatingWord)) {
-        const phonemeResult = evaluateSyllable(evaluatingWord, allTranscripts);
-        const finalTranscript = (phonemeResult === "correct" || phonemeResult === "close")
-          ? evaluatingWord.toLowerCase()
-          : primaryTranscript;
-        onResultRef.current(evaluatingWord, phonemeResult, finalTranscript);
-        return;
-      }
-
-      // PATH B: Phrase / Sentence (contains a space)
-      const targetUpper = evaluatingWord.toUpperCase().replace(/[.,!?]/g, "");
-      if (targetUpper.includes(" ")) {
-        let matched = false;
-        let sentenceBestMatch = "";
+      for (let r = 0; r < event.results.length; r++) {
+        const results = event.results[r];
+        const allTranscripts: string[] = [];
         for (let i = 0; i < results.length; i++) {
-          const raw = results[i].transcript.trim().toUpperCase().replace(/[.,!?]/g, "");
-          const targetWords = targetUpper.split(/\s+/);
-          let matchCount = 0;
-          targetWords.forEach(tw => { if (raw.includes(tw)) matchCount++; });
-          if (matchCount / targetWords.length >= 0.7 || raw.includes(targetUpper)) {
-            matched = true;
-            sentenceBestMatch = results[i].transcript.trim();
-            break;
+          allTranscripts.push(results[i].transcript.trim());
+        }
+        const primaryTranscript = allTranscripts[0] || "";
+        latestTranscript = primaryTranscript; // Update fallback transcript
+
+        let status: "correct" | "close" | "wrong" = "wrong";
+        let matchStr = primaryTranscript;
+
+        // PATH A: CV / VC Syllable
+        if (isSyllableTarget(evaluatingWord)) {
+          const phonemeResult = evaluateSyllable(evaluatingWord, allTranscripts);
+          status = phonemeResult;
+          matchStr = (status === "correct" || status === "close") ? evaluatingWord.toLowerCase() : primaryTranscript;
+        }
+        // PATH B: Phrase / Sentence
+        else if (evaluatingWord.toUpperCase().replace(/[.,!?]/g, "").includes(" ")) {
+          const targetUpper = evaluatingWord.toUpperCase().replace(/[.,!?]/g, "");
+          let matched = false;
+          for (let i = 0; i < results.length; i++) {
+            const raw = results[i].transcript.trim().toUpperCase().replace(/[.,!?]/g, "");
+            const targetWords = targetUpper.split(/\s+/);
+            let matchCount = 0;
+            targetWords.forEach(tw => { if (raw.includes(tw)) matchCount++; });
+            if (matchCount / targetWords.length >= 0.7 || raw.includes(targetUpper)) {
+              matched = true;
+              matchStr = results[i].transcript.trim();
+              break;
+            }
+          }
+          status = matched ? "correct" : "wrong";
+        }
+        // PATH C: Single Word
+        else {
+          let wordMatch = "";
+          let bestSimilarity = 0;
+          let isPerfectMatch = false;
+          const wordUpper = evaluatingWord.toUpperCase();
+
+          for (let i = 0; i < results.length; i++) {
+            const normalized = normalizeTranscript(results[i].transcript.trim());
+            const allowedWords = [wordUpper, ...(HOMOPHONES[wordUpper] || [])];
+            const phraseWords = normalized.split(" ");
+
+            if (allowedWords.some(t => normalized === t || phraseWords.includes(t))) {
+              wordMatch = evaluatingWord;
+              bestSimilarity = 1;
+              isPerfectMatch = true;
+              break;
+            }
+
+            for (const w of phraseWords) {
+              const similarity = calculateSimilarity(w, wordUpper);
+              if (similarity > bestSimilarity) {
+                bestSimilarity = similarity;
+                wordMatch = w;
+              }
+            }
+          }
+          if (!wordMatch) wordMatch = normalizeTranscript(results[0].transcript.trim());
+
+          if (isPerfectMatch || bestSimilarity === 1) {
+            status = "correct"; matchStr = wordMatch.toLowerCase();
+          } else if (bestSimilarity >= 0.5 || matchConsonants(wordMatch, wordUpper)) {
+            status = "close"; matchStr = wordMatch.toLowerCase();
+          } else {
+            status = "wrong"; matchStr = wordMatch.toLowerCase();
           }
         }
-        onResultRef.current(evaluatingWord, matched ? "correct" : "wrong", sentenceBestMatch || primaryTranscript);
-        return;
-      }
 
-      // PATH C: Single word
-      let bestMatch = "";
-      let bestSimilarity = 0;
-      let isPerfectMatch = false;
-      const wordUpper = evaluatingWord.toUpperCase();
-
-      for (let i = 0; i < results.length; i++) {
-        const normalized = normalizeTranscript(results[i].transcript.trim());
-        const allowedWords = [wordUpper, ...(HOMOPHONES[wordUpper] || [])];
-        const phraseWords = normalized.split(" ");
-
-        if (allowedWords.some(t => normalized === t || phraseWords.includes(t))) {
-          bestMatch = evaluatingWord;
-          bestSimilarity = 1;
-          isPerfectMatch = true;
-          break;
-        }
-
-        for (const word of phraseWords) {
-          const similarity = calculateSimilarity(word, wordUpper);
-          if (similarity > bestSimilarity) {
-            bestSimilarity = similarity;
-            bestMatch = word;
-          }
+        if (status === "correct") {
+          foundCorrect = true;
+          bestStatus = "correct";
+          bestTranscript = matchStr;
+          break; // Stop evaluating, we found a perfect match!
+        } else if (status === "close") {
+          foundClose = true;
+          bestStatus = "close";
+          bestTranscript = matchStr;
         }
       }
 
-      if (!bestMatch) bestMatch = normalizeTranscript(results[0].transcript.trim());
-
-      if (isPerfectMatch || bestSimilarity === 1) {
-        onResultRef.current(evaluatingWord, "correct", bestMatch.toLowerCase());
-      } else if (bestSimilarity >= 0.5 || matchConsonants(bestMatch, wordUpper)) {
-        onResultRef.current(evaluatingWord, "close", bestMatch.toLowerCase());
-      } else {
-        onResultRef.current(evaluatingWord, "wrong", bestMatch.toLowerCase());
+      // If we found a success, trigger immediately and stop the mic!
+      if (foundCorrect || (foundClose && event.results[event.results.length - 1].isFinal)) {
+        if (timeoutRef.current) clearTimeout(timeoutRef.current);
+        if (recognitionRef.current) {
+          try { recognitionRef.current.stop(); } catch (e) { }
+        }
+        onResultRef.current(evaluatingWord, bestStatus, bestTranscript);
       }
+      // If wrong, do NOTHING. Let it keep listening until the 5s timeout!
     };
 
     recognition.onerror = (event: any) => {
+      // Ignore no-speech errors during continuous listening
+      if (event.error === "no-speech") return;
+
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
-      if (resultReceivedRef.current) return;
-      if (event.error === "no-speech" || event.error === "aborted") {
+      if (event.error === "aborted") {
         onErrorRef.current();
         return;
       }
       console.error("Speech recognition error:", event.error);
-      onResultRef.current(evaluatingWord, "wrong", "");
+      onResultRef.current(evaluatingWord, "wrong", latestTranscript);
     };
 
     recognition.onend = () => {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-      if (!resultReceivedRef.current && recognitionRef.current === recognition) {
-        onErrorRef.current();
-      }
+      // If it ends naturally before timeout, don't trigger error.
+      // The 5s timeout fallback handles the failure gracefully.
     };
 
     try {
       recognition.start();
       timeoutRef.current = setTimeout(() => {
-        console.warn("[Speech] Auto-silence timeout.");
         if (recognitionRef.current) {
-          try { recognitionRef.current.stop(); } catch (e) {}
+          try { recognitionRef.current.stop(); } catch (e) { }
         }
-        onSilenceTimeoutRef.current();
+        // If 5 seconds pass and we never got a correct match, THEN we fail them
+        if (resultReceivedRef.current && latestTranscript) {
+          onResultRef.current(evaluatingWord, "wrong", latestTranscript);
+        } else {
+          onSilenceTimeoutRef.current();
+        }
       }, 5000);
     } catch (error) {
       console.error("Error starting recognition:", error);
