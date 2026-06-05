@@ -64,7 +64,6 @@ export function LevelCVCSentences({ levelId, accent }: LevelCVCSentencesProps) {
 
       const tLower = transcript.toLowerCase().replace(/[.,!?]/g, "");
       const targetLower = target.toLowerCase().replace(/[.,!?]/g, "");
-
       const wordsInTarget = targetLower.split(" ");
       let matchCount = 0;
       wordsInTarget.forEach(w => {
