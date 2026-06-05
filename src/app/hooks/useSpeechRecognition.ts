@@ -202,16 +202,19 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, onResult,
           const wordUpper = evaluatingWord.toUpperCase();
 
           for (let i = 0; i < results.length; i++) {
-            const normalized = normalizeTranscript(results[i].transcript.trim());
-            const allowedWords = [wordUpper, ...(HOMOPHONES[wordUpper] || [])].map(w => w.toUpperCase());
-            const phraseWords = normalized.split(" ");
+            const rawTranscript = results[i].transcript.trim().toLowerCase();
+            const allowedWords = [wordUpper.toLowerCase(), ...(HOMOPHONES[wordUpper] || [])].map(w => w.toLowerCase());
 
-            if (allowedWords.some(t => normalized === t || phraseWords.includes(t))) {
+            // Your exact HTML snippet logic:
+            if (allowedWords.some(t => rawTranscript.includes(t))) {
               wordMatch = evaluatingWord;
               bestSimilarity = 1;
               isPerfectMatch = true;
               break;
             }
+
+            const normalized = normalizeTranscript(results[i].transcript.trim());
+            const phraseWords = normalized.split(" ");
 
             for (const w of phraseWords) {
               const similarity = calculateSimilarity(w, wordUpper);
