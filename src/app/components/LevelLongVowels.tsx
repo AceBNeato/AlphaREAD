@@ -18,6 +18,7 @@ import { supabase } from "../../lib/supabase";
 import { Confetti } from "./ui/Confetti";
 import { LONG_VOWELS_DATA, LongVowelWord, LETTER_NAMES } from "../data/levels";
 import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
+import { applyMaleVoice } from "../utils/audio";
 
 interface LevelLongVowelsProps {
   levelId: number;
@@ -84,6 +85,7 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(word.toLowerCase());
       utterance.rate = 0.85;
+      applyMaleVoice(utterance);
       window.speechSynthesis.speak(utterance);
     }
   };

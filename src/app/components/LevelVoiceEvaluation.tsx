@@ -23,6 +23,7 @@ import { Confetti } from "./ui/Confetti";
 import { evaluateSyllable, isSyllableTarget } from "../utils/PhonemeEvaluator";
 import { useAudioVisualizer } from "../hooks/useAudioVisualizer";
 import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
+import { applyMaleVoice } from "../utils/audio";
 
 interface LevelVoiceEvaluationProps {
   levelId: number;
@@ -101,6 +102,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(speakText);
       utterance.rate = 0.9;
+      applyMaleVoice(utterance);
       window.speechSynthesis.speak(utterance);
     }
   };

@@ -110,3 +110,26 @@ export async function comparePhonemes(
     return { isMatch: false, score: 0 };
   }
 }
+
+/**
+ * Applies a male voice to a SpeechSynthesisUtterance if available.
+ */
+export function applyMaleVoice(utterance: SpeechSynthesisUtterance) {
+  const voices = window.speechSynthesis.getVoices();
+  if (voices.length > 0) {
+    const enVoices = voices.filter(v => v.lang.startsWith("en"));
+    const maleVoiceNames = ['david', 'mark', 'guy', 'matthew', 'james', 'arthur', 'daniel', 'alex', 'fred', 'male', 'brian'];
+    
+    let selectedVoice = enVoices.find(v => {
+      const lowerName = v.name.toLowerCase();
+      return maleVoiceNames.some(name => lowerName.includes(name));
+    });
+
+    if (selectedVoice) {
+      utterance.voice = selectedVoice;
+    } else if (enVoices.length > 0) {
+      // Fallback: sometimes the second voice is male (e.g. Zira then David)
+      utterance.voice = enVoices.length > 1 ? enVoices[1] : enVoices[0];
+    }
+  }
+}

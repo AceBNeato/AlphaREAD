@@ -22,6 +22,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { supabase } from "../../lib/supabase";
 import { Confetti } from "./ui/Confetti";
 import { getPhoneticPronunciation } from "../data/levels";
+import { applyMaleVoice } from "../utils/audio";
 
 interface LevelSyllableBuilderProps {
   levelId: number;
@@ -128,6 +129,7 @@ export function LevelSyllableBuilder({
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(phoneticText);
       utterance.rate = 0.9;
+      applyMaleVoice(utterance);
       window.speechSynthesis.speak(utterance);
     }
   };

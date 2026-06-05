@@ -382,29 +382,6 @@ export function generateSyllableTargets(
     }));
   }
 
-  // For mixed patterns (CV + VC)
-  if (patterns.includes("CV") && patterns.includes("VC")) {
-    const halfCount = Math.floor(count / 2);
-    const cvCount = halfCount;
-    const vcCount = count - cvCount;
-
-    const shuffledCV = shuffle([...ALL_CV_SYLLABLES]);
-    const shuffledVC = shuffle([...ALL_VC_SYLLABLES]);
-
-    const cvTargets = shuffledCV.slice(0, cvCount).map(syllable => ({
-      pattern: "CV" as SyllablePattern,
-      letters: syllable.split(""),
-      syllable,
-    }));
-
-    const vcTargets = shuffledVC.slice(0, vcCount).map(syllable => ({
-      pattern: "VC" as SyllablePattern,
-      letters: syllable.split(""),
-      syllable,
-    }));
-
-    return shuffle([...cvTargets, ...vcTargets]);
-  }
 
   return targets;
 }
@@ -447,7 +424,7 @@ export const LETTER_TTS: Record<string, string> = {
   "F": "Eff",
   "G": "Jee",
   "H": "Aitch",
-  "I": "Eye",
+  "I": "E",
   "J": "Jay",
   "K": "Kay",
   "L": "Ell",

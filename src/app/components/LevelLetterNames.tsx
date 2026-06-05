@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { supabase } from "../../lib/supabase";
 import { Confetti } from "./ui/Confetti";
 import { shuffle, allLetters, LETTER_NAMES, LETTER_TTS } from "../data/levels";
+import { applyMaleVoice } from "../utils/audio";
 
 interface LevelLetterNamesProps {
   levelId: number;
@@ -53,6 +54,7 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
       const name = LETTER_TTS[letter] || letter;
       const utterance = new SpeechSynthesisUtterance(name);
       utterance.rate = 0.85;
+      applyMaleVoice(utterance);
       window.speechSynthesis.speak(utterance);
     }
   };
@@ -90,25 +92,7 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
   const currentQuestion = stepQuestions[currentIndex];
   const progress = stepQuestions.length > 0 ? (currentIndex / stepQuestions.length) * 100 : 0;
 
-  // Auto-play review letter name when pair changes
-  useEffect(() => {
-    if (step.type === "review" && currentPair[0]) {
-      const t = setTimeout(() => {
-        playNameTTS(currentPair[0]);
-      }, 300);
-      return () => clearTimeout(t);
-    }
-  }, [currentStep, currentPairIndex, step.type]);
 
-  // Auto-play target name when match question changes
-  useEffect(() => {
-    if (step.type === "match" && currentQuestion) {
-      const t = setTimeout(() => {
-        playNameTTS(currentQuestion.targetLetter);
-      }, 400);
-      return () => clearTimeout(t);
-    }
-  }, [currentStep, currentIndex, currentQuestion, step.type]);
 
   const handleLetterClick = (letter: string) => {
     if (!letter) return;
