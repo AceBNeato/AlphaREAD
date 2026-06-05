@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { Home, Volume2, ArrowLeft, ArrowRight, Sparkles, CheckCircle2, XCircle, Mic, MicOff, AlertCircle, Shuffle, RotateCcw, SkipForward } from "lucide-react";
 import { Button } from "./ui/button";
@@ -49,7 +49,10 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
 
   // Voice Evaluation specific states
   const [evaluatingLetter, setEvaluatingLetter] = useState<string | null>(null);
-  const [voiceTranscript, setVoiceTranscript] = useState("");
+  const [completedVoiceLetters, setCompletedVoiceLetters] = useState<Set<string>>(new Set());
+  const [voiceFeedbackMap, setVoiceFeedbackMap] = useState<Record<string, "correct" | "wrong" | "close" | null>>({});
+  const [voiceTranscriptsMap, setVoiceTranscriptsMap] = useState<Record<string, string>>({});
+  const [shuffledVoiceLetters, setShuffledVoiceLetters] = useState<string[]>([]);
 
   // Global states
   const [showConfetti, setShowConfetti] = useState(false);
@@ -87,7 +90,7 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
   const stepQuestions = useMemo<Question[]>(() => {
     if (step.type === "review") return [];
     const shuffledTargets = shuffle([...step.letters]).slice(0, step.count);
-    
+
     if (step.type === "voice") {
       return shuffledTargets.map(target => ({ targetLetter: target, options: [] }));
     }
@@ -100,47 +103,53 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
       const options = shuffle([target, ...shuffledDistractors]);
       return { targetLetter: target, options };
     });
-  }, [currentStep, step.letters, step.count, step.type]); 
+  }, [currentStep, step.letters, step.count, step.type]);
 
   const currentQuestion = stepQuestions[currentIndex];
   const progress = stepQuestions.length > 0 ? (currentIndex / stepQuestions.length) * 100 : 0;
 
+  // Update shuffled letters when step changes
+  useEffect(() => {
+    if (step.type === "voice") {
+      setShuffledVoiceLetters([...step.letters]);
+      setCompletedVoiceLetters(new Set());
+      setVoiceFeedbackMap({});
+      setVoiceTranscriptsMap({});
+    }
+  }, [currentStep, step.type, step.letters]);
+
   // Voice Evaluation Hook
   const handleVoiceResult = useCallback((word: string, status: "correct" | "close" | "wrong" | null, transcript: string) => {
-    setVoiceTranscript(transcript);
-    
+    setVoiceTranscriptsMap(prev => ({ ...prev, [word]: transcript }));
+
     const tLower = transcript.toLowerCase();
     const lName = LETTER_NAMES[word]?.toLowerCase() || "";
     const lTTS = LETTER_TTS[word]?.toLowerCase() || "";
-    
+
     // Generous matching for single letters
-    const isCorrect = status === "correct" || status === "close" || 
-      tLower.includes(word.toLowerCase()) || 
-      (lName && tLower.includes(lName)) || 
+    const isCorrect = status === "correct" || status === "close" ||
+      tLower.includes(word.toLowerCase()) ||
+      (lName && tLower.includes(lName)) ||
       (lTTS && tLower.includes(lTTS));
 
     if (isCorrect) {
-      setFeedback("correct");
-      setShowConfetti(true);
+      setVoiceFeedbackMap(prev => ({ ...prev, [word]: "correct" }));
       setTimeout(() => {
         setEvaluatingLetter(null);
-        setShowConfetti(false);
-        if (currentIndex < stepQuestions.length - 1) {
-            setCurrentIndex(prev => prev + 1);
-            setFeedback(null);
-            setVoiceTranscript("");
-        } else {
-            handleStepNext();
-        }
-      }, 2000);
+        setCompletedVoiceLetters(prev => {
+          const newSet = new Set(prev);
+          newSet.add(word);
+          return newSet;
+        });
+      }, 1500);
     } else {
-      setFeedback("wrong");
+      setVoiceFeedbackMap(prev => ({ ...prev, [word]: "wrong" }));
       setTimeout(() => {
-        setFeedback(null);
+        setVoiceFeedbackMap(prev => ({ ...prev, [word]: null }));
         setEvaluatingLetter(null);
       }, 2000);
     }
-  }, [currentIndex, stepQuestions]);
+  }, []);
 
   useSpeechRecognition({
     evaluatingWord: evaluatingLetter,
@@ -148,15 +157,35 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
     onResult: handleVoiceResult,
     onError: () => setEvaluatingLetter(null),
     onSilenceTimeout: () => {
-      setFeedback("wrong");
-      setTimeout(() => {
-        setFeedback(null);
-        setEvaluatingLetter(null);
-      }, 1500);
+      if (evaluatingLetter) {
+        setVoiceFeedbackMap(prev => ({ ...prev, [evaluatingLetter]: "wrong" }));
+        setTimeout(() => {
+          setVoiceFeedbackMap(prev => ({ ...prev, [evaluatingLetter]: null }));
+          setEvaluatingLetter(null);
+        }, 1500);
+      }
     }
   });
 
+  const handleVoiceShuffle = () => {
+    setShuffledVoiceLetters(shuffle([...step.letters]));
+    setCompletedVoiceLetters(new Set());
+    setVoiceFeedbackMap({});
+    setVoiceTranscriptsMap({});
+  };
 
+  const handleVoiceReset = () => {
+    setCompletedVoiceLetters(new Set());
+    setVoiceFeedbackMap({});
+    setVoiceTranscriptsMap({});
+  };
+
+  const handleVoiceNext = () => {
+    setCompletedVoiceLetters(new Set());
+    setVoiceFeedbackMap({});
+    setVoiceTranscriptsMap({});
+    handleStepNext();
+  };
   const handleLetterClick = (letter: string) => {
     if (!letter) return;
     setClickedLetter(letter);
@@ -210,7 +239,6 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
       setFeedback(null);
       setSelectedAnswer(null);
       setWrongAnswers(new Set());
-      setVoiceTranscript("");
       setEvaluatingLetter(null);
     } else {
       setShowConfetti(true);
@@ -453,82 +481,124 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
             </motion.div>
           )}
 
-          {!showConfetti && step.type === "voice" && currentQuestion && (
+          {!showConfetti && step.type === "voice" && (
             <motion.div
               key={`voice-${currentStep}`}
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 1.05 }}
-              className="w-full max-w-xl mx-auto flex flex-col items-center"
+              className="w-full max-w-2xl mx-auto flex flex-col items-center"
             >
               <div className="text-center mb-6">
                 <h2 className="text-3xl font-black text-gray-800 dark:text-gray-100 mb-2">
                   Say the Name! 🗣️
                 </h2>
                 <p className="text-gray-500 dark:text-gray-400 text-sm">
-                  Tap the microphone and say the name of this letter loud and clear.
+                  Tap the microphone and say the name of the letter loud and clear.
                 </p>
               </div>
 
               {/* Controls */}
               <div className="flex justify-center gap-3 w-full mb-6">
-                <Button variant="outline" size="sm" onClick={() => { setCurrentIndex(0); setFeedback(null); setEvaluatingLetter(null); }} className="rounded-full flex items-center gap-2 border-gray-300">
+                <Button variant="outline" size="sm" onClick={handleVoiceShuffle} className="rounded-full flex items-center gap-2 border-gray-300">
                   <Shuffle className="w-4 h-4 text-gray-600" /> Shuffle
                 </Button>
-                <Button variant="outline" size="sm" onClick={() => { setCurrentIndex(0); setFeedback(null); setEvaluatingLetter(null); setVoiceTranscript(""); }} className="rounded-full flex items-center gap-2 border-gray-300">
+                <Button variant="outline" size="sm" onClick={handleVoiceReset} className="rounded-full flex items-center gap-2 border-gray-300">
                   <RotateCcw className="w-4 h-4 text-gray-600" /> Reset
                 </Button>
-                <Button variant="outline" size="sm" onClick={() => { setEvaluatingLetter(null); setFeedback(null); setVoiceTranscript(""); if (currentIndex < stepQuestions.length - 1) { setCurrentIndex(prev => prev + 1); } else { handleStepNext(); } }} className="rounded-full flex items-center gap-2 border-gray-300">
+                <Button size="sm" onClick={handleVoiceNext} disabled={completedVoiceLetters.size < shuffledVoiceLetters.length} className="rounded-full flex items-center gap-2 text-white shadow-md active:scale-95 transition-all" style={{ background: completedVoiceLetters.size >= shuffledVoiceLetters.length ? `linear-gradient(135deg, ${accent.primary}, ${accent.dark})` : "gray" }}>
+                  Next <ArrowRight className="w-4 h-4" />
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleVoiceNext} className="rounded-full flex items-center gap-2 border-gray-300">
                   Skip <SkipForward className="w-4 h-4 text-gray-600" />
                 </Button>
               </div>
 
-              <motion.div
-                className="w-full min-h-[160px] rounded-[2rem] bg-white dark:bg-gray-800 shadow-xl border-4 flex flex-col items-center justify-center p-8 mb-10 select-none text-center relative"
-                style={{ borderColor: feedback === 'correct' ? '#58CC02' : feedback === 'wrong' ? '#EF4444' : accent.primary }}
-              >
-                <span className="text-8xl font-black mb-2" style={{ color: accent.primary }}>
-                  {currentQuestion.targetLetter}
-                </span>
-                <span className="text-3xl font-medium opacity-40">
-                  {currentQuestion.targetLetter.toLowerCase()}
-                </span>
-                <Button
-                  onClick={() => playNameTTS(currentQuestion.targetLetter)}
-                  variant="ghost"
-                  className="rounded-full w-12 h-12 shadow-sm bg-gray-50 hover:bg-gray-100 absolute bottom-3 right-3"
-                >
-                  <Volume2 className="w-6 h-6 text-gray-500" />
-                </Button>
-              </motion.div>
+              <div className="w-full text-center mb-8">
+                <div className="space-y-3 bg-white/50 dark:bg-gray-800/50 p-4 rounded-3xl backdrop-blur-sm border-2 border-dashed border-gray-200 dark:border-gray-700 max-h-[60vh] overflow-y-auto">
+                  {shuffledVoiceLetters.map((l, idx) => {
+                    const isDone = completedVoiceLetters.has(l);
+                    const isEval = evaluatingLetter === l;
+                    const vFeedback = voiceFeedbackMap[l];
+                    const vTranscript = voiceTranscriptsMap[l];
 
-              <button
-                onClick={() => setEvaluatingLetter(currentQuestion.targetLetter)}
-                disabled={evaluatingLetter !== null || feedback === "correct"}
-                className={`w-32 h-32 rounded-full flex flex-col items-center justify-center text-white shadow-xl transition-all relative z-10 ${
-                  evaluatingLetter ? "bg-red-500 animate-pulse" : feedback === "correct" ? "bg-green-500" : "hover:scale-105 active:scale-95 cursor-pointer"
-                }`}
-                style={{
-                  background: !evaluatingLetter && feedback !== "correct" ? `linear-gradient(135deg, ${accent.primary}, ${accent.dark})` : undefined,
-                }}
-              >
-                {evaluatingLetter ? <Mic className="w-14 h-14 mb-1" /> : feedback === "correct" ? <CheckCircle2 className="w-14 h-14" /> : <MicOff className="w-14 h-14 mb-1" />}
-                <span className="text-[12px] uppercase font-bold tracking-widest">{evaluatingLetter ? "Listening" : "Speak"}</span>
-              </button>
+                    return (
+                      <div
+                        key={l}
+                        className={`flex items-center justify-between p-4 rounded-2xl border-2 transition-all ${isEval
+                          ? "bg-white dark:bg-gray-800 border-red-400 shadow-lg shadow-red-100 dark:shadow-red-900/20 scale-[1.02]"
+                          : vFeedback === "correct" || isDone
+                            ? "bg-[#58CC02]/10 border-[#58CC02]/30"
+                            : vFeedback === "wrong"
+                              ? "bg-red-50 border-red-200"
+                              : "bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 shadow-sm"
+                          }`}
+                      >
+                        <div className="flex items-center gap-4">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => playNameTTS(l)}
+                            className="rounded-full w-10 h-10 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 flex-shrink-0"
+                          >
+                            <Volume2 className="w-4 h-4" />
+                          </Button>
+                          <div className="flex flex-col items-start min-w-[60px]">
+                            <span className="text-3xl font-black text-gray-800 dark:text-gray-100 leading-none" style={{ color: isEval || isDone ? accent.primary : undefined }}>
+                              {l}
+                            </span>
+                            <span className="text-sm font-medium text-gray-400 dark:text-gray-500 uppercase tracking-widest mt-1">
+                              {l.toLowerCase()}
+                            </span>
+                          </div>
+                        </div>
 
-              <div className="text-center min-h-[40px] mt-6 w-full">
-                {evaluatingLetter && <p className="text-rose-500 font-bold text-sm uppercase">Listening...</p>}
-                {voiceTranscript && evaluatingLetter && <p className="text-gray-500 italic mt-2 text-sm">"{voiceTranscript}"</p>}
-                {feedback === "correct" && (
-                  <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-[#58CC02] font-bold text-lg">
-                    ✨ Perfect pronunciation!
-                  </motion.p>
-                )}
-                {feedback === "wrong" && (
-                  <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-red-500 font-bold text-lg flex items-center gap-2 justify-center">
-                    <AlertCircle className="w-5 h-5" /> Let's try again!
-                  </motion.p>
-                )}
+                        <div className="flex items-center gap-3">
+                          {isEval && vTranscript && (
+                            <span className="text-xs font-medium text-gray-500 italic max-w-[100px] truncate hidden sm:block">
+                              "{vTranscript}"
+                            </span>
+                          )}
+
+                          <button
+                            onClick={() => {
+                              if (!evaluatingLetter && !isDone) {
+                                setEvaluatingLetter(l);
+                                setVoiceFeedbackMap(prev => ({ ...prev, [l]: null }));
+                                setVoiceTranscriptsMap(prev => ({ ...prev, [l]: "" }));
+                              }
+                            }}
+                            disabled={evaluatingLetter !== null || isDone}
+                            className={`w-14 h-14 rounded-full flex flex-col items-center justify-center text-white shadow-md transition-all flex-shrink-0 ${isEval
+                              ? "bg-red-500 animate-pulse"
+                              : vFeedback === "correct" || isDone
+                                ? "bg-[#58CC02]"
+                                : vFeedback === "wrong"
+                                  ? "bg-red-400"
+                                  : "bg-teal-500 hover:bg-teal-600 hover:scale-105 active:scale-95 cursor-pointer"
+                              }`}
+                            style={{
+                              background: !isEval && vFeedback !== "correct" && !isDone && vFeedback !== "wrong" ? `linear-gradient(135deg, ${accent.primary}, ${accent.dark})` : undefined,
+                            }}
+                          >
+                            {isEval ? (
+                              <Mic className="w-6 h-6 mb-0.5" />
+                            ) : vFeedback === "correct" || isDone ? (
+                              <CheckCircle2 className="w-6 h-6" />
+                            ) : vFeedback === "wrong" ? (
+                              <XCircle className="w-6 h-6" />
+                            ) : (
+                              <MicOff className="w-6 h-6 mb-0.5" />
+                            )}
+                            <span className="text-[9px] uppercase font-bold tracking-widest">
+                              {isEval ? "..." : isDone ? "Done" : "Speak"}
+                            </span>
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </motion.div>
           )}
