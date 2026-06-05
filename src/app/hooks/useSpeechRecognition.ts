@@ -59,30 +59,30 @@ const HOMOPHONES: Record<string, string[]> = {
   // Alphabet phonetic homophones
   "A": ["a", "ay", "hey", "eight"],
   "B": ["b", "bee", "be"],
-  "C": ["c", "see", "sea", "si"],
-  "D": ["d", "dee"],
+  "C": ["c", "see", "sea"],
+  "D": ["d", "dee", "the"],
   "E": ["e", "ee"],
-  "F": ["f", "eff", "half"],
-  "G": ["g", "gee"],
-  "H": ["h", "aitch", "hatch", "age"],
-  "I": ["i", "eye", "aye"],
+  "F": ["f", "eff", "if", "half"],
+  "G": ["g", "gee", "jee"],
+  "H": ["h", "aitch", "hatch", "age", "each"],
+  "I": ["i", "eye", "hi"],
   "J": ["j", "jay"],
   "K": ["k", "kay", "okay"],
-  "L": ["l", "el", "ell"],
-  "M": ["m", "em", "emm", "am"],
-  "N": ["n", "en", "enn", "in", "an"],
-  "O": ["o", "oh", "owe"],
+  "L": ["l", "ell", "el"],
+  "M": ["m", "em", "am", "him"],
+  "N": ["n", "en", "an", "and", "in"],
+  "O": ["o", "oh"],
   "P": ["p", "pee", "pea"],
   "Q": ["q", "cue", "queue"],
-  "R": ["r", "ar", "are", "our"],
-  "S": ["s", "es", "ess", "us", "is"],
+  "R": ["r", "are", "our"],
+  "S": ["s", "ess", "yes", "is"],
   "T": ["t", "tee", "tea"],
-  "U": ["u", "you", "ewe"],
-  "V": ["v", "vee"],
-  "W": ["w", "double u", "double you", "double-u"],
-  "X": ["x", "ex", "axe"],
-  "Y": ["y", "why", "wife"],
-  "Z": ["z", "zee", "zed", "see"],
+  "U": ["u", "you"],
+  "V": ["v", "vee", "we"],
+  "W": ["w", "double u", "double you"],
+  "X": ["x", "ex", "axe", "text"],
+  "Y": ["y", "why", "while"],
+  "Z": ["z", "zee", "zed", "c"],
 
   // Common CV/VC homophones
   "PI": ["pie", "pee", "p"],
@@ -203,7 +203,7 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, onResult,
 
           for (let i = 0; i < results.length; i++) {
             const normalized = normalizeTranscript(results[i].transcript.trim());
-            const allowedWords = [wordUpper, ...(HOMOPHONES[wordUpper] || [])];
+            const allowedWords = [wordUpper, ...(HOMOPHONES[wordUpper] || [])].map(w => w.toUpperCase());
             const phraseWords = normalized.split(" ");
 
             if (allowedWords.some(t => normalized === t || phraseWords.includes(t))) {
