@@ -171,8 +171,35 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, onResult,
         let status: "correct" | "close" | "wrong" = "wrong";
         let matchStr = primaryTranscript;
 
+        // NEW PATH: Single Letter ("Say the Name")
+        const isSingleLetter = evaluatingWord.trim().length === 1 && /[A-Za-z]/.test(evaluatingWord.trim());
+
+        if (isSingleLetter) {
+          const letterUpper = evaluatingWord.toUpperCase().trim();
+          let matched = false;
+
+          for (let i = 0; i < results.length; i++) {
+            const normalized = normalizeTranscript(results[i].transcript);
+            // Dynamically add "LETTER X" fallback to handle Google API auto-corrections!
+            const allowedWords = [
+              letterUpper,
+              `LETTER ${letterUpper}`,
+              ...(HOMOPHONES[letterUpper] || [])
+            ].map(w => w.toUpperCase());
+            
+            const phraseWords = normalized.split(" ");
+
+            if (allowedWords.some(t => normalized === t || phraseWords.includes(t))) {
+              matched = true;
+              matchStr = letterUpper.toLowerCase();
+              break;
+            }
+          }
+          // Letters are either right or wrong—no "close" state.
+          status = matched ? "correct" : "wrong";
+        }
         // PATH A: CV / VC Syllable
-        if (isSyllableTarget(evaluatingWord)) {
+        else if (isSyllableTarget(evaluatingWord)) {
           const phonemeResult = evaluateSyllable(evaluatingWord, allTranscripts);
           status = phonemeResult;
           matchStr = (status === "correct" || status === "close") ? evaluatingWord.toLowerCase() : primaryTranscript;
