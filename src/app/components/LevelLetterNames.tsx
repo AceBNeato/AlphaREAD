@@ -1,12 +1,14 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router";
-import { Home, Volume2, ArrowLeft, ArrowRight, Sparkles, CheckCircle2, XCircle } from "lucide-react";
+import { Home, Volume2, ArrowLeft, ArrowRight, Sparkles, CheckCircle2, XCircle, Mic, MicOff, AlertCircle } from "lucide-react";
 import { Button } from "./ui/button";
 import { motion, AnimatePresence } from "motion/react";
 import { supabase } from "../../lib/supabase";
 import { Confetti } from "./ui/Confetti";
 import { shuffle, allLetters, LETTER_NAMES, LETTER_TTS } from "../data/levels";
 import { applyMaleVoice } from "../utils/audio";
+import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
+import { useAudioVisualizer } from "../hooks/useAudioVisualizer";
 
 interface LevelLetterNamesProps {
   levelId: number;
@@ -21,9 +23,12 @@ interface Question {
 const STEPS = [
   { id: 1, type: "review" as const, letters: ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"], title: "Review A-L" },
   { id: 2, type: "match" as const, letters: ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"], title: "Match A-L", count: 6 },
-  { id: 3, type: "review" as const, letters: ["M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"], title: "Review M-Z" },
-  { id: 4, type: "match" as const, letters: ["M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"], title: "Match M-Z", count: 7 },
-  { id: 5, type: "match" as const, letters: ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"], title: "Final Match A-Z", count: 10 },
+  { id: 3, type: "voice" as const, letters: ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"], title: "Speak A-L", count: 6 },
+  { id: 4, type: "review" as const, letters: ["M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"], title: "Review M-Z" },
+  { id: 5, type: "match" as const, letters: ["M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"], title: "Match M-Z", count: 7 },
+  { id: 6, type: "voice" as const, letters: ["M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"], title: "Speak M-Z", count: 7 },
+  { id: 7, type: "match" as const, letters: ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"], title: "Final Match", count: 10 },
+  { id: 8, type: "voice" as const, letters: ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"], title: "Final Speak", count: 10 },
 ];
 
 export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
@@ -36,21 +41,27 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
   const [currentPairIndex, setCurrentPairIndex] = useState(0);
   const [clickedLetter, setClickedLetter] = useState<string | null>(null);
 
-  // Match states
+  // Match/Voice states
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [wrongAnswers, setWrongAnswers] = useState<Set<string>>(new Set());
   const [feedback, setFeedback] = useState<"correct" | "wrong" | null>(null);
 
+  // Voice Evaluation specific states
+  const [evaluatingLetter, setEvaluatingLetter] = useState<string | null>(null);
+  const [voiceTranscript, setVoiceTranscript] = useState("");
+
   // Global states
   const [showConfetti, setShowConfetti] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+
+  const isMobile = useMemo(() => /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent), []);
+  useAudioVisualizer(isMobile, !!evaluatingLetter);
 
   // TTS utility
   const playNameTTS = (letter: string) => {
     if ("speechSynthesis" in window) {
       window.speechSynthesis.cancel();
-      // Use LETTER_TTS to control spoken pronunciation, keeping it separate from UI strings
       const name = LETTER_TTS[letter] || letter;
       const utterance = new SpeechSynthesisUtterance(name);
       utterance.rate = 0.85;
@@ -59,7 +70,6 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
     }
   };
 
-  // Generate pairs for the review phase of current step
   const currentSetPairs = useMemo(() => {
     if (step.type !== "review") return [];
     const p: [string, string][] = [];
@@ -75,10 +85,14 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
 
   const currentPair = currentSetPairs[currentPairIndex] || [];
 
-  // Generate questions for the match phase of current step (persisted per step)
   const stepQuestions = useMemo<Question[]>(() => {
-    if (step.type !== "match") return [];
+    if (step.type === "review") return [];
     const shuffledTargets = shuffle([...step.letters]).slice(0, step.count);
+    
+    if (step.type === "voice") {
+      return shuffledTargets.map(target => ({ targetLetter: target, options: [] }));
+    }
+
     return shuffledTargets.map((target) => {
       const distractors = allLetters
         .map((l) => l.letter)
@@ -87,11 +101,61 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
       const options = shuffle([target, ...shuffledDistractors]);
       return { targetLetter: target, options };
     });
-  }, [currentStep]); // Re-generate only when step advances
+  }, [currentStep, step.letters, step.count, step.type]); 
 
   const currentQuestion = stepQuestions[currentIndex];
   const progress = stepQuestions.length > 0 ? (currentIndex / stepQuestions.length) * 100 : 0;
 
+  // Voice Evaluation Hook
+  const handleVoiceResult = useCallback((word: string, status: "correct" | "close" | "wrong" | null, transcript: string) => {
+    setVoiceTranscript(transcript);
+    
+    const tLower = transcript.toLowerCase();
+    const lName = LETTER_NAMES[word]?.toLowerCase() || "";
+    const lTTS = LETTER_TTS[word]?.toLowerCase() || "";
+    
+    // Generous matching for single letters
+    const isCorrect = status === "correct" || status === "close" || 
+      tLower.includes(word.toLowerCase()) || 
+      (lName && tLower.includes(lName)) || 
+      (lTTS && tLower.includes(lTTS));
+
+    if (isCorrect) {
+      setFeedback("correct");
+      setShowConfetti(true);
+      setTimeout(() => {
+        setEvaluatingLetter(null);
+        setShowConfetti(false);
+        if (currentIndex < stepQuestions.length - 1) {
+            setCurrentIndex(prev => prev + 1);
+            setFeedback(null);
+            setVoiceTranscript("");
+        } else {
+            handleStepNext();
+        }
+      }, 2000);
+    } else {
+      setFeedback("wrong");
+      setTimeout(() => {
+        setFeedback(null);
+        setEvaluatingLetter(null);
+      }, 2000);
+    }
+  }, [currentIndex, stepQuestions]);
+
+  useSpeechRecognition({
+    evaluatingWord: evaluatingLetter,
+    enabled: !!evaluatingLetter,
+    onResult: handleVoiceResult,
+    onError: () => setEvaluatingLetter(null),
+    onSilenceTimeout: () => {
+      setFeedback("wrong");
+      setTimeout(() => {
+        setFeedback(null);
+        setEvaluatingLetter(null);
+      }, 1500);
+    }
+  });
 
 
   const handleLetterClick = (letter: string) => {
@@ -104,14 +168,12 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
   const handleOptionClick = (letter: string) => {
     if (!currentQuestion || feedback === "correct" || wrongAnswers.has(letter)) return;
 
-    // Play the name of the tapped option immediately so they learn what it is!
     playNameTTS(letter);
 
     if (letter === currentQuestion.targetLetter) {
       setFeedback("correct");
       setSelectedAnswer(letter);
 
-      // Play success chime after a short delay so TTS can be heard clearly
       setTimeout(() => {
         const audio = new Audio("https://assets.mixkit.co/active_storage/sfx/2013/2013-84.wav");
         audio.volume = 0.3;
@@ -125,7 +187,6 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
           setSelectedAnswer(null);
           setWrongAnswers(new Set());
         } else {
-          // Finished this quiz, go to next step
           handleStepNext();
         }
       }, 1600);
@@ -150,6 +211,8 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
       setFeedback(null);
       setSelectedAnswer(null);
       setWrongAnswers(new Set());
+      setVoiceTranscript("");
+      setEvaluatingLetter(null);
     } else {
       setShowConfetti(true);
     }
@@ -195,7 +258,6 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
     <div className="min-h-screen bg-gradient-to-br from-violet-50 via-purple-50 to-indigo-50 dark:bg-none dark:bg-[#0d141c] pb-12 flex flex-col">
       <Confetti active={showConfetti} />
 
-      {/* Header */}
       <div className="sticky top-0 z-10 bg-white/80 dark:bg-[#0d141c]/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 px-4 py-3">
         <div className="max-w-2xl mx-auto flex items-center justify-between gap-3">
           <Button variant="ghost" size="sm" onClick={handleGoBack} className="rounded-full">
@@ -229,7 +291,6 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
                 </p>
               </div>
 
-              {/* Pair Cards */}
               <div className="flex justify-center gap-6 mb-8">
                 {currentPair.map((l) => l ? (
                   <motion.div
@@ -254,7 +315,6 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
                 ) : null)}
               </div>
 
-              {/* Review Pagination Buttons */}
               <div className="flex justify-between items-center gap-4">
                 <Button
                   variant="outline"
@@ -282,7 +342,7 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
                     className="rounded-2xl flex-1 py-6 font-bold text-white shadow-lg"
                     style={{ background: "linear-gradient(135deg, #58CC02, #46a302)" }}
                   >
-                    Start Matching! <Sparkles className="w-5 h-5 ml-2" />
+                    Next Challenge! <Sparkles className="w-5 h-5 ml-2" />
                   </Button>
                 )}
               </div>
@@ -297,7 +357,6 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
               exit={{ opacity: 0, scale: 1.05 }}
               className="w-full"
             >
-              {/* Progress Bar */}
               <div className="w-full h-3 bg-gray-200/80 dark:bg-gray-800 rounded-full overflow-hidden mb-8 shadow-inner border border-gray-100 dark:border-gray-700/30">
                 <motion.div
                   initial={{ width: 0 }}
@@ -319,7 +378,6 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
                 </p>
               </div>
 
-              {/* Speaker Button */}
               <div className="flex justify-center mb-10">
                 <motion.button
                   whileHover={{ scale: 1.05 }}
@@ -338,7 +396,6 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
                 </motion.button>
               </div>
 
-              {/* Options grid */}
               <div className="grid grid-cols-3 gap-4 max-w-md mx-auto mb-10">
                 {currentQuestion?.options.map((letter) => {
                   const isCorrect = selectedAnswer === letter;
@@ -374,7 +431,6 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
                 })}
               </div>
 
-              {/* Feedback text */}
               <div className="text-center min-h-[40px]">
                 {feedback === "correct" && (
                   <motion.p
@@ -398,8 +454,94 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
             </motion.div>
           )}
 
-          {/* Celebration Screen */}
-          {showConfetti && (
+          {!showConfetti && step.type === "voice" && currentQuestion && (
+            <motion.div
+              key={`voice-${currentStep}`}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 1.05 }}
+              className="w-full max-w-md mx-auto flex flex-col items-center"
+            >
+              <div className="w-full h-3 bg-gray-200/80 dark:bg-gray-800 rounded-full overflow-hidden mb-8 shadow-inner border border-gray-100 dark:border-gray-700/30">
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${progress}%` }}
+                  transition={{ duration: 0.3, ease: "easeOut" }}
+                  className="h-full rounded-full"
+                  style={{
+                    background: `linear-gradient(90deg, ${accent.primary}, ${accent.dark})`,
+                  }}
+                />
+              </div>
+
+              <div className="text-center mb-8">
+                <h2 className="text-2xl font-black text-gray-800 dark:text-gray-100 mb-2">
+                  Say the Name! 🗣️
+                </h2>
+                <p className="text-gray-500 dark:text-gray-400 text-sm">
+                  Tap the microphone and say the name of this letter loud and clear.
+                </p>
+              </div>
+
+              <motion.div 
+                className="w-48 h-48 rounded-[3rem] bg-white dark:bg-gray-800 shadow-xl border-4 flex flex-col items-center justify-center mb-10 select-none relative"
+                style={{ borderColor: feedback === 'correct' ? '#58CC02' : feedback === 'wrong' ? '#EF4444' : accent.primary }}
+              >
+                <span className="text-8xl font-black" style={{ color: accent.primary }}>
+                  {currentQuestion.targetLetter}
+                </span>
+                <span className="text-3xl font-medium opacity-50 absolute bottom-4">
+                  {currentQuestion.targetLetter.toLowerCase()}
+                </span>
+              </motion.div>
+
+              <button
+                onClick={() => setEvaluatingLetter(currentQuestion.targetLetter)}
+                disabled={evaluatingLetter !== null || feedback === "correct"}
+                className={`w-28 h-28 rounded-full flex flex-col items-center justify-center text-white shadow-xl transition-all relative z-10 ${
+                  evaluatingLetter
+                    ? "bg-red-500 shadow-red-500/50 scale-110 animate-pulse"
+                    : feedback === "correct"
+                    ? "bg-green-500"
+                    : "bg-indigo-500 hover:bg-indigo-600 hover:scale-105 active:scale-95 cursor-pointer"
+                }`}
+                style={{
+                  background: !evaluatingLetter && feedback !== "correct" ? `linear-gradient(135deg, ${accent.primary}, ${accent.dark})` : undefined,
+                }}
+              >
+                {evaluatingLetter ? (
+                  <Mic className="w-12 h-12 mb-1" />
+                ) : feedback === "correct" ? (
+                  <CheckCircle2 className="w-12 h-12" />
+                ) : (
+                  <MicOff className="w-12 h-12 mb-1" />
+                )}
+                <span className="text-[10px] uppercase font-bold tracking-widest">
+                  {evaluatingLetter ? "Listening" : "Tap to Speak"}
+                </span>
+              </button>
+
+              <div className="text-center min-h-[40px] mt-6">
+                {evaluatingLetter && (
+                  <p className="text-rose-500 font-bold text-sm uppercase tracking-widest animate-pulse">
+                    {voiceTranscript ? `Heard: "${voiceTranscript}"` : "Speak Now..."}
+                  </p>
+                )}
+                {feedback === "correct" && (
+                  <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-[#58CC02] font-bold text-lg">
+                    ✨ Perfect pronunciation!
+                  </motion.p>
+                )}
+                {feedback === "wrong" && (
+                  <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-red-500 font-bold text-lg flex items-center gap-2 justify-center">
+                    <AlertCircle className="w-5 h-5" /> Let's try saying it again!
+                  </motion.p>
+                )}
+              </div>
+            </motion.div>
+          )}
+
+          {showConfetti && currentStep === STEPS.length - 1 && (
             <motion.div
               key="completion-screen"
               initial={{ opacity: 0, scale: 0.8 }}
