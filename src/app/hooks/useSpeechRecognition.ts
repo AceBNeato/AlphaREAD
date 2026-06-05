@@ -171,22 +171,26 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, onResult,
         let status: "correct" | "close" | "wrong" = "wrong";
         let matchStr = primaryTranscript;
 
-        // NEW PATH: Single Letter ("Say the Name")
-        const isSingleLetter = evaluatingWord.trim().length === 1 && /[A-Za-z]/.test(evaluatingWord.trim());
+        const trimmedWord = evaluatingWord.trim().toLowerCase();
+        
+        // NEW: Check if it's a single letter OR a magic E pattern (e.g., "a_e", "i_e")
+        const isSingleLetter = trimmedWord.length === 1 && /[a-z]/.test(trimmedWord);
+        const isMagicE = trimmedWord.length === 3 && /^[aeiou]_e$/.test(trimmedWord);
 
-        if (isSingleLetter) {
-          const letterUpper = evaluatingWord.toUpperCase().trim();
+        if (isSingleLetter || isMagicE) {
+          // If it's "a_e", grab just the "A". If it's a single letter, grab it.
+          const letterUpper = trimmedWord.charAt(0).toUpperCase();
           let matched = false;
 
           for (let i = 0; i < results.length; i++) {
             const normalized = normalizeTranscript(results[i].transcript);
-            // Dynamically add "LETTER X" fallback to handle Google API auto-corrections!
+            
+            // Look up the homophones for the base letter (e.g., "A")
             const allowedWords = [
               letterUpper,
               `LETTER ${letterUpper}`,
               ...(HOMOPHONES[letterUpper] || [])
             ].map(w => w.toUpperCase());
-            
             const phraseWords = normalized.split(" ");
 
             if (allowedWords.some(t => normalized === t || phraseWords.includes(t))) {
@@ -195,7 +199,6 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, onResult,
               break;
             }
           }
-          // Letters are either right or wrong—no "close" state.
           status = matched ? "correct" : "wrong";
         }
         // PATH A: CV / VC Syllable
