@@ -172,7 +172,7 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, onResult,
         let matchStr = primaryTranscript;
 
         const trimmedWord = evaluatingWord.trim().toLowerCase();
-        
+
         // NEW: Check if it's a single letter OR a magic E pattern (e.g., "a_e", "i_e")
         const isSingleLetter = trimmedWord.length === 1 && /[a-z]/.test(trimmedWord);
         const isMagicE = trimmedWord.length === 3 && /^[aeiou]_e$/.test(trimmedWord);
@@ -184,7 +184,7 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, onResult,
 
           for (let i = 0; i < results.length; i++) {
             const normalized = normalizeTranscript(results[i].transcript);
-            
+
             // Look up the homophones for the base letter (e.g., "A")
             const allowedWords = [
               letterUpper,

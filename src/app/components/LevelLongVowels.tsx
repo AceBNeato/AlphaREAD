@@ -5,7 +5,7 @@ import { Button } from "./ui/button";
 import { motion, AnimatePresence } from "motion/react";
 import { supabase } from "../../lib/supabase";
 import { Confetti } from "./ui/Confetti";
-import { LONG_VOWELS_DATA, LongVowelWord, LETTER_NAMES, LETTER_TTS, shuffle } from "../data/levels";
+import { LONG_VOWELS_DATA, LONG_VOWELS_SENTENCES, LongVowelWord, LETTER_NAMES, LETTER_TTS, shuffle } from "../data/levels";
 import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
 
 import { useAudioVisualizer } from "../hooks/useAudioVisualizer";
@@ -15,7 +15,7 @@ interface LevelLongVowelsProps {
   accent: { primary: string; dark: string; lightBg: string };
 }
 
-type Phase = "review" | "patterns" | "words";
+type Phase = "review" | "patterns" | "words" | "sentences";
 
 const VOWELS = ["A", "E", "I", "O", "U"];
 
@@ -58,12 +58,25 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
   const [activeWords, setActiveWords] = useState<{ word: string; vowel: string }[]>([]);
   const [wordIdx, setWordIdx] = useState(0);
 
+  // Sentence Quiz State
+  const SENTENCES_PER_SET = 10;
+  const totalSentenceSets = Math.ceil(LONG_VOWELS_SENTENCES.length / SENTENCES_PER_SET);
+  const [sentenceSetIdx, setSentenceSetIdx] = useState(0);
+  const [activeSentences, setActiveSentences] = useState<string[]>([]);
+
   useEffect(() => {
     setActiveWords(allWordsRaw.slice(wordSetIdx * WORDS_PER_SET, wordSetIdx * WORDS_PER_SET + WORDS_PER_SET));
     setCompletedWords(new Set());
     setWordFeedbackMap({});
     setWordTranscriptsMap({});
   }, [wordSetIdx, allWordsRaw]);
+
+  useEffect(() => {
+    setActiveSentences(LONG_VOWELS_SENTENCES.slice(sentenceSetIdx * SENTENCES_PER_SET, sentenceSetIdx * SENTENCES_PER_SET + SENTENCES_PER_SET));
+    setCompletedSentences(new Set());
+    setSentenceFeedbackMap({});
+    setSentenceTranscriptsMap({});
+  }, [sentenceSetIdx]);
 
   // Voice Eval States
   const [evaluatingPatternId, setEvaluatingPatternId] = useState<string | null>(null);
@@ -75,19 +88,27 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
   const [completedWords, setCompletedWords] = useState<Set<string>>(new Set());
   const [wordFeedbackMap, setWordFeedbackMap] = useState<Record<string, "correct" | "wrong" | null>>({});
   const [wordTranscriptsMap, setWordTranscriptsMap] = useState<Record<string, string>>({});
-  
+
+  const [evaluatingSentenceId, setEvaluatingSentenceId] = useState<string | null>(null);
+  const [completedSentences, setCompletedSentences] = useState<Set<string>>(new Set());
+  const [sentenceFeedbackMap, setSentenceFeedbackMap] = useState<Record<string, "correct" | "wrong" | null>>({});
+  const [sentenceTranscriptsMap, setSentenceTranscriptsMap] = useState<Record<string, string>>({});
+
   const [showConfetti, setShowConfetti] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
   const evaluatingTargetForMic = useMemo(() => {
     if (currentPhase === "patterns" && evaluatingPatternId) {
-       return allPatternsRaw.find(p => p.pattern === evaluatingPatternId)?.vowel || null;
+      return allPatternsRaw.find(p => p.pattern === evaluatingPatternId)?.vowel || null;
     }
     if (currentPhase === "words" && evaluatingWordId) {
-       return evaluatingWordId;
+      return evaluatingWordId;
+    }
+    if (currentPhase === "sentences" && evaluatingSentenceId) {
+      return evaluatingSentenceId;
     }
     return null;
-  }, [currentPhase, evaluatingPatternId, evaluatingWordId, allPatternsRaw]);
+  }, [currentPhase, evaluatingPatternId, evaluatingWordId, evaluatingSentenceId, allPatternsRaw]);
 
   const isMobile = useMemo(() => /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent), []);
   useAudioVisualizer(isMobile, !!evaluatingTargetForMic);
@@ -107,9 +128,7 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
   };
 
   const handleNextQuiz = useCallback(() => {
-    if (currentPhase === "patterns") {
-      setShowConfetti(true);
-    } else if (currentPhase === "words") {
+    if (currentPhase === "patterns" || currentPhase === "words" || currentPhase === "sentences") {
       setShowConfetti(true);
     }
   }, [currentPhase]);
@@ -124,7 +143,7 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
         const vName = LETTER_NAMES[target]?.toLowerCase() || "";
         const vTTS = LETTER_TTS[target]?.toLowerCase() || "";
         isCorrect = tLower.includes(vName) || tLower.includes(vTTS) || tLower.includes(target.toLowerCase());
-        
+
         if (isCorrect) {
           setPatternFeedbackMap(prev => ({ ...prev, [evaluatingPatternId]: "correct" }));
           setTimeout(() => {
@@ -153,9 +172,24 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
             setEvaluatingWordId(null);
           }, 2000);
         }
+      } else if (currentPhase === "sentences" && evaluatingSentenceId) {
+        setSentenceTranscriptsMap(prev => ({ ...prev, [evaluatingSentenceId]: transcript }));
+        if (isCorrect) {
+          setSentenceFeedbackMap(prev => ({ ...prev, [evaluatingSentenceId]: "correct" }));
+          setTimeout(() => {
+            setCompletedSentences(prev => new Set(prev).add(evaluatingSentenceId));
+            setEvaluatingSentenceId(null);
+          }, 1500);
+        } else {
+          setSentenceFeedbackMap(prev => ({ ...prev, [evaluatingSentenceId]: "wrong" }));
+          setTimeout(() => {
+            setSentenceFeedbackMap(prev => ({ ...prev, [evaluatingSentenceId]: null }));
+            setEvaluatingSentenceId(null);
+          }, 2000);
+        }
       }
     },
-    [currentPhase, evaluatingPatternId, evaluatingWordId]
+    [currentPhase, evaluatingPatternId, evaluatingWordId, evaluatingSentenceId]
   );
 
   useSpeechRecognition({
@@ -163,8 +197,9 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
     enabled: !!evaluatingTargetForMic,
     onResult: handleResult,
     onError: () => {
-       setEvaluatingPatternId(null);
-       setEvaluatingWordId(null);
+      setEvaluatingPatternId(null);
+      setEvaluatingWordId(null);
+      setEvaluatingSentenceId(null);
     },
     onSilenceTimeout: () => {
       if (currentPhase === "patterns" && evaluatingPatternId) {
@@ -179,6 +214,12 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
           setWordFeedbackMap(prev => ({ ...prev, [evaluatingWordId]: null }));
           setEvaluatingWordId(null);
         }, 1500);
+      } else if (currentPhase === "sentences" && evaluatingSentenceId) {
+        setSentenceFeedbackMap(prev => ({ ...prev, [evaluatingSentenceId]: "wrong" }));
+        setTimeout(() => {
+          setSentenceFeedbackMap(prev => ({ ...prev, [evaluatingSentenceId]: null }));
+          setEvaluatingSentenceId(null);
+        }, 1500);
       }
     }
   });
@@ -189,11 +230,16 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
       setCompletedPatterns(new Set());
       setPatternFeedbackMap({});
       setPatternTranscriptsMap({});
-    } else {
+    } else if (currentPhase === "words") {
       setActiveWords(shuffle([...activeWords]));
       setCompletedWords(new Set());
       setWordFeedbackMap({});
       setWordTranscriptsMap({});
+    } else if (currentPhase === "sentences") {
+      setActiveSentences(shuffle([...activeSentences]));
+      setCompletedSentences(new Set());
+      setSentenceFeedbackMap({});
+      setSentenceTranscriptsMap({});
     }
   };
 
@@ -202,10 +248,14 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
       setCompletedPatterns(new Set());
       setPatternFeedbackMap({});
       setPatternTranscriptsMap({});
-    } else {
+    } else if (currentPhase === "words") {
       setCompletedWords(new Set());
       setWordFeedbackMap({});
       setWordTranscriptsMap({});
+    } else if (currentPhase === "sentences") {
+      setCompletedSentences(new Set());
+      setSentenceFeedbackMap({});
+      setSentenceTranscriptsMap({});
     }
   };
 
@@ -213,8 +263,11 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
     if (currentPhase === "patterns") {
       setCompletedPatterns(new Set(activePatterns.map(p => p.pattern)));
       handleNextQuiz();
-    } else {
+    } else if (currentPhase === "words") {
       setCompletedWords(new Set(activeWords.map(w => w.word)));
+      handleNextQuiz();
+    } else if (currentPhase === "sentences") {
+      setCompletedSentences(new Set(activeSentences));
       handleNextQuiz();
     }
   };
@@ -302,9 +355,9 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
                       key={pattern.pattern}
                       className="bg-white dark:bg-gray-800/80 rounded-3xl p-6 border-2 border-amber-200 dark:border-gray-700 shadow-lg flex flex-col justify-start"
                     >
-                      <div 
-                         onClick={() => playTTS(VOWELS[reviewIdx])}
-                         className="text-center border-b-2 border-dashed border-amber-100 dark:border-gray-700 pb-4 mb-6 cursor-pointer hover:bg-amber-50 dark:hover:bg-gray-700 rounded-xl transition-colors active:scale-95"
+                      <div
+                        onClick={() => playTTS(VOWELS[reviewIdx])}
+                        className="text-center border-b-2 border-dashed border-amber-100 dark:border-gray-700 pb-4 mb-6 cursor-pointer hover:bg-amber-50 dark:hover:bg-gray-700 rounded-xl transition-colors active:scale-95"
                       >
                         <span className="text-xs uppercase font-bold tracking-wider text-amber-500 dark:text-amber-400 block mb-1">
                           {pattern.name}
@@ -352,7 +405,7 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
                 >
                   <ArrowLeft className="w-5 h-5 mr-2" /> Back
                 </Button>
-                
+
                 {reviewIdx < 4 ? (
                   <Button
                     size="lg"
@@ -418,17 +471,9 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
                     return (
                       <div
                         key={p.pattern}
-                        className={`flex items-center justify-between p-4 rounded-2xl border-2 transition-all ${
-                          isEval
-                            ? "bg-white dark:bg-gray-800 border-red-400 shadow-lg shadow-red-100 dark:shadow-red-900/20 scale-[1.02]"
-                            : vFeedback === "correct" || isDone
-                            ? "bg-[#58CC02]/10 border-[#58CC02]/30"
-                            : vFeedback === "wrong"
-                            ? "bg-red-50 border-red-200"
-                            : "bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 shadow-sm"
-                        }`}
+                        className={`flex items-center justify-between p-4 rounded-2xl transition-all ${isDone || vFeedback === "correct" ? 'bg-green-50 dark:bg-green-900/20' : vFeedback === "wrong" ? 'bg-red-50 dark:bg-red-900/10' : 'bg-white dark:bg-gray-800'} shadow-sm border-2 ${isEval ? 'border-pink-400 shadow-md' : isDone || vFeedback === "correct" ? 'border-green-200' : vFeedback === "wrong" ? 'border-red-200' : 'border-transparent hover:border-gray-300 dark:hover:border-gray-600'}`}
                       >
-                        <div className="flex items-center gap-4">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
                           <Button
                             variant="ghost"
                             size="sm"
@@ -437,14 +482,12 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
                           >
                             <Volume2 className="w-4 h-4" />
                           </Button>
-                          <div className="flex flex-col items-start min-w-[60px]">
-                            <span className="text-3xl font-black text-gray-800 dark:text-gray-100 leading-none" style={{ color: isEval || isDone ? accent.primary : undefined }}>
-                              {p.pattern}
-                            </span>
-                            <span className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">
-                              {p.name}
-                            </span>
-                          </div>
+                          <span className="text-3xl font-bold min-w-[60px] text-left tracking-widest uppercase flex items-center gap-1.5" style={{ color: isDone || vFeedback === "correct" ? '#58CC02' : accent.primary }}>
+                            {p.pattern}
+                          </span>
+                          <span className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1 sm:mt-0">
+                            {p.name}
+                          </span>
                         </div>
 
                         <div className="flex items-center gap-3">
@@ -463,30 +506,23 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
                               }
                             }}
                             disabled={evaluatingPatternId !== null || isDone}
-                            className={`w-14 h-14 rounded-full flex flex-col items-center justify-center text-white shadow-md transition-all flex-shrink-0 ${
-                              isEval
-                                ? "bg-red-500 animate-pulse"
-                                : vFeedback === "correct" || isDone
-                                ? "bg-[#58CC02]"
+                            className={`relative w-12 h-12 rounded-xl flex items-center justify-center transition-all flex-shrink-0 ${isDone || vFeedback === "correct"
+                              ? 'bg-green-500 text-white shadow-none opacity-50 cursor-default'
+                              : isEval
+                                ? 'bg-red-500 text-white shadow-lg'
                                 : vFeedback === "wrong"
-                                ? "bg-red-400"
-                                : "bg-amber-500 hover:bg-amber-600 hover:scale-105 active:scale-95 cursor-pointer"
-                            }`}
-                            style={{
-                              background: !isEval && vFeedback !== "correct" && !isDone && vFeedback !== "wrong" ? `linear-gradient(135deg, ${accent.primary}, ${accent.dark})` : undefined,
-                            }}
+                                  ? 'bg-red-400 text-white'
+                                  : 'bg-gradient-to-br from-pink-500 to-rose-500 text-white shadow-md hover:scale-105 active:scale-95'
+                              }`}
                           >
-                            {isEval ? (
-                              <Mic className="w-6 h-6 mb-0.5" />
-                            ) : vFeedback === "correct" || isDone ? (
-                              <CheckCircle2 className="w-6 h-6" />
-                            ) : vFeedback === "wrong" ? (
-                              <XCircle className="w-6 h-6" />
-                            ) : (
-                              <MicOff className="w-6 h-6 mb-0.5" />
+                            {isEval && (
+                              <>
+                                <span className="absolute inset-0 rounded-xl bg-red-500/40 animate-ping" />
+                                <span className="absolute -inset-1 rounded-xl bg-red-500/20 animate-pulse" />
+                              </>
                             )}
-                            <span className="text-[9px] uppercase font-bold tracking-widest">
-                              {isEval ? "..." : isDone ? "Done" : "Speak"}
+                            <span className="relative z-10">
+                              {isDone || vFeedback === "correct" ? <CheckCircle2 className="w-6 h-6" /> : vFeedback === "wrong" ? <XCircle className="w-6 h-6" /> : isEval ? <MicOff className="w-5 h-5 animate-bounce" /> : <Mic className="w-5 h-5" />}
                             </span>
                           </button>
                         </div>
@@ -497,7 +533,7 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
               </div>
             </motion.div>
           ) : !showConfetti && currentPhase === "words" ? (
-             <motion.div
+            <motion.div
               key={`phase-words-${wordSetIdx}`}
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -540,17 +576,9 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
                     return (
                       <div
                         key={w.word}
-                        className={`flex items-center justify-between p-4 rounded-2xl border-2 transition-all ${
-                          isEval
-                            ? "bg-white dark:bg-gray-800 border-red-400 shadow-lg shadow-red-100 dark:shadow-red-900/20 scale-[1.02]"
-                            : vFeedback === "correct" || isDone
-                            ? "bg-[#58CC02]/10 border-[#58CC02]/30"
-                            : vFeedback === "wrong"
-                            ? "bg-red-50 border-red-200"
-                            : "bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 shadow-sm"
-                        }`}
+                        className={`flex items-center justify-between p-4 rounded-2xl transition-all ${isDone || vFeedback === "correct" ? 'bg-green-50 dark:bg-green-900/20' : vFeedback === "wrong" ? 'bg-red-50 dark:bg-red-900/10' : 'bg-white dark:bg-gray-800'} shadow-sm border-2 ${isEval ? 'border-pink-400 shadow-md' : isDone || vFeedback === "correct" ? 'border-green-200' : vFeedback === "wrong" ? 'border-red-200' : 'border-transparent hover:border-gray-300 dark:hover:border-gray-600'}`}
                       >
-                        <div className="flex items-center gap-4">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
                           <Button
                             variant="ghost"
                             size="sm"
@@ -559,14 +587,12 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
                           >
                             <Volume2 className="w-4 h-4" />
                           </Button>
-                          <div className="flex flex-col items-start min-w-[60px]">
-                            <span className="text-3xl font-black text-gray-800 dark:text-gray-100 leading-none" style={{ color: isEval || isDone ? accent.primary : undefined }}>
-                              {w.word}
-                            </span>
-                            <span className="text-[10px] font-bold text-gray-300 uppercase tracking-widest mt-1">
-                              Long {w.vowel}
-                            </span>
-                          </div>
+                          <span className="text-3xl font-bold min-w-[60px] text-left tracking-widest uppercase flex items-center gap-1.5" style={{ color: isDone || vFeedback === "correct" ? '#58CC02' : accent.primary }}>
+                            {w.word}
+                          </span>
+                          <span className="text-[10px] font-bold text-gray-300 uppercase tracking-widest mt-1 sm:mt-0">
+                            Long {w.vowel}
+                          </span>
                         </div>
 
                         <div className="flex items-center gap-3">
@@ -585,30 +611,125 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
                               }
                             }}
                             disabled={evaluatingWordId !== null || isDone}
-                            className={`w-14 h-14 rounded-full flex flex-col items-center justify-center text-white shadow-md transition-all flex-shrink-0 ${
-                              isEval
-                                ? "bg-red-500 animate-pulse"
-                                : vFeedback === "correct" || isDone
-                                ? "bg-[#58CC02]"
+                            className={`relative w-12 h-12 rounded-xl flex items-center justify-center transition-all flex-shrink-0 ${isDone || vFeedback === "correct"
+                              ? 'bg-green-500 text-white shadow-none opacity-50 cursor-default'
+                              : isEval
+                                ? 'bg-red-500 text-white shadow-lg'
                                 : vFeedback === "wrong"
-                                ? "bg-red-400"
-                                : "bg-amber-500 hover:bg-amber-600 hover:scale-105 active:scale-95 cursor-pointer"
-                            }`}
-                            style={{
-                              background: !isEval && vFeedback !== "correct" && !isDone && vFeedback !== "wrong" ? `linear-gradient(135deg, ${accent.primary}, ${accent.dark})` : undefined,
-                            }}
+                                  ? 'bg-red-400 text-white'
+                                  : 'bg-gradient-to-br from-pink-500 to-rose-500 text-white shadow-md hover:scale-105 active:scale-95'
+                              }`}
                           >
-                            {isEval ? (
-                              <Mic className="w-6 h-6 mb-0.5" />
-                            ) : vFeedback === "correct" || isDone ? (
-                              <CheckCircle2 className="w-6 h-6" />
-                            ) : vFeedback === "wrong" ? (
-                              <XCircle className="w-6 h-6" />
-                            ) : (
-                              <MicOff className="w-6 h-6 mb-0.5" />
+                            {isEval && (
+                              <>
+                                <span className="absolute inset-0 rounded-xl bg-red-500/40 animate-ping" />
+                                <span className="absolute -inset-1 rounded-xl bg-red-500/20 animate-pulse" />
+                              </>
                             )}
-                            <span className="text-[9px] uppercase font-bold tracking-widest">
-                              {isEval ? "..." : isDone ? "Done" : "Speak"}
+                            <span className="relative z-10">
+                              {isDone || vFeedback === "correct" ? <CheckCircle2 className="w-6 h-6" /> : vFeedback === "wrong" ? <XCircle className="w-6 h-6" /> : isEval ? <MicOff className="w-5 h-5 animate-bounce" /> : <Mic className="w-5 h-5" />}
+                            </span>
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </motion.div>
+          ) : !showConfetti && currentPhase === "sentences" ? (
+            <motion.div
+              key={`phase-sentences-${sentenceSetIdx}`}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 1.05 }}
+              className="w-full max-w-2xl mx-auto flex flex-col items-center"
+            >
+              <div className="text-center mb-8">
+                <h2 className="text-3xl font-black text-gray-800 dark:text-gray-100 mb-2">
+                  Read the Sentences! 🗣️
+                </h2>
+                <p className="text-gray-500 dark:text-gray-400 text-sm">
+                  Say each sentence out loud into the microphone.
+                </p>
+              </div>
+
+              {/* Controls */}
+              <div className="flex justify-center gap-3 w-full mb-6">
+                <Button variant="outline" size="sm" onClick={handleShuffle} className="rounded-full flex items-center gap-2 border-amber-300">
+                  <Shuffle className="w-4 h-4 text-amber-600" /> Shuffle
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleReset} className="rounded-full flex items-center gap-2 border-amber-300">
+                  <RotateCcw className="w-4 h-4 text-amber-600" /> Reset
+                </Button>
+                <Button size="sm" onClick={handleSkip} disabled={completedSentences.size < activeSentences.length} className="rounded-full flex items-center gap-2 text-white shadow-md active:scale-95 transition-all" style={{ background: completedSentences.size >= activeSentences.length ? `linear-gradient(135deg, ${accent.primary}, ${accent.dark})` : "gray" }}>
+                  Next <ArrowRight className="w-4 h-4" />
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleSkip} className="rounded-full flex items-center gap-2 border-amber-300">
+                  Skip <SkipForward className="w-4 h-4 text-amber-600" />
+                </Button>
+              </div>
+
+              <div className="w-full text-center mb-8">
+                <div className="space-y-3 bg-white/50 dark:bg-gray-800/50 p-4 rounded-3xl backdrop-blur-sm border-2 border-dashed border-gray-200 dark:border-gray-700 max-h-[60vh] overflow-y-auto">
+                  {activeSentences.map((s, idx) => {
+                    const isDone = completedSentences.has(s);
+                    const isEval = evaluatingSentenceId === s;
+                    const vFeedback = sentenceFeedbackMap[s];
+                    const vTranscript = sentenceTranscriptsMap[s];
+
+                    return (
+                      <div
+                        key={s}
+                        className={`flex items-center justify-between p-4 rounded-2xl transition-all ${isDone || vFeedback === "correct" ? 'bg-green-50 dark:bg-green-900/20' : vFeedback === "wrong" ? 'bg-red-50 dark:bg-red-900/10' : 'bg-white dark:bg-gray-800'} shadow-sm border-2 ${isEval ? 'border-pink-400 shadow-md' : isDone || vFeedback === "correct" ? 'border-green-200' : vFeedback === "wrong" ? 'border-red-200' : 'border-transparent hover:border-gray-300 dark:hover:border-gray-600'}`}
+                      >
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => playTTS(s)}
+                            className="rounded-full w-10 h-10 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 flex-shrink-0"
+                          >
+                            <Volume2 className="w-4 h-4" />
+                          </Button>
+                          <span className="text-xl font-bold text-left leading-snug flex items-center gap-1.5" style={{ color: isDone || vFeedback === "correct" ? '#58CC02' : accent.primary }}>
+                            {s}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                          {isEval && vTranscript && (
+                            <span className="text-xs font-medium text-gray-500 italic max-w-[150px] truncate hidden sm:block">
+                              "{vTranscript}"
+                            </span>
+                          )}
+
+                          <button
+                            onClick={() => {
+                              if (!evaluatingSentenceId && !isDone) {
+                                setEvaluatingSentenceId(s);
+                                setSentenceFeedbackMap(prev => ({ ...prev, [s]: null }));
+                                setSentenceTranscriptsMap(prev => ({ ...prev, [s]: "" }));
+                              }
+                            }}
+                            disabled={evaluatingSentenceId !== null || isDone}
+                            className={`relative w-12 h-12 rounded-xl flex items-center justify-center transition-all flex-shrink-0 ${isDone || vFeedback === "correct"
+                              ? 'bg-green-500 text-white shadow-none opacity-50 cursor-default'
+                              : isEval
+                                ? 'bg-red-500 text-white shadow-lg'
+                                : vFeedback === "wrong"
+                                  ? 'bg-red-400 text-white'
+                                  : 'bg-gradient-to-br from-pink-500 to-rose-500 text-white shadow-md hover:scale-105 active:scale-95'
+                              }`}
+                          >
+                            {isEval && (
+                              <>
+                                <span className="absolute inset-0 rounded-xl bg-red-500/40 animate-ping" />
+                                <span className="absolute -inset-1 rounded-xl bg-red-500/20 animate-pulse" />
+                              </>
+                            )}
+                            <span className="relative z-10">
+                              {isDone || vFeedback === "correct" ? <CheckCircle2 className="w-6 h-6" /> : vFeedback === "wrong" ? <XCircle className="w-6 h-6" /> : isEval ? <MicOff className="w-5 h-5 animate-bounce" /> : <Mic className="w-5 h-5" />}
                             </span>
                           </button>
                         </div>
@@ -634,19 +755,23 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
               </motion.div>
 
               <h3 className="text-3xl font-black mb-4" style={{ color: accent.primary }}>
-                {currentPhase === "patterns" ? "Patterns Mastered!" : wordSetIdx === totalWordSets - 1 ? "Lesson Mastered!" : "Set Complete!"}
+                {currentPhase === "patterns" ? "Patterns Mastered!" : currentPhase === "words" ? (wordSetIdx === totalWordSets - 1 ? "Words Mastered!" : "Set Complete!") : sentenceSetIdx === totalSentenceSets - 1 ? "Lesson Mastered!" : "Set Complete!"}
               </h3>
 
               <p className="text-gray-600 dark:text-gray-400 mb-8 leading-relaxed">
-                {currentPhase === "patterns" 
-                  ? "You correctly identified all the long vowel patterns! Ready to read some words?" 
-                  : wordSetIdx === totalWordSets - 1 
-                    ? "You successfully read all the long vowel words out loud! Awesome job!" 
-                    : "You successfully read 10 long vowel words! Ready for the next set?"}
+                {currentPhase === "patterns"
+                  ? "You correctly identified all the long vowel patterns! Ready to read some words?"
+                  : currentPhase === "words"
+                    ? (wordSetIdx === totalWordSets - 1
+                      ? "You successfully read all the long vowel words out loud! Ready for sentences?"
+                      : "You successfully read 10 long vowel words! Ready for the next set?")
+                    : (sentenceSetIdx === totalSentenceSets - 1
+                      ? "You successfully read all the sentences! Awesome job!"
+                      : "You successfully read 10 sentences! Ready for the next set?")}
               </p>
-              
+
               {currentPhase === "patterns" ? (
-                 <Button
+                <Button
                   onClick={() => {
                     setCurrentPhase("words");
                     setShowConfetti(false);
@@ -657,7 +782,33 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
                 >
                   Start Reading Words <ArrowRight className="ml-2 w-5 h-5" />
                 </Button>
-              ) : wordSetIdx === totalWordSets - 1 ? (
+              ) : currentPhase === "words" ? (
+                wordSetIdx === totalWordSets - 1 ? (
+                  <Button
+                    onClick={() => {
+                      setCurrentPhase("sentences");
+                      setShowConfetti(false);
+                    }}
+                    size="lg"
+                    className="rounded-2xl px-10 py-6 text-lg text-white font-bold w-full shadow-xl animate-bounce"
+                    style={{ background: `linear-gradient(135deg, ${accent.primary} 0%, ${accent.dark} 100%)` }}
+                  >
+                    Start Reading Sentences <ArrowRight className="ml-2 w-5 h-5" />
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={() => {
+                      setWordSetIdx(prev => prev + 1);
+                      setShowConfetti(false);
+                    }}
+                    size="lg"
+                    className="rounded-2xl px-10 py-6 text-lg text-white font-bold w-full shadow-xl animate-bounce"
+                    style={{ background: `linear-gradient(135deg, ${accent.primary} 0%, ${accent.dark} 100%)` }}
+                  >
+                    Start Next 10 Words <ArrowRight className="ml-2 w-5 h-5" />
+                  </Button>
+                )
+              ) : sentenceSetIdx === totalSentenceSets - 1 ? (
                 <Button
                   disabled={isSaving}
                   onClick={handleFinish}
@@ -668,16 +819,16 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
                   {isSaving ? "Saving..." : "Back to Levels"}
                 </Button>
               ) : (
-                 <Button
+                <Button
                   onClick={() => {
-                    setWordSetIdx(prev => prev + 1);
+                    setSentenceSetIdx(prev => prev + 1);
                     setShowConfetti(false);
                   }}
                   size="lg"
                   className="rounded-2xl px-10 py-6 text-lg text-white font-bold w-full shadow-xl animate-bounce"
                   style={{ background: `linear-gradient(135deg, ${accent.primary} 0%, ${accent.dark} 100%)` }}
                 >
-                  Start Next 10 Words <ArrowRight className="ml-2 w-5 h-5" />
+                  Start Next 10 Sentences <ArrowRight className="ml-2 w-5 h-5" />
                 </Button>
               )}
             </motion.div>

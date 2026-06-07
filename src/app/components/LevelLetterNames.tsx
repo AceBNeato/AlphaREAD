@@ -525,16 +525,9 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
                     return (
                       <div
                         key={l}
-                        className={`flex items-center justify-between p-4 rounded-2xl border-2 transition-all ${isEval
-                          ? "bg-white dark:bg-gray-800 border-red-400 shadow-lg shadow-red-100 dark:shadow-red-900/20 scale-[1.02]"
-                          : vFeedback === "correct" || isDone
-                            ? "bg-[#58CC02]/10 border-[#58CC02]/30"
-                            : vFeedback === "wrong"
-                              ? "bg-red-50 border-red-200"
-                              : "bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 shadow-sm"
-                          }`}
+                        className={`flex items-center justify-between p-4 rounded-2xl transition-all ${isDone || vFeedback === "correct" ? 'bg-green-50 dark:bg-green-900/20' : vFeedback === "wrong" ? 'bg-red-50 dark:bg-red-900/10' : 'bg-white dark:bg-gray-800'} shadow-sm border-2 ${isEval ? 'border-pink-400 shadow-md' : isDone || vFeedback === "correct" ? 'border-green-200' : vFeedback === "wrong" ? 'border-red-200' : 'border-transparent hover:border-gray-300 dark:hover:border-gray-600'}`}
                       >
-                        <div className="flex items-center gap-4">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
                           <Button
                             variant="ghost"
                             size="sm"
@@ -543,14 +536,9 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
                           >
                             <Volume2 className="w-4 h-4" />
                           </Button>
-                          <div className="flex flex-col items-start min-w-[60px]">
-                            <span className="text-3xl font-black text-gray-800 dark:text-gray-100 leading-none" style={{ color: isEval || isDone ? accent.primary : undefined }}>
-                              {l}
-                            </span>
-                            <span className="text-sm font-medium text-gray-400 dark:text-gray-500 uppercase tracking-widest mt-1">
-                              {l.toLowerCase()}
-                            </span>
-                          </div>
+                          <span className="text-3xl font-bold min-w-[60px] text-left tracking-widest uppercase flex items-center gap-1.5" style={{ color: isDone || vFeedback === "correct" ? '#58CC02' : accent.primary }}>
+                            {l}
+                          </span>
                         </div>
 
                         <div className="flex items-center gap-3">
@@ -569,29 +557,24 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
                               }
                             }}
                             disabled={evaluatingLetter !== null || isDone}
-                            className={`w-14 h-14 rounded-full flex flex-col items-center justify-center text-white shadow-md transition-all flex-shrink-0 ${isEval
-                              ? "bg-red-500 animate-pulse"
-                              : vFeedback === "correct" || isDone
-                                ? "bg-[#58CC02]"
+                            className={`relative w-12 h-12 rounded-xl flex items-center justify-center transition-all flex-shrink-0 ${
+                              isDone || vFeedback === "correct"
+                                ? 'bg-green-500 text-white shadow-none opacity-50 cursor-default'
+                                : isEval
+                                ? 'bg-red-500 text-white shadow-lg'
                                 : vFeedback === "wrong"
-                                  ? "bg-red-400"
-                                  : "bg-teal-500 hover:bg-teal-600 hover:scale-105 active:scale-95 cursor-pointer"
-                              }`}
-                            style={{
-                              background: !isEval && vFeedback !== "correct" && !isDone && vFeedback !== "wrong" ? `linear-gradient(135deg, ${accent.primary}, ${accent.dark})` : undefined,
-                            }}
+                                ? 'bg-red-400 text-white'
+                                : 'bg-gradient-to-br from-pink-500 to-rose-500 text-white shadow-md hover:scale-105 active:scale-95'
+                            }`}
                           >
-                            {isEval ? (
-                              <Mic className="w-6 h-6 mb-0.5" />
-                            ) : vFeedback === "correct" || isDone ? (
-                              <CheckCircle2 className="w-6 h-6" />
-                            ) : vFeedback === "wrong" ? (
-                              <XCircle className="w-6 h-6" />
-                            ) : (
-                              <MicOff className="w-6 h-6 mb-0.5" />
+                            {isEval && (
+                              <>
+                                <span className="absolute inset-0 rounded-xl bg-red-500/40 animate-ping" />
+                                <span className="absolute -inset-1 rounded-xl bg-red-500/20 animate-pulse" />
+                              </>
                             )}
-                            <span className="text-[9px] uppercase font-bold tracking-widest">
-                              {isEval ? "..." : isDone ? "Done" : "Speak"}
+                            <span className="relative z-10">
+                              {isDone || vFeedback === "correct" ? <CheckCircle2 className="w-6 h-6" /> : vFeedback === "wrong" ? <XCircle className="w-6 h-6" /> : isEval ? <MicOff className="w-5 h-5 animate-bounce" /> : <Mic className="w-5 h-5" />}
                             </span>
                           </button>
                         </div>
