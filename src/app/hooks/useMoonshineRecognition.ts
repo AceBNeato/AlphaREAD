@@ -98,48 +98,29 @@ interface UseMoonshineRecognitionProps {
   onError: () => void;
 }
 
-let globalTranscriber: Moonshine.MicrophoneTranscriber | null = null;
+let isModelReady = false;
 let isInitializing = false;
+const MODEL_URL = "model/tiny";
 
 export async function preloadMoonshineModel() {
-  if (globalTranscriber || isInitializing) return;
+  if (isModelReady || isInitializing) return;
   isInitializing = true;
   modelLoadState.status = 'loading';
   modelLoadState.percent = 0;
   modelLoadState.notify();
 
   try {
-    console.log("[Moonshine] Fetching tiny model from JSdelivr...");
-    globalTranscriber = new Moonshine.MicrophoneTranscriber(
-      "model/tiny",
-      {
-        onModelLoadStarted() {
-          modelLoadState.status = 'loading';
-          modelLoadState.notify();
-        },
-        onModelLoaded() {
-          modelLoadState.status = 'ready';
-          modelLoadState.notify();
-        },
-        onError(e: any) {
-          console.error("[Moonshine] Error:", e);
-          modelLoadState.status = 'error';
-          modelLoadState.notify();
-        }
-      },
-      true // use VAD by default for cleaner chunks
-    );
-    // Warm the ONNX model explicitly without triggering the VAD/AudioContext.
-    // This pre-downloads the 140MB weights into browser cache safely.
-    if (Moonshine.Transcriber && Moonshine.Transcriber.model) {
-      await Moonshine.Transcriber.model.loadModel();
-      modelLoadState.status = 'ready';
-      modelLoadState.notify();
-    } else {
-      console.warn("[Moonshine] Transcriber.model not found, fallback to wait for interaction");
-      modelLoadState.status = 'ready'; // fake ready so UI button isn't disabled forever
-      modelLoadState.notify();
-    }
+    console.log("[Moonshine] Warming up model weights (no AudioContext yet)...");
+    // ✅ FIX: Only load the model weights — do NOT create a MicrophoneTranscriber here.
+    // Creating a Transcriber creates an AudioContext at construction time, which Chrome
+    // will immediately suspend if there's no user gesture. We defer the Transcriber
+    // creation to the actual mic-click so the AudioContext is always fresh.
+    const tempModel = new Moonshine.MoonshineModel(MODEL_URL);
+    await tempModel.loadModel();
+    isModelReady = true;
+    modelLoadState.status = 'ready';
+    modelLoadState.notify();
+    console.log("[Moonshine] Model weights ready.");
   } catch (err) {
     console.error("[Moonshine] Init error:", err);
     modelLoadState.status = 'error';
@@ -154,6 +135,7 @@ export function useMoonshineRecognition({ evaluatingWord, enabled = true, onResu
   const activeTranscriberRef = useRef<any>(null);
   const silenceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const isMountedRef = useRef<boolean>(true);
+  const isRecordingRef = useRef<boolean>(false); // 🛑 FIX: Guard against restart loops
 
   // 🛑 FIX 5: Prevent infinite useEffect loops from inline function props
   const callbacksRef = useRef({ onResult, onError, onSilenceTimeout });
@@ -168,6 +150,7 @@ export function useMoonshineRecognition({ evaluatingWord, enabled = true, onResu
 
   const stopMicrophone = useCallback(() => {
     if (DEBUG) console.log(`[Moonshine Debug] 🛑 stopMicrophone called`);
+    isRecordingRef.current = false;
     if (silenceTimerRef.current) {
       clearTimeout(silenceTimerRef.current);
       silenceTimerRef.current = null;
@@ -175,14 +158,17 @@ export function useMoonshineRecognition({ evaluatingWord, enabled = true, onResu
     if (activeTranscriberRef.current) {
       // 🛑 FIX 4: Destroy the media stream manually!
       // Moonshine's internal stop() only pauses the VAD but leaves the mic stream active.
-      const stream = (activeTranscriberRef.current as any).mediaStream;
+      const stream = (activeTranscriberRef.current as any).mediaStream ||
+                     (activeTranscriberRef.current as any)._stream ||
+                     (activeTranscriberRef.current as any).stream;
       if (stream && stream.getTracks) {
         stream.getTracks().forEach((track: MediaStreamTrack) => {
           track.stop();
           if (DEBUG) console.log(`[Moonshine Debug] 🎙️ MediaStreamTrack stopped: ${track.label}`);
         });
       }
-      activeTranscriberRef.current.stop();
+      // Also kill any MediaStreamAudioSourceNodes in the audioContext
+      try { activeTranscriberRef.current.stop(); } catch(_) {}
       activeTranscriberRef.current = null;
     }
     if (isMountedRef.current) setIsListening(false);
@@ -244,45 +230,31 @@ export function useMoonshineRecognition({ evaluatingWord, enabled = true, onResu
       return;
     }
 
-    let isMounted = true;
-
-    // 🛑 FIX 1: Resume AudioContext IMMEDIATELY before any async/await.
-    // This preserves the "user gesture" trust from the button click.
-    try {
-      globalAudioContexts.forEach(ctx => {
-        if (ctx.state === 'suspended') {
-          ctx.resume().catch(e => console.warn("AudioContext resume failed:", e));
-        }
-      });
-      // Fallback just in case
-      if (globalTranscriber) {
-        for (const val of Object.values(globalTranscriber)) {
-          if (val instanceof window.AudioContext && val.state === 'suspended') {
-            val.resume().catch(e => console.warn("AudioContext fallback resume failed:", e));
-          }
-        }
-      }
-    } catch (e) {
-      console.warn("Could not resume AudioContexts", e);
+    // 🛑 Guard: if already recording, don't restart
+    if (isRecordingRef.current) {
+      if (DEBUG) console.log(`[Moonshine Debug] ⚠️ Already recording — skipping restart for "${evaluatingWord}"`);
+      return;
     }
+
+    let isMounted = true;
 
     const startRecording = async () => {
       if (DEBUG) console.log(`\n[Moonshine Debug] 🎤 startRecording called for "${evaluatingWord}"`);
 
-      if (!globalTranscriber && !isInitializing) {
+      if (!isModelReady && !isInitializing) {
         if (DEBUG) console.log(`[Moonshine Debug] ⏳ Model not loaded yet — triggering preload...`);
         await preloadMoonshineModel();
       }
 
       let waited = 0;
-      while (modelLoadState.status !== 'ready' && waited < 30000) {
+      while (!isModelReady && waited < 30000) {
         await new Promise(r => setTimeout(r, 500));
         waited += 500;
-        if (DEBUG && waited % 2000 === 0) console.log(`[Moonshine Debug] ⏳ Waiting for model... (${waited}ms elapsed, status: ${modelLoadState.status})`);
+        if (DEBUG && waited % 2000 === 0) console.log(`[Moonshine Debug] ⏳ Waiting for model... (${waited}ms elapsed)`);
       }
 
-      if (modelLoadState.status !== 'ready' || !globalTranscriber) {
-        console.error(`[Moonshine Debug] ❌ Model not ready after ${waited}ms. Status: ${modelLoadState.status}`);
+      if (!isModelReady) {
+        console.error(`[Moonshine Debug] ❌ Model not ready after ${waited}ms.`);
         callbacksRef.current.onError();
         return;
       }
@@ -292,9 +264,17 @@ export function useMoonshineRecognition({ evaluatingWord, enabled = true, onResu
         return;
       }
 
-      if (DEBUG) console.log(`[Moonshine Debug] ✅ Model ready. Attaching mic for "${evaluatingWord}"...`);
+      // ✅ FIX: Create a FRESH MicrophoneTranscriber on every activation.
+      // This creates a brand-new AudioContext right now, during (or just after) the
+      // user gesture. Chrome won't suspend it because the page is already unlocked.
+      // The heavy model weights are cached in the static Transcriber.model from preload.
+      if (DEBUG) console.log(`[Moonshine Debug] 🆕 Creating fresh MicrophoneTranscriber for "${evaluatingWord}"...`);
 
-      const transcriber = globalTranscriber!;
+      const transcriber = new Moonshine.MicrophoneTranscriber(
+        MODEL_URL,
+        {}, // callbacks assigned below
+        true // useVAD
+      );
 
       const resetTimer = () => {
         if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
@@ -313,7 +293,6 @@ export function useMoonshineRecognition({ evaluatingWord, enabled = true, onResu
       transcriber.callbacks.onTranscriptionCommitted = (text: string) => {
         if (DEBUG) console.log(`[Moonshine Debug] 🏁 onTranscriptionCommitted | target: "${evaluatingWord}" | heard: "${text || '(empty)'}"`);
         resetTimer();
-        // Even if text is empty, it means the speech chunk ended. We MUST evaluate it!
         handleTranscription(text || "", true);
       };
       transcriber.callbacks.onError = (e: any) => {
@@ -322,10 +301,9 @@ export function useMoonshineRecognition({ evaluatingWord, enabled = true, onResu
       };
 
       activeTranscriberRef.current = transcriber;
+      isRecordingRef.current = true;
 
       try {
-        // 🛑 FIX 2: Start the timer BEFORE awaiting start().
-        // If start() hangs because of audio context issues, the timeout will save you
         resetTimer();
         if (DEBUG) console.log(`[Moonshine Debug] 🚀 Calling transcriber.start() for "${evaluatingWord}"...`);
 
@@ -336,6 +314,7 @@ export function useMoonshineRecognition({ evaluatingWord, enabled = true, onResu
         }
       } catch (err) {
         console.error(`[Moonshine Debug] ❌ Mic start() threw an error for "${evaluatingWord}":`, err);
+        isRecordingRef.current = false;
         callbacksRef.current.onError();
       }
     };
