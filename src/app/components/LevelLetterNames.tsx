@@ -9,7 +9,7 @@ import { shuffle, allLetters, LETTER_NAMES, LETTER_TTS } from "../data/levels";
 
 import { useMoonshineRecognition, useModelLoadState } from "../hooks/useMoonshineRecognition";
 import { toast } from "sonner";
-import { useAudioVisualizer } from "../hooks/useAudioVisualizer";
+import { AudioVisualizer } from "./AudioVisualizer";
 
 interface LevelLetterNamesProps {
   levelId: number;
@@ -81,7 +81,6 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
   }, [clearEvalTimeout]);
 
   const isMobile = useMemo(() => /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent), []);
-  useAudioVisualizer(isMobile, !!evaluatingLetter);
 
   // TTS utility
   const playNameTTS = (letter: string) => {
@@ -582,25 +581,7 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
                           {isEval && !vTranscript && (
                             <div className="flex items-center gap-2 mt-1 sm:mt-0">
                               <span className="text-pink-500 text-sm font-bold animate-pulse">Listening...</span>
-                              <div className="flex gap-1 items-center h-8 justify-center min-w-[50px]">
-                                {isMobile ? (
-                                  <>
-                                    <div className="w-1.5 bg-pink-500 rounded-full animate-[wave_0.8s_ease-in-out_infinite_0ms]" style={{ height: '20px', animationName: 'wave', animationDuration: '0.8s', animationIterationCount: 'infinite', animationDelay: '0ms' }} />
-                                    <div className="w-1.5 bg-pink-400 rounded-full" style={{ height: '28px', animation: 'wave 0.8s ease-in-out infinite 0.1s' }} />
-                                    <div className="w-1.5 bg-pink-500 rounded-full" style={{ height: '36px', animation: 'wave 0.8s ease-in-out infinite 0.2s' }} />
-                                    <div className="w-1.5 bg-pink-400 rounded-full" style={{ height: '28px', animation: 'wave 0.8s ease-in-out infinite 0.3s' }} />
-                                    <div className="w-1.5 bg-pink-500 rounded-full" style={{ height: '20px', animation: 'wave 0.8s ease-in-out infinite 0.4s' }} />
-                                  </>
-                                ) : (
-                                  <>
-                                    <div id="wave-bar-1" className="w-1.5 bg-pink-500 rounded-full transition-all duration-75" style={{ height: '6px' }} />
-                                    <div id="wave-bar-2" className="w-1.5 bg-pink-400 rounded-full transition-all duration-75" style={{ height: '6px' }} />
-                                    <div id="wave-bar-3" className="w-1.5 bg-pink-500 rounded-full transition-all duration-75" style={{ height: '6px' }} />
-                                    <div id="wave-bar-4" className="w-1.5 bg-pink-400 rounded-full transition-all duration-75" style={{ height: '6px' }} />
-                                    <div id="wave-bar-5" className="w-1.5 bg-pink-500 rounded-full transition-all duration-75" style={{ height: '6px' }} />
-                                  </>
-                                )}
-                              </div>
+                              <AudioVisualizer isListening={!!evaluatingLetter} isMobile={isMobile} />
                             </div>
                           )}
 

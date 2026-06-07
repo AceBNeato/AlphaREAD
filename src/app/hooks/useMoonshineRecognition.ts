@@ -3,6 +3,18 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import * as Moonshine from "@usefulsensors/moonshine-js";
 import { evaluateSyllable } from "../utils/PhonemeEvaluator";
 
+// Hijack AudioContext creation to globally track instances and bypass minification hiding
+const globalAudioContexts: AudioContext[] = [];
+const OriginalAudioContext = window.AudioContext || (window as any).webkitAudioContext;
+if (OriginalAudioContext) {
+  window.AudioContext = function(...args: any[]) {
+    const ctx = new OriginalAudioContext(...args);
+    globalAudioContexts.push(ctx);
+    return ctx;
+  } as any;
+  window.AudioContext.prototype = OriginalAudioContext.prototype;
+}
+
 const HOMOPHONES: Record<string, string[]> = {
   "A": ["a", "ay", "hey", "eight"],
   "B": ["b", "bee", "be"],
@@ -179,6 +191,26 @@ export function useMoonshineRecognition({ evaluatingWord, enabled = true, onResu
 
     let isMounted = true;
 
+    // 🛑 FIX 1: Resume AudioContext IMMEDIATELY before any async/await.
+    // This preserves the "user gesture" trust from the button click.
+    try {
+      globalAudioContexts.forEach(ctx => {
+        if (ctx.state === 'suspended') {
+          ctx.resume().catch(e => console.warn("AudioContext resume failed:", e));
+        }
+      });
+      // Fallback just in case
+      if (globalTranscriber) {
+        for (const val of Object.values(globalTranscriber)) {
+          if (val instanceof window.AudioContext && val.state === 'suspended') {
+            val.resume().catch(e => console.warn("AudioContext fallback resume failed:", e));
+          }
+        }
+      }
+    } catch (e) {
+      console.warn("Could not resume AudioContexts", e);
+    }
+
     const startRecording = async () => {
       if (!globalTranscriber && !isInitializing) {
         await preloadMoonshineModel();
@@ -199,10 +231,6 @@ export function useMoonshineRecognition({ evaluatingWord, enabled = true, onResu
       if (!isMounted) return;
 
       const transcriber = globalTranscriber!;
-      
-      if ((transcriber as any).audioContext?.state === 'suspended') {
-        await (transcriber as any).audioContext.resume();
-      }
 
       const resetTimer = () => {
         if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
@@ -228,9 +256,12 @@ export function useMoonshineRecognition({ evaluatingWord, enabled = true, onResu
       activeTranscriberRef.current = transcriber;
 
       try {
+        // 🛑 FIX 2: Start the timer BEFORE awaiting start().
+        // If start() hangs because of audio context issues, the timeout will save you
+        resetTimer();
+        
         await transcriber.start();
         if (isMounted) setIsListening(true);
-        resetTimer();
       } catch (err) {
         console.error("[Moonshine] Mic error:", err);
         onError();
@@ -243,7 +274,7 @@ export function useMoonshineRecognition({ evaluatingWord, enabled = true, onResu
       isMounted = false;
       stopMicrophone();
     };
-  }, [enabled, evaluatingWord, stopMicrophone, handleTranscription, onError]);
+  }, [enabled, evaluatingWord, stopMicrophone, handleTranscription, onError, onSilenceTimeout]);
 
   return { isListening };
 }
