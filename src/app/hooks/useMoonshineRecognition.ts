@@ -178,12 +178,26 @@ export function useMoonshineRecognition({ evaluatingWord, enabled = true, onResu
     if (!evaluatingWord) return;
     if (!rawPhones && !isFinal) return; // Ignore empty interim updates, but MUST process empty finals!
 
-    const cleanedPhones = rawPhones.replace(/\[|\]|\/|\|/g, '').trim();
+    // Strip ALL punctuation (not just brackets) so "A." matches "A", "Be." matches "BE"
+    const cleanedPhones = rawPhones.replace(/[^\w\s]/g, ' ').replace(/\s+/g, ' ').trim();
     const trimmedTarget = evaluatingWord.trim().toLowerCase();
     const isSingleLetter = trimmedTarget.length === 1 && /[a-z]/.test(trimmedTarget);
     const isMagicE = trimmedTarget.length === 3 && /^[aeiou]_e$/.test(trimmedTarget);
 
-    if (DEBUG) console.log(`[Moonshine Debug] 📝 handleTranscription | target: "${evaluatingWord}" | raw: "${rawPhones}" | isFinal: ${isFinal}`);
+    if (DEBUG) console.log(`[Moonshine Debug] 📝 handleTranscription | target: "${evaluatingWord}" | raw: "${rawPhones}" | cleaned: "${cleanedPhones}" | isFinal: ${isFinal}`);
+
+    // 🚫 Anti-hallucination: Moonshine generates phantom sentences during background noise.
+    // For single-letter targets, any transcript > 5 words is almost certainly a hallucination.
+    const wordCount = cleanedPhones.split(/\s+/).filter(Boolean).length;
+    if ((isSingleLetter || isMagicE) && wordCount > 5) {
+      if (DEBUG) console.log(`[Moonshine Debug] 🚫 Hallucination (${wordCount} words for "${evaluatingWord}"). Ignoring.`);
+      if (isFinal) {
+        // Committed hallucination = treat as wrong and stop so the UI doesn't stay stuck
+        stopMicrophone();
+        callbacksRef.current.onResult(evaluatingWord, 'wrong', '...');
+      }
+      return;
+    }
 
     let phonemeResult: "correct" | "close" | "wrong" = "wrong";
 

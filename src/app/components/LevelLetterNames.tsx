@@ -168,10 +168,11 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
         });
       }, 1500);
     } else {
-      setVoiceFeedbackMap(prev => ({ ...prev, [word]: "wrong" }));
+      const letter = word; // capture before clearing
+      setEvaluatingLetter(null); // 🛑 IMMEDIATELY stop mic from restarting
+      setVoiceFeedbackMap(prev => ({ ...prev, [letter]: "wrong" }));
       evaluationTimeoutRef.current = setTimeout(() => {
-        setVoiceFeedbackMap(prev => ({ ...prev, [word]: null }));
-        setEvaluatingLetter(null);
+        setVoiceFeedbackMap(prev => ({ ...prev, [letter]: null }));
       }, 2000);
     }
   }, [clearEvalTimeout]);
@@ -184,10 +185,11 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
     onSilenceTimeout: () => {
       clearEvalTimeout();
       if (evaluatingLetter) {
-        setVoiceFeedbackMap(prev => ({ ...prev, [evaluatingLetter]: "wrong" }));
+        const letter = evaluatingLetter; // capture before clearing
+        setEvaluatingLetter(null); // 🛑 IMMEDIATELY clear so hook doesn't restart
+        setVoiceFeedbackMap(prev => ({ ...prev, [letter]: "wrong" }));
         evaluationTimeoutRef.current = setTimeout(() => {
-          setVoiceFeedbackMap(prev => ({ ...prev, [evaluatingLetter]: null }));
-          setEvaluatingLetter(null);
+          setVoiceFeedbackMap(prev => ({ ...prev, [letter]: null }));
         }, 1500);
       }
     }
