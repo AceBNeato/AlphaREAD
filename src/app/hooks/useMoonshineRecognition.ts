@@ -98,7 +98,7 @@ export async function preloadMoonshineModel() {
           modelLoadState.notify();
         }
       },
-      false // disable VAD auto-commit to get updates faster
+      true // use VAD by default for cleaner chunks
     );
     // Force load the model without starting the mic
     await (globalTranscriber as any).load();
@@ -193,23 +193,18 @@ export function useMoonshineRecognition({ evaluatingWord, enabled = true, onResu
 
       if (!isMounted) return;
 
-      // Create a fresh transcriber instance for this session but it shares the static loaded model
-      const transcriber = new Moonshine.MicrophoneTranscriber(
-        "model/tiny",
-        {
-          onTranscriptionUpdated: (text: string) => {
-            if (text) handleTranscription(text);
-          },
-          onTranscriptionCommitted: (text: string) => {
-            if (text) handleTranscription(text);
-          },
-          onError: (e: any) => {
-            console.error("[Moonshine] Session error:", e);
-            onError();
-          }
-        },
-        true // use VAD for cleaner segmentation
-      );
+      const transcriber = globalTranscriber!;
+      
+      transcriber.callbacks.onTranscriptionUpdated = (text: string) => {
+        if (text) handleTranscription(text);
+      };
+      transcriber.callbacks.onTranscriptionCommitted = (text: string) => {
+        if (text) handleTranscription(text);
+      };
+      transcriber.callbacks.onError = (e: any) => {
+        console.error("[Moonshine] Session error:", e);
+        onError();
+      };
 
       activeTranscriberRef.current = transcriber;
 
