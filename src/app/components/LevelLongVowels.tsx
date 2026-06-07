@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { supabase } from "../../lib/supabase";
 import { Confetti } from "./ui/Confetti";
 import { LONG_VOWELS_DATA, LONG_VOWELS_SENTENCES, LongVowelWord, LETTER_NAMES, LETTER_TTS, shuffle } from "../data/levels";
-import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
+// Removed useSpeechRecognition
 import { useMoonshineRecognition, useModelLoadState } from "../hooks/useMoonshineRecognition";
 import { toast } from "sonner";
 import { AudioVisualizer } from "./AudioVisualizer";
@@ -256,10 +256,9 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
     }
   });
 
-  useSpeechRecognition({
+  useMoonshineRecognition({
     evaluatingWord: evaluatingTargetForSpeech,
     enabled: !!evaluatingTargetForSpeech,
-    singleShot: true, // Long vowel words/sentences are single utterances — auto-stop after phrase
     onResult: handleResult,
     onError: () => {
       setEvaluatingWordId(null);

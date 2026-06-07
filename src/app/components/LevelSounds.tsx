@@ -252,8 +252,13 @@ export function LevelSounds({ levelId, accent }: LevelSoundsProps) {
                 </div>
 
                 {evaluatingLetter && (
-                  <div className="flex justify-center mb-4 mt-2">
+                  <div className="flex flex-col sm:flex-row items-center justify-center gap-2 mb-4 mt-2">
                     <AudioVisualizer isListening={!!evaluatingLetter} isMobile={isMobile} />
+                    {lastHeard && (
+                      <span className="p-1 bg-gray-200 rounded text-[10px] font-mono text-gray-700 ml-1 truncate max-w-[120px]">
+                        [Heard: {lastHeard}]
+                      </span>
+                    )}
                   </div>
                 )}
 
@@ -261,12 +266,6 @@ export function LevelSounds({ levelId, accent }: LevelSoundsProps) {
                   <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className={`flex items-center justify-center gap-2 font-bold text-lg mb-4 ${evalFeedback === 'correct' ? 'text-green-500' : 'text-red-500'}`}>
                     {evalFeedback === 'correct' ? <><CheckCircle2 /> Correct!</> : <><AlertCircle /> Try again!</>}
                   </motion.div>
-                )}
-                {lastHeard && evaluatingLetter && (
-                  <div className="mb-4 p-3 bg-gray-100 dark:bg-gray-700 rounded-xl text-sm font-mono text-gray-600 dark:text-gray-300">
-                    <span className="font-semibold text-xs uppercase tracking-wider block mb-1">Heard:</span>
-                    {lastHeard}
-                  </div>
                 )}
                 <div className="text-gray-400 text-sm">Letter {evalIndex + 1} of {currentEvalLetters.length}</div>
               </div>

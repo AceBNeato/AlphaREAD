@@ -3,16 +3,33 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import * as Moonshine from "@usefulsensors/moonshine-js";
 import { evaluateSyllable } from "../utils/PhonemeEvaluator";
 
+const DEBUG = true;
+
 // Hijack AudioContext creation to globally track instances and bypass minification hiding
 const globalAudioContexts: AudioContext[] = [];
 const OriginalAudioContext = window.AudioContext || (window as any).webkitAudioContext;
 if (OriginalAudioContext) {
-  window.AudioContext = function(...args: any[]) {
+  window.AudioContext = function (...args: any[]) {
     const ctx = new OriginalAudioContext(...args);
     globalAudioContexts.push(ctx);
     return ctx;
   } as any;
   window.AudioContext.prototype = OriginalAudioContext.prototype;
+}
+
+// 🛑 FIX 3: Global User Gesture Listener
+// Chrome drops the "user gesture" token by the time React's useEffect runs.
+// We MUST resume the AudioContext synchronously on the actual click event.
+if (typeof window !== 'undefined') {
+  const resumeAudio = () => {
+    globalAudioContexts.forEach(ctx => {
+      if (ctx.state === 'suspended') {
+        ctx.resume().catch(() => { });
+      }
+    });
+  };
+  window.addEventListener('click', resumeAudio, { capture: true, passive: true });
+  window.addEventListener('touchstart', resumeAudio, { capture: true, passive: true });
 }
 
 const HOMOPHONES: Record<string, string[]> = {
@@ -134,9 +151,15 @@ export async function preloadMoonshineModel() {
 
 export function useMoonshineRecognition({ evaluatingWord, enabled = true, onResult, onSilenceTimeout, onError }: UseMoonshineRecognitionProps) {
   const [isListening, setIsListening] = useState(false);
-  const isMountedRef = useRef(true);
-  const activeTranscriberRef = useRef<Moonshine.MicrophoneTranscriber | null>(null);
+  const activeTranscriberRef = useRef<any>(null);
   const silenceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const isMountedRef = useRef<boolean>(true);
+
+  // 🛑 FIX 5: Prevent infinite useEffect loops from inline function props
+  const callbacksRef = useRef({ onResult, onError, onSilenceTimeout });
+  useEffect(() => {
+    callbacksRef.current = { onResult, onError, onSilenceTimeout };
+  }, [onResult, onError, onSilenceTimeout]);
 
   useEffect(() => {
     isMountedRef.current = true;
@@ -144,11 +167,21 @@ export function useMoonshineRecognition({ evaluatingWord, enabled = true, onResu
   }, []);
 
   const stopMicrophone = useCallback(() => {
+    if (DEBUG) console.log(`[Moonshine Debug] 🛑 stopMicrophone called`);
     if (silenceTimerRef.current) {
       clearTimeout(silenceTimerRef.current);
       silenceTimerRef.current = null;
     }
     if (activeTranscriberRef.current) {
+      // 🛑 FIX 4: Destroy the media stream manually!
+      // Moonshine's internal stop() only pauses the VAD but leaves the mic stream active.
+      const stream = (activeTranscriberRef.current as any).mediaStream;
+      if (stream && stream.getTracks) {
+        stream.getTracks().forEach((track: MediaStreamTrack) => {
+          track.stop();
+          if (DEBUG) console.log(`[Moonshine Debug] 🎙️ MediaStreamTrack stopped: ${track.label}`);
+        });
+      }
       activeTranscriberRef.current.stop();
       activeTranscriberRef.current = null;
     }
@@ -156,12 +189,15 @@ export function useMoonshineRecognition({ evaluatingWord, enabled = true, onResu
   }, []);
 
   const handleTranscription = useCallback((rawPhones: string, isFinal: boolean = true) => {
-    if (!evaluatingWord || !rawPhones) return;
+    if (!evaluatingWord) return;
+    if (!rawPhones && !isFinal) return; // Ignore empty interim updates, but MUST process empty finals!
 
     const cleanedPhones = rawPhones.replace(/\[|\]|\/|\|/g, '').trim();
     const trimmedTarget = evaluatingWord.trim().toLowerCase();
     const isSingleLetter = trimmedTarget.length === 1 && /[a-z]/.test(trimmedTarget);
     const isMagicE = trimmedTarget.length === 3 && /^[aeiou]_e$/.test(trimmedTarget);
+
+    if (DEBUG) console.log(`[Moonshine Debug] 📝 handleTranscription | target: "${evaluatingWord}" | raw: "${rawPhones}" | isFinal: ${isFinal}`);
 
     let phonemeResult: "correct" | "close" | "wrong" = "wrong";
 
@@ -174,10 +210,12 @@ export function useMoonshineRecognition({ evaluatingWord, enabled = true, onResu
       ].map(w => w.toUpperCase());
 
       const phraseWords = cleanedPhones.toUpperCase().split(/\s+/);
+      if (DEBUG) console.log(`[Moonshine Debug] 🔤 Letter mode | cleaned: "${cleanedPhones}" | allowed: [${allowedWords.join(', ')}]`);
       if (allowedWords.some(t => cleanedPhones.toUpperCase() === t || phraseWords.includes(t))) {
         phonemeResult = "correct";
       }
     } else {
+      if (DEBUG) console.log(`[Moonshine Debug] 🔊 Syllable mode | cleaned: "${cleanedPhones}" | target: "${evaluatingWord}"`);
       phonemeResult = evaluateSyllable(evaluatingWord, [cleanedPhones]);
     }
 
@@ -186,13 +224,19 @@ export function useMoonshineRecognition({ evaluatingWord, enabled = true, onResu
       : cleanedPhones || "...";
 
     if (phonemeResult === "correct" || phonemeResult === "close") {
+      if (DEBUG) console.log(`[Moonshine Debug] ✅ CORRECT! Stopping mic. target: "${evaluatingWord}" | heard: "${cleanedPhones}"`);
       stopMicrophone(); // auto stop if they got it right
+    } else if (isFinal) {
+      if (DEBUG) console.log(`[Moonshine Debug] ❌ WRONG (final). target: "${evaluatingWord}" | heard: "${cleanedPhones}"`);
+    } else {
+      if (DEBUG) console.log(`[Moonshine Debug] ⏳ interim wrong (still listening). target: "${evaluatingWord}" | heard: "${cleanedPhones}"`);
     }
 
     // Only report "wrong" if the transcript is finalized. Otherwise report null to just update the UI text.
     const reportedStatus = (phonemeResult === "wrong" && !isFinal) ? null : phonemeResult;
-    onResult(evaluatingWord, reportedStatus, finalTranscript);
-  }, [evaluatingWord, onResult, stopMicrophone]);
+    if (DEBUG) console.log(`[Moonshine Debug] 📤 Reporting to component | status: ${reportedStatus} | transcript: "${finalTranscript}"`);
+    callbacksRef.current.onResult(evaluatingWord, reportedStatus, finalTranscript);
+  }, [evaluatingWord, stopMicrophone]);
 
   useEffect(() => {
     if (!enabled || !evaluatingWord) {
@@ -223,7 +267,10 @@ export function useMoonshineRecognition({ evaluatingWord, enabled = true, onResu
     }
 
     const startRecording = async () => {
+      if (DEBUG) console.log(`\n[Moonshine Debug] 🎤 startRecording called for "${evaluatingWord}"`);
+
       if (!globalTranscriber && !isInitializing) {
+        if (DEBUG) console.log(`[Moonshine Debug] ⏳ Model not loaded yet — triggering preload...`);
         await preloadMoonshineModel();
       }
 
@@ -231,37 +278,47 @@ export function useMoonshineRecognition({ evaluatingWord, enabled = true, onResu
       while (modelLoadState.status !== 'ready' && waited < 30000) {
         await new Promise(r => setTimeout(r, 500));
         waited += 500;
+        if (DEBUG && waited % 2000 === 0) console.log(`[Moonshine Debug] ⏳ Waiting for model... (${waited}ms elapsed, status: ${modelLoadState.status})`);
       }
 
       if (modelLoadState.status !== 'ready' || !globalTranscriber) {
-        console.error("[Moonshine] Model not ready");
-        onError();
+        console.error(`[Moonshine Debug] ❌ Model not ready after ${waited}ms. Status: ${modelLoadState.status}`);
+        callbacksRef.current.onError();
         return;
       }
 
-      if (!isMounted) return;
+      if (!isMounted) {
+        if (DEBUG) console.log(`[Moonshine Debug] ⚠️ Component unmounted before mic could start. Aborting.`);
+        return;
+      }
+
+      if (DEBUG) console.log(`[Moonshine Debug] ✅ Model ready. Attaching mic for "${evaluatingWord}"...`);
 
       const transcriber = globalTranscriber!;
 
       const resetTimer = () => {
         if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
         silenceTimerRef.current = setTimeout(() => {
+          if (DEBUG) console.log(`[Moonshine Debug] ⏱️ 4s silence timeout reached for "${evaluatingWord}". Stopping mic.`);
           stopMicrophone();
-          if (onSilenceTimeout) onSilenceTimeout();
+          if (callbacksRef.current.onSilenceTimeout) callbacksRef.current.onSilenceTimeout();
         }, 4000);
       };
 
       transcriber.callbacks.onTranscriptionUpdated = (text: string) => {
+        if (DEBUG) console.log(`[Moonshine Debug] 🔄 onTranscriptionUpdated | target: "${evaluatingWord}" | heard: "${text}"`);
         resetTimer();
         if (text) handleTranscription(text, false);
       };
       transcriber.callbacks.onTranscriptionCommitted = (text: string) => {
+        if (DEBUG) console.log(`[Moonshine Debug] 🏁 onTranscriptionCommitted | target: "${evaluatingWord}" | heard: "${text || '(empty)'}"`);
         resetTimer();
-        if (text) handleTranscription(text, true);
+        // Even if text is empty, it means the speech chunk ended. We MUST evaluate it!
+        handleTranscription(text || "", true);
       };
       transcriber.callbacks.onError = (e: any) => {
-        console.error("[Moonshine] Session error:", e);
-        onError();
+        console.error(`[Moonshine Debug] ❌ Session error for "${evaluatingWord}":`, e);
+        callbacksRef.current.onError();
       };
 
       activeTranscriberRef.current = transcriber;
@@ -270,12 +327,16 @@ export function useMoonshineRecognition({ evaluatingWord, enabled = true, onResu
         // 🛑 FIX 2: Start the timer BEFORE awaiting start().
         // If start() hangs because of audio context issues, the timeout will save you
         resetTimer();
-        
+        if (DEBUG) console.log(`[Moonshine Debug] 🚀 Calling transcriber.start() for "${evaluatingWord}"...`);
+
         await transcriber.start();
-        if (isMounted) setIsListening(true);
+        if (isMounted) {
+          setIsListening(true);
+          if (DEBUG) console.log(`[Moonshine Debug] 🎙️ Mic is LIVE and listening for "${evaluatingWord}"`);
+        }
       } catch (err) {
-        console.error("[Moonshine] Mic error:", err);
-        onError();
+        console.error(`[Moonshine Debug] ❌ Mic start() threw an error for "${evaluatingWord}":`, err);
+        callbacksRef.current.onError();
       }
     };
 
@@ -285,7 +346,7 @@ export function useMoonshineRecognition({ evaluatingWord, enabled = true, onResu
       isMounted = false;
       stopMicrophone();
     };
-  }, [enabled, evaluatingWord, stopMicrophone, handleTranscription, onError, onSilenceTimeout]);
+  }, [enabled, evaluatingWord, stopMicrophone, handleTranscription]);
 
   return { isListening };
 }
