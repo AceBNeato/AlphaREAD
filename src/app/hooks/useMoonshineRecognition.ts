@@ -112,8 +112,11 @@ export async function preloadMoonshineModel() {
       },
       true // use VAD by default for cleaner chunks
     );
-    // Force load the model without starting the mic
-    await (globalTranscriber as any).load();
+    // Warm the model by starting and immediately stopping.
+    // This triggers the internal model download and fires onModelLoaded().
+    // We stop immediately so the mic doesn't actually open.
+    await globalTranscriber!.start();
+    globalTranscriber!.stop();
   } catch (err) {
     console.error("[Moonshine] Init error:", err);
     modelLoadState.status = 'error';
