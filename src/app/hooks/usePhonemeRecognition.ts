@@ -133,6 +133,14 @@ export function usePhonemeRecognition({
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isProcessingRef = useRef(false);
   const evaluatingWordRef = useRef(evaluatingWord);
+  const isMountedRef = useRef(true);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     evaluatingWordRef.current = evaluatingWord;
@@ -195,6 +203,9 @@ export function usePhonemeRecognition({
       }
 
       const output = await globalTranscriber(audio16k);
+      
+      if (!isMountedRef.current) return;
+
       const rawPhones = output.text || "";
 
       // Strip IPA brackets e.g. "[b] [æ]" → "b æ"
@@ -207,10 +218,13 @@ export function usePhonemeRecognition({
 
       onResult(targetWord, phonemeResult, finalTranscript);
     } catch (err) {
+      if (!isMountedRef.current) return;
       console.error("[Phoneme] Recognition error:", err);
       onError();
     } finally {
-      isProcessingRef.current = false;
+      if (isMountedRef.current) {
+        isProcessingRef.current = false;
+      }
     }
   }, [stopMicrophone, onResult, onError]);
 

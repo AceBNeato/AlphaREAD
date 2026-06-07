@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useNavigate } from "react-router";
 import { Home, Volume2, Mic, MicOff, CheckCircle2, XCircle, Sparkles, ArrowRight, ArrowLeft, AlertCircle, Shuffle, RotateCcw, SkipForward } from "lucide-react";
 import { Button } from "./ui/button";
@@ -97,6 +97,19 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
   const [showConfetti, setShowConfetti] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
+  const evaluationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const clearEvalTimeout = useCallback(() => {
+    if (evaluationTimeoutRef.current) {
+      clearTimeout(evaluationTimeoutRef.current);
+      evaluationTimeoutRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => {
+    return () => clearEvalTimeout();
+  }, [clearEvalTimeout]);
+
   const evaluatingTargetForMic = useMemo(() => {
     if (currentPhase === "patterns" && evaluatingPatternId) {
       return allPatternsRaw.find(p => p.pattern === evaluatingPatternId)?.vowel || null;
@@ -138,6 +151,8 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
       const tLower = transcript.toLowerCase();
       let isCorrect = status === "correct" || status === "close" || tLower.includes(target.toLowerCase());
 
+      clearEvalTimeout();
+
       if (currentPhase === "patterns" && evaluatingPatternId) {
         setPatternTranscriptsMap(prev => ({ ...prev, [evaluatingPatternId]: transcript }));
         const vName = LETTER_NAMES[target]?.toLowerCase() || "";
@@ -148,13 +163,13 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
 
         if (isCorrect) {
           setPatternFeedbackMap(prev => ({ ...prev, [evaluatingPatternId]: "correct" }));
-          setTimeout(() => {
+          evaluationTimeoutRef.current = setTimeout(() => {
             setCompletedPatterns(prev => new Set(prev).add(evaluatingPatternId));
             setEvaluatingPatternId(null);
           }, 1500);
         } else {
           setPatternFeedbackMap(prev => ({ ...prev, [evaluatingPatternId]: "wrong" }));
-          setTimeout(() => {
+          evaluationTimeoutRef.current = setTimeout(() => {
             setPatternFeedbackMap(prev => ({ ...prev, [evaluatingPatternId]: null }));
             setEvaluatingPatternId(null);
           }, 2000);
@@ -165,13 +180,13 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
 
         if (isCorrect) {
           setWordFeedbackMap(prev => ({ ...prev, [evaluatingWordId]: "correct" }));
-          setTimeout(() => {
+          evaluationTimeoutRef.current = setTimeout(() => {
             setCompletedWords(prev => new Set(prev).add(evaluatingWordId));
             setEvaluatingWordId(null);
           }, 1500);
         } else {
           setWordFeedbackMap(prev => ({ ...prev, [evaluatingWordId]: "wrong" }));
-          setTimeout(() => {
+          evaluationTimeoutRef.current = setTimeout(() => {
             setWordFeedbackMap(prev => ({ ...prev, [evaluatingWordId]: null }));
             setEvaluatingWordId(null);
           }, 2000);
@@ -182,13 +197,13 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
 
         if (isCorrect) {
           setSentenceFeedbackMap(prev => ({ ...prev, [evaluatingSentenceId]: "correct" }));
-          setTimeout(() => {
+          evaluationTimeoutRef.current = setTimeout(() => {
             setCompletedSentences(prev => new Set(prev).add(evaluatingSentenceId));
             setEvaluatingSentenceId(null);
           }, 1500);
         } else {
           setSentenceFeedbackMap(prev => ({ ...prev, [evaluatingSentenceId]: "wrong" }));
-          setTimeout(() => {
+          evaluationTimeoutRef.current = setTimeout(() => {
             setSentenceFeedbackMap(prev => ({ ...prev, [evaluatingSentenceId]: null }));
             setEvaluatingSentenceId(null);
           }, 2000);
@@ -208,21 +223,22 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
       setEvaluatingSentenceId(null);
     },
     onSilenceTimeout: () => {
+      clearEvalTimeout();
       if (currentPhase === "patterns" && evaluatingPatternId) {
         setPatternFeedbackMap(prev => ({ ...prev, [evaluatingPatternId]: "wrong" }));
-        setTimeout(() => {
+        evaluationTimeoutRef.current = setTimeout(() => {
           setPatternFeedbackMap(prev => ({ ...prev, [evaluatingPatternId]: null }));
           setEvaluatingPatternId(null);
         }, 1500);
       } else if (currentPhase === "words" && evaluatingWordId) {
         setWordFeedbackMap(prev => ({ ...prev, [evaluatingWordId]: "wrong" }));
-        setTimeout(() => {
+        evaluationTimeoutRef.current = setTimeout(() => {
           setWordFeedbackMap(prev => ({ ...prev, [evaluatingWordId]: null }));
           setEvaluatingWordId(null);
         }, 1500);
       } else if (currentPhase === "sentences" && evaluatingSentenceId) {
         setSentenceFeedbackMap(prev => ({ ...prev, [evaluatingSentenceId]: "wrong" }));
-        setTimeout(() => {
+        evaluationTimeoutRef.current = setTimeout(() => {
           setSentenceFeedbackMap(prev => ({ ...prev, [evaluatingSentenceId]: null }));
           setEvaluatingSentenceId(null);
         }, 1500);
@@ -231,6 +247,7 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
   });
 
   const handleShuffle = () => {
+    clearEvalTimeout();
     if (currentPhase === "patterns") {
       setActivePatterns(shuffle([...allPatternsRaw]));
       setCompletedPatterns(new Set());
@@ -250,6 +267,7 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
   };
 
   const handleReset = () => {
+    clearEvalTimeout();
     if (currentPhase === "patterns") {
       setCompletedPatterns(new Set());
       setPatternFeedbackMap({});
@@ -266,6 +284,7 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
   };
 
   const handleSkip = () => {
+    clearEvalTimeout();
     if (currentPhase === "patterns") {
       setCompletedPatterns(new Set(activePatterns.map(p => p.pattern)));
       handleNextQuiz();

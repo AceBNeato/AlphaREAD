@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router";
 import {
   Mic,
@@ -52,8 +52,21 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
   // Detect mobile — on phones we skip getUserMedia to avoid mic conflict with SpeechRecognition
   const isMobile = useMemo(() => /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent), []);
   const isIOS = useMemo(() => /iPhone|iPad|iPod/i.test(navigator.userAgent), []);
+  const evaluationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const clearEvalTimeout = useCallback(() => {
+    if (evaluationTimeoutRef.current) {
+      clearTimeout(evaluationTimeoutRef.current);
+      evaluationTimeoutRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => {
+    return () => clearEvalTimeout();
+  }, [clearEvalTimeout]);
 
   const handleShuffle = () => {
+    clearEvalTimeout();
     setWords(shuffle([...words]));
     setCompletedWords(new Set());
     setWordsIndex(0);
@@ -63,6 +76,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
   };
 
   const handleReset = () => {
+    clearEvalTimeout();
     setCompletedWords(new Set());
     setWordsIndex(0);
     setEvalFeedback({});
@@ -71,6 +85,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
   };
 
   const handleNext = () => {
+    clearEvalTimeout();
     const currentWord = words[wordsIndex];
     if (currentWord) {
       setCompletedWords(prev => {
@@ -112,14 +127,21 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
   useAudioVisualizer(isMobile, !!evaluatingWord);
 
   const safeSetEvaluatingWordNull = useCallback(() => {
+    console.log("[AlphabetGO Debug] LevelVoiceEvaluation: safeSetEvaluatingWordNull called");
     setEvaluatingWord(null);
     setIsMicResetting(true);
-    setTimeout(() => setIsMicResetting(false), 400);
+    setTimeout(() => {
+      console.log("[AlphabetGO Debug] LevelVoiceEvaluation: mic reset complete");
+      setIsMicResetting(false);
+    }, 400);
   }, []);
 
   const handleResult = useCallback((word: string, status: "correct" | "close" | "wrong" | null, transcript: string) => {
+    console.log(`[AlphabetGO Debug] LevelVoiceEvaluation: handleResult for "${word}" | Status: ${status} | Transcript: "${transcript}"`);
     setTranscripts(prev => ({ ...prev, [word]: transcript }));
     setEvalFeedback(prev => ({ ...prev, [word]: status }));
+
+    clearEvalTimeout();
 
     if (status === "correct" || status === "close") {
       setShowConfetti(true);
@@ -128,7 +150,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
       setCompletedWords(newCompleted);
 
       setProcessingWord(null);
-      setTimeout(() => {
+      evaluationTimeoutRef.current = setTimeout(() => {
         safeSetEvaluatingWordNull();
         setShowConfetti(false);
         if (newCompleted.size >= words.length) {
@@ -145,12 +167,12 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
       }, 2000);
     } else if (status === "wrong") {
       setProcessingWord(null);
-      setTimeout(() => {
+      evaluationTimeoutRef.current = setTimeout(() => {
         setEvalFeedback(prev => ({ ...prev, [word]: null }));
         safeSetEvaluatingWordNull();
       }, 2500);
     }
-  }, [completedWords, words.length, safeSetEvaluatingWordNull]);
+  }, [completedWords, words, clearEvalTimeout, safeSetEvaluatingWordNull]);
 
   const handleError = useCallback(() => {
     if (evaluatingWord) {
@@ -160,14 +182,16 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
 
   const handleSilence = useCallback((wordToUse?: string) => {
     const targetWord = wordToUse || evaluatingWord;
+    console.log(`[AlphabetGO Debug] LevelVoiceEvaluation: handleSilence triggered for "${targetWord}"`);
     if (!targetWord) return;
     setEvalFeedback(prev => ({ ...prev, [targetWord]: "wrong" }));
     setProcessingWord(null);
-    setTimeout(() => {
+    clearEvalTimeout();
+    evaluationTimeoutRef.current = setTimeout(() => {
       setEvalFeedback(prev => ({ ...prev, [targetWord]: null }));
       safeSetEvaluatingWordNull();
     }, 1500);
-  }, [evaluatingWord, safeSetEvaluatingWordNull]);
+  }, [evaluatingWord, clearEvalTimeout, safeSetEvaluatingWordNull]);
 
   // Fast Word-Level Engine for all targets
   useSpeechRecognition({
@@ -179,7 +203,11 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
   });
 
   const startRecording = (word: string) => {
-    if (evaluatingWord || completedWords.has(word) || isMicResetting) return;
+    console.log(`[AlphabetGO Debug] LevelVoiceEvaluation: startRecording called for "${word}"`);
+    if (evaluatingWord || completedWords.has(word) || isMicResetting) {
+      console.log(`[AlphabetGO Debug] LevelVoiceEvaluation: startRecording blocked (evaluatingWord=${evaluatingWord}, completed=${completedWords.has(word)}, resetting=${isMicResetting})`);
+      return;
+    }
     setEvaluatingWord(word);
     setEvalFeedback(prev => ({ ...prev, [word]: null }));
     setTranscripts(prev => ({ ...prev, [word]: "" }));

@@ -1,5 +1,8 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { evaluateSyllable, isSyllableTarget, PhonemeResult } from "../utils/PhonemeEvaluator";
+
+const DEBUG = true;
+
 const DIGIT_MAP: Record<string, string> = {
   "0": "ZERO", "1": "ONE", "2": "TWO", "3": "THREE", "4": "FOUR",
   "5": "FIVE", "6": "SIX", "7": "SEVEN", "8": "EIGHT", "9": "NINE"
@@ -134,14 +137,19 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, onResult,
       return;
     }
 
+    if (DEBUG) console.log(`\n[AlphabetGO Debug] 🎤 Starting SpeechRecognition for target: "${evaluatingWord}"`);
+
     const SpeechRecognitionAPI = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognitionAPI) {
+      if (DEBUG) console.warn("[AlphabetGO Debug] ❌ SpeechRecognition API not supported in this browser.");
       cleanup();
       return;
     }
 
     resultReceivedRef.current = false;
     let latestTranscript = ""; // Track the latest thing heard for the timeout fallback
+    let hasMatched = false; // Prevent race conditions while stopping
+    let isActive = true; // Track if this specific effect is still active
 
     const recognition = new SpeechRecognitionAPI();
     recognitionRef.current = recognition;
@@ -152,12 +160,15 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, onResult,
     recognition.maxAlternatives = 5;
 
     recognition.onresult = (event: any) => {
+      if (!isActive || hasMatched) return; // Prevent overlapping events while stopping or after cleanup
       resultReceivedRef.current = true;
 
       let foundCorrect = false;
       let foundClose = false;
       let bestStatus: "correct" | "close" | "wrong" = "wrong";
       let bestTranscript = "";
+
+      if (DEBUG) console.log(`[AlphabetGO Debug] 🗣️ Result Event Received. Evaluating against: "${evaluatingWord}"`);
 
       for (let r = 0; r < event.results.length; r++) {
         const results = event.results[r];
@@ -167,6 +178,8 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, onResult,
         }
         const primaryTranscript = allTranscripts[0] || "";
         latestTranscript = primaryTranscript; // Update fallback transcript
+
+        if (DEBUG) console.log(`[AlphabetGO Debug] Alternatives [Index ${r}]:`, allTranscripts);
 
         let status: "correct" | "close" | "wrong" = "wrong";
         let matchStr = primaryTranscript;
@@ -279,6 +292,8 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, onResult,
           }
         }
 
+        if (DEBUG) console.log(`[AlphabetGO Debug] Evaluated primary "${primaryTranscript}" -> Status: ${status}, matchStr: "${matchStr}"`);
+
         if (status === "correct") {
           foundCorrect = true;
           bestStatus = "correct";
@@ -293,6 +308,8 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, onResult,
 
       // If we found a success, trigger immediately and stop the mic!
       if (foundCorrect || (foundClose && event.results[event.results.length - 1].isFinal)) {
+        hasMatched = true; // Block future onresult events
+        if (DEBUG) console.log(`[AlphabetGO Debug] ✅ Match successful! Best Status: ${bestStatus}, Best Transcript: "${bestTranscript}"`);
         if (timeoutRef.current) clearTimeout(timeoutRef.current);
         if (recognitionRef.current) {
           try { recognitionRef.current.stop(); } catch (e) { }
@@ -300,20 +317,24 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, onResult,
         onResultRef.current(evaluatingWord, bestStatus, bestTranscript);
       } else {
         // Emit interim transcript so the UI can display "Heard: ..." or "Listening..."
+        if (DEBUG) console.log(`[AlphabetGO Debug] ⏳ Interim Match failed or waiting for final... Best Status: ${bestStatus}, Primary Transcript: "${latestTranscript}"`);
         onResultRef.current(evaluatingWord, null, latestTranscript);
       }
     };
 
     recognition.onerror = (event: any) => {
+      if (!isActive || hasMatched) return; // Prevent overlapping events while stopping
       // Ignore no-speech errors during continuous listening
       if (event.error === "no-speech") return;
 
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
       if (event.error === "aborted") {
+        if (DEBUG) console.log(`[AlphabetGO Debug] ⚠️ Recognition aborted for "${evaluatingWord}".`);
         onErrorRef.current();
         return;
       }
-      console.error("Speech recognition error:", event.error);
+      if (DEBUG) console.error("[AlphabetGO Debug] ❌ Speech recognition error:", event.error);
+      hasMatched = true;
       onResultRef.current(evaluatingWord, "wrong", latestTranscript);
     };
 
@@ -325,21 +346,29 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, onResult,
     try {
       recognition.start();
       timeoutRef.current = setTimeout(() => {
+        if (!isActive || hasMatched) return;
+        if (DEBUG) console.log(`[AlphabetGO Debug] ⏱️ Timeout reached (5s) for "${evaluatingWord}". Evaluating final state...`);
         if (recognitionRef.current) {
           try { recognitionRef.current.stop(); } catch (e) { }
         }
+        hasMatched = true;
         // If 5 seconds pass and we never got a correct match, THEN we fail them
         if (resultReceivedRef.current && latestTranscript) {
+          if (DEBUG) console.log(`[AlphabetGO Debug] 👎 Forcing "wrong" feedback with transcript: "${latestTranscript}"`);
           onResultRef.current(evaluatingWord, "wrong", latestTranscript);
         } else {
+          if (DEBUG) console.log(`[AlphabetGO Debug] 🤫 No speech detected (silence timeout).`);
           onSilenceTimeoutRef.current();
         }
       }, 5000);
     } catch (error) {
-      console.error("Error starting recognition:", error);
+      if (DEBUG) console.error("[AlphabetGO Debug] ❌ Error starting recognition:", error);
       onErrorRef.current();
     }
 
-    return cleanup;
+    return () => {
+      isActive = false;
+      cleanup();
+    };
   }, [evaluatingWord, enabled, cleanup]);
 }

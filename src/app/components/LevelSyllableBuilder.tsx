@@ -103,6 +103,15 @@ export function LevelSyllableBuilder({
 
   const ttsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const successTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const wrongTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (ttsTimeoutRef.current) clearTimeout(ttsTimeoutRef.current);
+      if (successTimeoutRef.current) clearTimeout(successTimeoutRef.current);
+      if (wrongTimeoutRef.current) clearTimeout(wrongTimeoutRef.current);
+    };
+  }, []);
 
   const currentTarget = targets[currentIndex];
   const allDone = completedTargets.size >= targets.length;
@@ -173,7 +182,8 @@ export function LevelSyllableBuilder({
           }, 2500);
         } else {
           setFeedback("wrong");
-          setTimeout(() => {
+          if (wrongTimeoutRef.current) clearTimeout(wrongTimeoutRef.current);
+          wrongTimeoutRef.current = setTimeout(() => {
             setFeedback(null);
             setSelectedLetters([]);
           }, 1000);

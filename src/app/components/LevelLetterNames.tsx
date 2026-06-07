@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useNavigate } from "react-router";
 import { Home, Volume2, ArrowLeft, ArrowRight, Sparkles, CheckCircle2, XCircle, Mic, MicOff, AlertCircle, Shuffle, RotateCcw, SkipForward } from "lucide-react";
 import { Button } from "./ui/button";
@@ -57,6 +57,19 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
   // Global states
   const [showConfetti, setShowConfetti] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+
+  const evaluationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const clearEvalTimeout = useCallback(() => {
+    if (evaluationTimeoutRef.current) {
+      clearTimeout(evaluationTimeoutRef.current);
+      evaluationTimeoutRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => {
+    return () => clearEvalTimeout();
+  }, [clearEvalTimeout]);
 
   const isMobile = useMemo(() => /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent), []);
   useAudioVisualizer(isMobile, !!evaluatingLetter);
@@ -134,9 +147,11 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
 
     if (status === null && !isCorrect) return;
 
+    clearEvalTimeout();
+
     if (isCorrect) {
       setVoiceFeedbackMap(prev => ({ ...prev, [word]: "correct" }));
-      setTimeout(() => {
+      evaluationTimeoutRef.current = setTimeout(() => {
         setEvaluatingLetter(null);
         setCompletedVoiceLetters(prev => {
           const newSet = new Set(prev);
@@ -146,12 +161,12 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
       }, 1500);
     } else {
       setVoiceFeedbackMap(prev => ({ ...prev, [word]: "wrong" }));
-      setTimeout(() => {
+      evaluationTimeoutRef.current = setTimeout(() => {
         setVoiceFeedbackMap(prev => ({ ...prev, [word]: null }));
         setEvaluatingLetter(null);
       }, 2000);
     }
-  }, []);
+  }, [clearEvalTimeout]);
 
   useSpeechRecognition({
     evaluatingWord: evaluatingLetter,
@@ -159,9 +174,10 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
     onResult: handleVoiceResult,
     onError: () => setEvaluatingLetter(null),
     onSilenceTimeout: () => {
+      clearEvalTimeout();
       if (evaluatingLetter) {
         setVoiceFeedbackMap(prev => ({ ...prev, [evaluatingLetter]: "wrong" }));
-        setTimeout(() => {
+        evaluationTimeoutRef.current = setTimeout(() => {
           setVoiceFeedbackMap(prev => ({ ...prev, [evaluatingLetter]: null }));
           setEvaluatingLetter(null);
         }, 1500);
@@ -170,6 +186,7 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
   });
 
   const handleVoiceShuffle = () => {
+    clearEvalTimeout();
     setShuffledVoiceLetters(shuffle([...step.letters]));
     setCompletedVoiceLetters(new Set());
     setVoiceFeedbackMap({});
@@ -177,12 +194,14 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
   };
 
   const handleVoiceReset = () => {
+    clearEvalTimeout();
     setCompletedVoiceLetters(new Set());
     setVoiceFeedbackMap({});
     setVoiceTranscriptsMap({});
   };
 
   const handleVoiceNext = () => {
+    clearEvalTimeout();
     setCompletedVoiceLetters(new Set());
     setVoiceFeedbackMap({});
     setVoiceTranscriptsMap({});
@@ -210,7 +229,8 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
         audio.play().catch(() => { });
       }, 400);
 
-      setTimeout(() => {
+      clearEvalTimeout();
+      evaluationTimeoutRef.current = setTimeout(() => {
         if (currentIndex < stepQuestions.length - 1) {
           setCurrentIndex((prev) => prev + 1);
           setFeedback(null);
@@ -227,13 +247,14 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
         next.add(letter);
         return next;
       });
-      setTimeout(() => {
+      evaluationTimeoutRef.current = setTimeout(() => {
         setFeedback(null);
       }, 800);
     }
   };
 
   const handleStepNext = () => {
+    clearEvalTimeout();
     if (currentStep < STEPS.length - 1) {
       setCurrentStep((prev) => Math.min(prev + 1, STEPS.length - 1));
       setCurrentPairIndex(0);

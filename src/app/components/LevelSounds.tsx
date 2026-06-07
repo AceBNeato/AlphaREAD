@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { Home, Sparkles, Mic, CheckCircle2, AlertCircle, PlayCircle, ChevronRight, MicOff } from "lucide-react";
 import { Button } from "./ui/button";
@@ -41,6 +41,19 @@ export function LevelSounds({ levelId, accent }: LevelSoundsProps) {
   const [lastHeard, setLastHeard] = useState<string | null>(null);
   const [evaluatingLetter, setEvaluatingLetter] = useState<string | null>(null);
 
+  const evaluationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const clearEvalTimeout = useCallback(() => {
+    if (evaluationTimeoutRef.current) {
+      clearTimeout(evaluationTimeoutRef.current);
+      evaluationTimeoutRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => {
+    return () => clearEvalTimeout();
+  }, [clearEvalTimeout]);
+
   const setSizes = [6, 7, 6, 7];
 
   const getLettersForCurrentSet = () => {
@@ -71,9 +84,11 @@ export function LevelSounds({ levelId, accent }: LevelSoundsProps) {
       
       const isCorrect = status === "correct" || status === "close" || tLower.includes(target.toLowerCase()) || tLower.includes(phonetic);
 
+      clearEvalTimeout();
+
       if (isCorrect) {
         setEvalFeedback("correct");
-        setTimeout(() => {
+        evaluationTimeoutRef.current = setTimeout(() => {
           if (evalIndex < currentEvalLetters.length - 1) {
             setEvalIndex(prev => Math.min(prev + 1, currentEvalLetters.length - 1));
             setEvalFeedback(null);
@@ -85,7 +100,7 @@ export function LevelSounds({ levelId, accent }: LevelSoundsProps) {
         }, 1500);
       } else {
         setEvalFeedback("wrong");
-        setTimeout(() => {
+        evaluationTimeoutRef.current = setTimeout(() => {
             setEvalFeedback(null);
             setEvaluatingLetter(null);
         }, 2000);
@@ -93,8 +108,9 @@ export function LevelSounds({ levelId, accent }: LevelSoundsProps) {
     },
     onError: () => setEvaluatingLetter(null),
     onSilenceTimeout: () => {
+      clearEvalTimeout();
       setEvalFeedback("wrong");
-      setTimeout(() => {
+      evaluationTimeoutRef.current = setTimeout(() => {
           setEvalFeedback(null);
           setEvaluatingLetter(null);
       }, 1500);

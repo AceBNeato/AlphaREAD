@@ -364,6 +364,8 @@ function evaluateVC(target: string, transcripts: string[]): "correct" | "close" 
 
 export type PhonemeResult = "correct" | "close" | "wrong";
 
+const DEBUG = true;
+
 /**
  * Main entry point. Evaluates one or more SpeechRecognition transcript
  * alternatives against a target CV or VC syllable.
@@ -374,6 +376,7 @@ export type PhonemeResult = "correct" | "close" | "wrong";
  */
 export function evaluateSyllable(target: string, transcripts: string[]): PhonemeResult {
   const upper = target.toUpperCase();
+  if (DEBUG) console.log(`[AlphabetGO Debug] 🧩 PhonemeEvaluator analyzing "${upper}" with transcripts:`, transcripts);
 
   // 1. Literal Match: If the browser transcribed the exact word (e.g., "it", "me", "am")
   for (const raw of transcripts) {

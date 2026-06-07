@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useNavigate } from "react-router";
 import { Home, Mic, MicOff, CheckCircle2, Sparkles, ArrowRight, AlertCircle, Shuffle, RotateCcw, Volume2, SkipForward } from "lucide-react";
 import { Button } from "./ui/button";
@@ -34,6 +34,19 @@ export function LevelCVCSentences({ levelId, accent }: LevelCVCSentencesProps) {
 
   const [showConfetti, setShowConfetti] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+
+  const evaluationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const clearEvalTimeout = useCallback(() => {
+    if (evaluationTimeoutRef.current) {
+      clearTimeout(evaluationTimeoutRef.current);
+      evaluationTimeoutRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => {
+    return () => clearEvalTimeout();
+  }, [clearEvalTimeout]);
 
   const isMobile = useMemo(() => /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent), []);
   useAudioVisualizer(isMobile, !!evaluatingSentence);
@@ -71,15 +84,17 @@ export function LevelCVCSentences({ levelId, accent }: LevelCVCSentencesProps) {
 
       const isCorrect = status === "correct" || status === "close" || tLower.includes(targetLower) || (matchCount / wordsInTarget.length >= 0.7);
 
+      clearEvalTimeout();
+
       if (isCorrect) {
         setEvalFeedback("correct");
-        setTimeout(() => {
+        evaluationTimeoutRef.current = setTimeout(() => {
           setEvaluatingSentence(null);
           handleNext();
         }, 1500);
       } else {
         setEvalFeedback("wrong");
-        setTimeout(() => {
+        evaluationTimeoutRef.current = setTimeout(() => {
           setEvalFeedback(null);
           setEvaluatingSentence(null);
         }, 2000);
@@ -94,8 +109,9 @@ export function LevelCVCSentences({ levelId, accent }: LevelCVCSentencesProps) {
     onResult: handleResult,
     onError: () => setEvaluatingSentence(null),
     onSilenceTimeout: () => {
+      clearEvalTimeout();
       setEvalFeedback("wrong");
-      setTimeout(() => {
+      evaluationTimeoutRef.current = setTimeout(() => {
         setEvalFeedback(null);
         setEvaluatingSentence(null);
       }, 1500);
@@ -103,6 +119,7 @@ export function LevelCVCSentences({ levelId, accent }: LevelCVCSentencesProps) {
   });
 
   const handleShuffle = () => {
+    clearEvalTimeout();
     setActiveSentences(prev => [...prev].sort(() => Math.random() - 0.5));
     setCurrentIndex(0);
     setEvalFeedback(null);
@@ -110,6 +127,7 @@ export function LevelCVCSentences({ levelId, accent }: LevelCVCSentencesProps) {
   };
 
   const handleReset = () => {
+    clearEvalTimeout();
     setActiveSentences(CVC_SENTENCES.slice(currentSetIndex * 10, currentSetIndex * 10 + 10));
     setCurrentIndex(0);
     setEvalFeedback(null);
@@ -198,7 +216,7 @@ export function LevelCVCSentences({ levelId, accent }: LevelCVCSentencesProps) {
                 <Button variant="outline" size="sm" onClick={handleReset} className="rounded-full flex items-center gap-2 border-gray-300">
                   <RotateCcw className="w-4 h-4 text-gray-600" /> Reset
                 </Button>
-                <Button variant="outline" size="sm" onClick={handleNext} className="rounded-full flex items-center gap-2 border-gray-300">
+                <Button variant="outline" size="sm" onClick={() => { clearEvalTimeout(); handleNext(); }} className="rounded-full flex items-center gap-2 border-gray-300">
                   Skip <SkipForward className="w-4 h-4 text-gray-600" />
                 </Button>
               </div>
