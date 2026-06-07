@@ -115,6 +115,7 @@ export function useMoonshineRecognition({ evaluatingWord, enabled = true, onResu
   const [isListening, setIsListening] = useState(false);
   const isMountedRef = useRef(true);
   const activeTranscriberRef = useRef<Moonshine.MicrophoneTranscriber | null>(null);
+  const silenceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     isMountedRef.current = true;
@@ -122,6 +123,10 @@ export function useMoonshineRecognition({ evaluatingWord, enabled = true, onResu
   }, []);
 
   const stopMicrophone = useCallback(() => {
+    if (silenceTimerRef.current) {
+      clearTimeout(silenceTimerRef.current);
+      silenceTimerRef.current = null;
+    }
     if (activeTranscriberRef.current) {
       activeTranscriberRef.current.stop();
       activeTranscriberRef.current = null;
@@ -195,10 +200,24 @@ export function useMoonshineRecognition({ evaluatingWord, enabled = true, onResu
 
       const transcriber = globalTranscriber!;
       
+      if ((transcriber as any).audioContext?.state === 'suspended') {
+        await (transcriber as any).audioContext.resume();
+      }
+
+      const resetTimer = () => {
+        if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+        silenceTimerRef.current = setTimeout(() => {
+          stopMicrophone();
+          if (onSilenceTimeout) onSilenceTimeout();
+        }, 4000);
+      };
+
       transcriber.callbacks.onTranscriptionUpdated = (text: string) => {
+        resetTimer();
         if (text) handleTranscription(text);
       };
       transcriber.callbacks.onTranscriptionCommitted = (text: string) => {
+        resetTimer();
         if (text) handleTranscription(text);
       };
       transcriber.callbacks.onError = (e: any) => {
@@ -211,6 +230,7 @@ export function useMoonshineRecognition({ evaluatingWord, enabled = true, onResu
       try {
         await transcriber.start();
         if (isMounted) setIsListening(true);
+        resetTimer();
       } catch (err) {
         console.error("[Moonshine] Mic error:", err);
         onError();
