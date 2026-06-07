@@ -200,7 +200,7 @@ export function LevelSyllableBuilder({
 
       // Auto advance to next if possible
       if (currentIndex < targets.length - 1) {
-        setCurrentIndex(currentIndex + 1);
+        setCurrentIndex(prev => Math.min(prev + 1, targets.length - 1));
       }
       return;
     }
@@ -216,7 +216,7 @@ export function LevelSyllableBuilder({
         });
         // Index stays the same to show the next target in the newly shifted array
       } else {
-        setCurrentIndex(currentIndex + 1);
+        setCurrentIndex(prev => Math.min(prev + 1, targets.length - 1));
       }
       setSelectedLetters([]);
       setFeedback(null);
@@ -225,7 +225,7 @@ export function LevelSyllableBuilder({
 
   const goPrev = () => {
     if (currentIndex > 0) {
-      setCurrentIndex(currentIndex - 1);
+      setCurrentIndex(prev => Math.max(prev - 1, 0));
       setSelectedLetters([]);
       setFeedback(null);
     }

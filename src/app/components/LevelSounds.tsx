@@ -75,7 +75,7 @@ export function LevelSounds({ levelId, accent }: LevelSoundsProps) {
         setEvalFeedback("correct");
         setTimeout(() => {
           if (evalIndex < currentEvalLetters.length - 1) {
-            setEvalIndex(prev => prev + 1);
+            setEvalIndex(prev => Math.min(prev + 1, currentEvalLetters.length - 1));
             setEvalFeedback(null);
             setEvaluatingLetter(null);
           } else {
@@ -124,7 +124,7 @@ export function LevelSounds({ levelId, accent }: LevelSoundsProps) {
 
   const handleSetComplete = () => {
     if (currentSetIdx < setSizes.length - 1) {
-      setCurrentSetIdx(prev => prev + 1);
+      setCurrentSetIdx(prev => Math.min(prev + 1, setSizes.length - 1));
       setPhase("review");
       setReviewedLetters(new Set());
       setEvalIndex(0);

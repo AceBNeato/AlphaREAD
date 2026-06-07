@@ -90,7 +90,7 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
 
   const handleStepNext = () => {
     if (currentStep < STEPS.length - 1) {
-      setCurrentStep(prev => prev + 1);
+      setCurrentStep(prev => Math.min(prev + 1, STEPS.length - 1));
       setCurrentPairIndex(0);
     } else {
       // Save locally only — no Supabase progress
@@ -124,9 +124,7 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
         return next;
       });
     }
-    if (gridIndex < gridShuffled.length - 1) {
-      setGridIndex(prev => prev + 1);
-    }
+    setGridIndex(prev => Math.min(prev + 1, gridShuffled.length - 1));
   };
 
   return (
@@ -183,7 +181,7 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
                 {currentPairIndex < currentSetPairs.length - 1 ? (
                   <Button
                     size="lg"
-                    onClick={() => setCurrentPairIndex((prev: number) => prev + 1)}
+                    onClick={() => setCurrentPairIndex((prev: number) => Math.min(prev + 1, currentSetPairs.length - 1))}
                     className="flex-1 py-6 text-base text-white"
                     style={{ background: `linear-gradient(135deg, ${accent.primary}, ${accent.dark})` }}
                   >

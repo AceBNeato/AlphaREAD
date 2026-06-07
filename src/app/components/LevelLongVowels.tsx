@@ -406,7 +406,7 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
                   variant="outline"
                   size="lg"
                   disabled={reviewIdx === 0}
-                  onClick={() => setReviewIdx((prev) => prev - 1)}
+                  onClick={() => setReviewIdx((prev) => Math.max(prev - 1, 0))}
                   className="rounded-2xl flex-1 py-6 border-2 font-bold max-w-[200px]"
                 >
                   <ArrowLeft className="w-5 h-5 mr-2" /> Back
@@ -415,7 +415,7 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
                 {reviewIdx < 4 ? (
                   <Button
                     size="lg"
-                    onClick={() => setReviewIdx((prev) => prev + 1)}
+                    onClick={() => setReviewIdx((prev) => Math.min(prev + 1, 4))}
                     className="rounded-2xl flex-1 py-6 font-bold text-white shadow-lg"
                     style={{ background: `linear-gradient(135deg, ${accent.primary}, ${accent.dark})` }}
                   >
@@ -876,7 +876,7 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
                 ) : (
                   <Button
                     onClick={() => {
-                      setWordSetIdx(prev => prev + 1);
+                      setWordSetIdx(prev => Math.min(prev + 1, totalWordSets - 1));
                       setShowConfetti(false);
                     }}
                     size="lg"
@@ -899,7 +899,7 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
               ) : (
                 <Button
                   onClick={() => {
-                    setSentenceSetIdx(prev => prev + 1);
+                    setSentenceSetIdx(prev => Math.min(prev + 1, totalSentenceSets - 1));
                     setShowConfetti(false);
                   }}
                   size="lg"

@@ -49,7 +49,7 @@ export function LevelCVCMaster({ levelId, accent }: LevelCVCMasterProps) {
 
   const handleNextStep = async () => {
     if (currentStep < STEPS.length - 1) {
-      setCurrentStep(prev => prev + 1);
+      setCurrentStep(prev => Math.min(prev + 1, STEPS.length - 1));
     } else {
       // Game Over, all completed!
       const completedLevels = JSON.parse(localStorage.getItem("completedLevels") || "[]");

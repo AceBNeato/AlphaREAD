@@ -80,7 +80,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
       });
     }
     if (wordsIndex < words.length - 1) {
-      setWordsIndex(prev => prev + 1);
+      setWordsIndex(prev => Math.min(prev + 1, words.length - 1));
     } else {
       setShowCompletionScreen(true);
     }
