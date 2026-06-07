@@ -7,7 +7,8 @@ import { supabase } from "../../lib/supabase";
 import { Confetti } from "./ui/Confetti";
 import { LONG_VOWELS_DATA, LONG_VOWELS_SENTENCES, LongVowelWord, LETTER_NAMES, LETTER_TTS, shuffle } from "../data/levels";
 import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
-import { usePhonemeRecognition } from "../hooks/usePhonemeRecognition";
+import { usePhonemeRecognition, useModelLoadState } from "../hooks/usePhonemeRecognition";
+import { toast } from "sonner";
 import { useAudioVisualizer } from "../hooks/useAudioVisualizer";
 
 interface LevelLongVowelsProps {
@@ -96,6 +97,14 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
 
   const [showConfetti, setShowConfetti] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+
+  const modelState = useModelLoadState();
+
+  useEffect(() => {
+    if (modelState.status === "ready") {
+      toast("Voice Engine Online", { icon: "✨", duration: 3000, id: "phoneme-ready-vowels" });
+    }
+  }, [modelState.status]);
 
   const evaluationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -577,6 +586,10 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
 
                           <button
                             onClick={() => {
+                              if (modelState.status !== "ready") {
+                                toast("Voice Engine is still loading...", { icon: "⏳", id: "phoneme-loading-vowels" });
+                                return;
+                              }
                               if (isEval) {
                                 setEvaluatingPatternId(null);
                               } else if (!isDone) {
@@ -585,14 +598,16 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
                                 setPatternTranscriptsMap(prev => ({ ...prev, [p.pattern]: "" }));
                               }
                             }}
-                            disabled={(evaluatingPatternId !== null && !isEval) || isDone}
+                            disabled={(evaluatingPatternId !== null && !isEval) || isDone || modelState.status !== "ready"}
                             className={`relative w-12 h-12 rounded-xl flex items-center justify-center transition-all flex-shrink-0 ${isDone || vFeedback === "correct"
                               ? 'bg-green-500 text-white shadow-none opacity-50 cursor-default'
-                              : isEval
-                                ? 'bg-red-500 text-white shadow-lg'
-                                : vFeedback === "wrong"
-                                  ? 'bg-red-400 text-white'
-                                  : 'bg-gradient-to-br from-pink-500 to-rose-500 text-white shadow-md hover:scale-105 active:scale-95'
+                              : modelState.status !== "ready"
+                                ? 'bg-gray-300 dark:bg-gray-700 text-gray-500 cursor-not-allowed'
+                                : isEval
+                                  ? 'bg-red-500 text-white shadow-lg'
+                                  : vFeedback === "wrong"
+                                    ? 'bg-red-400 text-white'
+                                    : 'bg-gradient-to-br from-pink-500 to-rose-500 text-white shadow-md hover:scale-105 active:scale-95'
                               }`}
                           >
                             {isEval && (

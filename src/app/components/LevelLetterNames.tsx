@@ -7,7 +7,8 @@ import { supabase } from "../../lib/supabase";
 import { Confetti } from "./ui/Confetti";
 import { shuffle, allLetters, LETTER_NAMES, LETTER_TTS } from "../data/levels";
 
-import { usePhonemeRecognition } from "../hooks/usePhonemeRecognition";
+import { usePhonemeRecognition, useModelLoadState } from "../hooks/usePhonemeRecognition";
+import { toast } from "sonner";
 import { useAudioVisualizer } from "../hooks/useAudioVisualizer";
 
 interface LevelLetterNamesProps {
@@ -46,6 +47,14 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [wrongAnswers, setWrongAnswers] = useState<Set<string>>(new Set());
   const [feedback, setFeedback] = useState<"correct" | "wrong" | null>(null);
+
+  const modelState = useModelLoadState();
+
+  useEffect(() => {
+    if (modelState.status === "ready") {
+      toast("Voice Engine Online", { icon: "✨", duration: 3000, id: "phoneme-ready" });
+    }
+  }, [modelState.status]);
 
   // Voice Evaluation specific states
   const [evaluatingLetter, setEvaluatingLetter] = useState<string | null>(null);
@@ -597,6 +606,10 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
 
                           <button
                             onClick={() => {
+                              if (modelState.status !== "ready") {
+                                toast("Voice Engine is still loading...", { icon: "⏳", id: "phoneme-loading" });
+                                return;
+                              }
                               if (isEval) {
                                 setEvaluatingLetter(null);
                               } else if (!isDone) {
@@ -605,14 +618,16 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
                                 setVoiceTranscriptsMap(prev => ({ ...prev, [l]: "" }));
                               }
                             }}
-                            disabled={(evaluatingLetter !== null && !isEval) || isDone}
+                            disabled={(evaluatingLetter !== null && !isEval) || isDone || modelState.status !== "ready"}
                             className={`relative w-12 h-12 rounded-xl flex items-center justify-center transition-all flex-shrink-0 ${isDone || vFeedback === "correct"
                               ? 'bg-green-500 text-white shadow-none opacity-50 cursor-default'
-                              : isEval
-                                ? 'bg-red-500 text-white shadow-lg'
-                                : vFeedback === "wrong"
-                                  ? 'bg-red-400 text-white'
-                                  : 'bg-gradient-to-br from-pink-500 to-rose-500 text-white shadow-md hover:scale-105 active:scale-95'
+                              : modelState.status !== "ready"
+                                ? 'bg-gray-300 dark:bg-gray-700 text-gray-500 cursor-not-allowed'
+                                : isEval
+                                  ? 'bg-red-500 text-white shadow-lg'
+                                  : vFeedback === "wrong"
+                                    ? 'bg-red-400 text-white'
+                                    : 'bg-gradient-to-br from-pink-500 to-rose-500 text-white shadow-md hover:scale-105 active:scale-95'
                               }`}
                           >
                             {isEval && (
