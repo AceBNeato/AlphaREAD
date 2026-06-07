@@ -465,7 +465,7 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
                   What Sound is this? 🗣️
                 </h2>
                 <p className="text-gray-500 dark:text-gray-400 text-sm">
-                  Say the correct long vowel name out loud.
+                  Say the correct long vowel name 2 times out loud.
                 </p>
               </div>
 

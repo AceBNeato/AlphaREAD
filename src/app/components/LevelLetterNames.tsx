@@ -7,8 +7,7 @@ import { supabase } from "../../lib/supabase";
 import { Confetti } from "./ui/Confetti";
 import { shuffle, allLetters, LETTER_NAMES, LETTER_TTS } from "../data/levels";
 
-import { useMoonshineRecognition, useModelLoadState } from "../hooks/useMoonshineRecognition";
-import { toast } from "sonner";
+import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
 import { AudioVisualizer } from "./AudioVisualizer";
 
 interface LevelLetterNamesProps {
@@ -42,19 +41,14 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
   const [currentPairIndex, setCurrentPairIndex] = useState(0);
   const [clickedLetter, setClickedLetter] = useState<string | null>(null);
 
-  // Match/Voice states
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
-  const [wrongAnswers, setWrongAnswers] = useState<Set<string>>(new Set());
-  const [feedback, setFeedback] = useState<"correct" | "wrong" | null>(null);
+  // Match states (Duolingo style)
+  const [matchColumns, setMatchColumns] = useState<{ left: string[]; right: string[] }>({ left: [], right: [] });
+  const [selectedSpeakerMatch, setSelectedSpeakerMatch] = useState<string | null>(null);
+  const [selectedLetterMatch, setSelectedLetterMatch] = useState<string | null>(null);
+  const [matchedPairs, setMatchedPairs] = useState<Set<string>>(new Set());
+  const [wrongMatchPair, setWrongMatchPair] = useState<[string, string] | null>(null);
 
-  const modelState = useModelLoadState();
 
-  useEffect(() => {
-    if (modelState.status === "ready") {
-      toast("Moonshine AI Online", { icon: "🚀", duration: 3000, id: "moonshine-ready" });
-    }
-  }, [modelState.status]);
 
   // Voice Evaluation specific states
   const [evaluatingLetter, setEvaluatingLetter] = useState<string | null>(null);
@@ -108,26 +102,43 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
 
   const currentPair = currentSetPairs[currentPairIndex] || [];
 
-  const stepQuestions = useMemo<Question[]>(() => {
-    if (step.type === "review") return [];
-    const shuffledTargets = shuffle([...step.letters]).slice(0, step.count);
+  const matchProgress = matchColumns.left.length > 0 ? (matchedPairs.size / matchColumns.left.length) * 100 : 0;
 
-    if (step.type === "voice") {
-      return shuffledTargets.map(target => ({ targetLetter: target, options: [] }));
+  // Generate Match columns when step changes
+  useEffect(() => {
+    if (step.type === "match") {
+      const targets = shuffle([...step.letters]).slice(0, step.count || step.letters.length);
+      setMatchColumns({
+        left: shuffle([...targets]),
+        right: shuffle([...targets])
+      });
+      setMatchedPairs(new Set());
+      setSelectedSpeakerMatch(null);
+      setSelectedLetterMatch(null);
+      setWrongMatchPair(null);
     }
+  }, [currentStep, step]);
 
-    return shuffledTargets.map((target) => {
-      const distractors = allLetters
-        .map((l) => l.letter)
-        .filter((l) => l !== target);
-      const shuffledDistractors = shuffle(distractors).slice(0, 2);
-      const options = shuffle([target, ...shuffledDistractors]);
-      return { targetLetter: target, options };
-    });
-  }, [currentStep, step.letters, step.count, step.type]);
+  // Match controls
+  const handleMatchShuffle = () => {
+    clearEvalTimeout();
+    setMatchColumns(prev => ({
+      left: shuffle([...prev.left]),
+      right: shuffle([...prev.right])
+    }));
+    setMatchedPairs(new Set());
+    setSelectedSpeakerMatch(null);
+    setSelectedLetterMatch(null);
+    setWrongMatchPair(null);
+  };
 
-  const currentQuestion = stepQuestions[currentIndex];
-  const progress = stepQuestions.length > 0 ? (currentIndex / stepQuestions.length) * 100 : 0;
+  const handleMatchReset = () => {
+    clearEvalTimeout();
+    setMatchedPairs(new Set());
+    setSelectedSpeakerMatch(null);
+    setSelectedLetterMatch(null);
+    setWrongMatchPair(null);
+  };
 
   // Update shuffled letters when step changes
   useEffect(() => {
@@ -177,7 +188,7 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
     }
   }, [clearEvalTimeout]);
 
-  useMoonshineRecognition({
+  useSpeechRecognition({
     evaluatingWord: evaluatingLetter,
     enabled: !!evaluatingLetter,
     onResult: handleVoiceResult,
@@ -224,42 +235,54 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
     setTimeout(() => setClickedLetter(null), 1000);
   };
 
-  const handleOptionClick = (letter: string) => {
-    if (!currentQuestion || feedback === "correct" || wrongAnswers.has(letter)) return;
-
+  const handleSpeakerMatchClick = (letter: string) => {
+    if (matchedPairs.has(letter) || wrongMatchPair) return;
     playNameTTS(letter);
+    setSelectedSpeakerMatch(letter);
 
-    if (letter === currentQuestion.targetLetter) {
-      setFeedback("correct");
-      setSelectedAnswer(letter);
+    if (selectedLetterMatch) {
+      checkMatch(letter, selectedLetterMatch);
+    }
+  };
 
+  const handleLetterMatchClick = (letter: string) => {
+    if (matchedPairs.has(letter) || wrongMatchPair) return;
+    setSelectedLetterMatch(letter);
+
+    if (selectedSpeakerMatch) {
+      checkMatch(selectedSpeakerMatch, letter);
+    }
+  };
+
+  const checkMatch = (speaker: string, letter: string) => {
+    if (speaker === letter) {
+      // Correct Match
       setTimeout(() => {
         const audio = new Audio("https://assets.mixkit.co/active_storage/sfx/2013/2013-84.wav");
         audio.volume = 0.3;
         audio.play().catch(() => { });
-      }, 400);
+      }, 200);
 
+      setMatchedPairs(prev => new Set(prev).add(speaker));
+      setSelectedSpeakerMatch(null);
+      setSelectedLetterMatch(null);
+
+      // Next step if all matched
+      if (matchedPairs.size + 1 === matchColumns.left.length) {
+        clearEvalTimeout();
+        evaluationTimeoutRef.current = setTimeout(() => {
+          handleStepNext();
+        }, 1500);
+      }
+    } else {
+      // Wrong Match
+      setWrongMatchPair([speaker, letter]);
       clearEvalTimeout();
       evaluationTimeoutRef.current = setTimeout(() => {
-        if (currentIndex < stepQuestions.length - 1) {
-          setCurrentIndex((prev) => prev + 1);
-          setFeedback(null);
-          setSelectedAnswer(null);
-          setWrongAnswers(new Set());
-        } else {
-          handleStepNext();
-        }
-      }, 1600);
-    } else {
-      setFeedback("wrong");
-      setWrongAnswers((prev) => {
-        const next = new Set(prev);
-        next.add(letter);
-        return next;
-      });
-      evaluationTimeoutRef.current = setTimeout(() => {
-        setFeedback(null);
-      }, 800);
+        setWrongMatchPair(null);
+        setSelectedSpeakerMatch(null);
+        setSelectedLetterMatch(null);
+      }, 1000);
     }
   };
 
@@ -268,10 +291,10 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
     if (currentStep < STEPS.length - 1) {
       setCurrentStep((prev) => Math.min(prev + 1, STEPS.length - 1));
       setCurrentPairIndex(0);
-      setCurrentIndex(0);
-      setFeedback(null);
-      setSelectedAnswer(null);
-      setWrongAnswers(new Set());
+      setMatchedPairs(new Set());
+      setSelectedSpeakerMatch(null);
+      setSelectedLetterMatch(null);
+      setWrongMatchPair(null);
       setEvaluatingLetter(null);
     } else {
       setShowConfetti(true);
@@ -420,7 +443,7 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
               <div className="w-full h-3 bg-gray-200/80 dark:bg-gray-800 rounded-full overflow-hidden mb-8 shadow-inner border border-gray-100 dark:border-gray-700/30">
                 <motion.div
                   initial={{ width: 0 }}
-                  animate={{ width: `${progress}%` }}
+                  animate={{ width: `${matchProgress}%` }}
                   transition={{ duration: 0.3, ease: "easeOut" }}
                   className="h-full rounded-full"
                   style={{
@@ -433,81 +456,104 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
                 <h2 className="text-2xl font-black text-gray-800 dark:text-gray-100 mb-2">
                   Listen and Match!
                 </h2>
-                <p className="text-gray-500 dark:text-gray-400 text-sm">
-                  Tap the speaker to hear a letter name, then choose the correct letter.
+                <p className="text-gray-500 dark:text-gray-400 text-sm mb-6">
+                  Tap a speaker to hear a letter name, then choose the matching letter.
                 </p>
+
+                {/* Match Controls */}
+                <div className="flex justify-center gap-3 w-full">
+                  <Button variant="outline" size="sm" onClick={handleMatchShuffle} className="rounded-full flex items-center gap-2 border-amber-300">
+                    <Shuffle className="w-4 h-4 text-amber-600" /> Shuffle
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={handleMatchReset} className="rounded-full flex items-center gap-2 border-amber-300">
+                    <RotateCcw className="w-4 h-4 text-amber-600" /> Reset
+                  </Button>
+                  <Button size="sm" onClick={handleStepNext} disabled={matchedPairs.size < matchColumns.left.length} className="rounded-full flex items-center gap-2 text-white shadow-md active:scale-95 transition-all" style={{ background: matchedPairs.size >= matchColumns.left.length ? `linear-gradient(135deg, ${accent.primary}, ${accent.dark})` : "gray" }}>
+                    Next <ArrowRight className="w-4 h-4" />
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={handleStepNext} className="rounded-full flex items-center gap-2 border-amber-300">
+                    Skip <SkipForward className="w-4 h-4 text-amber-600" />
+                  </Button>
+                </div>
               </div>
 
-              <div className="flex justify-center mb-10">
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => currentQuestion && playNameTTS(currentQuestion.targetLetter)}
-                  className="w-32 h-32 rounded-[2rem] flex flex-col items-center justify-center text-white shadow-lg border-b-6 active:translate-y-1 active:border-b-2 cursor-pointer transition-all"
-                  style={{
-                    background: `linear-gradient(135deg, ${accent.primary}, ${accent.dark})`,
-                    borderColor: accent.dark,
-                  }}
-                >
-                  <Volume2 className="w-14 h-14" />
-                  <span className="text-[10px] font-bold uppercase tracking-wider mt-1 opacity-80">
-                    Hear Name
-                  </span>
-                </motion.button>
-              </div>
+              <div className="flex justify-center gap-6 max-w-2xl mx-auto mb-10 px-4">
+                {/* Left Column: TTS Speakers */}
+                <div className="flex flex-col gap-4 flex-1">
+                  {matchColumns.left.map((letter) => {
+                    const isMatched = matchedPairs.has(letter);
+                    const isSelected = selectedSpeakerMatch === letter;
+                    const isWrong = wrongMatchPair && wrongMatchPair[0] === letter;
 
-              <div className="grid grid-cols-3 gap-4 max-w-md mx-auto mb-10">
-                {currentQuestion?.options.map((letter) => {
-                  const isCorrect = selectedAnswer === letter;
-                  const isWrong = wrongAnswers.has(letter);
+                    return (
+                      <motion.button
+                        key={`speaker-${letter}`}
+                        whileHover={{ scale: isMatched ? 1 : 1.02 }}
+                        whileTap={{ scale: isMatched ? 1 : 0.98 }}
+                        onClick={() => handleSpeakerMatchClick(letter)}
+                        disabled={isMatched || !!wrongMatchPair}
+                        className={`p-4 rounded-[1.5rem] flex items-center justify-center transition-all border-b-4 border-2 shadow-sm ${isMatched
+                          ? "bg-gray-100 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700/50 text-gray-400 dark:text-gray-500 translate-y-[2px] opacity-50 cursor-default"
+                          : isWrong
+                            ? "bg-red-50 border-red-500 text-red-500 animate-shake"
+                            : isSelected
+                              ? "bg-blue-50 border-blue-500 text-blue-600 shadow-md translate-y-[2px]"
+                              : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-gray-300 hover:shadow-md cursor-pointer"
+                          }`}
+                      >
+                        <Volume2 className="w-8 h-8" />
+                      </motion.button>
+                    );
+                  })}
+                </div>
 
-                  return (
-                    <motion.button
-                      key={letter}
-                      whileHover={{ scale: isWrong || isCorrect ? 1 : 1.03 }}
-                      whileTap={{ scale: isWrong || isCorrect ? 1 : 0.97 }}
-                      onClick={() => handleOptionClick(letter)}
-                      disabled={isCorrect || isWrong || feedback === "correct"}
-                      className={`aspect-square rounded-3xl flex flex-col items-center justify-center transition-all shadow-md relative border-b-6 select-none font-black text-4xl sm:text-5xl uppercase cursor-pointer ${isCorrect
-                        ? "bg-green-500 border-green-600 text-white border-b-2 translate-y-[4px] pointer-events-none"
-                        : isWrong
-                          ? "bg-red-500 border-red-600 text-white border-b-2 translate-y-[4px] pointer-events-none opacity-40 animate-shake"
-                          : "bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-100 hover:shadow-lg border-gray-200 dark:border-gray-700"
-                        }`}
-                    >
-                      {letter}
-                      <span className="text-sm font-medium opacity-60 normal-case">
-                        {letter.toLowerCase()}
-                      </span>
+                {/* Right Column: Letters */}
+                <div className="flex flex-col gap-4 flex-1">
+                  {matchColumns.right.map((letter) => {
+                    const isMatched = matchedPairs.has(letter);
+                    const isSelected = selectedLetterMatch === letter;
+                    const isWrong = wrongMatchPair && wrongMatchPair[1] === letter;
 
-                      {isCorrect && (
-                        <CheckCircle2 className="absolute top-2 right-2 w-5 h-5 text-white bg-green-600 rounded-full" />
-                      )}
-                      {isWrong && (
-                        <XCircle className="absolute top-2 right-2 w-5 h-5 text-white bg-red-600 rounded-full" />
-                      )}
-                    </motion.button>
-                  );
-                })}
+                    return (
+                      <motion.button
+                        key={`letter-${letter}`}
+                        whileHover={{ scale: isMatched ? 1 : 1.02 }}
+                        whileTap={{ scale: isMatched ? 1 : 0.98 }}
+                        onClick={() => handleLetterMatchClick(letter)}
+                        disabled={isMatched || !!wrongMatchPair}
+                        className={`p-4 rounded-[1.5rem] flex items-center justify-center transition-all border-b-4 border-2 shadow-sm font-black text-2xl uppercase ${isMatched
+                          ? "bg-gray-100 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700/50 text-gray-400 dark:text-gray-500 translate-y-[2px] opacity-50 cursor-default"
+                          : isWrong
+                            ? "bg-red-50 border-red-500 text-red-500 animate-shake"
+                            : isSelected
+                              ? "bg-blue-50 border-blue-500 text-blue-600 shadow-md translate-y-[2px]"
+                              : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-100 hover:border-gray-300 hover:shadow-md cursor-pointer"
+                          }`}
+                      >
+                        {letter}
+                      </motion.button>
+                    );
+                  })}
+                </div>
               </div>
 
               <div className="text-center min-h-[40px]">
-                {feedback === "correct" && (
-                  <motion.p
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="text-[#58CC02] font-bold text-lg"
-                  >
-                    ✨ Spot on! That's the letter "{currentQuestion.targetLetter}"!
-                  </motion.p>
-                )}
-                {feedback === "wrong" && (
+                {wrongMatchPair && (
                   <motion.p
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     className="text-red-500 font-bold text-lg"
                   >
-                    Not quite, listen again!
+                    Not quite, try again!
+                  </motion.p>
+                )}
+                {matchedPairs.size > 0 && matchedPairs.size === matchColumns.left.length && (
+                  <motion.p
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="text-[#58CC02] font-bold text-lg"
+                  >
+                    ✨ All matched!
                   </motion.p>
                 )}
               </div>
@@ -589,10 +635,6 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
 
                           <button
                             onClick={() => {
-                              if (modelState.status !== "ready") {
-                                toast("Moonshine AI is still loading...", { icon: "⏳", id: "moonshine-loading" });
-                                return;
-                              }
                               if (isEval) {
                                 setEvaluatingLetter(null);
                               } else if (!isDone) {
@@ -601,16 +643,14 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
                                 setVoiceTranscriptsMap(prev => ({ ...prev, [l]: "" }));
                               }
                             }}
-                            disabled={(evaluatingLetter !== null && !isEval) || isDone || modelState.status !== "ready"}
+                            disabled={(evaluatingLetter !== null && !isEval) || isDone}
                             className={`relative w-12 h-12 rounded-xl flex items-center justify-center transition-all flex-shrink-0 ${isDone || vFeedback === "correct"
                               ? 'bg-green-500 text-white shadow-none opacity-50 cursor-default'
-                              : modelState.status !== "ready"
-                                ? 'bg-gray-300 dark:bg-gray-700 text-gray-500 cursor-not-allowed'
-                                : isEval
-                                  ? 'bg-red-500 text-white shadow-lg'
-                                  : vFeedback === "wrong"
-                                    ? 'bg-red-400 text-white'
-                                    : 'bg-gradient-to-br from-pink-500 to-rose-500 text-white shadow-md hover:scale-105 active:scale-95'
+                              : isEval
+                                ? 'bg-red-500 text-white shadow-lg'
+                                : vFeedback === "wrong"
+                                  ? 'bg-red-400 text-white'
+                                  : 'bg-gradient-to-br from-pink-500 to-rose-500 text-white shadow-md hover:scale-105 active:scale-95'
                               }`}
                           >
                             {isEval && (
