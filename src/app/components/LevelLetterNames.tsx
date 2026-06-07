@@ -7,7 +7,7 @@ import { supabase } from "../../lib/supabase";
 import { Confetti } from "./ui/Confetti";
 import { shuffle, allLetters, LETTER_NAMES, LETTER_TTS } from "../data/levels";
 
-import { usePhonemeRecognition, useModelLoadState } from "../hooks/usePhonemeRecognition";
+import { useMoonshineRecognition, useModelLoadState } from "../hooks/useMoonshineRecognition";
 import { toast } from "sonner";
 import { useAudioVisualizer } from "../hooks/useAudioVisualizer";
 
@@ -52,7 +52,7 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
 
   useEffect(() => {
     if (modelState.status === "ready") {
-      toast("Voice Engine Online", { icon: "✨", duration: 3000, id: "phoneme-ready" });
+      toast("Moonshine AI Online", { icon: "🚀", duration: 3000, id: "moonshine-ready" });
     }
   }, [modelState.status]);
 
@@ -177,7 +177,7 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
     }
   }, [clearEvalTimeout]);
 
-  usePhonemeRecognition({
+  useMoonshineRecognition({
     evaluatingWord: evaluatingLetter,
     enabled: !!evaluatingLetter,
     onResult: handleVoiceResult,
@@ -607,7 +607,7 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
                           <button
                             onClick={() => {
                               if (modelState.status !== "ready") {
-                                toast("Voice Engine is still loading...", { icon: "⏳", id: "phoneme-loading" });
+                                toast("Moonshine AI is still loading...", { icon: "⏳", id: "moonshine-loading" });
                                 return;
                               }
                               if (isEval) {

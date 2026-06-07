@@ -7,7 +7,7 @@ import { supabase } from "../../lib/supabase";
 import { Confetti } from "./ui/Confetti";
 import { LONG_VOWELS_DATA, LONG_VOWELS_SENTENCES, LongVowelWord, LETTER_NAMES, LETTER_TTS, shuffle } from "../data/levels";
 import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
-import { usePhonemeRecognition, useModelLoadState } from "../hooks/usePhonemeRecognition";
+import { useMoonshineRecognition, useModelLoadState } from "../hooks/useMoonshineRecognition";
 import { toast } from "sonner";
 import { useAudioVisualizer } from "../hooks/useAudioVisualizer";
 
@@ -102,7 +102,7 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
 
   useEffect(() => {
     if (modelState.status === "ready") {
-      toast("Voice Engine Online", { icon: "✨", duration: 3000, id: "phoneme-ready-vowels" });
+      toast("Moonshine AI Online", { icon: "🚀", duration: 3000, id: "moonshine-ready-vowels" });
     }
   }, [modelState.status]);
 
@@ -222,7 +222,7 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
     [currentPhase, evaluatingPatternId, evaluatingWordId, evaluatingSentenceId]
   );
 
-  const evaluatingTargetForPhoneme = useMemo(() => {
+  const evaluatingTargetForMoonshine = useMemo(() => {
     if (currentPhase === "patterns" && evaluatingPatternId) {
       const p = allPatternsRaw.find(x => x.pattern === evaluatingPatternId);
       return p ? p.vowel : null;
@@ -240,9 +240,9 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
     return null;
   }, [currentPhase, evaluatingWordId, evaluatingSentenceId]);
 
-  usePhonemeRecognition({
-    evaluatingWord: evaluatingTargetForPhoneme,
-    enabled: !!evaluatingTargetForPhoneme,
+  useMoonshineRecognition({
+    evaluatingWord: evaluatingTargetForMoonshine,
+    enabled: !!evaluatingTargetForMoonshine,
     onResult: handleResult,
     onError: () => setEvaluatingPatternId(null),
     onSilenceTimeout: () => {
@@ -587,7 +587,7 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
                           <button
                             onClick={() => {
                               if (modelState.status !== "ready") {
-                                toast("Voice Engine is still loading...", { icon: "⏳", id: "phoneme-loading-vowels" });
+                                toast("Moonshine AI is still loading...", { icon: "⏳", id: "moonshine-loading-vowels" });
                                 return;
                               }
                               if (isEval) {
