@@ -573,15 +573,15 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
                         </div>
 
                         <div className="flex items-center gap-3">
-                          {isEval && vTranscript && (
-                            <div className="p-1 bg-gray-200 rounded text-[10px] font-mono text-gray-700 mt-1 sm:mt-0 max-w-[150px] truncate">
-                              Heard: {vTranscript}
-                            </div>
-                          )}
-                          {isEval && !vTranscript && (
-                            <div className="flex items-center gap-2 mt-1 sm:mt-0">
+                          {isEval && (
+                            <div className="flex items-center gap-2 mt-1 sm:mt-0 flex-wrap">
                               <span className="text-pink-500 text-sm font-bold animate-pulse">Listening...</span>
                               <AudioVisualizer isListening={!!evaluatingLetter} isMobile={isMobile} />
+                              {vTranscript && (
+                                <span className="p-1 bg-gray-200 rounded text-[10px] font-mono text-gray-700 ml-1 truncate max-w-[120px]">
+                                  [Heard: {vTranscript}]
+                                </span>
+                              )}
                             </div>
                           )}
 

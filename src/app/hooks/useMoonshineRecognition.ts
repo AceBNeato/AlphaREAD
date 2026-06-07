@@ -112,11 +112,17 @@ export async function preloadMoonshineModel() {
       },
       true // use VAD by default for cleaner chunks
     );
-    // Warm the model by starting and immediately stopping.
-    // This triggers the internal model download and fires onModelLoaded().
-    // We stop immediately so the mic doesn't actually open.
-    await globalTranscriber!.start();
-    globalTranscriber!.stop();
+    // Warm the ONNX model explicitly without triggering the VAD/AudioContext.
+    // This pre-downloads the 140MB weights into browser cache safely.
+    if (Moonshine.Transcriber && Moonshine.Transcriber.model) {
+      await Moonshine.Transcriber.model.loadModel();
+      modelLoadState.status = 'ready';
+      modelLoadState.notify();
+    } else {
+      console.warn("[Moonshine] Transcriber.model not found, fallback to wait for interaction");
+      modelLoadState.status = 'ready'; // fake ready so UI button isn't disabled forever
+      modelLoadState.notify();
+    }
   } catch (err) {
     console.error("[Moonshine] Init error:", err);
     modelLoadState.status = 'error';
@@ -149,7 +155,7 @@ export function useMoonshineRecognition({ evaluatingWord, enabled = true, onResu
     if (isMountedRef.current) setIsListening(false);
   }, []);
 
-  const handleTranscription = useCallback((rawPhones: string) => {
+  const handleTranscription = useCallback((rawPhones: string, isFinal: boolean = true) => {
     if (!evaluatingWord || !rawPhones) return;
 
     const cleanedPhones = rawPhones.replace(/\[|\]|\/|\|/g, '').trim();
@@ -183,7 +189,9 @@ export function useMoonshineRecognition({ evaluatingWord, enabled = true, onResu
       stopMicrophone(); // auto stop if they got it right
     }
 
-    onResult(evaluatingWord, phonemeResult, finalTranscript);
+    // Only report "wrong" if the transcript is finalized. Otherwise report null to just update the UI text.
+    const reportedStatus = (phonemeResult === "wrong" && !isFinal) ? null : phonemeResult;
+    onResult(evaluatingWord, reportedStatus, finalTranscript);
   }, [evaluatingWord, onResult, stopMicrophone]);
 
   useEffect(() => {
@@ -245,11 +253,11 @@ export function useMoonshineRecognition({ evaluatingWord, enabled = true, onResu
 
       transcriber.callbacks.onTranscriptionUpdated = (text: string) => {
         resetTimer();
-        if (text) handleTranscription(text);
+        if (text) handleTranscription(text, false);
       };
       transcriber.callbacks.onTranscriptionCommitted = (text: string) => {
         resetTimer();
-        if (text) handleTranscription(text);
+        if (text) handleTranscription(text, true);
       };
       transcriber.callbacks.onError = (e: any) => {
         console.error("[Moonshine] Session error:", e);

@@ -8,8 +8,7 @@ import { Confetti } from "./ui/Confetti";
 import { CVC_SENTENCES } from "../data/levels";
 import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
 
-import { useAudioVisualizer } from "../hooks/useAudioVisualizer";
-
+import { AudioVisualizer } from "./AudioVisualizer";
 interface LevelCVCSentencesProps {
   levelId: number;
   accent: { primary: string; dark: string; lightBg: string };
@@ -49,7 +48,6 @@ export function LevelCVCSentences({ levelId, accent }: LevelCVCSentencesProps) {
   }, [clearEvalTimeout]);
 
   const isMobile = useMemo(() => /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent), []);
-  useAudioVisualizer(isMobile, !!evaluatingSentence);
 
   const playTTS = (text: string) => {
     if ("speechSynthesis" in window) {
@@ -251,7 +249,12 @@ export function LevelCVCSentences({ levelId, accent }: LevelCVCSentencesProps) {
               </button>
 
               <div className="text-center min-h-[40px] mt-6 w-full">
-                {evaluatingSentence && <p className="text-rose-500 font-bold text-sm uppercase">Listening...</p>}
+                {evaluatingSentence && (
+                  <div className="flex items-center justify-center gap-2">
+                    <p className="text-rose-500 font-bold text-sm uppercase">Listening...</p>
+                    <AudioVisualizer isListening={!!evaluatingSentence} isMobile={isMobile} />
+                  </div>
+                )}
                 {voiceTranscript && evaluatingSentence && <p className="text-gray-500 italic mt-2 text-sm">"{voiceTranscript}"</p>}
                 {evalFeedback === "correct" && <p className="text-[#58CC02] font-bold text-lg">✨ Great reading!</p>}
                 {evalFeedback === "wrong" && <p className="text-red-500 font-bold text-lg flex items-center gap-2 justify-center"><AlertCircle className="w-5 h-5" /> Let's try again!</p>}

@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { getLetterPhonetic } from "../data/levels";
 import { supabase } from "../../lib/supabase";
 import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
-import { useAudioVisualizer } from "../hooks/useAudioVisualizer";
+import { AudioVisualizer } from "./AudioVisualizer";
 
 // QWERTY keyboard layout
 const QWERTY_ROWS = [
@@ -72,7 +72,6 @@ export function LevelSounds({ levelId, accent }: LevelSoundsProps) {
   const currentEvalLetter = currentEvalLetters[evalIndex];
 
   const isMobile = useMemo(() => /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent), []);
-  useAudioVisualizer(isMobile, !!evaluatingLetter);
 
   useSpeechRecognition({
     evaluatingWord: evaluatingLetter,
@@ -251,6 +250,13 @@ export function LevelSounds({ levelId, accent }: LevelSoundsProps) {
                     <span className="text-[12px] uppercase font-bold tracking-widest">{evaluatingLetter ? "Listening" : "Speak"}</span>
                   </button>
                 </div>
+
+                {evaluatingLetter && (
+                  <div className="flex justify-center mb-4 mt-2">
+                    <AudioVisualizer isListening={!!evaluatingLetter} isMobile={isMobile} />
+                  </div>
+                )}
+
                 {evalFeedback && (
                   <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className={`flex items-center justify-center gap-2 font-bold text-lg mb-4 ${evalFeedback === 'correct' ? 'text-green-500' : 'text-red-500'}`}>
                     {evalFeedback === 'correct' ? <><CheckCircle2 /> Correct!</> : <><AlertCircle /> Try again!</>}

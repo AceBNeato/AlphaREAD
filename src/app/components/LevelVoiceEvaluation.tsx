@@ -344,15 +344,15 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
                               <AlertCircle className="w-4 h-4" /> Try again!
                             </motion.div>
                           )}
-                          {isCurrent && transcript && (
-                            <div className="p-1 bg-gray-200 rounded text-[10px] font-mono text-gray-700 mt-1 sm:mt-0">
-                              Heard: {transcript}
-                            </div>
-                          )}
-                          {isCurrent && !transcript && !processingWord && (
-                            <div className="flex items-center gap-2 mt-1 sm:mt-0">
+                          {isCurrent && !processingWord && (
+                            <div className="flex items-center gap-2 mt-1 sm:mt-0 flex-wrap">
                               <span className="text-pink-500 text-sm font-bold animate-pulse">Listening...</span>
                               <AudioVisualizer isListening={!!evaluatingWord} isMobile={isMobile} />
+                              {transcript && (
+                                <span className="p-1 bg-gray-200 rounded text-[10px] font-mono text-gray-700 ml-1 truncate max-w-[120px]">
+                                  [Heard: {transcript}]
+                                </span>
+                              )}
                             </div>
                           )}
                           {processingWord === w && (
