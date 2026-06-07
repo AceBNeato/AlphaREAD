@@ -208,21 +208,38 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, onResult,
           matchStr = (status === "correct" || status === "close") ? evaluatingWord.toLowerCase() : primaryTranscript;
         }
         // PATH B: Phrase / Sentence
-        else if (evaluatingWord.toUpperCase().replace(/[.,!?]/g, "").includes(" ")) {
-          const targetUpper = evaluatingWord.toUpperCase().replace(/[.,!?]/g, "");
+        else if (evaluatingWord.toUpperCase().replace(/[.,!?]/g, "").trim().includes(" ")) {
+          const targetUpper = evaluatingWord.toUpperCase().replace(/[.,!?]/g, "").trim();
+          const targetWords = targetUpper.split(/\s+/);
+
           let matched = false;
+          let closeMatched = false;
+
           for (let i = 0; i < results.length; i++) {
             const raw = results[i].transcript.trim().toUpperCase().replace(/[.,!?]/g, "");
-            const targetWords = targetUpper.split(/\s+/);
+            const rawWords = raw.split(/\s+/);
+
             let matchCount = 0;
-            targetWords.forEach(tw => { if (raw.includes(tw)) matchCount++; });
-            if (matchCount / targetWords.length >= 0.7 || raw.includes(targetUpper)) {
+            const availableRawWords = [...rawWords];
+            targetWords.forEach(tw => {
+              const idx = availableRawWords.indexOf(tw);
+              if (idx !== -1) {
+                matchCount++;
+                availableRawWords.splice(idx, 1);
+              }
+            });
+
+            const matchRatio = matchCount / targetWords.length;
+            if (matchRatio >= 0.75 || raw.includes(targetUpper)) {
               matched = true;
               matchStr = results[i].transcript.trim();
               break;
+            } else if (matchRatio >= 0.4) {
+              closeMatched = true;
+              matchStr = results[i].transcript.trim();
             }
           }
-          status = matched ? "correct" : "wrong";
+          status = matched ? "correct" : closeMatched ? "close" : "wrong";
         }
         // PATH C: Single Word
         else {
@@ -281,8 +298,10 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, onResult,
           try { recognitionRef.current.stop(); } catch (e) { }
         }
         onResultRef.current(evaluatingWord, bestStatus, bestTranscript);
+      } else {
+        // Emit interim transcript so the UI can display "Heard: ..." or "Listening..."
+        onResultRef.current(evaluatingWord, null, latestTranscript);
       }
-      // If wrong, do NOTHING. Let it keep listening until the 5s timeout!
     };
 
     recognition.onerror = (event: any) => {

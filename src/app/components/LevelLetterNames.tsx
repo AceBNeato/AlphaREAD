@@ -132,6 +132,8 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
       (lName && tLower.includes(lName)) ||
       (lTTS && tLower.includes(lTTS));
 
+    if (status === null && !isCorrect) return;
+
     if (isCorrect) {
       setVoiceFeedbackMap(prev => ({ ...prev, [word]: "correct" }));
       setTimeout(() => {
@@ -543,9 +545,33 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
 
                         <div className="flex items-center gap-3">
                           {isEval && vTranscript && (
-                            <span className="text-xs font-medium text-gray-500 italic max-w-[100px] truncate hidden sm:block">
-                              "{vTranscript}"
-                            </span>
+                            <div className="p-1 bg-gray-200 rounded text-[10px] font-mono text-gray-700 mt-1 sm:mt-0 max-w-[150px] truncate hidden sm:block">
+                              Heard: {vTranscript}
+                            </div>
+                          )}
+                          {isEval && !vTranscript && (
+                            <div className="flex items-center gap-2 mt-1 sm:mt-0">
+                              <span className="text-pink-500 text-sm font-bold animate-pulse hidden sm:block">Listening...</span>
+                              <div className="flex gap-1 items-center h-8 justify-center min-w-[50px]">
+                                {isMobile ? (
+                                  <>
+                                    <div className="w-1.5 bg-pink-500 rounded-full animate-[wave_0.8s_ease-in-out_infinite_0ms]" style={{ height: '20px', animationName: 'wave', animationDuration: '0.8s', animationIterationCount: 'infinite', animationDelay: '0ms' }} />
+                                    <div className="w-1.5 bg-pink-400 rounded-full" style={{ height: '28px', animation: 'wave 0.8s ease-in-out infinite 0.1s' }} />
+                                    <div className="w-1.5 bg-pink-500 rounded-full" style={{ height: '36px', animation: 'wave 0.8s ease-in-out infinite 0.2s' }} />
+                                    <div className="w-1.5 bg-pink-400 rounded-full" style={{ height: '28px', animation: 'wave 0.8s ease-in-out infinite 0.3s' }} />
+                                    <div className="w-1.5 bg-pink-500 rounded-full" style={{ height: '20px', animation: 'wave 0.8s ease-in-out infinite 0.4s' }} />
+                                  </>
+                                ) : (
+                                  <>
+                                    <div id="wave-bar-1" className="w-1.5 bg-pink-500 rounded-full transition-all duration-75" style={{ height: '6px' }} />
+                                    <div id="wave-bar-2" className="w-1.5 bg-pink-400 rounded-full transition-all duration-75" style={{ height: '6px' }} />
+                                    <div id="wave-bar-3" className="w-1.5 bg-pink-500 rounded-full transition-all duration-75" style={{ height: '6px' }} />
+                                    <div id="wave-bar-4" className="w-1.5 bg-pink-400 rounded-full transition-all duration-75" style={{ height: '6px' }} />
+                                    <div id="wave-bar-5" className="w-1.5 bg-pink-500 rounded-full transition-all duration-75" style={{ height: '6px' }} />
+                                  </>
+                                )}
+                              </div>
+                            </div>
                           )}
 
                           <button
