@@ -90,9 +90,15 @@ export async function preloadPhonemeModel() {
     // Allow pulling from HuggingFace CDN directly since we are an online webapp
     env.allowLocalModels = false;
     env.allowRemoteModels = true;
-    env.useBrowserCache = true;
+    
+    // IMPORTANT: Temporarily disable browser cache because it saved the 404 HTML page!
+    env.useBrowserCache = false;
+    
+    // Explicitly tell Transformers.js to load its WebAssembly engine from CDN
+    // Otherwise Vite tries to load it from the local server and returns index.html (404), causing the SyntaxError
+    env.backends.onnx.wasm.wasmPaths = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.14.0/dist/';
 
-    console.log("[Phoneme] Fetching wav2vec2 model from HuggingFace CDN...");
+    console.log("[Phoneme] Fetching wav2vec2 model from HuggingFace CDN (cache bypassed)...");
     globalTranscriber = await pipeline(
       "automatic-speech-recognition",
       "Xenova/wav2vec2-base-960h",
