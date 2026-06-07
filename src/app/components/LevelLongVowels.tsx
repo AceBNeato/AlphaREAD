@@ -555,7 +555,7 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
                           {isEval && (
                             <div className="flex items-center gap-2 mt-1 sm:mt-0 flex-wrap">
                               <span className="text-pink-500 text-sm font-bold animate-pulse">Listening...</span>
-                              <AudioVisualizer isListening={!!evaluatingTargetForMoonshine} isMobile={isMobile} />
+                              <AudioVisualizer isListening={!!evaluatingTargetForMic} isMobile={isMobile} />
                               {vTranscript && (
                                 <span className="p-1 bg-gray-200 rounded text-[10px] font-mono text-gray-700 ml-1 truncate max-w-[120px]">
                                   [Heard: {vTranscript}]
@@ -566,10 +566,6 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
 
                           <button
                             onClick={() => {
-                              if (modelState.status !== "ready") {
-                                toast("Moonshine AI is still loading...", { icon: "⏳", id: "moonshine-loading-vowels" });
-                                return;
-                              }
                               if (isEval) {
                                 setEvaluatingPatternId(null);
                               } else if (!isDone) {
@@ -578,16 +574,14 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
                                 setPatternTranscriptsMap(prev => ({ ...prev, [p.pattern]: "" }));
                               }
                             }}
-                            disabled={(evaluatingPatternId !== null && !isEval) || isDone || modelState.status !== "ready"}
+                            disabled={(evaluatingPatternId !== null && !isEval) || isDone}
                             className={`relative w-12 h-12 rounded-xl flex items-center justify-center transition-all flex-shrink-0 ${isDone || vFeedback === "correct"
                               ? 'bg-green-500 text-white shadow-none opacity-50 cursor-default'
-                              : modelState.status !== "ready"
-                                ? 'bg-gray-300 dark:bg-gray-700 text-gray-500 cursor-not-allowed'
-                                : isEval
-                                  ? 'bg-red-500 text-white shadow-lg'
-                                  : vFeedback === "wrong"
-                                    ? 'bg-red-400 text-white'
-                                    : 'bg-gradient-to-br from-pink-500 to-rose-500 text-white shadow-md hover:scale-105 active:scale-95'
+                              : isEval
+                                ? 'bg-red-500 text-white shadow-lg'
+                                : vFeedback === "wrong"
+                                  ? 'bg-red-400 text-white'
+                                  : 'bg-gradient-to-br from-pink-500 to-rose-500 text-white shadow-md hover:scale-105 active:scale-95'
                               }`}
                           >
                             {isEval && (
