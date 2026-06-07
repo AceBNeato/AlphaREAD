@@ -6,7 +6,7 @@ import { ThemeToggle } from "../components/ThemeToggle";
 import { levels } from "../data/levels";
 import { App } from '@capacitor/app';
 import { supabase } from "../../lib/supabase";
-import { preloadPhonemeModel } from "../hooks/usePhonemeRecognition";
+import { preloadMoonshineModel } from "../hooks/useMoonshineRecognition";
 
 interface UserProfile {
   id: string;
@@ -85,10 +85,10 @@ export default function Dashboard() {
       validateDevice();
     }
 
-    // Warm up the local Wav2Vec2 AI model in the background while the student
+    // Warm up the local Moonshine AI model in the background while the student
     // reads the dashboard. By the time they start a phonics lesson, the model
     // is already loaded and won't cause a visible delay.
-    preloadPhonemeModel();
+    preloadMoonshineModel();
 
   }, [navigate]);
 
