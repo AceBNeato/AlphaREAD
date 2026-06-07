@@ -13,6 +13,45 @@ interface UsePhonemeRecognitionProps {
   onError: () => void;
 }
 
+const HOMOPHONES: Record<string, string[]> = {
+  // Alphabet phonetic homophones
+  "A": ["a", "ay", "hey", "eight"],
+  "B": ["b", "bee", "be"],
+  "C": ["c", "see", "sea"],
+  "D": ["d", "dee", "the"],
+  "E": ["e", "ee", 'ih'],
+  "F": ["f", "eff", "if", "half"],
+  "G": ["g", "gee", "jee"],
+  "H": ["h", "aitch", "hatch", "age", "each"],
+  "I": ["i", "eye", "hi"],
+  "J": ["j", "jay"],
+  "K": ["k", "kay", "okay"],
+  "L": ["l", "ell", "el"],
+  "M": ["m", "em", "am", "him"],
+  "N": ["n", "en", "an", "and", "in"],
+  "O": ["o", "oh"],
+  "P": ["p", "pee", "pea"],
+  "Q": ["q", "cue", "queue"],
+  "R": ["r", "are", "our"],
+  "S": ["s", "ess", "yes", "is"],
+  "T": ["t", "tee", "tea"],
+  "U": ["u", "you", "yu"],
+  "V": ["v", "vee", "we"],
+  "W": ["w", "double u", "double you"],
+  "X": ["x", "ex", "axe", "text"],
+  "Y": ["y", "why", "while"],
+  "Z": ["z", "zee", "zed", "c"],
+
+  // Common CV/VC homophones
+  "PI": ["pie", "pee", "p"],
+  "ME": ["me", "mee", "m"],
+  "BE": ["be", "bee", "b"],
+  "TO": ["to", "too", "two", "t"],
+  "DO": ["do", "doo", "d"],
+  "WE": ["we", "wee", "w"],
+  "HE": ["he", "hee", "h"],
+};
+
 // ─── GLOBAL MODEL CACHE ───────────────────────────────────────────────────────
 // Keep the model in a global variable so it survives React re-renders and
 // route changes without being garbage-collected or re-downloaded.
@@ -211,7 +250,27 @@ export function usePhonemeRecognition({
       // Strip IPA brackets e.g. "[b] [æ]" → "b æ"
       const cleanedPhones = rawPhones.replace(/\[|\]|\/|\|/g, '').trim();
 
-      const phonemeResult = evaluateSyllable(targetWord, [cleanedPhones]);
+      const trimmedTarget = targetWord.trim().toLowerCase();
+      const isSingleLetter = trimmedTarget.length === 1 && /[a-z]/.test(trimmedTarget);
+      const isMagicE = trimmedTarget.length === 3 && /^[aeiou]_e$/.test(trimmedTarget);
+
+      let phonemeResult: "correct" | "close" | "wrong" = "wrong";
+
+      if (isSingleLetter || isMagicE) {
+        const letterUpper = trimmedTarget.charAt(0).toUpperCase();
+        const allowedWords = [
+          letterUpper,
+          `LETTER ${letterUpper}`,
+          ...(HOMOPHONES[letterUpper] || [])
+        ].map(w => w.toUpperCase());
+        
+        const phraseWords = cleanedPhones.toUpperCase().split(" ");
+        if (allowedWords.some(t => cleanedPhones.toUpperCase() === t || phraseWords.includes(t))) {
+          phonemeResult = "correct";
+        }
+      } else {
+        phonemeResult = evaluateSyllable(targetWord, [cleanedPhones]);
+      }
       const finalTranscript = (phonemeResult === "correct" || phonemeResult === "close")
         ? targetWord.toLowerCase()
         : cleanedPhones || "...";

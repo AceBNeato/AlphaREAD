@@ -7,7 +7,7 @@ import { supabase } from "../../lib/supabase";
 import { Confetti } from "./ui/Confetti";
 import { LONG_VOWELS_DATA, LONG_VOWELS_SENTENCES, LongVowelWord, LETTER_NAMES, LETTER_TTS, shuffle } from "../data/levels";
 import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
-
+import { usePhonemeRecognition } from "../hooks/usePhonemeRecognition";
 import { useAudioVisualizer } from "../hooks/useAudioVisualizer";
 
 interface LevelLongVowelsProps {
@@ -157,7 +157,7 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
         setPatternTranscriptsMap(prev => ({ ...prev, [evaluatingPatternId]: transcript }));
         const vName = LETTER_NAMES[target]?.toLowerCase() || "";
         const vTTS = LETTER_TTS[target]?.toLowerCase() || "";
-        isCorrect = tLower.includes(vName) || tLower.includes(vTTS) || tLower.includes(target.toLowerCase());
+        isCorrect = isCorrect || tLower.includes(vName) || tLower.includes(vTTS) || tLower.includes(target.toLowerCase());
 
         if (status === null && !isCorrect) return;
 
@@ -213,16 +213,29 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
     [currentPhase, evaluatingPatternId, evaluatingWordId, evaluatingSentenceId]
   );
 
-  useSpeechRecognition({
-    evaluatingWord: evaluatingTargetForMic,
-    enabled: !!evaluatingTargetForMic,
-    singleShot: true, // Long vowel patterns/words are single utterances — auto-stop after phrase
+  const evaluatingTargetForPhoneme = useMemo(() => {
+    if (currentPhase === "patterns" && evaluatingPatternId) {
+      const p = allPatternsRaw.find(x => x.pattern === evaluatingPatternId);
+      return p ? p.vowel : null;
+    }
+    return null;
+  }, [currentPhase, evaluatingPatternId, allPatternsRaw]);
+
+  const evaluatingTargetForSpeech = useMemo(() => {
+    if (currentPhase === "words" && evaluatingWordId) {
+      return evaluatingWordId;
+    }
+    if (currentPhase === "sentences" && evaluatingSentenceId) {
+      return evaluatingSentenceId;
+    }
+    return null;
+  }, [currentPhase, evaluatingWordId, evaluatingSentenceId]);
+
+  usePhonemeRecognition({
+    evaluatingWord: evaluatingTargetForPhoneme,
+    enabled: !!evaluatingTargetForPhoneme,
     onResult: handleResult,
-    onError: () => {
-      setEvaluatingPatternId(null);
-      setEvaluatingWordId(null);
-      setEvaluatingSentenceId(null);
-    },
+    onError: () => setEvaluatingPatternId(null),
     onSilenceTimeout: () => {
       clearEvalTimeout();
       if (currentPhase === "patterns" && evaluatingPatternId) {
@@ -231,7 +244,22 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
           setPatternFeedbackMap(prev => ({ ...prev, [evaluatingPatternId]: null }));
           setEvaluatingPatternId(null);
         }, 1500);
-      } else if (currentPhase === "words" && evaluatingWordId) {
+      }
+    }
+  });
+
+  useSpeechRecognition({
+    evaluatingWord: evaluatingTargetForSpeech,
+    enabled: !!evaluatingTargetForSpeech,
+    singleShot: true, // Long vowel words/sentences are single utterances — auto-stop after phrase
+    onResult: handleResult,
+    onError: () => {
+      setEvaluatingWordId(null);
+      setEvaluatingSentenceId(null);
+    },
+    onSilenceTimeout: () => {
+      clearEvalTimeout();
+      if (currentPhase === "words" && evaluatingWordId) {
         setWordFeedbackMap(prev => ({ ...prev, [evaluatingWordId]: "wrong" }));
         evaluationTimeoutRef.current = setTimeout(() => {
           setWordFeedbackMap(prev => ({ ...prev, [evaluatingWordId]: null }));
@@ -518,13 +546,13 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
 
                         <div className="flex items-center gap-3">
                           {isEval && vTranscript && (
-                            <div className="p-1 bg-gray-200 rounded text-[10px] font-mono text-gray-700 mt-1 sm:mt-0 max-w-[150px] truncate hidden sm:block">
+                            <div className="p-1 bg-gray-200 rounded text-[10px] font-mono text-gray-700 mt-1 sm:mt-0 max-w-[150px] truncate">
                               Heard: {vTranscript}
                             </div>
                           )}
                           {isEval && !vTranscript && (
                             <div className="flex items-center gap-2 mt-1 sm:mt-0">
-                              <span className="text-pink-500 text-sm font-bold animate-pulse hidden sm:block">Listening...</span>
+                              <span className="text-pink-500 text-sm font-bold animate-pulse">Listening...</span>
                               <div className="flex gap-1 items-center h-8 justify-center min-w-[50px]">
                                 {isMobile ? (
                                   <>
@@ -549,13 +577,15 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
 
                           <button
                             onClick={() => {
-                              if (!evaluatingPatternId && !isDone) {
+                              if (isEval) {
+                                setEvaluatingPatternId(null);
+                              } else if (!isDone) {
                                 setEvaluatingPatternId(p.pattern);
                                 setPatternFeedbackMap(prev => ({ ...prev, [p.pattern]: null }));
                                 setPatternTranscriptsMap(prev => ({ ...prev, [p.pattern]: "" }));
                               }
                             }}
-                            disabled={evaluatingPatternId !== null || isDone}
+                            disabled={(evaluatingPatternId !== null && !isEval) || isDone}
                             className={`relative w-12 h-12 rounded-xl flex items-center justify-center transition-all flex-shrink-0 ${isDone || vFeedback === "correct"
                               ? 'bg-green-500 text-white shadow-none opacity-50 cursor-default'
                               : isEval
@@ -647,13 +677,13 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
 
                         <div className="flex items-center gap-3">
                           {isEval && vTranscript && (
-                            <div className="p-1 bg-gray-200 rounded text-[10px] font-mono text-gray-700 mt-1 sm:mt-0 max-w-[150px] truncate hidden sm:block">
+                            <div className="p-1 bg-gray-200 rounded text-[10px] font-mono text-gray-700 mt-1 sm:mt-0 max-w-[150px] truncate">
                               Heard: {vTranscript}
                             </div>
                           )}
                           {isEval && !vTranscript && (
                             <div className="flex items-center gap-2 mt-1 sm:mt-0">
-                              <span className="text-pink-500 text-sm font-bold animate-pulse hidden sm:block">Listening...</span>
+                              <span className="text-pink-500 text-sm font-bold animate-pulse">Listening...</span>
                               <div className="flex gap-1 items-center h-8 justify-center min-w-[50px]">
                                 {isMobile ? (
                                   <>
@@ -678,13 +708,15 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
 
                           <button
                             onClick={() => {
-                              if (!evaluatingWordId && !isDone) {
+                              if (isEval) {
+                                setEvaluatingWordId(null);
+                              } else if (!isDone) {
                                 setEvaluatingWordId(w.word);
                                 setWordFeedbackMap(prev => ({ ...prev, [w.word]: null }));
                                 setWordTranscriptsMap(prev => ({ ...prev, [w.word]: "" }));
                               }
                             }}
-                            disabled={evaluatingWordId !== null || isDone}
+                            disabled={(evaluatingWordId !== null && !isEval) || isDone}
                             className={`relative w-12 h-12 rounded-xl flex items-center justify-center transition-all flex-shrink-0 ${isDone || vFeedback === "correct"
                               ? 'bg-green-500 text-white shadow-none opacity-50 cursor-default'
                               : isEval
@@ -773,13 +805,13 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
 
                         <div className="flex items-center gap-3">
                           {isEval && vTranscript && (
-                            <div className="p-1 bg-gray-200 rounded text-[10px] font-mono text-gray-700 mt-1 sm:mt-0 max-w-[150px] truncate hidden sm:block">
+                            <div className="p-1 bg-gray-200 rounded text-[10px] font-mono text-gray-700 mt-1 sm:mt-0 max-w-[150px] truncate">
                               Heard: {vTranscript}
                             </div>
                           )}
                           {isEval && !vTranscript && (
                             <div className="flex items-center gap-2 mt-1 sm:mt-0">
-                              <span className="text-pink-500 text-sm font-bold animate-pulse hidden sm:block">Listening...</span>
+                              <span className="text-pink-500 text-sm font-bold animate-pulse">Listening...</span>
                               <div className="flex gap-1 items-center h-8 justify-center min-w-[50px]">
                                 {isMobile ? (
                                   <>
@@ -804,13 +836,15 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
 
                           <button
                             onClick={() => {
-                              if (!evaluatingSentenceId && !isDone) {
+                              if (isEval) {
+                                setEvaluatingSentenceId(null);
+                              } else if (!isDone) {
                                 setEvaluatingSentenceId(s);
                                 setSentenceFeedbackMap(prev => ({ ...prev, [s]: null }));
                                 setSentenceTranscriptsMap(prev => ({ ...prev, [s]: "" }));
                               }
                             }}
-                            disabled={evaluatingSentenceId !== null || isDone}
+                            disabled={(evaluatingSentenceId !== null && !isEval) || isDone}
                             className={`relative w-12 h-12 rounded-xl flex items-center justify-center transition-all flex-shrink-0 ${isDone || vFeedback === "correct"
                               ? 'bg-green-500 text-white shadow-none opacity-50 cursor-default'
                               : isEval

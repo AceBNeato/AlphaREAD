@@ -235,8 +235,14 @@ export function LevelSounds({ levelId, accent }: LevelSoundsProps) {
                 </div>
                 <div className="flex justify-center mb-8">
                   <button
-                    onClick={() => setEvaluatingLetter(currentEvalLetter)}
-                    disabled={evaluatingLetter !== null || evalFeedback === "correct"}
+                    onClick={() => {
+                      if (evaluatingLetter === currentEvalLetter) {
+                        setEvaluatingLetter(null);
+                      } else {
+                        setEvaluatingLetter(currentEvalLetter);
+                      }
+                    }}
+                    disabled={(evaluatingLetter !== null && evaluatingLetter !== currentEvalLetter) || evalFeedback === "correct"}
                     className={`w-32 h-32 rounded-full flex flex-col items-center justify-center text-white shadow-xl transition-all relative z-10 ${
                       evaluatingLetter ? "bg-red-500 animate-pulse" : evalFeedback === "correct" ? "bg-green-500" : "bg-blue-500 hover:bg-blue-600 hover:scale-105 active:scale-95"
                     }`}

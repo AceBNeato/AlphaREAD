@@ -7,7 +7,7 @@ import { supabase } from "../../lib/supabase";
 import { Confetti } from "./ui/Confetti";
 import { shuffle, allLetters, LETTER_NAMES, LETTER_TTS } from "../data/levels";
 
-import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
+import { usePhonemeRecognition } from "../hooks/usePhonemeRecognition";
 import { useAudioVisualizer } from "../hooks/useAudioVisualizer";
 
 interface LevelLetterNamesProps {
@@ -168,10 +168,9 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
     }
   }, [clearEvalTimeout]);
 
-  useSpeechRecognition({
+  usePhonemeRecognition({
     evaluatingWord: evaluatingLetter,
     enabled: !!evaluatingLetter,
-    singleShot: true, // Letter names are single short words — auto-stop after phrase
     onResult: handleVoiceResult,
     onError: () => setEvaluatingLetter(null),
     onSilenceTimeout: () => {
@@ -567,13 +566,13 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
 
                         <div className="flex items-center gap-3">
                           {isEval && vTranscript && (
-                            <div className="p-1 bg-gray-200 rounded text-[10px] font-mono text-gray-700 mt-1 sm:mt-0 max-w-[150px] truncate hidden sm:block">
+                            <div className="p-1 bg-gray-200 rounded text-[10px] font-mono text-gray-700 mt-1 sm:mt-0 max-w-[150px] truncate">
                               Heard: {vTranscript}
                             </div>
                           )}
                           {isEval && !vTranscript && (
                             <div className="flex items-center gap-2 mt-1 sm:mt-0">
-                              <span className="text-pink-500 text-sm font-bold animate-pulse hidden sm:block">Listening...</span>
+                              <span className="text-pink-500 text-sm font-bold animate-pulse">Listening...</span>
                               <div className="flex gap-1 items-center h-8 justify-center min-w-[50px]">
                                 {isMobile ? (
                                   <>
@@ -598,22 +597,23 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
 
                           <button
                             onClick={() => {
-                              if (!evaluatingLetter && !isDone) {
+                              if (isEval) {
+                                setEvaluatingLetter(null);
+                              } else if (!isDone) {
                                 setEvaluatingLetter(l);
                                 setVoiceFeedbackMap(prev => ({ ...prev, [l]: null }));
                                 setVoiceTranscriptsMap(prev => ({ ...prev, [l]: "" }));
                               }
                             }}
-                            disabled={evaluatingLetter !== null || isDone}
-                            className={`relative w-12 h-12 rounded-xl flex items-center justify-center transition-all flex-shrink-0 ${
-                              isDone || vFeedback === "correct"
-                                ? 'bg-green-500 text-white shadow-none opacity-50 cursor-default'
-                                : isEval
+                            disabled={(evaluatingLetter !== null && !isEval) || isDone}
+                            className={`relative w-12 h-12 rounded-xl flex items-center justify-center transition-all flex-shrink-0 ${isDone || vFeedback === "correct"
+                              ? 'bg-green-500 text-white shadow-none opacity-50 cursor-default'
+                              : isEval
                                 ? 'bg-red-500 text-white shadow-lg'
                                 : vFeedback === "wrong"
-                                ? 'bg-red-400 text-white'
-                                : 'bg-gradient-to-br from-pink-500 to-rose-500 text-white shadow-md hover:scale-105 active:scale-95'
-                            }`}
+                                  ? 'bg-red-400 text-white'
+                                  : 'bg-gradient-to-br from-pink-500 to-rose-500 text-white shadow-md hover:scale-105 active:scale-95'
+                              }`}
                           >
                             {isEval && (
                               <>
