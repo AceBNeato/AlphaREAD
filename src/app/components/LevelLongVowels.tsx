@@ -6,9 +6,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { supabase } from "../../lib/supabase";
 import { Confetti } from "./ui/Confetti";
 import { LONG_VOWELS_DATA, LONG_VOWELS_SENTENCES, LongVowelWord, LETTER_NAMES, LETTER_TTS, shuffle } from "../data/levels";
-// Removed useSpeechRecognition
-import { useMoonshineRecognition, useModelLoadState } from "../hooks/useMoonshineRecognition";
-import { toast } from "sonner";
+import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
 import { AudioVisualizer } from "./AudioVisualizer";
 
 interface LevelLongVowelsProps {
@@ -98,13 +96,6 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
   const [showConfetti, setShowConfetti] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  const modelState = useModelLoadState();
-
-  useEffect(() => {
-    if (modelState.status === "ready") {
-      toast("Moonshine AI Online", { icon: "🚀", duration: 3000, id: "moonshine-ready-vowels" });
-    }
-  }, [modelState.status]);
 
   const evaluationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -221,29 +212,15 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
     [currentPhase, evaluatingPatternId, evaluatingWordId, evaluatingSentenceId]
   );
 
-  const evaluatingTargetForMoonshine = useMemo(() => {
-    if (currentPhase === "patterns" && evaluatingPatternId) {
-      const p = allPatternsRaw.find(x => x.pattern === evaluatingPatternId);
-      return p ? p.vowel : null;
-    }
-    return null;
-  }, [currentPhase, evaluatingPatternId, allPatternsRaw]);
-
-  const evaluatingTargetForSpeech = useMemo(() => {
-    if (currentPhase === "words" && evaluatingWordId) {
-      return evaluatingWordId;
-    }
-    if (currentPhase === "sentences" && evaluatingSentenceId) {
-      return evaluatingSentenceId;
-    }
-    return null;
-  }, [currentPhase, evaluatingWordId, evaluatingSentenceId]);
-
-  useMoonshineRecognition({
-    evaluatingWord: evaluatingTargetForMoonshine,
-    enabled: !!evaluatingTargetForMoonshine,
+  useSpeechRecognition({
+    evaluatingWord: evaluatingTargetForMic,
+    enabled: !!evaluatingTargetForMic,
     onResult: handleResult,
-    onError: () => setEvaluatingPatternId(null),
+    onError: () => {
+      setEvaluatingPatternId(null);
+      setEvaluatingWordId(null);
+      setEvaluatingSentenceId(null);
+    },
     onSilenceTimeout: () => {
       clearEvalTimeout();
       if (currentPhase === "patterns" && evaluatingPatternId) {
@@ -252,21 +229,7 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
           setPatternFeedbackMap(prev => ({ ...prev, [evaluatingPatternId]: null }));
           setEvaluatingPatternId(null);
         }, 1500);
-      }
-    }
-  });
-
-  useMoonshineRecognition({
-    evaluatingWord: evaluatingTargetForSpeech,
-    enabled: !!evaluatingTargetForSpeech,
-    onResult: handleResult,
-    onError: () => {
-      setEvaluatingWordId(null);
-      setEvaluatingSentenceId(null);
-    },
-    onSilenceTimeout: () => {
-      clearEvalTimeout();
-      if (currentPhase === "words" && evaluatingWordId) {
+      } else if (currentPhase === "words" && evaluatingWordId) {
         setWordFeedbackMap(prev => ({ ...prev, [evaluatingWordId]: "wrong" }));
         evaluationTimeoutRef.current = setTimeout(() => {
           setWordFeedbackMap(prev => ({ ...prev, [evaluatingWordId]: null }));
