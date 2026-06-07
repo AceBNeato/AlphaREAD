@@ -51,6 +51,11 @@ export function useModelLoadState() {
   useEffect(() => {
     const listener = () => setState({ status: modelLoadState.status, percent: modelLoadState.percent });
     modelLoadState.listeners.add(listener);
+
+    if (modelLoadState.status === 'idle') {
+      preloadMoonshineModel();
+    }
+
     return () => { modelLoadState.listeners.delete(listener); };
   }, []);
   return state;
