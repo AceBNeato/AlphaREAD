@@ -1,7 +1,10 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { evaluateSyllable, isSyllableTarget, PhonemeResult } from "../utils/PhonemeEvaluator";
 
-const DEBUG = true;
+// Logs only in development — automatically silent in production builds
+const DEBUG = typeof process !== 'undefined'
+  ? process.env.NODE_ENV !== 'production'
+  : (import.meta as any).env?.DEV ?? false;
 
 const DIGIT_MAP: Record<string, string> = {
   "0": "ZERO", "1": "ONE", "2": "TWO", "3": "THREE", "4": "FOUR",
@@ -52,6 +55,9 @@ export type EvaluationFeedback = "correct" | "close" | "wrong" | null;
 interface UseSpeechRecognitionProps {
   evaluatingWord: string | null;
   enabled?: boolean;
+  /** When true: continuous=false, interimResults=false — browser auto-stops after one phrase.
+   *  Best for single letter/word tasks (Lesson 4 Letter Names, Lesson 5 Long Vowels). */
+  singleShot?: boolean;
   onResult: (word: string, status: EvaluationFeedback, transcript: string) => void;
   onSilenceTimeout: () => void;
   onError: () => void;
@@ -64,7 +70,7 @@ const HOMOPHONES: Record<string, string[]> = {
   "B": ["b", "bee", "be"],
   "C": ["c", "see", "sea"],
   "D": ["d", "dee", "the"],
-  "E": ["e", "ee"],
+  "E": ["e", "ee", 'ih'],
   "F": ["f", "eff", "if", "half"],
   "G": ["g", "gee", "jee"],
   "H": ["h", "aitch", "hatch", "age", "each"],
@@ -80,7 +86,7 @@ const HOMOPHONES: Record<string, string[]> = {
   "R": ["r", "are", "our"],
   "S": ["s", "ess", "yes", "is"],
   "T": ["t", "tee", "tea"],
-  "U": ["u", "you"],
+  "U": ["u", "you", "yu"],
   "V": ["v", "vee", "we"],
   "W": ["w", "double u", "double you"],
   "X": ["x", "ex", "axe", "text"],
@@ -107,7 +113,7 @@ const HOMOPHONES: Record<string, string[]> = {
   "BUG": ["bag", "pug", "bud"],
 };
 
-export function useSpeechRecognition({ evaluatingWord, enabled = true, onResult, onSilenceTimeout, onError }: UseSpeechRecognitionProps) {
+export function useSpeechRecognition({ evaluatingWord, enabled = true, singleShot = false, onResult, onSilenceTimeout, onError }: UseSpeechRecognitionProps) {
   const recognitionRef = useRef<any>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const resultReceivedRef = useRef(false);
@@ -154,8 +160,8 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, onResult,
     const recognition = new SpeechRecognitionAPI();
     recognitionRef.current = recognition;
 
-    recognition.continuous = true; // Keep mic open!
-    recognition.interimResults = true; // Evaluate as they speak!
+    recognition.continuous = !singleShot;      // singleShot: stops after one phrase
+    recognition.interimResults = !singleShot;  // singleShot: only final results
     recognition.lang = "en-US";
     recognition.maxAlternatives = 5;
 
@@ -339,8 +345,19 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, onResult,
     };
 
     recognition.onend = () => {
-      // If it ends naturally before timeout, don't trigger error.
-      // The 5s timeout fallback handles the failure gracefully.
+      // In singleShot mode the browser fires onend after the phrase ends.
+      // If we haven't matched yet and the timeout hasn't fired, treat it as silence.
+      if (singleShot && isActive && !hasMatched) {
+        if (timeoutRef.current) clearTimeout(timeoutRef.current);
+        hasMatched = true;
+        if (resultReceivedRef.current && latestTranscript) {
+          if (DEBUG) console.log(`[AlphabetGO Debug] 🏁 singleShot onend — forcing "wrong" with: "${latestTranscript}"`);
+          onResultRef.current(evaluatingWord, "wrong", latestTranscript);
+        } else {
+          if (DEBUG) console.log(`[AlphabetGO Debug] 🤫 singleShot onend — no speech, silence timeout.`);
+          onSilenceTimeoutRef.current();
+        }
+      }
     };
 
     try {

@@ -216,6 +216,7 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
   useSpeechRecognition({
     evaluatingWord: evaluatingTargetForMic,
     enabled: !!evaluatingTargetForMic,
+    singleShot: true, // Long vowel patterns/words are single utterances — auto-stop after phrase
     onResult: handleResult,
     onError: () => {
       setEvaluatingPatternId(null);
@@ -477,7 +478,7 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
                 <Button variant="outline" size="sm" onClick={handleReset} className="rounded-full flex items-center gap-2 border-amber-300">
                   <RotateCcw className="w-4 h-4 text-amber-600" /> Reset
                 </Button>
-                <Button size="sm" onClick={handleSkip} disabled={completedPatterns.size < activePatterns.length} className="rounded-full flex items-center gap-2 text-white shadow-md active:scale-95 transition-all" style={{ background: completedPatterns.size >= activePatterns.length ? `linear-gradient(135deg, ${accent.primary}, ${accent.dark})` : "gray" }}>
+                <Button size="sm" onClick={handleNextQuiz} disabled={completedPatterns.size < activePatterns.length} className="rounded-full flex items-center gap-2 text-white shadow-md active:scale-95 transition-all" style={{ background: completedPatterns.size >= activePatterns.length ? `linear-gradient(135deg, ${accent.primary}, ${accent.dark})` : "gray" }}>
                   Next <ArrowRight className="w-4 h-4" />
                 </Button>
                 <Button variant="outline" size="sm" onClick={handleSkip} className="rounded-full flex items-center gap-2 border-amber-300">
@@ -606,7 +607,7 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
                 <Button variant="outline" size="sm" onClick={handleReset} className="rounded-full flex items-center gap-2 border-amber-300">
                   <RotateCcw className="w-4 h-4 text-amber-600" /> Reset
                 </Button>
-                <Button size="sm" onClick={handleSkip} disabled={completedWords.size < activeWords.length} className="rounded-full flex items-center gap-2 text-white shadow-md active:scale-95 transition-all" style={{ background: completedWords.size >= activeWords.length ? `linear-gradient(135deg, ${accent.primary}, ${accent.dark})` : "gray" }}>
+                <Button size="sm" onClick={handleNextQuiz} disabled={completedWords.size < activeWords.length} className="rounded-full flex items-center gap-2 text-white shadow-md active:scale-95 transition-all" style={{ background: completedWords.size >= activeWords.length ? `linear-gradient(135deg, ${accent.primary}, ${accent.dark})` : "gray" }}>
                   Next <ArrowRight className="w-4 h-4" />
                 </Button>
                 <Button variant="outline" size="sm" onClick={handleSkip} className="rounded-full flex items-center gap-2 border-amber-300">
@@ -735,7 +736,7 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
                 <Button variant="outline" size="sm" onClick={handleReset} className="rounded-full flex items-center gap-2 border-amber-300">
                   <RotateCcw className="w-4 h-4 text-amber-600" /> Reset
                 </Button>
-                <Button size="sm" onClick={handleSkip} disabled={completedSentences.size < activeSentences.length} className="rounded-full flex items-center gap-2 text-white shadow-md active:scale-95 transition-all" style={{ background: completedSentences.size >= activeSentences.length ? `linear-gradient(135deg, ${accent.primary}, ${accent.dark})` : "gray" }}>
+                <Button size="sm" onClick={handleNextQuiz} disabled={completedSentences.size < activeSentences.length} className="rounded-full flex items-center gap-2 text-white shadow-md active:scale-95 transition-all" style={{ background: completedSentences.size >= activeSentences.length ? `linear-gradient(135deg, ${accent.primary}, ${accent.dark})` : "gray" }}>
                   Next <ArrowRight className="w-4 h-4" />
                 </Button>
                 <Button variant="outline" size="sm" onClick={handleSkip} className="rounded-full flex items-center gap-2 border-amber-300">

@@ -171,6 +171,7 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
   useSpeechRecognition({
     evaluatingWord: evaluatingLetter,
     enabled: !!evaluatingLetter,
+    singleShot: true, // Letter names are single short words — auto-stop after phrase
     onResult: handleVoiceResult,
     onError: () => setEvaluatingLetter(null),
     onSilenceTimeout: () => {

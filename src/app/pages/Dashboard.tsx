@@ -85,7 +85,9 @@ export default function Dashboard() {
       validateDevice();
     }
 
-    // Trigger the silent background download of the phonetic AI model
+    // Warm up the local Wav2Vec2 AI model in the background while the student
+    // reads the dashboard. By the time they start a phonics lesson, the model
+    // is already loaded and won't cause a visible delay.
     preloadPhonemeModel();
 
   }, [navigate]);

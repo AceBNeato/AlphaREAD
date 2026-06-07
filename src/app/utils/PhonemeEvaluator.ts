@@ -364,7 +364,10 @@ function evaluateVC(target: string, transcripts: string[]): "correct" | "close" 
 
 export type PhonemeResult = "correct" | "close" | "wrong";
 
-const DEBUG = true;
+// Logs only in development — automatically silent in production builds
+const DEBUG = typeof process !== 'undefined'
+  ? process.env.NODE_ENV !== 'production'
+  : (import.meta as any).env?.DEV ?? false;
 
 /**
  * Main entry point. Evaluates one or more SpeechRecognition transcript
