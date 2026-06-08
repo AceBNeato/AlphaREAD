@@ -208,6 +208,7 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
 
   const handleVoiceShuffle = () => {
     clearEvalTimeout();
+    setEvaluatingLetter(null);
     setShuffledVoiceLetters(shuffle([...step.letters]));
     setCompletedVoiceLetters(new Set());
     setVoiceFeedbackMap({});
@@ -216,6 +217,7 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
 
   const handleVoiceReset = () => {
     clearEvalTimeout();
+    setEvaluatingLetter(null);
     setCompletedVoiceLetters(new Set());
     setVoiceFeedbackMap({});
     setVoiceTranscriptsMap({});
@@ -223,6 +225,7 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
 
   const handleVoiceNext = () => {
     clearEvalTimeout();
+    setEvaluatingLetter(null);
     setCompletedVoiceLetters(new Set());
     setVoiceFeedbackMap({});
     setVoiceTranscriptsMap({});

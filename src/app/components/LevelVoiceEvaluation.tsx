@@ -14,6 +14,7 @@ import {
   Volume2,
   Shuffle,
   Loader2,
+  SkipForward,
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { CVC_WORDS, shuffle, getPhoneticPronunciation } from "../data/levels";
@@ -86,19 +87,15 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
 
   const handleNext = () => {
     clearEvalTimeout();
-    const currentWord = words[wordsIndex];
-    if (currentWord) {
-      setCompletedWords(prev => {
-        const next = new Set(prev);
-        next.add(currentWord);
-        return next;
-      });
-    }
-    if (wordsIndex < words.length - 1) {
-      setWordsIndex(prev => Math.min(prev + 1, words.length - 1));
-    } else {
-      setShowCompletionScreen(true);
-    }
+    safeSetEvaluatingWordNull();
+    setShowCompletionScreen(true);
+  };
+
+  const handleSkip = () => {
+    clearEvalTimeout();
+    safeSetEvaluatingWordNull();
+    setCompletedWords(new Set(words));
+    setShowCompletionScreen(true);
   };
 
   const playTTS = async (text: string) => {
@@ -305,11 +302,19 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
               <Button
                 size="sm"
                 onClick={handleNext}
-                disabled={completedWords.size >= words.length}
+                disabled={completedWords.size < words.length}
                 className="flex items-center gap-1.5 text-white shadow-md active:scale-95"
-                style={{ background: `linear-gradient(135deg, ${accent.primary}, ${accent.dark})` }}
+                style={{ background: completedWords.size >= words.length ? `linear-gradient(135deg, ${accent.primary}, ${accent.dark})` : "gray" }}
               >
                 Next <ArrowRight className="w-4 h-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleSkip}
+                className="flex items-center gap-1.5 border-amber-300 text-amber-600 hover:bg-amber-50 dark:border-amber-700 dark:text-amber-400"
+              >
+                Skip <SkipForward className="w-4 h-4" />
               </Button>
             </div>
 

@@ -248,6 +248,9 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
 
   const handleShuffle = () => {
     clearEvalTimeout();
+    setEvaluatingPatternId(null);
+    setEvaluatingWordId(null);
+    setEvaluatingSentenceId(null);
     if (currentPhase === "patterns") {
       setActivePatterns(shuffle([...allPatternsRaw]));
       setCompletedPatterns(new Set());
@@ -268,6 +271,9 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
 
   const handleReset = () => {
     clearEvalTimeout();
+    setEvaluatingPatternId(null);
+    setEvaluatingWordId(null);
+    setEvaluatingSentenceId(null);
     if (currentPhase === "patterns") {
       setCompletedPatterns(new Set());
       setPatternFeedbackMap({});
@@ -285,6 +291,9 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
 
   const handleSkip = () => {
     clearEvalTimeout();
+    setEvaluatingPatternId(null);
+    setEvaluatingWordId(null);
+    setEvaluatingSentenceId(null);
     if (currentPhase === "patterns") {
       setCompletedPatterns(new Set(activePatterns.map(p => p.pattern)));
       handleNextQuiz();
