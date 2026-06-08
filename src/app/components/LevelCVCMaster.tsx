@@ -23,7 +23,7 @@ export function LevelCVCMaster({ levelId, accent }: LevelCVCMasterProps) {
   // Dynamically generate a single random pool of 10 CVC words each time the level starts!
   const STEPS: GameStep[] = useMemo(() => {
     const randomWords = shuffle([...CVC_WORDS]).slice(0, 10);
-    
+
     // Break into chunks of 5 words
     const chunk1 = randomWords.slice(0, 5);
     const chunk2 = randomWords.slice(5, 10);
@@ -32,11 +32,11 @@ export function LevelCVCMaster({ levelId, accent }: LevelCVCMasterProps) {
       // 5 first
       { phase: "build", words: chunk1 },
       { phase: "eval", words: chunk1 },
-      
+
       // 5 next
       { phase: "build", words: chunk2 },
       { phase: "eval", words: chunk2 },
-      
+
       // 10 last (eval only)
       { phase: "eval", words: [...chunk1, ...chunk2] }
     ];
