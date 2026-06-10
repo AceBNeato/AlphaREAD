@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { LevelSyllableBuilder } from "./LevelSyllableBuilder";
 import { LevelVoiceEvaluation } from "./LevelVoiceEvaluation";
+import { LevelCVCSentences } from "./LevelCVCSentences";
 import { supabase } from "../../lib/supabase";
 import { useNavigate } from "react-router";
 import { SyllableTarget, CVC_WORDS, shuffle } from "../data/levels";
@@ -10,7 +11,7 @@ interface LevelCVCMasterProps {
   accent: { primary: string; dark: string; lightBg: string };
 }
 
-type StepPhase = "build" | "eval" | "milestone";
+type StepPhase = "build" | "eval" | "milestone" | "sentences";
 
 interface GameStep {
   phase: StepPhase;
@@ -38,7 +39,10 @@ export function LevelCVCMaster({ levelId, accent }: LevelCVCMasterProps) {
       { phase: "eval", words: chunk2 },
 
       // 10 last (eval only)
-      { phase: "eval", words: [...chunk1, ...chunk2] }
+      { phase: "eval", words: [...chunk1, ...chunk2] },
+
+      // Final sentences quiz
+      { phase: "sentences", words: [] }
     ];
   }, []);
 
@@ -89,6 +93,18 @@ export function LevelCVCMaster({ levelId, accent }: LevelCVCMasterProps) {
         levelId={levelId}
         accent={accent}
         customWords={step.words}
+        isSubPhase={true}
+        onComplete={handleNextStep}
+      />
+    );
+  }
+
+  // Phase: Sentences Quiz
+  if (step.phase === "sentences") {
+    return (
+      <LevelCVCSentences
+        levelId={levelId}
+        accent={accent}
         isSubPhase={true}
         onComplete={handleNextStep}
       />

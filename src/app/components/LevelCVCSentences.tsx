@@ -12,9 +12,11 @@ import { AudioVisualizer } from "./AudioVisualizer";
 interface LevelCVCSentencesProps {
   levelId: number;
   accent: { primary: string; dark: string; lightBg: string };
+  isSubPhase?: boolean;
+  onComplete?: () => void;
 }
 
-export function LevelCVCSentences({ levelId, accent }: LevelCVCSentencesProps) {
+export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete }: LevelCVCSentencesProps) {
   const navigate = useNavigate();
 
   const [currentSetIndex, setCurrentSetIndex] = useState(0); // 0, 1, 2
@@ -59,6 +61,7 @@ export function LevelCVCSentences({ levelId, accent }: LevelCVCSentencesProps) {
   };
 
   const handleNext = useCallback(() => {
+    setEvaluatingSentence(null);
     if (currentIndex < activeSentences.length - 1) {
       setCurrentIndex(prev => prev + 1);
       setEvalFeedback(null);
@@ -118,6 +121,7 @@ export function LevelCVCSentences({ levelId, accent }: LevelCVCSentencesProps) {
 
   const handleShuffle = () => {
     clearEvalTimeout();
+    setEvaluatingSentence(null);
     setActiveSentences(prev => [...prev].sort(() => Math.random() - 0.5));
     setCurrentIndex(0);
     setEvalFeedback(null);
@@ -126,6 +130,7 @@ export function LevelCVCSentences({ levelId, accent }: LevelCVCSentencesProps) {
 
   const handleReset = () => {
     clearEvalTimeout();
+    setEvaluatingSentence(null);
     setActiveSentences(CVC_SENTENCES.slice(currentSetIndex * 10, currentSetIndex * 10 + 10));
     setCurrentIndex(0);
     setEvalFeedback(null);
@@ -164,7 +169,12 @@ export function LevelCVCSentences({ levelId, accent }: LevelCVCSentencesProps) {
       localStorage.setItem("completedLevels", JSON.stringify(completedLevels));
     }
     setIsSaving(false);
-    navigate("/levels");
+    
+    if (onComplete) {
+      onComplete();
+    } else {
+      navigate("/levels");
+    }
   };
 
   const isFinalSet = currentSetIndex === 2; // 3 sets total (0,1,2)
@@ -173,19 +183,21 @@ export function LevelCVCSentences({ levelId, accent }: LevelCVCSentencesProps) {
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 dark:bg-none dark:bg-[#0d141c] pb-12 flex flex-col">
       <Confetti active={showConfetti} />
 
-      <div className="sticky top-0 z-10 bg-white/80 dark:bg-[#0d141c]/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 px-4 py-3">
-        <div className="max-w-4xl mx-auto flex items-center justify-between gap-3">
-          <Button variant="ghost" size="sm" onClick={handleGoBack} className="rounded-full">
-            <Home className="w-5 h-5" />
-          </Button>
-          <h2 className="text-lg font-bold tracking-tight text-center flex-1" style={{ color: accent.primary }}>
-            CVC Sentences (Set {currentSetIndex + 1}/3)
-          </h2>
-          <span className="text-xs font-bold text-gray-500 bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full uppercase">
-            {currentIndex + 1}/{activeSentences.length}
-          </span>
+      {!isSubPhase && (
+        <div className="sticky top-0 z-10 bg-white/80 dark:bg-[#0d141c]/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 px-4 py-3">
+          <div className="max-w-4xl mx-auto flex items-center justify-between gap-3">
+            <Button variant="ghost" size="sm" onClick={handleGoBack} className="rounded-full">
+              <Home className="w-5 h-5" />
+            </Button>
+            <h2 className="text-lg font-bold tracking-tight text-center flex-1" style={{ color: accent.primary }}>
+              CVC Sentences (Set {currentSetIndex + 1}/3)
+            </h2>
+            <span className="text-xs font-bold text-gray-500 bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full uppercase">
+              {currentIndex + 1}/{activeSentences.length}
+            </span>
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="max-w-4xl mx-auto px-4 py-6 flex-1 flex flex-col justify-center w-full">
         <AnimatePresence mode="wait">
@@ -293,7 +305,7 @@ export function LevelCVCSentences({ levelId, accent }: LevelCVCSentencesProps) {
                     background: `linear-gradient(135deg, ${accent.primary} 0%, ${accent.dark} 100%)`,
                   }}
                 >
-                  {isSaving ? "Saving..." : "Back to Levels"}
+                  {isSaving ? "Saving..." : isSubPhase ? "Continue" : "Back to Levels"}
                 </Button>
               ) : (
                 <Button
