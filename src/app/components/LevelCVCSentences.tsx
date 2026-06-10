@@ -1,6 +1,9 @@
-import { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { useNavigate } from "react-router";
-import { Home, Mic, MicOff, CheckCircle2, Sparkles, ArrowRight, AlertCircle, Shuffle, RotateCcw, Volume2, SkipForward } from "lucide-react";
+import {
+  Home, Mic, MicOff, CheckCircle2, XCircle, Sparkles, ArrowRight,
+  Shuffle, RotateCcw, SkipForward, Volume2
+} from "lucide-react";
 import { Button } from "./ui/button";
 import { motion, AnimatePresence } from "motion/react";
 import { supabase } from "../../lib/supabase";
@@ -8,7 +11,6 @@ import { Confetti } from "./ui/Confetti";
 import { CVC_SENTENCES } from "../data/levels";
 import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
 
-import { AudioVisualizer } from "./AudioVisualizer";
 interface LevelCVCSentencesProps {
   levelId: number;
   accent: { primary: string; dark: string; lightBg: string };
@@ -16,29 +18,27 @@ interface LevelCVCSentencesProps {
   onComplete?: () => void;
 }
 
+const SENTENCES_PER_SET = 10;
+const totalSets = Math.ceil(CVC_SENTENCES.length / SENTENCES_PER_SET);
+
 export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete }: LevelCVCSentencesProps) {
   const navigate = useNavigate();
 
-  const [currentSetIndex, setCurrentSetIndex] = useState(0); // 0, 1, 2
-  const [currentIndex, setCurrentIndex] = useState(0); // 0 to 9
-  const currentIndexRef = useRef(0);
-
+  const [currentSetIndex, setCurrentSetIndex] = useState(0);
   const [activeSentences, setActiveSentences] = useState<string[]>([]);
 
-  useEffect(() => {
-    setActiveSentences(CVC_SENTENCES.slice(currentSetIndex * 10, currentSetIndex * 10 + 10));
-    currentIndexRef.current = 0;
-    setCurrentIndex(0);
-  }, [currentSetIndex]);
-
-  const [evaluatingSentence, setEvaluatingSentence] = useState<string | null>(null);
-  const [evalFeedback, setEvalFeedback] = useState<"correct" | "wrong" | null>(null);
-  const [voiceTranscript, setVoiceTranscript] = useState("");
+  // Per-sentence state maps (matches Lesson 5 pattern)
+  const [evaluatingSentenceId, setEvaluatingSentenceId] = useState<string | null>(null);
+  const [completedSentences, setCompletedSentences] = useState<Set<string>>(new Set());
+  const [sentenceFeedbackMap, setSentenceFeedbackMap] = useState<Record<string, "correct" | "wrong" | null>>({});
+  const [sentenceTranscriptsMap, setSentenceTranscriptsMap] = useState<Record<string, string>>({});
 
   const [showConfetti, setShowConfetti] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
   const evaluationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const isMobile = useMemo(() => /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent), []);
 
   const clearEvalTimeout = useCallback(() => {
     if (evaluationTimeoutRef.current) {
@@ -47,11 +47,16 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete }: L
     }
   }, []);
 
-  useEffect(() => {
-    return () => clearEvalTimeout();
-  }, [clearEvalTimeout]);
+  useEffect(() => () => clearEvalTimeout(), [clearEvalTimeout]);
 
-  const isMobile = useMemo(() => /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent), []);
+  // Load sentences for current set
+  useEffect(() => {
+    setActiveSentences(CVC_SENTENCES.slice(currentSetIndex * SENTENCES_PER_SET, (currentSetIndex + 1) * SENTENCES_PER_SET));
+    setCompletedSentences(new Set());
+    setSentenceFeedbackMap({});
+    setSentenceTranscriptsMap({});
+    setEvaluatingSentenceId(null);
+  }, [currentSetIndex]);
 
   const playTTS = (text: string) => {
     if ("speechSynthesis" in window) {
@@ -62,84 +67,86 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete }: L
     }
   };
 
-  const handleNext = useCallback(() => {
-    setEvaluatingSentence(null);
-    if (currentIndexRef.current < activeSentences.length - 1) {
-      currentIndexRef.current += 1;
-      setCurrentIndex(currentIndexRef.current);
-      setEvalFeedback(null);
-      setVoiceTranscript("");
-    } else {
-      setShowConfetti(true);
-    }
-  }, [activeSentences.length]);
-
+  // Voice result handler (matches Lesson 5 pattern)
   const handleResult = useCallback(
     (target: string, status: "correct" | "close" | "wrong" | null, transcript: string) => {
-      setVoiceTranscript(transcript);
+      setSentenceTranscriptsMap(prev => ({ ...prev, [target]: transcript }));
 
       const tLower = transcript.toLowerCase().replace(/[.,!?]/g, "");
       const targetLower = target.toLowerCase().replace(/[.,!?]/g, "");
       const wordsInTarget = targetLower.split(" ");
       let matchCount = 0;
-      wordsInTarget.forEach(w => {
-        if (tLower.includes(w)) matchCount++;
-      });
+      wordsInTarget.forEach(w => { if (tLower.includes(w)) matchCount++; });
 
-      const isCorrect = status === "correct" || status === "close" || tLower.includes(targetLower) || (matchCount / wordsInTarget.length >= 0.7);
+      const isCorrect = status === "correct" || status === "close"
+        || tLower.includes(targetLower)
+        || (matchCount / wordsInTarget.length >= 0.7);
 
       clearEvalTimeout();
 
       if (isCorrect) {
-        setEvalFeedback("correct");
+        setSentenceFeedbackMap(prev => ({ ...prev, [target]: "correct" }));
         evaluationTimeoutRef.current = setTimeout(() => {
-          setEvaluatingSentence(null);
-          handleNext();
+          setCompletedSentences(prev => new Set(prev).add(target));
+          setEvaluatingSentenceId(null);
         }, 1500);
       } else {
-        setEvalFeedback("wrong");
+        setSentenceFeedbackMap(prev => ({ ...prev, [target]: "wrong" }));
         evaluationTimeoutRef.current = setTimeout(() => {
-          setEvalFeedback(null);
-          setEvaluatingSentence(null);
+          setSentenceFeedbackMap(prev => ({ ...prev, [target]: null }));
+          setEvaluatingSentenceId(null);
         }, 2000);
       }
     },
-    [handleNext]
+    [clearEvalTimeout]
   );
 
   useSpeechRecognition({
-    evaluatingWord: evaluatingSentence,
-    enabled: !!evaluatingSentence,
+    evaluatingWord: evaluatingSentenceId,
+    enabled: !!evaluatingSentenceId,
     onResult: handleResult,
-    onError: () => setEvaluatingSentence(null),
+    onError: () => setEvaluatingSentenceId(null),
     onSilenceTimeout: () => {
       clearEvalTimeout();
-      setEvalFeedback("wrong");
-      evaluationTimeoutRef.current = setTimeout(() => {
-        setEvalFeedback(null);
-        setEvaluatingSentence(null);
-      }, 1500);
+      if (evaluatingSentenceId) {
+        const s = evaluatingSentenceId;
+        setSentenceFeedbackMap(prev => ({ ...prev, [s]: "wrong" }));
+        evaluationTimeoutRef.current = setTimeout(() => {
+          setSentenceFeedbackMap(prev => ({ ...prev, [s]: null }));
+          setEvaluatingSentenceId(null);
+        }, 1500);
+      }
     }
   });
 
+  // Controls
   const handleShuffle = () => {
     clearEvalTimeout();
-    setEvaluatingSentence(null);
+    setEvaluatingSentenceId(null);
     setActiveSentences(prev => [...prev].sort(() => Math.random() - 0.5));
-    currentIndexRef.current = 0;
-    setCurrentIndex(0);
-    setEvalFeedback(null);
-    setVoiceTranscript("");
+    setCompletedSentences(new Set());
+    setSentenceFeedbackMap({});
+    setSentenceTranscriptsMap({});
   };
 
   const handleReset = () => {
     clearEvalTimeout();
-    setEvaluatingSentence(null);
-    setActiveSentences(CVC_SENTENCES.slice(currentSetIndex * 10, currentSetIndex * 10 + 10));
-    currentIndexRef.current = 0;
-    setCurrentIndex(0);
-    setEvalFeedback(null);
-    setVoiceTranscript("");
+    setEvaluatingSentenceId(null);
+    setActiveSentences(CVC_SENTENCES.slice(currentSetIndex * SENTENCES_PER_SET, (currentSetIndex + 1) * SENTENCES_PER_SET));
+    setCompletedSentences(new Set());
+    setSentenceFeedbackMap({});
+    setSentenceTranscriptsMap({});
+  };
+
+  const handleNextQuiz = () => {
+    setShowConfetti(true);
+  };
+
+  const handleSkip = () => {
+    clearEvalTimeout();
+    setEvaluatingSentenceId(null);
+    setCompletedSentences(new Set(activeSentences));
+    handleNextQuiz();
   };
 
   const handleGoBack = () => {
@@ -166,15 +173,13 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete }: L
       console.error("Error saving progress:", err);
     }
 
-    const completedLevels = JSON.parse(
-      localStorage.getItem("completedLevels") || "[]"
-    );
+    const completedLevels = JSON.parse(localStorage.getItem("completedLevels") || "[]");
     if (!completedLevels.includes(levelId)) {
       completedLevels.push(levelId);
       localStorage.setItem("completedLevels", JSON.stringify(completedLevels));
     }
     setIsSaving(false);
-    
+
     if (onComplete) {
       onComplete();
     } else {
@@ -182,108 +187,201 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete }: L
     }
   };
 
-  const isFinalSet = currentSetIndex === 2;
+  const isFinalSet = currentSetIndex === totalSets - 1;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 dark:bg-none dark:bg-[#0d141c] pb-12 flex flex-col">
       <Confetti active={showConfetti} />
 
+      {/* Header */}
       <div className="sticky top-0 z-10 bg-white/80 dark:bg-[#0d141c]/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 px-4 py-3">
         <div className="max-w-4xl mx-auto flex items-center justify-between gap-3">
-          {!isSubPhase && (
+          {!isSubPhase ? (
             <Button variant="ghost" size="sm" onClick={handleGoBack} className="rounded-full">
               <Home className="w-5 h-5" />
             </Button>
+          ) : (
+            <div className="w-9" />
           )}
           <h2 className="text-lg font-bold tracking-tight text-center flex-1" style={{ color: accent.primary }}>
-            {isSubPhase ? "CVC Sentences" : `CVC Sentences (Set ${currentSetIndex + 1}/3)`}
+            Sentences Quiz (Set {currentSetIndex + 1}/{totalSets})
           </h2>
           <span className="text-xs font-bold text-gray-500 bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full uppercase">
-            {currentIndex + 1}/{activeSentences.length}
+            {completedSentences.size}/{activeSentences.length}
           </span>
         </div>
-        {isSubPhase && (
-          <div className="max-w-4xl mx-auto px-4 mt-2">
-            <div className="h-2 w-full bg-gray-200 rounded-full overflow-hidden">
-              <div className="h-full bg-teal-500 transition-all duration-300" style={{ width: `${((currentIndex + 1) / activeSentences.length) * 100}%` }} />
-            </div>
+        {/* Progress bar */}
+        <div className="max-w-4xl mx-auto mt-2 px-1">
+          <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+            <motion.div
+              animate={{ width: `${activeSentences.length > 0 ? (completedSentences.size / activeSentences.length) * 100 : 0}%` }}
+              transition={{ duration: 0.3 }}
+              className="h-full rounded-full"
+              style={{ background: `linear-gradient(90deg, ${accent.primary}, ${accent.dark})` }}
+            />
           </div>
-        )}
+        </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 py-6 flex-1 flex flex-col justify-center w-full">
+      {/* Content */}
+      <div className="max-w-4xl mx-auto px-4 py-6 flex-1 flex flex-col w-full">
         <AnimatePresence mode="wait">
-          {!showConfetti && activeSentences.length > 0 ? (
+          {!showConfetti ? (
             <motion.div
-              key={`phase-quiz-${currentSetIndex}-${currentIndex}`}
+              key={`sentences-set-${currentSetIndex}`}
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 1.05 }}
-              className="w-full max-w-xl mx-auto flex flex-col items-center"
+              className="w-full max-w-2xl mx-auto flex flex-col items-center"
             >
-              <div className="text-center mb-6">
+              {/* Title */}
+              <div className="text-center mb-8">
                 <h2 className="text-3xl font-black text-gray-800 dark:text-gray-100 mb-2">
-                  Sentence Quiz! 🗣️
+                  Read the Sentences! 🗣️
                 </h2>
                 <p className="text-gray-500 dark:text-gray-400 text-sm">
-                  Tap the microphone and read the sentence out loud.
+                  Say each sentence out loud into the microphone.
                 </p>
               </div>
 
+              {/* Controls — identical to Lesson 5 */}
               <div className="flex justify-center gap-3 w-full mb-6">
-                <Button variant="outline" size="sm" onClick={handleShuffle} className="rounded-full flex items-center gap-2 border-gray-300">
-                  <Shuffle className="w-4 h-4 text-gray-600" /> Shuffle
+                <Button variant="outline" size="sm" onClick={handleShuffle} className="rounded-full flex items-center gap-2 border-emerald-300">
+                  <Shuffle className="w-4 h-4 text-emerald-600" /> Shuffle
                 </Button>
-                <Button variant="outline" size="sm" onClick={handleReset} className="rounded-full flex items-center gap-2 border-gray-300">
-                  <RotateCcw className="w-4 h-4 text-gray-600" /> Reset
+                <Button variant="outline" size="sm" onClick={handleReset} className="rounded-full flex items-center gap-2 border-emerald-300">
+                  <RotateCcw className="w-4 h-4 text-emerald-600" /> Reset
                 </Button>
-                <Button variant="outline" size="sm" onClick={() => { clearEvalTimeout(); handleNext(); }} className="rounded-full flex items-center gap-2 border-gray-300">
-                  Skip <SkipForward className="w-4 h-4 text-gray-600" />
+                <Button
+                  size="sm"
+                  onClick={handleNextQuiz}
+                  disabled={completedSentences.size < activeSentences.length}
+                  className="rounded-full flex items-center gap-2 text-white shadow-md active:scale-95 transition-all"
+                  style={{ background: completedSentences.size >= activeSentences.length ? `linear-gradient(135deg, ${accent.primary}, ${accent.dark})` : "gray" }}
+                >
+                  Next <ArrowRight className="w-4 h-4" />
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleSkip} className="rounded-full flex items-center gap-2 border-emerald-300">
+                  Skip <SkipForward className="w-4 h-4 text-emerald-600" />
                 </Button>
               </div>
 
-              <motion.div
-                className="w-full min-h-[160px] rounded-[2rem] bg-white dark:bg-gray-800 shadow-xl border-4 flex flex-col items-center justify-center p-8 mb-10 select-none text-center relative"
-                style={{ borderColor: evalFeedback === 'correct' ? '#58CC02' : evalFeedback === 'wrong' ? '#EF4444' : accent.primary }}
-              >
-                <span className="text-3xl sm:text-4xl font-black text-gray-800 dark:text-gray-100 leading-tight mb-4">
-                  "{activeSentences[currentIndex]}"
-                </span>
-                <Button
-                  onClick={() => playTTS(activeSentences[currentIndex])}
-                  variant="ghost"
-                  className="rounded-full w-12 h-12 shadow-sm bg-gray-50 hover:bg-gray-100 absolute bottom-3 right-3"
-                >
-                  <Volume2 className="w-6 h-6 text-gray-500" />
-                </Button>
-              </motion.div>
+              {/* Sentence List — identical layout to Lesson 5 */}
+              <div className="w-full text-center mb-8">
+                <div className="space-y-3 bg-white/50 dark:bg-gray-800/50 p-4 rounded-3xl backdrop-blur-sm border-2 border-dashed border-gray-200 dark:border-gray-700 max-h-[60vh] overflow-y-auto">
+                  {activeSentences.map((s) => {
+                    const isDone = completedSentences.has(s);
+                    const isEval = evaluatingSentenceId === s;
+                    const vFeedback = sentenceFeedbackMap[s];
+                    const vTranscript = sentenceTranscriptsMap[s];
 
-              <button
-                onClick={() => setEvaluatingSentence(activeSentences[currentIndex])}
-                disabled={evaluatingSentence !== null || evalFeedback === "correct"}
-                className={`w-32 h-32 rounded-full flex flex-col items-center justify-center text-white shadow-xl transition-all relative z-10 ${evaluatingSentence ? "bg-red-500 animate-pulse" : evalFeedback === "correct" ? "bg-green-500" : "bg-teal-500 hover:bg-teal-600 hover:scale-105 active:scale-95 cursor-pointer"
-                  }`}
-                style={{
-                  background: !evaluatingSentence && evalFeedback !== "correct" ? `linear-gradient(135deg, ${accent.primary}, ${accent.dark})` : undefined,
-                }}
-              >
-                {evaluatingSentence ? <MicOff className="w-14 h-14 mb-1" /> : evalFeedback === "correct" ? <CheckCircle2 className="w-14 h-14" /> : <Mic className="w-14 h-14 mb-1" />}
-                <span className="text-[12px] uppercase font-bold tracking-widest">{evaluatingSentence ? "Stop" : "Speak"}</span>
-              </button>
+                    return (
+                      <div
+                        key={s}
+                        className={`flex items-center justify-between p-4 rounded-2xl transition-all
+                          ${isDone || vFeedback === "correct" ? "bg-green-50 dark:bg-green-900/20" : vFeedback === "wrong" ? "bg-red-50 dark:bg-red-900/10" : "bg-white dark:bg-gray-800"}
+                          shadow-sm border-2
+                          ${isEval ? "border-pink-400 shadow-md" : isDone || vFeedback === "correct" ? "border-green-200" : vFeedback === "wrong" ? "border-red-200" : "border-transparent hover:border-gray-300 dark:hover:border-gray-600"}`}
+                      >
+                        {/* Left: TTS + Sentence text */}
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 flex-1 min-w-0 mr-3">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => playTTS(s)}
+                            className="rounded-full w-10 h-10 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 flex-shrink-0"
+                          >
+                            <Volume2 className="w-4 h-4" />
+                          </Button>
+                          <span
+                            className="text-xl font-bold text-left leading-snug"
+                            style={{ color: isDone || vFeedback === "correct" ? "#58CC02" : accent.primary }}
+                          >
+                            {s}
+                          </span>
+                        </div>
 
-              <div className="text-center min-h-[40px] mt-6 w-full">
-                {evaluatingSentence && (
-                  <div className="flex items-center justify-center gap-2">
-                    <p className="text-rose-500 font-bold text-sm uppercase">Listening...</p>
-                    <AudioVisualizer isListening={!!evaluatingSentence} isMobile={isMobile} />
-                  </div>
-                )}
-                {voiceTranscript && evaluatingSentence && <p className="text-gray-500 italic mt-2 text-sm">"{voiceTranscript}"</p>}
-                {evalFeedback === "correct" && <p className="text-[#58CC02] font-bold text-lg">✨ Great reading!</p>}
-                {evalFeedback === "wrong" && <p className="text-red-500 font-bold text-lg flex items-center gap-2 justify-center"><AlertCircle className="w-5 h-5" /> Let's try again!</p>}
+                        {/* Right: feedback + mic */}
+                        <div className="flex items-center gap-3 flex-shrink-0">
+                          {/* Listening feedback */}
+                          {isEval && vTranscript && (
+                            <div className="p-1 bg-gray-200 rounded text-[10px] font-mono text-gray-700 max-w-[150px] truncate">
+                              Heard: {vTranscript}
+                            </div>
+                          )}
+                          {isEval && !vTranscript && (
+                            <div className="flex items-center gap-2">
+                              <span className="text-pink-500 text-sm font-bold animate-pulse">Listening...</span>
+                              <div className="flex gap-1 items-center h-8 justify-center min-w-[50px]">
+                                {isMobile ? (
+                                  <>
+                                    <div className="w-1.5 bg-pink-500 rounded-full" style={{ height: "20px", animation: "wave 0.8s ease-in-out infinite 0ms" }} />
+                                    <div className="w-1.5 bg-pink-400 rounded-full" style={{ height: "28px", animation: "wave 0.8s ease-in-out infinite 0.1s" }} />
+                                    <div className="w-1.5 bg-pink-500 rounded-full" style={{ height: "36px", animation: "wave 0.8s ease-in-out infinite 0.2s" }} />
+                                    <div className="w-1.5 bg-pink-400 rounded-full" style={{ height: "28px", animation: "wave 0.8s ease-in-out infinite 0.3s" }} />
+                                    <div className="w-1.5 bg-pink-500 rounded-full" style={{ height: "20px", animation: "wave 0.8s ease-in-out infinite 0.4s" }} />
+                                  </>
+                                ) : (
+                                  <>
+                                    <div className="w-1.5 bg-pink-500 rounded-full transition-all duration-75" style={{ height: "6px" }} />
+                                    <div className="w-1.5 bg-pink-400 rounded-full transition-all duration-75" style={{ height: "6px" }} />
+                                    <div className="w-1.5 bg-pink-500 rounded-full transition-all duration-75" style={{ height: "6px" }} />
+                                    <div className="w-1.5 bg-pink-400 rounded-full transition-all duration-75" style={{ height: "6px" }} />
+                                    <div className="w-1.5 bg-pink-500 rounded-full transition-all duration-75" style={{ height: "6px" }} />
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Mic button — identical to Lesson 5 */}
+                          <button
+                            onClick={() => {
+                              if (isEval) {
+                                setEvaluatingSentenceId(null);
+                              } else if (!isDone) {
+                                setEvaluatingSentenceId(s);
+                                setSentenceFeedbackMap(prev => ({ ...prev, [s]: null }));
+                                setSentenceTranscriptsMap(prev => ({ ...prev, [s]: "" }));
+                              }
+                            }}
+                            disabled={(evaluatingSentenceId !== null && !isEval) || isDone}
+                            className={`relative w-12 h-12 rounded-xl flex items-center justify-center transition-all flex-shrink-0
+                              ${isDone || vFeedback === "correct"
+                                ? "bg-green-500 text-white shadow-none opacity-50 cursor-default"
+                                : isEval
+                                  ? "bg-red-500 text-white shadow-lg"
+                                  : vFeedback === "wrong"
+                                    ? "bg-red-400 text-white"
+                                    : "bg-gradient-to-br from-pink-500 to-rose-500 text-white shadow-md hover:scale-105 active:scale-95"
+                              }`}
+                          >
+                            {isEval && (
+                              <>
+                                <span className="absolute inset-0 rounded-xl bg-red-500/40 animate-ping" />
+                                <span className="absolute -inset-1 rounded-xl bg-red-500/20 animate-pulse" />
+                              </>
+                            )}
+                            <span className="relative z-10">
+                              {isDone || vFeedback === "correct"
+                                ? <CheckCircle2 className="w-6 h-6" />
+                                : vFeedback === "wrong"
+                                  ? <XCircle className="w-6 h-6" />
+                                  : isEval
+                                    ? <MicOff className="w-5 h-5 animate-bounce" />
+                                    : <Mic className="w-5 h-5" />
+                              }
+                            </span>
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </motion.div>
-          ) : showConfetti ? (
+          ) : (
+            /* Completion screen */
             <motion.div
               key="completion-screen"
               initial={{ opacity: 0, scale: 0.8 }}
@@ -298,7 +396,7 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete }: L
                 <Sparkles className="w-20 h-20 text-[#FFC800]" />
               </motion.div>
               <h3 className="text-3xl font-black mb-4" style={{ color: accent.primary }}>
-                {isFinalSet ? "Lesson Mastered!" : "Set Complete!"}
+                {isFinalSet ? "Lesson Mastered! 🎉" : "Set Complete! ⭐"}
               </h3>
               <p className="text-gray-600 dark:text-gray-400 mb-8 leading-relaxed">
                 {isFinalSet
@@ -312,11 +410,9 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete }: L
                   onClick={handleFinish}
                   size="lg"
                   className="rounded-2xl px-10 py-6 text-lg text-white font-bold w-full shadow-xl animate-bounce"
-                  style={{
-                    background: `linear-gradient(135deg, ${accent.primary} 0%, ${accent.dark} 100%)`,
-                  }}
+                  style={{ background: `linear-gradient(135deg, ${accent.primary} 0%, ${accent.dark} 100%)` }}
                 >
-                  {isSaving ? "Saving..." : isSubPhase ? "Continue" : "Back to Levels"}
+                  {isSaving ? "Saving..." : isSubPhase ? "Finish Level 3 🏆" : "Back to Levels"}
                 </Button>
               ) : (
                 <Button
@@ -326,15 +422,13 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete }: L
                   }}
                   size="lg"
                   className="rounded-2xl px-10 py-6 text-lg text-white font-bold w-full shadow-xl animate-bounce"
-                  style={{
-                    background: `linear-gradient(135deg, ${accent.primary} 0%, ${accent.dark} 100%)`,
-                  }}
+                  style={{ background: `linear-gradient(135deg, ${accent.primary} 0%, ${accent.dark} 100%)` }}
                 >
                   Start Next 10 <ArrowRight className="ml-2 w-5 h-5" />
                 </Button>
               )}
             </motion.div>
-          ) : null}
+          )}
         </AnimatePresence>
       </div>
     </div>
