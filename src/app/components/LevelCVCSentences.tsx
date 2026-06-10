@@ -21,11 +21,13 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete }: L
 
   const [currentSetIndex, setCurrentSetIndex] = useState(0); // 0, 1, 2
   const [currentIndex, setCurrentIndex] = useState(0); // 0 to 9
+  const currentIndexRef = useRef(0);
 
   const [activeSentences, setActiveSentences] = useState<string[]>([]);
 
   useEffect(() => {
     setActiveSentences(CVC_SENTENCES.slice(currentSetIndex * 10, currentSetIndex * 10 + 10));
+    currentIndexRef.current = 0;
     setCurrentIndex(0);
   }, [currentSetIndex]);
 
@@ -62,14 +64,15 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete }: L
 
   const handleNext = useCallback(() => {
     setEvaluatingSentence(null);
-    if (currentIndex < activeSentences.length - 1) {
-      setCurrentIndex(prev => prev + 1);
+    if (currentIndexRef.current < activeSentences.length - 1) {
+      currentIndexRef.current += 1;
+      setCurrentIndex(currentIndexRef.current);
       setEvalFeedback(null);
       setVoiceTranscript("");
     } else {
       setShowConfetti(true);
     }
-  }, [currentIndex, activeSentences]);
+  }, [activeSentences.length]);
 
   const handleResult = useCallback(
     (target: string, status: "correct" | "close" | "wrong" | null, transcript: string) => {
@@ -123,6 +126,7 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete }: L
     clearEvalTimeout();
     setEvaluatingSentence(null);
     setActiveSentences(prev => [...prev].sort(() => Math.random() - 0.5));
+    currentIndexRef.current = 0;
     setCurrentIndex(0);
     setEvalFeedback(null);
     setVoiceTranscript("");
@@ -132,6 +136,7 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete }: L
     clearEvalTimeout();
     setEvaluatingSentence(null);
     setActiveSentences(CVC_SENTENCES.slice(currentSetIndex * 10, currentSetIndex * 10 + 10));
+    currentIndexRef.current = 0;
     setCurrentIndex(0);
     setEvalFeedback(null);
     setVoiceTranscript("");
@@ -177,27 +182,34 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete }: L
     }
   };
 
-  const isFinalSet = currentSetIndex === 2; // 3 sets total (0,1,2)
+  const isFinalSet = currentSetIndex === 2;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 dark:bg-none dark:bg-[#0d141c] pb-12 flex flex-col">
       <Confetti active={showConfetti} />
 
-      {!isSubPhase && (
-        <div className="sticky top-0 z-10 bg-white/80 dark:bg-[#0d141c]/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 px-4 py-3">
-          <div className="max-w-4xl mx-auto flex items-center justify-between gap-3">
+      <div className="sticky top-0 z-10 bg-white/80 dark:bg-[#0d141c]/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 px-4 py-3">
+        <div className="max-w-4xl mx-auto flex items-center justify-between gap-3">
+          {!isSubPhase && (
             <Button variant="ghost" size="sm" onClick={handleGoBack} className="rounded-full">
               <Home className="w-5 h-5" />
             </Button>
-            <h2 className="text-lg font-bold tracking-tight text-center flex-1" style={{ color: accent.primary }}>
-              CVC Sentences (Set {currentSetIndex + 1}/3)
-            </h2>
-            <span className="text-xs font-bold text-gray-500 bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full uppercase">
-              {currentIndex + 1}/{activeSentences.length}
-            </span>
-          </div>
+          )}
+          <h2 className="text-lg font-bold tracking-tight text-center flex-1" style={{ color: accent.primary }}>
+            {isSubPhase ? "CVC Sentences" : `CVC Sentences (Set ${currentSetIndex + 1}/3)`}
+          </h2>
+          <span className="text-xs font-bold text-gray-500 bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full uppercase">
+            {currentIndex + 1}/{activeSentences.length}
+          </span>
         </div>
-      )}
+        {isSubPhase && (
+          <div className="max-w-4xl mx-auto px-4 mt-2">
+            <div className="h-2 w-full bg-gray-200 rounded-full overflow-hidden">
+              <div className="h-full bg-teal-500 transition-all duration-300" style={{ width: `${((currentIndex + 1) / activeSentences.length) * 100}%` }} />
+            </div>
+          </div>
+        )}
+      </div>
 
       <div className="max-w-4xl mx-auto px-4 py-6 flex-1 flex flex-col justify-center w-full">
         <AnimatePresence mode="wait">
@@ -218,7 +230,6 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete }: L
                 </p>
               </div>
 
-              {/* Controls */}
               <div className="flex justify-center gap-3 w-full mb-6">
                 <Button variant="outline" size="sm" onClick={handleShuffle} className="rounded-full flex items-center gap-2 border-gray-300">
                   <Shuffle className="w-4 h-4 text-gray-600" /> Shuffle
@@ -256,8 +267,8 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete }: L
                   background: !evaluatingSentence && evalFeedback !== "correct" ? `linear-gradient(135deg, ${accent.primary}, ${accent.dark})` : undefined,
                 }}
               >
-                {evaluatingSentence ? <Mic className="w-14 h-14 mb-1" /> : evalFeedback === "correct" ? <CheckCircle2 className="w-14 h-14" /> : <MicOff className="w-14 h-14 mb-1" />}
-                <span className="text-[12px] uppercase font-bold tracking-widest">{evaluatingSentence ? "Listening" : "Speak"}</span>
+                {evaluatingSentence ? <MicOff className="w-14 h-14 mb-1" /> : evalFeedback === "correct" ? <CheckCircle2 className="w-14 h-14" /> : <Mic className="w-14 h-14 mb-1" />}
+                <span className="text-[12px] uppercase font-bold tracking-widest">{evaluatingSentence ? "Stop" : "Speak"}</span>
               </button>
 
               <div className="text-center min-h-[40px] mt-6 w-full">
