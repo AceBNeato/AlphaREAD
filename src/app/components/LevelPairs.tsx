@@ -4,6 +4,7 @@ import { Button } from "./ui/button";
 import { allLetters as ALL_LETTERS } from "../data/levels";
 import { motion, AnimatePresence } from "motion/react";
 import { ChevronRight, Home, ArrowRight, ArrowLeft, Shuffle, RotateCcw } from "lucide-react";
+import { playSound } from "../utils/soundEffects";
 
 interface LevelPairsProps {
   levelId: number;
@@ -68,6 +69,7 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
 
   const handleLetterClick = (letter: string) => {
     if (!letter) return;
+    playSound("click", 0.25);
     setClickedLetter(letter);
     const audio = new Audio(`${(import.meta as any).env.BASE_URL}audio/alphasounds-${letter.toLowerCase()}.mp3`);
     audio.play().catch(() => { });
@@ -89,11 +91,12 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
   };
 
   const handleStepNext = () => {
+    playSound("click", 0.2);
     if (currentStep < STEPS.length - 1) {
       setCurrentStep(prev => Math.min(prev + 1, STEPS.length - 1));
       setCurrentPairIndex(0);
     } else {
-      // Save locally only — no Supabase progress
+      playSound("complete", 0.5);
       const completedLevels = JSON.parse(localStorage.getItem("completedLevels") || "[]");
       if (!completedLevels.includes(levelId)) {
         completedLevels.push(levelId);

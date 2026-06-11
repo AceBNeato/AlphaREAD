@@ -8,22 +8,7 @@ import { Button } from "./ui/button";
 import { motion, AnimatePresence } from "motion/react";
 import { shuffle } from "../data/levels";
 import { Confetti } from "./ui/Confetti";
-
-// ── Sound Effects ─────────────────────────────────────────────────────────────
-const SFX = {
-  click:    "https://assets.mixkit.co/active_storage/sfx/2571/2571-84.wav",
-  correct:  "https://assets.mixkit.co/active_storage/sfx/2013/2013-84.wav",
-  wrong:    "https://assets.mixkit.co/active_storage/sfx/2101/2101-84.wav",
-  complete: "https://assets.mixkit.co/active_storage/sfx/1362/1362-84.wav",
-};
-
-function playSound(type: keyof typeof SFX, volume = 0.4) {
-  try {
-    const audio = new Audio(SFX[type]);
-    audio.volume = volume;
-    audio.play().catch(() => {});
-  } catch (_) {}
-}
+import { playSound } from "../utils/soundEffects";
 
 type Pattern = "VC" | "CV";
 
@@ -99,7 +84,7 @@ function ReviewPhase({
     >
       <div className="text-center mb-6">
         <h2 className="text-3xl font-black text-gray-800 dark:text-gray-100 mb-1">
-          Review {pattern} Syllables 📖
+          {pattern} Builder 📖
         </h2>
         <p className="text-gray-500 dark:text-gray-400 text-sm">
           Tap a syllable or the 🔊 button to hear how it sounds.
@@ -409,7 +394,7 @@ export function LevelSyllableQuiz({ pattern, levelId: _levelId, accent, onComple
               {pattern === "VC" ? "Vowel + Consonant (VC)" : "Consonant + Vowel (CV)"}
             </h2>
             <p className="text-xs text-gray-500">
-              {step?.type === "review" ? `Review — ${step.setLabel}` : `Listen & Match — ${step.setLabel}`} ({totalReviewSets} sets)
+              {step?.type === "review" ? `Builder — ${step.setLabel}` : `Listen & Match — ${step.setLabel}`} ({totalReviewSets} sets)
             </p>
           </div>
           <span className="text-xs font-bold text-gray-500 bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full">
@@ -444,7 +429,7 @@ export function LevelSyllableQuiz({ pattern, levelId: _levelId, accent, onComple
               <h3 className="text-3xl font-black mb-4" style={{ color: accent.primary }}>
                 {pattern} Complete! 🎉
               </h3>
-              <p className="text-gray-600 dark:text-gray-400">You've reviewed and matched all {allSyllables.length} {pattern} syllables!</p>
+              <p className="text-gray-600 dark:text-gray-400">You've completed the builder and matched all {allSyllables.length} {pattern} syllables!</p>
             </motion.div>
           ) : step?.type === "review" ? (
             <ReviewPhase

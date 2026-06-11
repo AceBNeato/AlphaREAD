@@ -8,6 +8,7 @@ import { Confetti } from "./ui/Confetti";
 import { LONG_VOWELS_DATA, LONG_VOWELS_SENTENCES, LongVowelWord, LETTER_NAMES, LETTER_TTS, shuffle } from "../data/levels";
 import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
 import { AudioVisualizer } from "./AudioVisualizer";
+import { playSound } from "../utils/soundEffects";
 
 interface LevelLongVowelsProps {
   levelId: number;
@@ -162,12 +163,14 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
         if (status === null && !isCorrect) return;
 
         if (isCorrect) {
+          playSound("correct", 0.4);
           setPatternFeedbackMap(prev => ({ ...prev, [evaluatingPatternId]: "correct" }));
           evaluationTimeoutRef.current = setTimeout(() => {
             setCompletedPatterns(prev => new Set(prev).add(evaluatingPatternId));
             setEvaluatingPatternId(null);
           }, 1500);
         } else {
+          playSound("wrong", 0.35);
           setPatternFeedbackMap(prev => ({ ...prev, [evaluatingPatternId]: "wrong" }));
           evaluationTimeoutRef.current = setTimeout(() => {
             setPatternFeedbackMap(prev => ({ ...prev, [evaluatingPatternId]: null }));
@@ -179,12 +182,14 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
         if (status === null && !isCorrect) return;
 
         if (isCorrect) {
+          playSound("correct", 0.4);
           setWordFeedbackMap(prev => ({ ...prev, [evaluatingWordId]: "correct" }));
           evaluationTimeoutRef.current = setTimeout(() => {
             setCompletedWords(prev => new Set(prev).add(evaluatingWordId));
             setEvaluatingWordId(null);
           }, 1500);
         } else {
+          playSound("wrong", 0.35);
           setWordFeedbackMap(prev => ({ ...prev, [evaluatingWordId]: "wrong" }));
           evaluationTimeoutRef.current = setTimeout(() => {
             setWordFeedbackMap(prev => ({ ...prev, [evaluatingWordId]: null }));
@@ -196,12 +201,14 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
         if (status === null && !isCorrect) return;
 
         if (isCorrect) {
+          playSound("correct", 0.4);
           setSentenceFeedbackMap(prev => ({ ...prev, [evaluatingSentenceId]: "correct" }));
           evaluationTimeoutRef.current = setTimeout(() => {
             setCompletedSentences(prev => new Set(prev).add(evaluatingSentenceId));
             setEvaluatingSentenceId(null);
           }, 1500);
         } else {
+          playSound("wrong", 0.35);
           setSentenceFeedbackMap(prev => ({ ...prev, [evaluatingSentenceId]: "wrong" }));
           evaluationTimeoutRef.current = setTimeout(() => {
             setSentenceFeedbackMap(prev => ({ ...prev, [evaluatingSentenceId]: null }));
@@ -313,6 +320,7 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
   };
 
   const handleFinish = async () => {
+    playSound("complete", 0.5);
     setIsSaving(true);
     try {
       const profileStr = localStorage.getItem("userProfile");

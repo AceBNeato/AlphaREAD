@@ -6,9 +6,9 @@ import { motion, AnimatePresence } from "motion/react";
 import { supabase } from "../../lib/supabase";
 import { Confetti } from "./ui/Confetti";
 import { shuffle, allLetters, LETTER_NAMES, LETTER_TTS } from "../data/levels";
-
 import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
 import { AudioVisualizer } from "./AudioVisualizer";
+import { playSound } from "../utils/soundEffects";
 
 interface LevelLetterNamesProps {
   levelId: number;
@@ -169,6 +169,7 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
     clearEvalTimeout();
 
     if (isCorrect) {
+      playSound("correct", 0.4);
       setVoiceFeedbackMap(prev => ({ ...prev, [word]: "correct" }));
       evaluationTimeoutRef.current = setTimeout(() => {
         setEvaluatingLetter(null);
@@ -179,6 +180,7 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
         });
       }, 1500);
     } else {
+      playSound("wrong", 0.35);
       const letter = word; // capture before clearing
       setEvaluatingLetter(null); // 🛑 IMMEDIATELY stop mic from restarting
       setVoiceFeedbackMap(prev => ({ ...prev, [letter]: "wrong" }));
@@ -196,6 +198,7 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
     onSilenceTimeout: () => {
       clearEvalTimeout();
       if (evaluatingLetter) {
+        playSound("wrong", 0.35);
         const letter = evaluatingLetter; // capture before clearing
         setEvaluatingLetter(null); // 🛑 IMMEDIATELY clear so hook doesn't restart
         setVoiceFeedbackMap(prev => ({ ...prev, [letter]: "wrong" }));
@@ -233,6 +236,7 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
   };
   const handleLetterClick = (letter: string) => {
     if (!letter) return;
+    playSound("click", 0.2);
     setClickedLetter(letter);
     playNameTTS(letter);
     setTimeout(() => setClickedLetter(null), 1000);
@@ -240,6 +244,7 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
 
   const handleSpeakerMatchClick = (letter: string) => {
     if (matchedPairs.has(letter) || wrongMatchPair) return;
+    playSound("click", 0.2);
     playNameTTS(letter);
     setSelectedSpeakerMatch(letter);
 
@@ -250,6 +255,7 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
 
   const handleLetterMatchClick = (letter: string) => {
     if (matchedPairs.has(letter) || wrongMatchPair) return;
+    playSound("click", 0.2);
     setSelectedLetterMatch(letter);
 
     if (selectedSpeakerMatch) {
@@ -261,9 +267,7 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
     if (speaker === letter) {
       // Correct Match
       setTimeout(() => {
-        const audio = new Audio("https://assets.mixkit.co/active_storage/sfx/2013/2013-84.wav");
-        audio.volume = 0.3;
-        audio.play().catch(() => { });
+        playSound("correct", 0.4);
       }, 200);
 
       setMatchedPairs(prev => new Set(prev).add(speaker));
@@ -279,6 +283,7 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
       }
     } else {
       // Wrong Match
+      playSound("wrong", 0.35);
       setWrongMatchPair([speaker, letter]);
       clearEvalTimeout();
       evaluationTimeoutRef.current = setTimeout(() => {
@@ -300,6 +305,7 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
       setWrongMatchPair(null);
       setEvaluatingLetter(null);
     } else {
+      playSound("complete", 0.5);
       setShowConfetti(true);
     }
   };

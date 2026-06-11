@@ -22,6 +22,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { supabase } from "../../lib/supabase";
 import { Confetti } from "./ui/Confetti";
 import { getPhoneticPronunciation } from "../data/levels";
+import { playSound } from "../utils/soundEffects";
 
 
 interface LevelSyllableBuilderProps {
@@ -181,6 +182,7 @@ export function LevelSyllableBuilder({
   const handleLetterClick = (letter: string) => {
     if (feedback || allDone || completedTargets.has(currentTarget.syllable)) return;
 
+    playSound("click", 0.2);
     // Play audio for the letter
     const audio = new Audio(`${(import.meta as any).env.BASE_URL}audio/alphasounds-${letter.toLowerCase()}.mp3`);
     audio.play().catch(() => {
@@ -195,6 +197,7 @@ export function LevelSyllableBuilder({
         const formed = newSelected.join("");
 
         if (formed === currentTarget.syllable) {
+          playSound("correct", 0.4);
           setFeedback("correct");
           setShowConfetti(true);
 
@@ -217,6 +220,7 @@ export function LevelSyllableBuilder({
             setShowConfetti(false);
           }, 2500);
         } else {
+          playSound("wrong", 0.35);
           setFeedback("wrong");
           if (wrongTimeoutRef.current) clearTimeout(wrongTimeoutRef.current);
           wrongTimeoutRef.current = setTimeout(() => {
