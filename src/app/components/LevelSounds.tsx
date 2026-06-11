@@ -7,6 +7,7 @@ import { getLetterPhonetic } from "../data/levels";
 import { supabase } from "../../lib/supabase";
 import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
 import { AudioVisualizer } from "./AudioVisualizer";
+import { playSound } from "../utils/soundEffects";
 
 // QWERTY keyboard layout
 const QWERTY_ROWS = [
@@ -86,6 +87,7 @@ export function LevelSounds({ levelId, accent }: LevelSoundsProps) {
       clearEvalTimeout();
 
       if (isCorrect) {
+        playSound("correct", 0.4);
         setEvalFeedback("correct");
         evaluationTimeoutRef.current = setTimeout(() => {
           if (evalIndex < currentEvalLetters.length - 1) {
@@ -98,6 +100,7 @@ export function LevelSounds({ levelId, accent }: LevelSoundsProps) {
           }
         }, 1500);
       } else {
+        playSound("wrong", 0.35);
         setEvalFeedback("wrong");
         evaluationTimeoutRef.current = setTimeout(() => {
             setEvalFeedback(null);
@@ -108,6 +111,7 @@ export function LevelSounds({ levelId, accent }: LevelSoundsProps) {
     onError: () => setEvaluatingLetter(null),
     onSilenceTimeout: () => {
       clearEvalTimeout();
+      playSound("wrong", 0.35);
       setEvalFeedback("wrong");
       evaluationTimeoutRef.current = setTimeout(() => {
           setEvalFeedback(null);
@@ -120,6 +124,7 @@ export function LevelSounds({ levelId, accent }: LevelSoundsProps) {
   const handleLetterClick = (letter: string) => {
     if (phase !== "review") return;
 
+    playSound("click", 0.2);
     setClickedLetter(letter);
     setReviewedLetters(prev => new Set(prev).add(letter));
 
@@ -139,12 +144,14 @@ export function LevelSounds({ levelId, accent }: LevelSoundsProps) {
 
   const handleSetComplete = () => {
     if (currentSetIdx < setSizes.length - 1) {
+      playSound("complete", 0.5);
       setCurrentSetIdx(prev => Math.min(prev + 1, setSizes.length - 1));
       setPhase("review");
       setReviewedLetters(new Set());
       setEvalIndex(0);
       setEvalFeedback(null);
     } else {
+      playSound("complete", 0.5);
       saveFinalProgress();
     }
   };

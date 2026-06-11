@@ -22,6 +22,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { supabase } from "../../lib/supabase";
 import { Confetti } from "./ui/Confetti";
 import { evaluateSyllable, isSyllableTarget } from "../utils/PhonemeEvaluator";
+import { playSound } from "../utils/soundEffects";
 import { AudioVisualizer } from "./AudioVisualizer";
 import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
 
@@ -67,6 +68,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
   }, [clearEvalTimeout]);
 
   const handleShuffle = () => {
+    playSound("click", 0.2);
     clearEvalTimeout();
     setWords(shuffle([...words]));
     setCompletedWords(new Set());
@@ -77,6 +79,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
   };
 
   const handleReset = () => {
+    playSound("click", 0.2);
     clearEvalTimeout();
     setCompletedWords(new Set());
     setWordsIndex(0);
@@ -86,12 +89,14 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
   };
 
   const handleNext = () => {
+    playSound("click", 0.2);
     clearEvalTimeout();
     safeSetEvaluatingWordNull();
     setShowCompletionScreen(true);
   };
 
   const handleSkip = () => {
+    playSound("click", 0.2);
     clearEvalTimeout();
     safeSetEvaluatingWordNull();
     setCompletedWords(new Set(words));
@@ -140,6 +145,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
     clearEvalTimeout();
 
     if (status === "correct" || status === "close") {
+      playSound("correct", 0.4);
       setShowConfetti(true);
       const newCompleted = new Set(completedWords);
       newCompleted.add(word);
@@ -162,6 +168,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
         }
       }, 2000);
     } else if (status === "wrong") {
+      playSound("wrong", 0.35);
       setProcessingWord(null);
       evaluationTimeoutRef.current = setTimeout(() => {
         setEvalFeedback(prev => ({ ...prev, [word]: null }));
@@ -180,6 +187,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
     const targetWord = wordToUse || evaluatingWord;
     console.log(`[AlphabetGO Debug] LevelVoiceEvaluation: handleSilence triggered for "${targetWord}"`);
     if (!targetWord) return;
+    playSound("wrong", 0.35);
     setEvalFeedback(prev => ({ ...prev, [targetWord]: "wrong" }));
     setProcessingWord(null);
     clearEvalTimeout();

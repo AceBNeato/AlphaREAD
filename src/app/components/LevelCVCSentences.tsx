@@ -10,6 +10,7 @@ import { supabase } from "../../lib/supabase";
 import { Confetti } from "./ui/Confetti";
 import { CVC_SENTENCES } from "../data/levels";
 import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
+import { playSound } from "../utils/soundEffects";
 
 interface LevelCVCSentencesProps {
   levelId: number;
@@ -85,12 +86,14 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete }: L
       clearEvalTimeout();
 
       if (isCorrect) {
+        playSound("correct", 0.4);
         setSentenceFeedbackMap(prev => ({ ...prev, [target]: "correct" }));
         evaluationTimeoutRef.current = setTimeout(() => {
           setCompletedSentences(prev => new Set(prev).add(target));
           setEvaluatingSentenceId(null);
         }, 1500);
       } else {
+        playSound("wrong", 0.35);
         setSentenceFeedbackMap(prev => ({ ...prev, [target]: "wrong" }));
         evaluationTimeoutRef.current = setTimeout(() => {
           setSentenceFeedbackMap(prev => ({ ...prev, [target]: null }));
@@ -109,6 +112,7 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete }: L
     onSilenceTimeout: () => {
       clearEvalTimeout();
       if (evaluatingSentenceId) {
+        playSound("wrong", 0.35);
         const s = evaluatingSentenceId;
         setSentenceFeedbackMap(prev => ({ ...prev, [s]: "wrong" }));
         evaluationTimeoutRef.current = setTimeout(() => {
@@ -121,6 +125,7 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete }: L
 
   // Controls
   const handleShuffle = () => {
+    playSound("click", 0.2);
     clearEvalTimeout();
     setEvaluatingSentenceId(null);
     setActiveSentences(prev => [...prev].sort(() => Math.random() - 0.5));
@@ -130,6 +135,7 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete }: L
   };
 
   const handleReset = () => {
+    playSound("click", 0.2);
     clearEvalTimeout();
     setEvaluatingSentenceId(null);
     setActiveSentences(CVC_SENTENCES.slice(currentSetIndex * SENTENCES_PER_SET, (currentSetIndex + 1) * SENTENCES_PER_SET));
@@ -139,10 +145,12 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete }: L
   };
 
   const handleNextQuiz = () => {
+    playSound("complete", 0.5);
     setShowConfetti(true);
   };
 
   const handleSkip = () => {
+    playSound("click", 0.2);
     clearEvalTimeout();
     setEvaluatingSentenceId(null);
     setCompletedSentences(new Set(activeSentences));
