@@ -133,6 +133,42 @@ export function LevelSyllableBuilder({
   };
 
   const playTTS = async (text: string, pattern: SyllablePattern) => {
+    const syllableLower = text.toLowerCase();
+
+    // Use local audio files for CV and VC patterns
+    if (pattern === "CV") {
+      const audioPath = `${(import.meta as any).env.BASE_URL}audio/cv-audio/cv-${syllableLower}.MP3`;
+      const audio = new Audio(audioPath);
+      audio.play().catch(() => {
+        // Fallback to Google TTS if file missing
+        const phoneticText = getPhoneticText(text, pattern);
+        if ('speechSynthesis' in window) {
+          window.speechSynthesis.cancel();
+          const utterance = new SpeechSynthesisUtterance(phoneticText);
+          utterance.rate = 0.85;
+          window.speechSynthesis.speak(utterance);
+        }
+      });
+      return;
+    }
+
+    if (pattern === "VC") {
+      const audioPath = `${(import.meta as any).env.BASE_URL}audio/vc-audio/vc-${syllableLower}.MP3`;
+      const audio = new Audio(audioPath);
+      audio.play().catch(() => {
+        // Fallback to Google TTS if file missing
+        const phoneticText = getPhoneticText(text, pattern);
+        if ('speechSynthesis' in window) {
+          window.speechSynthesis.cancel();
+          const utterance = new SpeechSynthesisUtterance(phoneticText);
+          utterance.rate = 0.85;
+          window.speechSynthesis.speak(utterance);
+        }
+      });
+      return;
+    }
+
+    // CVC: no local audio files — use Google TTS
     const phoneticText = getPhoneticText(text, pattern);
     if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel();
