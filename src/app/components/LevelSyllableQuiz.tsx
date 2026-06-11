@@ -9,6 +9,22 @@ import { motion, AnimatePresence } from "motion/react";
 import { shuffle } from "../data/levels";
 import { Confetti } from "./ui/Confetti";
 
+// ── Sound Effects ─────────────────────────────────────────────────────────────
+const SFX = {
+  click:    "https://assets.mixkit.co/active_storage/sfx/2571/2571-84.wav",
+  correct:  "https://assets.mixkit.co/active_storage/sfx/2013/2013-84.wav",
+  wrong:    "https://assets.mixkit.co/active_storage/sfx/2101/2101-84.wav",
+  complete: "https://assets.mixkit.co/active_storage/sfx/1362/1362-84.wav",
+};
+
+function playSound(type: keyof typeof SFX, volume = 0.4) {
+  try {
+    const audio = new Audio(SFX[type]);
+    audio.volume = volume;
+    audio.play().catch(() => {});
+  } catch (_) {}
+}
+
 type Pattern = "VC" | "CV";
 
 interface Step {
@@ -68,6 +84,7 @@ function ReviewPhase({
   const [clicked, setClicked] = useState<string | null>(null);
 
   const handlePlay = (syl: string) => {
+    playSound("click", 0.25);
     playAudio(syl, pattern);
     setClicked(syl);
     setTimeout(() => setClicked(null), 600);
@@ -160,16 +177,17 @@ function MatchPhase({
 
   const checkMatch = useCallback((left: string, right: string) => {
     if (left === right) {
-      const audio = new Audio("https://assets.mixkit.co/active_storage/sfx/2013/2013-84.wav");
-      audio.volume = 0.3;
-      audio.play().catch(() => {});
+      playSound("correct", 0.4);
       const next = new Set(matchedPairs);
       next.add(left);
       setMatchedPairs(next);
       setSelectedLeft(null);
       setSelectedRight(null);
-      if (next.size === leftCol.length) setShowConfetti(true);
+      if (next.size === leftCol.length) {
+        setShowConfetti(true);
+      }
     } else {
+      playSound("wrong", 0.35);
       setWrongPair([left, right]);
       timeoutRef.current = setTimeout(() => {
         setWrongPair(null);
@@ -181,6 +199,7 @@ function MatchPhase({
 
   const handleLeftClick = (syl: string) => {
     if (matchedPairs.has(syl) || wrongPair) return;
+    playSound("click", 0.2);
     playAudio(syl, pattern);
     setSelectedLeft(syl);
     if (selectedRight) checkMatch(syl, selectedRight);
@@ -188,6 +207,7 @@ function MatchPhase({
 
   const handleRightClick = (syl: string) => {
     if (matchedPairs.has(syl) || wrongPair) return;
+    playSound("click", 0.2);
     playAudio(syl, pattern); // word button also plays audio
     setSelectedRight(syl);
     if (selectedLeft) checkMatch(selectedLeft, syl);
@@ -360,9 +380,11 @@ export function LevelSyllableQuiz({ pattern, levelId: _levelId, accent, onComple
   const progressPct = (currentStep / steps.length) * 100;
 
   const handleNext = () => {
+    playSound("click", 0.2);
     if (currentStep < steps.length - 1) {
       setCurrentStep(prev => prev + 1);
     } else {
+      playSound("complete", 0.5);
       setShowFinalConfetti(true);
       setTimeout(() => onComplete(), 2500);
     }

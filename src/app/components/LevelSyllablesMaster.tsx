@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
+import { LevelSyllableBuilder } from "./LevelSyllableBuilder";
 import { LevelSyllableQuiz } from "./LevelSyllableQuiz";
+import { generateSyllableTargets } from "../data/levels";
 import { supabase } from "../../lib/supabase";
 import { Home, CheckCircle2 } from "lucide-react";
 import { Button } from "./ui/button";
@@ -11,15 +13,31 @@ interface LevelSyllablesMasterProps {
   accent: { primary: string; dark: string; lightBg: string };
 }
 
+type SubPhase = "build" | "quiz";
+
 export function LevelSyllablesMaster({ levelId, accent }: LevelSyllablesMasterProps) {
   const navigate = useNavigate();
 
   const [selectedSubLevel, setSelectedSubLevel] = useState<"CV" | "VC" | null>(null);
+  const [subPhase, setSubPhase] = useState<SubPhase>("build");
+
   const [completedSubLevels, setCompletedSubLevels] = useState<string[]>(() =>
     JSON.parse(localStorage.getItem("completedSubLevels_Level2") || "[]")
   );
 
-  const handleSubLevelComplete = async (pattern: "CV" | "VC") => {
+  // Word builder targets (10 random syllables for the build phase)
+  const [buildTargets] = useState(() => {
+    // Will be regenerated when a sub-level is picked
+    return { VC: generateSyllableTargets(["VC"], 10), CV: generateSyllableTargets(["CV"], 10) };
+  });
+
+  const handleBuildComplete = () => {
+    // After word builder → go to Review + Match quiz
+    setSubPhase("quiz");
+  };
+
+  const handleQuizComplete = async () => {
+    const pattern = selectedSubLevel!;
     const newCompleted = [...completedSubLevels];
     if (!newCompleted.includes(pattern)) {
       newCompleted.push(pattern);
@@ -52,25 +70,46 @@ export function LevelSyllablesMaster({ levelId, accent }: LevelSyllablesMasterPr
       }
       navigate("/levels", { replace: true });
     } else {
+      // Return to picker to choose the other sub-level
       setSelectedSubLevel(null);
+      setSubPhase("build");
     }
   };
 
-  // Show quiz for selected sub-level
-  if (selectedSubLevel) {
+  // ── Phase: Word Builder ──────────────────────────────────────────────────────
+  if (selectedSubLevel && subPhase === "build") {
+    return (
+      <LevelSyllableBuilder
+        levelId={levelId}
+        patterns={[selectedSubLevel]}
+        accent={accent}
+        customTargets={buildTargets[selectedSubLevel]}
+        isSubPhase={true}
+        onComplete={handleBuildComplete}
+      />
+    );
+  }
+
+  // ── Phase: Review + Listen & Match ──────────────────────────────────────────
+  if (selectedSubLevel && subPhase === "quiz") {
     return (
       <LevelSyllableQuiz
         pattern={selectedSubLevel}
         levelId={levelId}
         accent={accent}
-        onComplete={() => handleSubLevelComplete(selectedSubLevel)}
+        onComplete={handleQuizComplete}
       />
     );
   }
 
-  // Selection screen
+  // ── Selection Screen ─────────────────────────────────────────────────────────
   const isVCDone = completedSubLevels.includes("VC");
   const isCVDone = completedSubLevels.includes("CV");
+
+  const handleSelect = (pattern: "VC" | "CV") => {
+    setSelectedSubLevel(pattern);
+    setSubPhase("build");
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-purple-50 dark:bg-none dark:bg-[#0d141c] pb-12 flex flex-col">
@@ -81,7 +120,7 @@ export function LevelSyllablesMaster({ levelId, accent }: LevelSyllablesMasterPr
           </Button>
           <div className="flex-1 text-center pr-8">
             <h2 className="text-lg font-bold tracking-tight" style={{ color: accent.primary }}>
-              Lesson 2: Syllable Quiz
+              Lesson 2: Syllable Master
             </h2>
           </div>
         </div>
@@ -93,7 +132,7 @@ export function LevelSyllablesMaster({ levelId, accent }: LevelSyllablesMasterPr
             Choose a Pattern
           </h1>
           <p className="text-gray-500 dark:text-gray-400">
-            Review all syllables then practice matching by sound. Complete both to finish Lesson 2!
+            Build syllables, then review and match by sound. Complete both to finish Lesson 2!
           </p>
         </div>
 
@@ -101,7 +140,7 @@ export function LevelSyllablesMaster({ levelId, accent }: LevelSyllablesMasterPr
           {/* VC */}
           <motion.button
             whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-            onClick={() => setSelectedSubLevel("VC")}
+            onClick={() => handleSelect("VC")}
             className="w-full text-left p-8 rounded-[2.5rem] border-3 bg-white dark:bg-gray-800/80 shadow-lg hover:shadow-xl transition-all flex flex-col sm:flex-row items-center sm:items-start gap-6 cursor-pointer"
             style={{ borderColor: "#CE82FF" }}
           >
@@ -115,15 +154,20 @@ export function LevelSyllablesMaster({ levelId, accent }: LevelSyllablesMasterPr
                 {isVCDone && <CheckCircle2 className="w-5 h-5 text-[#58CC02] flex-shrink-0" />}
               </div>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                58 syllables like <span className="font-bold">AB, IM, OT</span> — Review then Listen & Match
+                Build & pronounce syllables like <span className="font-bold">AB, IM, OT</span>
               </p>
+              <div className="flex gap-1 mt-3 flex-wrap justify-center sm:justify-start">
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-100 text-purple-600 font-bold">Word Builder</span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-100 text-purple-600 font-bold">Review</span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-100 text-purple-600 font-bold">Listen & Match</span>
+              </div>
             </div>
           </motion.button>
 
           {/* CV */}
           <motion.button
             whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-            onClick={() => setSelectedSubLevel("CV")}
+            onClick={() => handleSelect("CV")}
             className="w-full text-left p-8 rounded-[2.5rem] border-3 bg-white dark:bg-gray-800/80 shadow-lg hover:shadow-xl transition-all flex flex-col sm:flex-row items-center sm:items-start gap-6 cursor-pointer"
             style={{ borderColor: "#FF9600" }}
           >
@@ -137,8 +181,13 @@ export function LevelSyllablesMaster({ levelId, accent }: LevelSyllablesMasterPr
                 {isCVDone && <CheckCircle2 className="w-5 h-5 text-[#58CC02] flex-shrink-0" />}
               </div>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                83 syllables like <span className="font-bold">BA, MI, TO</span> — Review then Listen & Match
+                Build & pronounce syllables like <span className="font-bold">BA, MI, TO</span>
               </p>
+              <div className="flex gap-1 mt-3 flex-wrap justify-center sm:justify-start">
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-orange-100 text-orange-600 font-bold">Word Builder</span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-orange-100 text-orange-600 font-bold">Review</span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-orange-100 text-orange-600 font-bold">Listen & Match</span>
+              </div>
             </div>
           </motion.button>
         </div>
