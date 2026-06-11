@@ -6,14 +6,16 @@ import {
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { motion, AnimatePresence } from "motion/react";
-import { shuffle } from "../data/levels";
+import { shuffle, SyllableTarget } from "../data/levels";
 import { Confetti } from "./ui/Confetti";
 import { playSound } from "../utils/soundEffects";
+
+import { LevelSyllableBuilder } from "./LevelSyllableBuilder";
 
 type Pattern = "VC" | "CV";
 
 interface Step {
-  type: "review" | "match";
+  type: "build" | "match";
   items: string[];
   setLabel: string;  // e.g. "Set 1/6"
 }
@@ -54,75 +56,13 @@ function buildSteps(allSyllables: string[]): Step[] {
   for (let i = 0; i < totalChunks; i++) {
     const chunk = allSyllables.slice(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE);
     const label = `Set ${i + 1}/${totalChunks}`;
-    steps.push({ type: "review", items: chunk, setLabel: label });
+    steps.push({ type: "build", items: chunk, setLabel: label });
     steps.push({ type: "match", items: chunk, setLabel: label });
   }
   return steps;
 }
 
-// ── Review Phase ─────────────────────────────────────────────────────────────
-function ReviewPhase({
-  items, pattern, accent, onNext,
-}: {
-  items: string[]; pattern: Pattern; accent: { primary: string; dark: string }; onNext: () => void;
-}) {
-  const [clicked, setClicked] = useState<string | null>(null);
 
-  const handlePlay = (syl: string) => {
-    playSound("click", 0.25);
-    playAudio(syl, pattern);
-    setClicked(syl);
-    setTimeout(() => setClicked(null), 600);
-  };
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, x: 50 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: -50 }}
-      className="w-full max-w-xl mx-auto flex flex-col items-center"
-    >
-      <div className="text-center mb-6">
-        <h2 className="text-3xl font-black text-gray-800 dark:text-gray-100 mb-1">
-          {pattern} Builder 📖
-        </h2>
-        <p className="text-gray-500 dark:text-gray-400 text-sm">
-          Tap a syllable or the 🔊 button to hear how it sounds.
-        </p>
-      </div>
-
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 w-full mb-8">
-        {items.map((syl) => (
-          <motion.div
-            key={syl}
-            whileTap={{ scale: 0.93 }}
-            onClick={() => handlePlay(syl)}
-            className="flex items-center justify-between rounded-2xl p-4 cursor-pointer select-none shadow-md border-2 transition-all"
-            style={{
-              background: clicked === syl
-                ? `linear-gradient(135deg, ${accent.primary}, ${accent.dark})`
-                : "white",
-              borderColor: clicked === syl ? accent.dark : accent.primary + "50",
-              color: clicked === syl ? "white" : accent.primary,
-            }}
-          >
-            <span className="text-3xl font-black tracking-widest">{syl}</span>
-            <Volume2 className="w-5 h-5 opacity-60 flex-shrink-0" />
-          </motion.div>
-        ))}
-      </div>
-
-      <Button
-        onClick={onNext}
-        size="lg"
-        className="rounded-2xl px-10 py-6 text-lg text-white font-bold w-full shadow-xl"
-        style={{ background: `linear-gradient(135deg, ${accent.primary}, ${accent.dark})` }}
-      >
-        Start Matching <ArrowRight className="ml-2 w-5 h-5" />
-      </Button>
-    </motion.div>
-  );
-}
 
 // ── Match Phase ───────────────────────────────────────────────────────────────
 function MatchPhase({
@@ -315,7 +255,7 @@ function MatchPhase({
 }
 
 // ── Main Component ────────────────────────────────────────────────────────────
-export function LevelSyllableQuiz({ pattern, levelId: _levelId, accent, onComplete }: LevelSyllableQuizProps) {
+export function LevelSyllableQuiz({ pattern, levelId, accent, onComplete }: LevelSyllableQuizProps) {
   const navigate = useNavigate();
   const [allSyllables] = useState<string[]>(() => {
     // Load from levels data
@@ -388,7 +328,7 @@ export function LevelSyllableQuiz({ pattern, levelId: _levelId, accent, onComple
               {pattern === "VC" ? "Vowel + Consonant (VC)" : "Consonant + Vowel (CV)"}
             </h2>
             <p className="text-xs text-gray-500">
-              {step?.type === "review" ? `Builder — ${step.setLabel}` : `Listen & Match — ${step.setLabel}`} ({totalReviewSets} sets)
+              {step?.type === "build" ? `Builder — ${step.setLabel}` : `Listen & Match — ${step.setLabel}`} ({totalReviewSets} sets)
             </p>
           </div>
           <span className="text-xs font-bold text-gray-500 bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full">
@@ -425,13 +365,19 @@ export function LevelSyllableQuiz({ pattern, levelId: _levelId, accent, onComple
               </h3>
               <p className="text-gray-600 dark:text-gray-400">You've completed the builder and matched all {allSyllables.length} {pattern} syllables!</p>
             </motion.div>
-          ) : step?.type === "review" ? (
-            <ReviewPhase
-              key={`review-${currentStep}`}
-              items={step.items}
-              pattern={pattern}
+          ) : step?.type === "build" ? (
+            <LevelSyllableBuilder
+              key={`build-${currentStep}`}
+              levelId={levelId}
+              patterns={[pattern]}
               accent={accent}
-              onNext={handleNext}
+              embedded={true}
+              customTargets={step.items.map(syl => ({
+                syllable: syl,
+                letters: syl.split(''),
+                pattern: pattern
+              }))}
+              onComplete={handleNext}
             />
           ) : (
             <MatchPhase

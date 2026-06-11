@@ -32,6 +32,7 @@ interface LevelSyllableBuilderProps {
   onComplete?: () => void;
   customTargets?: SyllableTarget[];
   isSubPhase?: boolean;
+  embedded?: boolean;
 }
 
 const patternLabels: Record<SyllablePattern, string> = {
@@ -53,6 +54,7 @@ export function LevelSyllableBuilder({
   onComplete,
   customTargets,
   isSubPhase,
+  embedded,
 }: LevelSyllableBuilderProps) {
   const navigate = useNavigate();
 
@@ -118,6 +120,14 @@ export function LevelSyllableBuilder({
   const allDone = completedTargets.size >= targets.length;
   const progress = (completedTargets.size / targets.length) * 100;
   const slotCount = currentTarget ? currentTarget.letters.length : 2;
+
+  useEffect(() => {
+    if (allDone && embedded && onComplete) {
+      onComplete();
+    }
+  }, [allDone, embedded, onComplete]);
+
+  if (allDone && embedded) return null;
 
   /**
    * Returns the phonetically correct TTS string for a syllable.
@@ -305,33 +315,12 @@ export function LevelSyllableBuilder({
     navigate("/levels", { replace: true });
   };
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-yellow-50 to-pink-50 dark:bg-none dark:bg-[#0d141c]">
-      <Confetti active={showConfetti} />
-      {/* Header */}
-      <div className="sticky top-0 z-10 bg-white/80 dark:bg-[#0d141c]/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 px-4 py-3">
-        <div className="max-w-2xl mx-auto flex items-center gap-3">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleGoBack}
-            className="rounded-full"
-          >
-            <Home className="w-5 h-5" />
-          </Button>
-          <div className="flex-1 text-center pr-8">
-            <h2 className="text-lg font-bold tracking-tight" style={{ color: accent.primary }}>
-              {levelId === 3 ? "CVC Word Builder" : "Syllable Builder"}
-            </h2>
-          </div>
-        </div>
-      </div>
 
-      {/* Content */}
-      <div className="max-w-2xl mx-auto px-4 py-6">
 
-        {/* SUB-LEVEL PICKER — shown when Level 2 has both VC and CV */}
-        {!selectedSubPattern && patterns.length > 1 ? (
+  const innerContent = (
+    <div className={`max-w-2xl mx-auto px-4 ${embedded ? "py-2" : "py-6"}`}>
+      {/* SUB-LEVEL PICKER — shown when Level 2 has both VC and CV */}
+      {!selectedSubPattern && patterns.length > 1 ? (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -409,7 +398,7 @@ export function LevelSyllableBuilder({
               </div>
             )}
 
-            {!allDone ? (
+            {!allDone && (
               <>
                 {/* Progress Bar */}
                 <div className="w-full h-3 bg-gray-200/80 dark:bg-gray-800 rounded-full overflow-hidden mb-4 shadow-inner border border-gray-100 dark:border-gray-700/30">
@@ -690,99 +679,39 @@ export function LevelSyllableBuilder({
                   </Button>
                 </div>
               </>
-            ) : (
-              /* All Done */
-              <motion.div
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="text-center py-12"
-              >
-                <motion.div
-                  animate={{ rotate: [0, 10, -10, 0] }}
-                  transition={{ repeat: Infinity, duration: 2 }}
-                  className="inline-block mb-6"
-                >
-                  <Sparkles className="w-20 h-20 text-[#FFC800]" />
-                </motion.div>
-                <h3 className="text-3xl mb-4" style={{ color: accent.primary }}>
-                  All Syllables Built!
-                </h3>
-                <p className="text-gray-500 dark:text-gray-400 mb-4">
-                  You matched {targets.length} out of {targets.length} syllables!
-                </p>
-                <div className="flex flex-wrap justify-center gap-3 mb-8">
-                  {targets.map((t, i) => (
-                    <motion.button
-                      key={i}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={() => playTTS(t.syllable, t.pattern)}
-                      className="px-4 py-2.5 rounded-full text-white text-lg font-bold flex items-center gap-2 shadow-md cursor-pointer transition-all hover:brightness-105 active:brightness-95 border-b-4 border-black/20"
-                      style={{
-                        background: `linear-gradient(135deg, ${patternColors[t.pattern]}, ${accent.dark})`,
-                      }}
-                    >
-                      <Volume2 className="w-5 h-5 text-white/90" />
-                      <span>{t.syllable}</span>
-                      <span className="opacity-70 text-xs font-normal">({t.pattern})</span>
-                    </motion.button>
-                  ))}
-                </div>
-                <Button
-                  disabled={isSaving}
-                  onClick={async () => {
-                    if (isSubPhase) {
-                      if (onComplete) onComplete();
-                      return;
-                    }
-
-                    setIsSaving(true);
-                    try {
-                      const profileStr = localStorage.getItem("userProfile");
-                      if (profileStr) {
-                        const profile = JSON.parse(profileStr);
-                        if (profile.id) {
-                          await supabase.from("progress").insert({
-                            student_id: profile.id,
-                            level_id: levelId,
-                            score: targets.length
-                          });
-                        }
-                      }
-                    } catch (err) {
-                      console.error("Error saving progress:", err);
-                    }
-
-                    const completedLevels = JSON.parse(
-                      localStorage.getItem("completedLevels") || "[]"
-                    );
-                    if (!completedLevels.includes(levelId)) {
-                      completedLevels.push(levelId);
-                      localStorage.setItem(
-                        "completedLevels",
-                        JSON.stringify(completedLevels)
-                      );
-                    }
-                    setIsSaving(false);
-                    if (onComplete) {
-                      onComplete();
-                    } else {
-                      navigate("/levels");
-                    }
-                  }}
-                  size="lg"
-                  className="rounded-xl px-8 py-6 text-lg text-white"
-                  style={{
-                    background: `linear-gradient(135deg, ${accent.primary} 0%, ${accent.dark} 100%)`,
-                  }}
-                >
-                  {onComplete ? <ArrowRight className="w-5 h-5 mr-2" /> : <Home className="w-5 h-5 mr-2" />}
-                  {isSaving ? "Saving..." : onComplete ? (isSubPhase ? "Next Challenge" : "Next Phase: Voice") : "Back to Levels"}
-                </Button>
-              </motion.div>
             )}
           </>
         )}
       </div>
+  );
+
+  if (embedded) {
+    if (allDone) return null;
+    return innerContent;
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-yellow-50 to-pink-50 dark:bg-none dark:bg-[#0d141c]">
+      <Confetti active={showConfetti} />
+      {/* Header */}
+      <div className="sticky top-0 z-10 bg-white/80 dark:bg-[#0d141c]/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 px-4 py-3">
+        <div className="max-w-2xl mx-auto flex items-center gap-3">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleGoBack}
+            className="rounded-full"
+          >
+            <Home className="w-5 h-5" />
+          </Button>
+          <div className="flex-1 text-center pr-8">
+            <h2 className="text-lg font-bold tracking-tight" style={{ color: accent.primary }}>
+              {levelId === 3 ? "CVC Word Builder" : "Syllable Builder"}
+            </h2>
+          </div>
+        </div>
+      </div>
+      {innerContent}
     </div>
   );
 }

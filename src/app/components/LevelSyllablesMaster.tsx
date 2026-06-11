@@ -1,8 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
-import { LevelSyllableBuilder } from "./LevelSyllableBuilder";
 import { LevelSyllableQuiz } from "./LevelSyllableQuiz";
-import { generateSyllableTargets } from "../data/levels";
 import { supabase } from "../../lib/supabase";
 import { Home, CheckCircle2 } from "lucide-react";
 import { Button } from "./ui/button";
@@ -13,28 +11,14 @@ interface LevelSyllablesMasterProps {
   accent: { primary: string; dark: string; lightBg: string };
 }
 
-type SubPhase = "build" | "quiz";
-
 export function LevelSyllablesMaster({ levelId, accent }: LevelSyllablesMasterProps) {
   const navigate = useNavigate();
 
   const [selectedSubLevel, setSelectedSubLevel] = useState<"CV" | "VC" | null>(null);
-  const [subPhase, setSubPhase] = useState<SubPhase>("build");
 
   const [completedSubLevels, setCompletedSubLevels] = useState<string[]>(() =>
     JSON.parse(localStorage.getItem("completedSubLevels_Level2") || "[]")
   );
-
-  // Word builder targets (10 random syllables for the build phase)
-  const [buildTargets] = useState(() => {
-    // Will be regenerated when a sub-level is picked
-    return { VC: generateSyllableTargets(["VC"], 10), CV: generateSyllableTargets(["CV"], 10) };
-  });
-
-  const handleBuildComplete = () => {
-    // After word builder → go to Review + Match quiz
-    setSubPhase("quiz");
-  };
 
   const handleQuizComplete = async () => {
     const pattern = selectedSubLevel!;
@@ -72,26 +56,11 @@ export function LevelSyllablesMaster({ levelId, accent }: LevelSyllablesMasterPr
     } else {
       // Return to picker to choose the other sub-level
       setSelectedSubLevel(null);
-      setSubPhase("build");
     }
   };
 
-  // ── Phase: Word Builder ──────────────────────────────────────────────────────
-  if (selectedSubLevel && subPhase === "build") {
-    return (
-      <LevelSyllableBuilder
-        levelId={levelId}
-        patterns={[selectedSubLevel]}
-        accent={accent}
-        customTargets={buildTargets[selectedSubLevel]}
-        isSubPhase={true}
-        onComplete={handleBuildComplete}
-      />
-    );
-  }
-
-  // ── Phase: Review + Listen & Match ──────────────────────────────────────────
-  if (selectedSubLevel && subPhase === "quiz") {
+  // ── Phase: Builder + Listen & Match ──────────────────────────────────────────
+  if (selectedSubLevel) {
     return (
       <LevelSyllableQuiz
         pattern={selectedSubLevel}
@@ -108,7 +77,6 @@ export function LevelSyllablesMaster({ levelId, accent }: LevelSyllablesMasterPr
 
   const handleSelect = (pattern: "VC" | "CV") => {
     setSelectedSubLevel(pattern);
-    setSubPhase("build");
   };
 
   return (
@@ -132,7 +100,7 @@ export function LevelSyllablesMaster({ levelId, accent }: LevelSyllablesMasterPr
             Choose a Pattern
           </h1>
           <p className="text-gray-500 dark:text-gray-400">
-            Build syllables, then review and match by sound. Complete both to finish Lesson 2!
+            Build syllables, then listen and match by sound. Complete both to finish Lesson 2!
           </p>
         </div>
 
@@ -157,8 +125,7 @@ export function LevelSyllablesMaster({ levelId, accent }: LevelSyllablesMasterPr
                 Build & pronounce syllables like <span className="font-bold">AB, IM, OT</span>
               </p>
               <div className="flex gap-1 mt-3 flex-wrap justify-center sm:justify-start">
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-100 text-purple-600 font-bold">Word Builder</span>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-100 text-purple-600 font-bold">Review</span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-100 text-purple-600 font-bold">Syllable Builder</span>
                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-100 text-purple-600 font-bold">Listen & Match</span>
               </div>
             </div>
@@ -184,8 +151,7 @@ export function LevelSyllablesMaster({ levelId, accent }: LevelSyllablesMasterPr
                 Build & pronounce syllables like <span className="font-bold">BA, MI, TO</span>
               </p>
               <div className="flex gap-1 mt-3 flex-wrap justify-center sm:justify-start">
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-orange-100 text-orange-600 font-bold">Word Builder</span>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-orange-100 text-orange-600 font-bold">Review</span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-orange-100 text-orange-600 font-bold">Syllable Builder</span>
                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-orange-100 text-orange-600 font-bold">Listen & Match</span>
               </div>
             </div>
