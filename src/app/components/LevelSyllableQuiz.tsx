@@ -201,16 +201,20 @@ function MatchPhase({
                 whileTap={{ scale: isDone ? 1 : 0.98 }}
                 onClick={() => !isDone && handleLeftClick(syl)}
                 disabled={isDone}
-                className={`p-3 rounded-[1.2rem] flex items-center justify-center transition-all border-b-4 border-2 shadow-sm ${isDone
-                  ? "bg-gray-100 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700/50 text-gray-400 dark:text-gray-500 translate-y-[2px] opacity-50 cursor-default"
-                  : isWrong
-                    ? "bg-red-50 border-red-500 text-red-500 animate-shake"
-                    : isSelected
-                      ? "bg-blue-50 border-blue-500 text-blue-600 shadow-md translate-y-[2px]"
-                      : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-gray-300 hover:shadow-md cursor-pointer"
+                className={`relative h-[3.25rem] rounded-[1rem] flex items-center justify-center gap-2 font-bold text-white transition-all shadow-md ${isDone
+                    ? "opacity-50 grayscale cursor-default"
+                    : isWrong
+                      ? "animate-shake bg-red-500"
+                      : isSelected
+                        ? "bg-blue-600 scale-[1.02] shadow-lg ring-4 ring-blue-300"
+                        : ""
                   }`}
+                style={{
+                  background: isWrong ? undefined : isSelected ? undefined : isDone ? "#9ca3af" : `linear-gradient(135deg, ${accent.primary}, ${accent.dark})`,
+                }}
               >
-                <Volume2 className="w-6 h-6" />
+                <span className="relative text-lg">{isDone ? syl : "▶"}</span>
+                {isSelected && <span className="absolute inset-0 bg-white/20 rounded-[1rem]" />}
               </motion.button>
             );
           })}
@@ -229,14 +233,15 @@ function MatchPhase({
                 whileTap={{ scale: isDone ? 1 : 0.98 }}
                 onClick={() => !isDone && handleRightClick(syl)}
                 disabled={isDone}
-                className={`p-3 rounded-[1.2rem] flex items-center justify-center transition-all border-b-4 border-2 shadow-sm font-black text-xl uppercase ${isDone
-                  ? "bg-gray-100 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700/50 text-gray-400 dark:text-gray-500 translate-y-[2px] opacity-50 cursor-default"
-                  : isWrong
-                    ? "bg-red-50 border-red-500 text-red-500 animate-shake"
-                    : isSelected
-                      ? "bg-blue-50 border-blue-500 text-blue-600 shadow-md translate-y-[2px]"
-                      : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-100 hover:border-gray-300 hover:shadow-md cursor-pointer"
+                className={`h-[3.25rem] rounded-[1rem] flex items-center justify-center font-black text-xl tracking-widest uppercase transition-all shadow-md border-2 ${isDone
+                    ? "opacity-50 grayscale bg-gray-100 text-gray-400 border-gray-200 cursor-default"
+                    : isWrong
+                      ? "animate-shake bg-red-100 text-red-600 border-red-500"
+                      : isSelected
+                        ? "bg-blue-50 text-blue-600 border-blue-500 scale-[1.02] shadow-lg ring-4 ring-blue-200"
+                        : "bg-white text-gray-700 hover:border-gray-300 hover:shadow-lg"
                   }`}
+                style={{ borderColor: isSelected || isWrong || isDone ? undefined : accent.primary + "80" }}
               >
                 {syl}
               </motion.button>
@@ -261,32 +266,32 @@ export function LevelSyllableQuiz({ pattern, levelId, accent, onComplete }: Leve
     // Load from levels data
     if (pattern === "VC") {
       return [
-        "AB","AD","AF","AG","AK","AL","AM","AN","AP","AR","AS","AT","AV",
-        "EB","ED","EG","EK","EL","EM","EN","EP","ER","ES","ET",
-        "IB","ID","IG","IK","IL","IM","IN","IP","IR","IS","IT",
-        "OB","OD","OF","OG","OK","OL","OM","ON","OP","OR","OS","OT",
-        "UB","UD","UG","UK","UL","UM","UN","UP","UR","US","UT",
+        "AB", "AD", "AF", "AG", "AK", "AL", "AM", "AN", "AP", "AR", "AS", "AT", "AV",
+        "EB", "ED", "EG", "EK", "EL", "EM", "EN", "EP", "ER", "ES", "ET",
+        "IB", "ID", "IG", "IK", "IL", "IM", "IN", "IP", "IR", "IS", "IT",
+        "OB", "OD", "OF", "OG", "OK", "OL", "OM", "ON", "OP", "OR", "OS", "OT",
+        "UB", "UD", "UG", "UK", "UL", "UM", "UN", "UP", "UR", "US", "UT",
       ];
     }
     // CV
     return [
-      "BA","BE","BI","BO","BU",
-      "CA","CO","CU",
-      "DA","DE","DI","DO","DU",
-      "FA","FE","FI","FO","FU",
-      "HA","HE","HI","HO","HU",
-      "JA","JE","JI","JO","JU",
-      "KA","KE","KI","KO","KU",
-      "LA","LE","LI","LO","LU",
-      "MA","ME","MI","MO","MU",
-      "NA","NE","NI","NO","NU",
-      "PA","PE","PI","PO","PU",
-      "RA","RE","RI","RO","RU",
-      "SA","SE","SI","SO","SU",
-      "TA","TE","TI","TO","TU",
-      "VA","VE","VI","VO","VU",
-      "WA","WE","WI","WO","WU",
-      "ZA","ZE","ZI","ZO","ZU",
+      "BA", "BE", "BI", "BO", "BU",
+      "CA", "CO", "CU",
+      "DA", "DE", "DI", "DO", "DU",
+      "FA", "FE", "FI", "FO", "FU",
+      "HA", "HE", "HI", "HO", "HU",
+      "JA", "JE", "JI", "JO", "JU",
+      "KA", "KE", "KI", "KO", "KU",
+      "LA", "LE", "LI", "LO", "LU",
+      "MA", "ME", "MI", "MO", "MU",
+      "NA", "NE", "NI", "NO", "NU",
+      "PA", "PE", "PI", "PO", "PU",
+      "RA", "RE", "RI", "RO", "RU",
+      "SA", "SE", "SI", "SO", "SU",
+      "TA", "TE", "TI", "TO", "TU",
+      "VA", "VE", "VI", "VO", "VU",
+      "WA", "WE", "WI", "WO", "WU",
+      "ZA", "ZE", "ZI", "ZO", "ZU",
     ];
   });
 
