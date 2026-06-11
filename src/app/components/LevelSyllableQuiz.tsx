@@ -25,7 +25,7 @@ interface LevelSyllableQuizProps {
   onComplete: () => void;
 }
 
-const CHUNK_SIZE = 10;
+const CHUNK_SIZE = 6;
 
 function getAudioPath(syllable: string, pattern: Pattern): string {
   const base = (import.meta as any).env.BASE_URL;
@@ -249,63 +249,57 @@ function MatchPhase({
       {/* Two-column match */}
       <div className="w-full grid grid-cols-2 gap-3 mb-6">
         {/* Left: speaker buttons */}
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-3">
           {leftCol.map((syl) => {
             const isDone = matchedPairs.has(syl);
             const isSelected = selectedLeft === syl;
             const isWrong = isWrongLeft(syl);
             return (
-              <button
-                key={syl}
+              <motion.button
+                key={`left-${syl}`}
+                whileHover={{ scale: isDone ? 1 : 1.02 }}
+                whileTap={{ scale: isDone ? 1 : 0.98 }}
                 onClick={() => !isDone && handleLeftClick(syl)}
                 disabled={isDone}
-                className={`relative h-14 rounded-xl flex items-center justify-center gap-2 font-bold text-white text-sm transition-all shadow-md
-                  ${isDone ? "opacity-50 cursor-default bg-green-500"
-                    : isWrong ? "bg-red-500 animate-shake"
-                    : isSelected ? "scale-105 ring-4 ring-offset-2"
-                    : "hover:scale-105 active:scale-95 cursor-pointer"}`}
-                style={{
-                  background: isDone ? "#22c55e"
-                    : isWrong ? "#ef4444"
-                    : isSelected ? `linear-gradient(135deg, ${accent.primary}, ${accent.dark})`
-                    : `linear-gradient(135deg, #ec4899, #be185d)`,
-                }}
+                className={`p-3 rounded-[1.2rem] flex items-center justify-center transition-all border-b-4 border-2 shadow-sm ${isDone
+                  ? "bg-gray-100 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700/50 text-gray-400 dark:text-gray-500 translate-y-[2px] opacity-50 cursor-default"
+                  : isWrong
+                    ? "bg-red-50 border-red-500 text-red-500 animate-shake"
+                    : isSelected
+                      ? "bg-blue-50 border-blue-500 text-blue-600 shadow-md translate-y-[2px]"
+                      : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-gray-300 hover:shadow-md cursor-pointer"
+                  }`}
               >
-                {isSelected && !isDone && (
-                  <span className="absolute inset-0 rounded-xl bg-white/20 animate-pulse" />
-                )}
-                <span className="relative">
-                  {isDone ? <CheckCircle2 className="w-5 h-5" /> : isWrong ? <XCircle className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
-                </span>
-                <span className="relative text-base">{isDone ? syl : "▶"}</span>
-              </button>
+                <Volume2 className="w-6 h-6" />
+              </motion.button>
             );
           })}
         </div>
 
-        {/* Right: word buttons (clicking also plays audio) */}
-        <div className="flex flex-col gap-2">
+        {/* Right: word buttons */}
+        <div className="flex flex-col gap-3 flex-1">
           {rightCol.map((syl) => {
             const isDone = matchedPairs.has(syl);
             const isSelected = selectedRight === syl;
             const isWrong = isWrongRight(syl);
             return (
-              <button
-                key={syl}
+              <motion.button
+                key={`right-${syl}`}
+                whileHover={{ scale: isDone ? 1 : 1.02 }}
+                whileTap={{ scale: isDone ? 1 : 0.98 }}
                 onClick={() => !isDone && handleRightClick(syl)}
                 disabled={isDone}
-                className={`h-14 rounded-xl flex items-center justify-center font-black text-2xl tracking-widest transition-all shadow-md border-2
-                  ${isDone ? "opacity-50 cursor-default border-green-400 bg-green-50 text-green-600"
-                    : isWrong ? "border-red-400 bg-red-50 text-red-600 animate-shake"
-                    : isSelected ? "border-4 bg-white dark:bg-gray-800 scale-105"
-                    : "border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 hover:border-pink-400 hover:scale-105 active:scale-95 cursor-pointer"}`}
-                style={{
-                  borderColor: isSelected ? accent.primary : undefined,
-                  color: isSelected ? accent.primary : undefined,
-                }}
+                className={`p-3 rounded-[1.2rem] flex items-center justify-center transition-all border-b-4 border-2 shadow-sm font-black text-xl uppercase ${isDone
+                  ? "bg-gray-100 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700/50 text-gray-400 dark:text-gray-500 translate-y-[2px] opacity-50 cursor-default"
+                  : isWrong
+                    ? "bg-red-50 border-red-500 text-red-500 animate-shake"
+                    : isSelected
+                      ? "bg-blue-50 border-blue-500 text-blue-600 shadow-md translate-y-[2px]"
+                      : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-100 hover:border-gray-300 hover:shadow-md cursor-pointer"
+                  }`}
               >
-                {isDone ? <CheckCircle2 className="w-5 h-5 text-green-500" /> : syl}
-              </button>
+                {syl}
+              </motion.button>
             );
           })}
         </div>

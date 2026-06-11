@@ -1,19 +1,85 @@
-// Shared sound effects utility for AlphabetGO
-// All sounds use CDN URLs with graceful fallback
+// Shared sound effects utility for AlphabetGO using Web Audio API
+// This avoids expiring CDN links and works perfectly offline with zero latency!
 
-const SFX_URLS = {
-  click:    "https://assets.mixkit.co/active_storage/sfx/2571/2571-84.wav",
-  correct:  "https://assets.mixkit.co/active_storage/sfx/2013/2013-84.wav",
-  wrong:    "https://assets.mixkit.co/active_storage/sfx/2101/2101-84.wav",
-  complete: "https://assets.mixkit.co/active_storage/sfx/1362/1362-84.wav",
-} as const;
+let audioCtx: AudioContext | null = null;
 
-export type SoundType = keyof typeof SFX_URLS;
+function getAudioContext() {
+  if (!audioCtx) {
+    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+    if (AudioContextClass) {
+      audioCtx = new AudioContextClass();
+    }
+  }
+  if (audioCtx && audioCtx.state === "suspended") {
+    audioCtx.resume().catch(() => { });
+  }
+  return audioCtx;
+}
+
+export type SoundType = "click" | "correct" | "wrong" | "complete";
 
 export function playSound(type: SoundType, volume = 0.4) {
   try {
-    const audio = new Audio(SFX_URLS[type]);
-    audio.volume = volume;
-    audio.play().catch(() => {});
-  } catch (_) {}
+    const ctx = getAudioContext();
+    if (!ctx) return;
+
+    const osc = ctx.createOscillator();
+    const gainNode = ctx.createGain();
+
+    osc.connect(gainNode);
+    gainNode.connect(ctx.destination);
+
+    const now = ctx.currentTime;
+
+    if (type === "click") {
+      // Soft tap (like a wooden block)
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(600, now);
+      osc.frequency.exponentialRampToValueAtTime(100, now + 0.05);
+      gainNode.gain.setValueAtTime(volume, now);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+      osc.start(now);
+      osc.stop(now + 0.05);
+    }
+    else if (type === "correct") {
+      // Cheerful Ding (C5 then E5)
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(523.25, now); // C5
+      osc.frequency.setValueAtTime(659.25, now + 0.1); // E5
+      gainNode.gain.setValueAtTime(0, now);
+      gainNode.gain.linearRampToValueAtTime(volume, now + 0.02);
+      gainNode.gain.setValueAtTime(volume, now + 0.1);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+      osc.start(now);
+      osc.stop(now + 0.4);
+    }
+    else if (type === "wrong") {
+      // Gentle Buzzer
+      osc.type = "triangle";
+      osc.frequency.setValueAtTime(150, now);
+      osc.frequency.linearRampToValueAtTime(100, now + 0.3);
+      gainNode.gain.setValueAtTime(volume * 0.8, now);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+      osc.start(now);
+      osc.stop(now + 0.3);
+    }
+    else if (type === "complete") {
+      // Triumphant Fanfare (C4, E4, G4, C5)
+      osc.type = "square";
+      gainNode.gain.setValueAtTime(0, now);
+      gainNode.gain.linearRampToValueAtTime(volume * 0.15, now + 0.05);
+
+      osc.frequency.setValueAtTime(261.63, now); // C4
+      osc.frequency.setValueAtTime(329.63, now + 0.15); // E4
+      osc.frequency.setValueAtTime(392.00, now + 0.3); // G4
+      osc.frequency.setValueAtTime(523.25, now + 0.45); // C5
+
+      gainNode.gain.setValueAtTime(volume * 0.15, now + 0.45);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, now + 1.2);
+      osc.start(now);
+      osc.stop(now + 1.2);
+    }
+  } catch (err) {
+    console.error("Audio playback failed:", err);
+  }
 }

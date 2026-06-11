@@ -412,7 +412,7 @@ export function LevelSyllableBuilder({
             {!allDone ? (
               <>
                 {/* Progress Bar */}
-                <div className="w-full h-3 bg-gray-200/80 dark:bg-gray-800 rounded-full overflow-hidden mb-6 shadow-inner border border-gray-100 dark:border-gray-700/30">
+                <div className="w-full h-3 bg-gray-200/80 dark:bg-gray-800 rounded-full overflow-hidden mb-4 shadow-inner border border-gray-100 dark:border-gray-700/30">
                   <motion.div
                     initial={{ width: 0 }}
                     animate={{ width: `${progress}%` }}
@@ -431,7 +431,7 @@ export function LevelSyllableBuilder({
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: -40 }}
                     transition={{ duration: 0.25 }}
-                    className="text-center mb-6"
+                    className="text-center mb-4"
                   >
                     {/* Target info */}
                     <div className="mb-2 text-sm text-gray-500 dark:text-gray-400">
@@ -439,7 +439,7 @@ export function LevelSyllableBuilder({
                     </div>
 
                     <div
-                      className="inline-flex flex-col items-center gap-3 px-8 py-5 rounded-2xl shadow-lg mb-4"
+                      className="inline-flex flex-col items-center gap-2 px-6 py-3 rounded-2xl shadow-lg mb-2"
                       style={{
                         background: `linear-gradient(135deg, ${patternColors[currentTarget.pattern]}20, ${patternColors[currentTarget.pattern]}10)`,
                         border: `2px solid ${patternColors[currentTarget.pattern]}`,
@@ -453,9 +453,9 @@ export function LevelSyllableBuilder({
                       </span>
 
                       {/* Show the actual target syllable */}
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2">
                         <span
-                          className="text-5xl tracking-widest"
+                          className="text-4xl sm:text-5xl tracking-widest"
                           style={{ color: patternColors[currentTarget.pattern] }}
                         >
                           {currentTarget.syllable.split("").map((ch, i) => (
@@ -502,13 +502,13 @@ export function LevelSyllableBuilder({
 
                     {/* Selected letters display */}
                     {!completedTargets.has(currentTarget.syllable) && (
-                      <div className="flex justify-center gap-3 mt-4 mb-6">
+                      <div className="flex justify-center gap-2 mt-2 mb-4">
                         {Array.from({ length: slotCount }).map((_, slot) => {
                           const isVowel = ["A", "E", "I", "O", "U"].includes(selectedLetters[slot]);
                           return (
                             <div
                               key={slot}
-                              className={`w-18 h-18 sm:w-20 sm:h-20 rounded-3xl flex items-center justify-center transition-all ${!selectedLetters[slot]
+                              className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center transition-all ${!selectedLetters[slot]
                                 ? "border-3 border-dashed border-gray-300 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-800/30"
                                 : feedback === "correct"
                                   ? "scale-105"
@@ -521,7 +521,7 @@ export function LevelSyllableBuilder({
                                 <motion.div
                                   initial={{ scale: 0, y: -10 }}
                                   animate={{ scale: 1, y: 0 }}
-                                  className="w-full h-full rounded-2xl flex flex-col items-center justify-center border-b-6 select-none shadow-md"
+                                  className="w-full h-full rounded-2xl flex flex-col items-center justify-center border-b-[4px] select-none shadow-md"
                                   style={{
                                     background: feedback === "correct"
                                       ? "linear-gradient(135deg, #58CC02 0%, #46a302 100%)"
@@ -539,15 +539,15 @@ export function LevelSyllableBuilder({
                                           : "#086CA5",
                                   }}
                                 >
-                                  <span className="text-white text-3xl sm:text-4xl font-black drop-shadow-sm uppercase">
+                                  <span className="text-white text-2xl sm:text-3xl font-black drop-shadow-sm uppercase">
                                     {selectedLetters[slot]}
                                   </span>
-                                  <span className="text-white/80 text-[10px] uppercase font-bold tracking-wider mt-0.5">
+                                  <span className="text-white/80 text-[9px] uppercase font-bold tracking-wider mt-0.5">
                                     {isVowel ? "vowel" : "cons."}
                                   </span>
                                 </motion.div>
                               ) : (
-                                <span className="text-gray-300 dark:text-gray-600 text-2xl font-bold opacity-50">
+                                <span className="text-gray-300 dark:text-gray-600 text-xl font-bold opacity-50">
                                   {patternPlaceholder(currentTarget.pattern)[slot]}
                                 </span>
                               )}
@@ -597,7 +597,7 @@ export function LevelSyllableBuilder({
 
                 {/* Letter Pool */}
                 {!completedTargets.has(currentTarget.syllable) && (
-                  <div className="grid grid-cols-5 sm:grid-cols-7 gap-3 mb-6">
+                  <div className="grid grid-cols-5 sm:grid-cols-7 gap-2 mb-4">
                     {letterPool.map((item, i) => {
                       const timesInTarget = currentTarget.syllable
                         .split("")
@@ -632,8 +632,8 @@ export function LevelSyllableBuilder({
                             !isDisabled && handleLetterClick(item.letter)
                           }
                           disabled={!!feedback || isDisabled}
-                          className={`aspect-square rounded-2xl flex flex-col items-center justify-center transition-all shadow-md active:scale-95 cursor-pointer relative border-b-6 select-none ${isVisuallySelected
-                            ? "opacity-30 border-b-2 translate-y-[4px] pointer-events-none"
+                          className={`aspect-square rounded-[1rem] flex flex-col items-center justify-center transition-all shadow-md active:scale-95 cursor-pointer relative border-b-[4px] select-none ${isVisuallySelected
+                            ? "opacity-30 border-b-2 translate-y-[2px] pointer-events-none"
                             : "active:border-b-0 active:translate-y-[4px]"
                             }`}
                           style={{
@@ -652,10 +652,10 @@ export function LevelSyllableBuilder({
                                   : "#086CA5",
                           } as React.CSSProperties}
                         >
-                          <span className="text-white text-3xl font-black drop-shadow-sm uppercase">
+                          <span className="text-white text-2xl font-black drop-shadow-sm uppercase">
                             {item.letter}
                           </span>
-                          <span className="text-white/80 text-[10px] uppercase font-bold tracking-wider mt-0.5">
+                          <span className="text-white/80 text-[9px] uppercase font-bold tracking-wider mt-0.5">
                             {item.isVowel ? "vowel" : "cons."}
                           </span>
                         </motion.button>
