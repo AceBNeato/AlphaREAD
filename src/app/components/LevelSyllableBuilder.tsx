@@ -122,10 +122,10 @@ export function LevelSyllableBuilder({
   const slotCount = currentTarget ? currentTarget.letters.length : 2;
 
   useEffect(() => {
-    if (allDone && embedded && onComplete) {
+    if (allDone && onComplete) {
       onComplete();
     }
-  }, [allDone, embedded, onComplete]);
+  }, [allDone, onComplete]);
 
   if (allDone && embedded) return null;
 
