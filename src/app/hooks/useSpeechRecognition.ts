@@ -238,6 +238,22 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, singleSho
             const raw = results[i].transcript.trim().toUpperCase().replace(/[.,!?]/g, "");
             const rawWords = raw.split(/\s+/);
 
+            // Strict subsequence match: all words in correct order
+            let targetIdx = 0;
+            for (let j = 0; j < rawWords.length; j++) {
+              if (rawWords[j] === targetWords[targetIdx]) {
+                targetIdx++;
+                if (targetIdx === targetWords.length) break;
+              }
+            }
+
+            if (targetIdx === targetWords.length || raw.includes(targetUpper)) {
+              matched = true;
+              matchStr = results[i].transcript.trim();
+              break;
+            }
+
+            // Close match check (for feedback purposes)
             let matchCount = 0;
             const availableRawWords = [...rawWords];
             targetWords.forEach(tw => {
@@ -249,11 +265,7 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, singleSho
             });
 
             const matchRatio = matchCount / targetWords.length;
-            if (matchRatio >= 0.75 || raw.includes(targetUpper)) {
-              matched = true;
-              matchStr = results[i].transcript.trim();
-              break;
-            } else if (matchRatio >= 0.4) {
+            if (matchRatio >= 0.5) {
               closeMatched = true;
               matchStr = results[i].transcript.trim();
             }
@@ -362,14 +374,18 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, singleSho
 
     try {
       recognition.start();
+      
+      const isPhrase = evaluatingWord.toUpperCase().replace(/[.,!?]/g, "").trim().includes(" ");
+      const timeoutDuration = isPhrase ? 10000 : 5000;
+
       timeoutRef.current = setTimeout(() => {
         if (!isActive || hasMatched) return;
-        if (DEBUG) console.log(`[AlphabetGO Debug] ⏱️ Timeout reached (5s) for "${evaluatingWord}". Evaluating final state...`);
+        if (DEBUG) console.log(`[AlphabetGO Debug] ⏱️ Timeout reached (${timeoutDuration}ms) for "${evaluatingWord}". Evaluating final state...`);
         if (recognitionRef.current) {
           try { recognitionRef.current.stop(); } catch (e) { }
         }
         hasMatched = true;
-        // If 5 seconds pass and we never got a correct match, THEN we fail them
+        // If timeout passes and we never got a correct match, THEN we fail them
         if (resultReceivedRef.current && latestTranscript) {
           if (DEBUG) console.log(`[AlphabetGO Debug] 👎 Forcing "wrong" feedback with transcript: "${latestTranscript}"`);
           onResultRef.current(evaluatingWord, "wrong", latestTranscript);
@@ -377,7 +393,7 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, singleSho
           if (DEBUG) console.log(`[AlphabetGO Debug] 🤫 No speech detected (silence timeout).`);
           onSilenceTimeoutRef.current();
         }
-      }, 5000);
+      }, timeoutDuration);
     } catch (error) {
       if (DEBUG) console.error("[AlphabetGO Debug] ❌ Error starting recognition:", error);
       onErrorRef.current();

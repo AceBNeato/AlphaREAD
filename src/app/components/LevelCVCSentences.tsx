@@ -73,15 +73,7 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete }: L
     (target: string, status: "correct" | "close" | "wrong" | null, transcript: string) => {
       setSentenceTranscriptsMap(prev => ({ ...prev, [target]: transcript }));
 
-      const tLower = transcript.toLowerCase().replace(/[.,!?]/g, "");
-      const targetLower = target.toLowerCase().replace(/[.,!?]/g, "");
-      const wordsInTarget = targetLower.split(" ");
-      let matchCount = 0;
-      wordsInTarget.forEach(w => { if (tLower.includes(w)) matchCount++; });
-
-      const isCorrect = status === "correct" || status === "close"
-        || tLower.includes(targetLower)
-        || (matchCount / wordsInTarget.length >= 0.7);
+      const isCorrect = status === "correct";
 
       clearEvalTimeout();
 
