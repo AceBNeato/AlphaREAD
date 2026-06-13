@@ -268,13 +268,13 @@ export function LevelSounds({ levelId, accent }: LevelSoundsProps) {
                 </div>
               </div>
 
-              <div className="flex justify-center gap-4 max-w-full mx-auto mb-10 px-4 overflow-x-hidden">
+              <div className="flex justify-center gap-2 sm:gap-4 max-w-full mx-auto mb-10 px-2 sm:px-4 overflow-x-hidden">
                 {/* Left Column: TTS Speakers */}
-                <div className="flex flex-col gap-4 flex-1 min-w-0">
+                <div className="flex flex-col gap-2 sm:gap-4 flex-1 min-w-0">
                   {matchColumns.left.map((letter) => {
                     const isMatched = matchedPairs.has(letter);
                     const isSelected = selectedSpeakerMatch === letter;
-                    const isWrong = wrongMatchPair && wrongMatchPair[0] === letter;
+                    const isWrong = !!(wrongMatchPair && wrongMatchPair[0] === letter);
 
                     return (
                       <MatchButton
@@ -295,11 +295,11 @@ export function LevelSounds({ levelId, accent }: LevelSoundsProps) {
                 </div>
 
                 {/* Right Column: Letters */}
-                <div className="flex flex-col gap-4 flex-1 min-w-0">
+                <div className="flex flex-col gap-2 sm:gap-4 flex-1 min-w-0">
                   {matchColumns.right.map((letter) => {
                     const isMatched = matchedPairs.has(letter);
                     const isSelected = selectedLetterMatch === letter;
-                    const isWrong = wrongMatchPair && wrongMatchPair[1] === letter;
+                    const isWrong = !!(wrongMatchPair && wrongMatchPair[1] === letter);
 
                     return (
                       <MatchButton
