@@ -201,20 +201,21 @@ function MatchPhase({
                 whileTap={{ scale: isDone ? 1 : 0.98 }}
                 onClick={() => !isDone && handleLeftClick(syl)}
                 disabled={isDone}
-                className={`relative h-[3.25rem] rounded-[1rem] flex items-center justify-center gap-2 font-bold text-white transition-all shadow-md ${isDone
-                    ? "opacity-50 grayscale cursor-default"
+                className={`relative p-4 rounded-[1.5rem] flex items-center justify-center gap-2 font-bold transition-all shadow-md border-2 border-b-[6px] ${isDone
+                    ? "opacity-50 grayscale cursor-default bg-gray-100 border-gray-200 text-gray-400 translate-y-[4px] border-b-2"
                     : isWrong
-                      ? "animate-shake bg-red-500"
+                      ? "animate-shake bg-red-50 text-red-500 border-red-500"
                       : isSelected
-                        ? "bg-blue-600 scale-[1.02] shadow-lg ring-4 ring-blue-300"
-                        : ""
+                        ? "bg-blue-50 border-blue-500 text-blue-600 shadow-md translate-y-[4px] border-b-2"
+                        : "text-white cursor-pointer hover:shadow-lg active:border-b-2 active:translate-y-[4px]"
                   }`}
                 style={{
-                  background: isWrong ? undefined : isSelected ? undefined : isDone ? "#9ca3af" : `linear-gradient(135deg, ${accent.primary}, ${accent.dark})`,
+                  background: isWrong ? undefined : isSelected ? undefined : isDone ? undefined : `linear-gradient(135deg, ${accent.primary}, ${accent.dark})`,
+                  borderColor: isWrong ? undefined : isSelected ? undefined : isDone ? undefined : accent.dark,
                 }}
               >
-                <span className="relative text-lg">{isDone ? syl : "▶"}</span>
-                {isSelected && <span className="absolute inset-0 bg-white/20 rounded-[1rem]" />}
+                <Volume2 className={`w-8 h-8 ${isDone ? "opacity-50" : ""}`} />
+                {isSelected && <span className="absolute inset-0 bg-white/20 rounded-[1.5rem]" />}
               </motion.button>
             );
           })}
@@ -233,17 +234,17 @@ function MatchPhase({
                 whileTap={{ scale: isDone ? 1 : 0.98 }}
                 onClick={() => !isDone && handleRightClick(syl)}
                 disabled={isDone}
-                className={`h-[3.25rem] rounded-[1rem] flex items-center justify-center font-black text-xl tracking-widest uppercase transition-all shadow-md border-2 ${isDone
-                    ? "opacity-50 grayscale bg-gray-100 text-gray-400 border-gray-200 cursor-default"
+                className={`p-4 rounded-[1.5rem] flex items-center justify-center font-black text-2xl tracking-widest transition-all shadow-md border-2 border-b-[6px] ${isDone
+                    ? "opacity-50 grayscale bg-gray-100 text-gray-400 border-gray-200 cursor-default translate-y-[4px] border-b-2"
                     : isWrong
-                      ? "animate-shake bg-red-100 text-red-600 border-red-500"
+                      ? "animate-shake bg-red-50 text-red-600 border-red-500"
                       : isSelected
-                        ? "bg-blue-50 text-blue-600 border-blue-500 scale-[1.02] shadow-lg ring-4 ring-blue-200"
-                        : "bg-white text-gray-700 hover:border-gray-300 hover:shadow-lg"
+                        ? "bg-blue-50 text-blue-600 border-blue-500 shadow-md translate-y-[4px] border-b-2"
+                        : "bg-white text-gray-700 hover:border-gray-300 hover:shadow-lg cursor-pointer active:border-b-2 active:translate-y-[4px]"
                   }`}
                 style={{ borderColor: isSelected || isWrong || isDone ? undefined : accent.primary + "80" }}
               >
-                {syl}
+                {syl.toLowerCase()}
               </motion.button>
             );
           })}
@@ -265,16 +266,16 @@ export function LevelSyllableQuiz({ pattern, levelId, accent, onComplete }: Leve
   const [allSyllables] = useState<string[]>(() => {
     // Load from levels data
     if (pattern === "VC") {
-      return [
+      return shuffle([
         "AB", "AD", "AF", "AG", "AK", "AL", "AM", "AN", "AP", "AR", "AS", "AT", "AV",
         "EB", "ED", "EG", "EK", "EL", "EM", "EN", "EP", "ER", "ES", "ET",
         "IB", "ID", "IG", "IK", "IL", "IM", "IN", "IP", "IR", "IS", "IT",
         "OB", "OD", "OF", "OG", "OK", "OL", "OM", "ON", "OP", "OR", "OS", "OT",
         "UB", "UD", "UG", "UK", "UL", "UM", "UN", "UP", "UR", "US", "UT",
-      ];
+      ]);
     }
     // CV
-    return [
+    return shuffle([
       "BA", "BE", "BI", "BO", "BU",
       "CA", "CO", "CU",
       "DA", "DE", "DI", "DO", "DU",
@@ -292,7 +293,7 @@ export function LevelSyllableQuiz({ pattern, levelId, accent, onComplete }: Leve
       "VA", "VE", "VI", "VO", "VU",
       "WA", "WE", "WI", "WO", "WU",
       "ZA", "ZE", "ZI", "ZO", "ZU",
-    ];
+    ]);
   });
 
   const [steps] = useState<Step[]>(() => buildSteps(allSyllables));
