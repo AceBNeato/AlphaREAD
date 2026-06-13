@@ -237,8 +237,27 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
                     const isWrong = wrongMatchPair && wrongMatchPair[0] === letter;
 
                     return (
-                      <motion.button key={`speaker-${letter}`} whileHover={{ scale: isMatched ? 1 : 1.02 }} whileTap={{ scale: isMatched ? 1 : 0.98 }} onClick={() => handleSpeakerMatchClick(letter)} disabled={isMatched || !!wrongMatchPair} className={`p-4 rounded-[1.5rem] flex items-center justify-center transition-all border-b-[6px] border-2 shadow-sm ${isMatched ? "bg-gray-100 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700/50 text-gray-400 dark:text-gray-500 translate-y-[4px] border-b-2 opacity-50 cursor-default" : isWrong ? "bg-red-50 border-red-500 text-red-500 animate-shake" : isSelected ? "bg-blue-50 border-blue-500 text-blue-600 shadow-md translate-y-[4px] border-b-2" : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-gray-300 hover:shadow-md cursor-pointer active:border-b-2 active:translate-y-[4px]"}`}>
-                        <Volume2 className="w-8 h-8" />
+                      <motion.button
+                        key={`speaker-${letter}`}
+                        whileHover={{ scale: isMatched ? 1 : 1.02 }}
+                        whileTap={{ scale: isMatched ? 1 : 0.98 }}
+                        onClick={() => handleSpeakerMatchClick(letter)}
+                        disabled={isMatched || !!wrongMatchPair}
+                        className={`relative p-4 rounded-[1.5rem] flex items-center justify-center gap-2 font-bold transition-all shadow-md border-2 border-b-[6px] ${isMatched
+                          ? "opacity-50 grayscale cursor-default bg-gray-100 border-gray-200 text-gray-400 translate-y-[4px] border-b-2"
+                          : isWrong
+                            ? "animate-shake bg-red-50 text-red-500 border-red-500"
+                            : isSelected
+                              ? "bg-blue-50 border-blue-500 text-blue-600 shadow-md translate-y-[4px] border-b-2"
+                              : "text-white cursor-pointer hover:shadow-lg active:border-b-2 active:translate-y-[4px]"
+                          }`}
+                        style={{
+                          background: isWrong ? undefined : isSelected ? undefined : isMatched ? undefined : `linear-gradient(135deg, ${accent.primary}, ${accent.dark})`,
+                          borderColor: isWrong ? undefined : isSelected ? undefined : isMatched ? undefined : accent.dark,
+                        }}
+                      >
+                        <Volume2 className={`w-8 h-8 ${isMatched ? "opacity-50" : ""}`} />
+                        {isSelected && <span className="absolute inset-0 bg-white/20 rounded-[1.5rem]" />}
                       </motion.button>
                     );
                   })}
@@ -252,7 +271,22 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
                     const isWrong = wrongMatchPair && wrongMatchPair[1] === letter;
 
                     return (
-                      <motion.button key={`letter-${letter}`} whileHover={{ scale: isMatched ? 1 : 1.02 }} whileTap={{ scale: isMatched ? 1 : 0.98 }} onClick={() => handleLetterMatchClick(letter)} disabled={isMatched || !!wrongMatchPair} className={`p-4 rounded-[1.5rem] flex items-center justify-center transition-all border-b-[6px] border-2 shadow-sm font-black text-2xl ${isMatched ? "bg-gray-100 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700/50 text-gray-400 dark:text-gray-500 translate-y-[4px] border-b-2 opacity-50 cursor-default" : isWrong ? "bg-red-50 border-red-500 text-red-500 animate-shake" : isSelected ? "bg-blue-50 border-blue-500 text-blue-600 shadow-md translate-y-[4px] border-b-2" : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-100 hover:border-gray-300 hover:shadow-md cursor-pointer active:border-b-2 active:translate-y-[4px]"}`}>
+                      <motion.button
+                        key={`letter-${letter}`}
+                        whileHover={{ scale: isMatched ? 1 : 1.02 }}
+                        whileTap={{ scale: isMatched ? 1 : 0.98 }}
+                        onClick={() => handleLetterMatchClick(letter)}
+                        disabled={isMatched || !!wrongMatchPair}
+                        className={`p-4 rounded-[1.5rem] flex items-center justify-center font-black text-2xl tracking-widest transition-all shadow-md border-2 border-b-[6px] ${isMatched
+                          ? "opacity-50 grayscale bg-gray-100 text-gray-400 border-gray-200 cursor-default translate-y-[4px] border-b-2"
+                          : isWrong
+                            ? "animate-shake bg-red-50 text-red-600 border-red-500"
+                            : isSelected
+                              ? "bg-blue-50 text-blue-600 border-blue-500 shadow-md translate-y-[4px] border-b-2"
+                              : "bg-white text-gray-700 hover:border-gray-300 hover:shadow-lg cursor-pointer active:border-b-2 active:translate-y-[4px]"
+                          }`}
+                        style={{ borderColor: isSelected || isWrong || isMatched ? undefined : accent.primary + "80" }}
+                      >
                         {letter}{letter.toLowerCase()}
                       </motion.button>
                     );

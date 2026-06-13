@@ -321,7 +321,7 @@ export function LevelSyllableQuiz({ pattern, levelId, accent, onComplete }: Leve
 
       {/* Header */}
       <div className="sticky top-0 z-10 bg-white/80 dark:bg-[#0d141c]/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 px-4 py-3">
-        <div className="max-w-xl mx-auto flex items-center gap-3">
+        <div className="max-w-4xl mx-auto flex items-center gap-3">
           <Button variant="ghost" size="sm"
             onClick={() => {
               if (window.confirm("Leave? Progress won't be saved.")) navigate("/levels");
@@ -342,7 +342,7 @@ export function LevelSyllableQuiz({ pattern, levelId, accent, onComplete }: Leve
           </span>
         </div>
         {/* Progress bar */}
-        <div className="max-w-xl mx-auto mt-2">
+        <div className="max-w-4xl mx-auto mt-2">
           <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
             <motion.div
               animate={{ width: `${progressPct}%` }}
@@ -354,7 +354,7 @@ export function LevelSyllableQuiz({ pattern, levelId, accent, onComplete }: Leve
         </div>
       </div>
 
-      <div className="max-w-xl mx-auto px-4 py-6 flex-1 flex flex-col justify-center w-full">
+      <div className="max-w-4xl mx-auto px-4 py-6 flex-1 flex flex-col justify-center w-full">
         <AnimatePresence mode="wait">
           {showFinalConfetti ? (
             <motion.div

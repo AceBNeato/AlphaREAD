@@ -335,7 +335,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
                 transition={{ duration: 0.3 }}
                 className="text-center mb-8"
               >
-                <div className="space-y-3 bg-white/50 dark:bg-gray-800/50 p-4 rounded-3xl backdrop-blur-sm border-2 border-dashed border-gray-200 dark:border-gray-700 max-h-[60vh] overflow-y-auto">
+                <div className="space-y-3 bg-white/50 dark:bg-gray-800/50 p-4 rounded-3xl backdrop-blur-sm border-2 border-dashed border-gray-200 dark:border-gray-700">
                   {words.map((w, idx) => {
                     const isDone = completedWords.has(w);
                     const isCurrent = evaluatingWord === w;
@@ -345,7 +345,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
 
                     return (
                       <div key={w} className={`flex items-center justify-between p-4 rounded-2xl transition-all ${isDone ? 'bg-green-50 dark:bg-green-900/20' : 'bg-white dark:bg-gray-800'} shadow-sm border-2 ${isCurrent ? 'border-pink-400 shadow-md' : isIndexMatch ? 'border-indigo-400 bg-indigo-50/20 dark:bg-indigo-950/10' : isDone ? 'border-green-200' : 'border-transparent'}`}>
-                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 min-w-0 flex-1">
                           <span className={`text-3xl font-bold w-20 text-left tracking-widest flex items-center gap-1.5 ${w.length === 3 ? 'lowercase' : 'uppercase'}`} style={{ color: isDone ? '#58CC02' : accent.primary }}>
                             {w}
                             {isIndexMatch && !isDone && <span className="w-2 h-2 rounded-full bg-indigo-500 animate-ping" />}
@@ -376,7 +376,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
                           )}
                         </div>
 
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 shrink-0 ml-2">
                           <button
                             onClick={() => {
                               if (isCurrent) {
