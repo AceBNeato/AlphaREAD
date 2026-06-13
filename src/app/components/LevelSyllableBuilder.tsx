@@ -321,368 +321,368 @@ export function LevelSyllableBuilder({
     <div className={`max-w-2xl mx-auto px-4 ${embedded ? "py-2" : "py-6"}`}>
       {/* SUB-LEVEL PICKER — shown when Level 2 has both VC and CV */}
       {!selectedSubPattern && patterns.length > 1 ? (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-center"
-          >
-            <h2 className="text-2xl mb-2" style={{ color: accent.primary }}>
-              {levelId === 3 ? "CVC Word Builder" : "Syllable Builder"}
-            </h2>
-            <p className="text-gray-500 dark:text-gray-400 text-sm mb-8">
-              Choose which pattern to practice!
-            </p>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center"
+        >
+          <h2 className="text-2xl mb-2" style={{ color: accent.primary }}>
+            {levelId === 3 ? "CVC Word Builder" : "Syllable Builder"}
+          </h2>
+          <p className="text-gray-500 dark:text-gray-400 text-sm mb-8">
+            Choose which pattern to practice!
+          </p>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {patterns.map((p, i) => (
-                <motion.button
-                  key={p}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: i * 0.1 }}
-                  onClick={() => {
-                    setSelectedSubPattern(p);
-                    setTargets(generateSyllableTargets([p], 10));
-                    setCurrentIndex(0);
-                    setCompletedTargets(new Set());
-                    setSelectedLetters([]);
-                  }}
-                  className="p-8 rounded-3xl border-3 shadow-lg hover:shadow-xl transition-all hover:scale-[1.03] active:scale-95 bg-white dark:bg-gray-800 cursor-pointer"
-                  style={{ borderColor: patternColors[p] }}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {patterns.map((p, i) => (
+              <motion.button
+                key={p}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: i * 0.1 }}
+                onClick={() => {
+                  setSelectedSubPattern(p);
+                  setTargets(generateSyllableTargets([p], 10));
+                  setCurrentIndex(0);
+                  setCompletedTargets(new Set());
+                  setSelectedLetters([]);
+                }}
+                className="p-8 rounded-3xl border-3 shadow-lg hover:shadow-xl transition-all hover:scale-[1.03] active:scale-95 bg-white dark:bg-gray-800 cursor-pointer"
+                style={{ borderColor: patternColors[p] }}
+              >
+                <div
+                  className="w-16 h-16 rounded-2xl flex items-center justify-center text-white mx-auto mb-4"
+                  style={{ background: `linear-gradient(135deg, ${patternColors[p]}, ${accent.dark})` }}
                 >
-                  <div
-                    className="w-16 h-16 rounded-2xl flex items-center justify-center text-white mx-auto mb-4"
-                    style={{ background: `linear-gradient(135deg, ${patternColors[p]}, ${accent.dark})` }}
+                  <span className="text-2xl font-bold">2.{i + 1}</span>
+                </div>
+                <h3 className="text-xl mb-1" style={{ color: patternColors[p] }}>
+                  {patternLabels[p]}
+                </h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  {p === "VC"
+                    ? "Build syllables like AB, IM, OT"
+                    : p === "CV"
+                      ? "Build syllables like BA, MI, TO"
+                      : "Build words like BAT, MUG, TIP"}
+                </p>
+                <div className="mt-4">
+                  <span
+                    className="text-xs px-4 py-1.5 rounded-full text-white"
+                    style={{ background: patternColors[p] }}
                   >
-                    <span className="text-2xl font-bold">2.{i + 1}</span>
+                    65 Syllables
+                  </span>
+                </div>
+              </motion.button>
+            ))}
+          </div>
+        </motion.div>
+      ) : (
+        <>
+          {patterns.length > 1 && (
+            <div className="text-center mb-6 mt-2">
+              <button
+                onClick={() => {
+                  setSelectedSubPattern(null);
+                  setTargets([]);
+                  setCurrentIndex(0);
+                  setCompletedTargets(new Set());
+                  setSelectedLetters([]);
+                  setFeedback(null);
+                }}
+                className="text-xs px-4 py-2 rounded-full border-2 border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all cursor-pointer font-bold shadow-sm active:scale-95"
+              >
+                ← Switch Pattern (VC / CV)
+              </button>
+            </div>
+          )}
+
+          {!allDone && (
+            <>
+              {/* Progress Bar */}
+              <div className="w-full h-3 bg-gray-200/80 dark:bg-gray-800 rounded-full overflow-hidden mb-4 shadow-inner border border-gray-100 dark:border-gray-700/30">
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${progress}%` }}
+                  transition={{ duration: 0.4, ease: "easeOut" }}
+                  className="h-full rounded-full"
+                  style={{
+                    background: `linear-gradient(90deg, ${accent.primary}, ${accent.dark})`,
+                  }}
+                />
+              </div>
+              {/* Current Target Card */}
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={currentIndex}
+                  initial={{ opacity: 0, x: 40 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -40 }}
+                  transition={{ duration: 0.25 }}
+                  className="text-center mb-4"
+                >
+                  {/* Target info */}
+                  <div className="mb-2 text-sm text-gray-500 dark:text-gray-400">
+                    Syllable {currentIndex + 1} of {targets.length}
                   </div>
-                  <h3 className="text-xl mb-1" style={{ color: patternColors[p] }}>
-                    {patternLabels[p]}
-                  </h3>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    {p === "VC"
-                      ? "Build syllables like AB, IM, OT"
-                      : p === "CV"
-                        ? "Build syllables like BA, MI, TO"
-                        : "Build words like BAT, MUG, TIP"}
-                  </p>
-                  <div className="mt-4">
+
+                  <div
+                    className="inline-flex flex-col items-center gap-2 px-6 py-3 rounded-2xl shadow-lg mb-2"
+                    style={{
+                      background: `linear-gradient(135deg, ${patternColors[currentTarget.pattern]}20, ${patternColors[currentTarget.pattern]}10)`,
+                      border: `2px solid ${patternColors[currentTarget.pattern]}`,
+                    }}
+                  >
                     <span
-                      className="text-xs px-4 py-1.5 rounded-full text-white"
-                      style={{ background: patternColors[p] }}
+                      className="text-xs px-3 py-1 rounded-full text-white"
+                      style={{ background: patternColors[currentTarget.pattern] }}
                     >
-                      65 Syllables
+                      {patternLabels[currentTarget.pattern]}
+                    </span>
+
+                    {/* Show the actual target syllable */}
+                    <div className="flex items-center gap-2">
+                      <span
+                        className="text-4xl sm:text-5xl tracking-widest"
+                        style={{ color: patternColors[currentTarget.pattern] }}
+                      >
+                        {currentTarget.syllable.split("").map((ch, i) => (
+                          <span
+                            key={i}
+                            style={{
+                              color: VOWELS.includes(ch)
+                                ? "#FF6B8A"
+                                : "#1CB0F6",
+                            }}
+                          >
+                            {ch.toLowerCase()}
+                          </span>
+                        ))}
+                      </span>
+                      {(completedTargets.has(currentTarget.syllable) || feedback === "correct") && (
+                        <button
+                          onClick={() => playTTS(currentTarget.syllable, currentTarget.pattern)}
+                          className="ml-4 p-3 bg-blue-100 hover:bg-blue-200 text-blue-600 rounded-full transition-colors active:scale-95 flex-shrink-0 cursor-pointer"
+                        >
+                          <Volume2 className="w-6 h-6" />
+                        </button>
+                      )}
+                    </div>
+
+                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                      Tap letters below in the correct order
                     </span>
                   </div>
-                </motion.button>
-              ))}
-            </div>
-          </motion.div>
-        ) : (
-          <>
-            {patterns.length > 1 && (
-              <div className="text-center mb-6 mt-2">
-                <button
-                  onClick={() => {
-                    setSelectedSubPattern(null);
-                    setTargets([]);
-                    setCurrentIndex(0);
-                    setCompletedTargets(new Set());
-                    setSelectedLetters([]);
-                    setFeedback(null);
-                  }}
-                  className="text-xs px-4 py-2 rounded-full border-2 border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all cursor-pointer font-bold shadow-sm active:scale-95"
-                >
-                  ← Switch Pattern (VC / CV)
-                </button>
-              </div>
-            )}
 
-            {!allDone && (
-              <>
-                {/* Progress Bar */}
-                <div className="w-full h-3 bg-gray-200/80 dark:bg-gray-800 rounded-full overflow-hidden mb-4 shadow-inner border border-gray-100 dark:border-gray-700/30">
-                  <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: `${progress}%` }}
-                    transition={{ duration: 0.4, ease: "easeOut" }}
-                    className="h-full rounded-full"
-                    style={{
-                      background: `linear-gradient(90deg, ${accent.primary}, ${accent.dark})`,
-                    }}
-                  />
-                </div>
-                {/* Current Target Card */}
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key={currentIndex}
-                    initial={{ opacity: 0, x: 40 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -40 }}
-                    transition={{ duration: 0.25 }}
-                    className="text-center mb-4"
-                  >
-                    {/* Target info */}
-                    <div className="mb-2 text-sm text-gray-500 dark:text-gray-400">
-                      Syllable {currentIndex + 1} of {targets.length}
-                    </div>
-
-                    <div
-                      className="inline-flex flex-col items-center gap-2 px-6 py-3 rounded-2xl shadow-lg mb-2"
-                      style={{
-                        background: `linear-gradient(135deg, ${patternColors[currentTarget.pattern]}20, ${patternColors[currentTarget.pattern]}10)`,
-                        border: `2px solid ${patternColors[currentTarget.pattern]}`,
-                      }}
+                  {/* Completed badge */}
+                  {completedTargets.has(currentTarget.syllable) && (
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      className="flex items-center justify-center gap-2 mb-4 text-[#58CC02]"
                     >
-                      <span
-                        className="text-xs px-3 py-1 rounded-full text-white"
-                        style={{ background: patternColors[currentTarget.pattern] }}
-                      >
-                        {patternLabels[currentTarget.pattern]}
+                      <CheckCircle2 className="w-5 h-5" />
+                      <span>
+                        Completed! — "{currentTarget.syllable.toLowerCase()}"
                       </span>
+                    </motion.div>
+                  )}
 
-                      {/* Show the actual target syllable */}
-                      <div className="flex items-center gap-2">
-                        <span
-                          className="text-4xl sm:text-5xl tracking-widest"
-                          style={{ color: patternColors[currentTarget.pattern] }}
-                        >
-                          {currentTarget.syllable.split("").map((ch, i) => (
-                            <span
-                              key={i}
-                              style={{
-                                color: VOWELS.includes(ch)
-                                  ? "#FF6B8A"
-                                  : "#1CB0F6",
-                              }}
-                            >
-                              {ch.toLowerCase()}
-                            </span>
-                          ))}
-                        </span>
-                        {(completedTargets.has(currentTarget.syllable) || feedback === "correct") && (
-                          <button
-                            onClick={() => playTTS(currentTarget.syllable, currentTarget.pattern)}
-                            className="ml-4 p-3 bg-blue-100 hover:bg-blue-200 text-blue-600 rounded-full transition-colors active:scale-95 flex-shrink-0 cursor-pointer"
+                  {/* Selected letters display */}
+                  {!completedTargets.has(currentTarget.syllable) && (
+                    <div className="flex justify-center gap-2 mt-2 mb-4">
+                      {Array.from({ length: slotCount }).map((_, slot) => {
+                        const isVowel = ["A", "E", "I", "O", "U"].includes(selectedLetters[slot]);
+                        return (
+                          <div
+                            key={slot}
+                            className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center transition-all ${!selectedLetters[slot]
+                              ? "border-3 border-dashed border-gray-300 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-800/30"
+                              : feedback === "correct"
+                                ? "scale-105"
+                                : feedback === "wrong"
+                                  ? "animate-shake"
+                                  : ""
+                              }`}
                           >
-                            <Volume2 className="w-6 h-6" />
-                          </button>
-                        )}
-                      </div>
-
-                      <span className="text-xs text-gray-500 dark:text-gray-400">
-                        Tap letters below in the correct order
-                      </span>
-                    </div>
-
-                    {/* Completed badge */}
-                    {completedTargets.has(currentTarget.syllable) && (
-                      <motion.div
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        className="flex items-center justify-center gap-2 mb-4 text-[#58CC02]"
-                      >
-                        <CheckCircle2 className="w-5 h-5" />
-                        <span>
-                          Completed! — "{currentTarget.syllable.toLowerCase()}"
-                        </span>
-                      </motion.div>
-                    )}
-
-                    {/* Selected letters display */}
-                    {!completedTargets.has(currentTarget.syllable) && (
-                      <div className="flex justify-center gap-2 mt-2 mb-4">
-                        {Array.from({ length: slotCount }).map((_, slot) => {
-                          const isVowel = ["A", "E", "I", "O", "U"].includes(selectedLetters[slot]);
-                          return (
-                            <div
-                              key={slot}
-                              className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center transition-all ${!selectedLetters[slot]
-                                ? "border-3 border-dashed border-gray-300 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-800/30"
-                                : feedback === "correct"
-                                  ? "scale-105"
-                                  : feedback === "wrong"
-                                    ? "animate-shake"
-                                    : ""
-                                }`}
-                            >
-                              {selectedLetters[slot] ? (
-                                <motion.div
-                                  initial={{ scale: 0, y: -10 }}
-                                  animate={{ scale: 1, y: 0 }}
-                                  className="w-full h-full rounded-2xl flex flex-col items-center justify-center border-b-[4px] select-none shadow-md"
-                                  style={{
-                                    background: feedback === "correct"
-                                      ? "linear-gradient(135deg, #58CC02 0%, #46a302 100%)"
-                                      : feedback === "wrong"
-                                        ? "linear-gradient(135deg, #FF4B4B 0%, #D82A2A 100%)"
-                                        : isVowel
-                                          ? "linear-gradient(135deg, #FF6B8A 0%, #FF4B8A 100%)"
-                                          : "linear-gradient(135deg, #1CB0F6 0%, #0a8ed4 100%)",
-                                    borderColor: feedback === "correct"
-                                      ? "#3e8e01"
-                                      : feedback === "wrong"
-                                        ? "#b81d1d"
-                                        : isVowel
-                                          ? "#C82A52"
-                                          : "#086CA5",
-                                  }}
-                                >
-                                  <span className="text-white text-3xl sm:text-4xl font-black drop-shadow-sm">
-                                    {selectedLetters[slot]?.toLowerCase()}
-                                  </span>
-                                  <span className="text-white/80 text-[9px] uppercase font-bold tracking-wider mt-0.5">
-                                    {isVowel ? "vowel" : "cons."}
-                                  </span>
-                                </motion.div>
-                              ) : (
-                                <span className="text-gray-300 dark:text-gray-600 text-xl font-bold opacity-50">
-                                  {patternPlaceholder(currentTarget.pattern)[slot]}
+                            {selectedLetters[slot] ? (
+                              <motion.div
+                                initial={{ scale: 0, y: -10 }}
+                                animate={{ scale: 1, y: 0 }}
+                                className="w-full h-full rounded-2xl flex flex-col items-center justify-center border-b-[4px] select-none shadow-md"
+                                style={{
+                                  background: feedback === "correct"
+                                    ? "linear-gradient(135deg, #58CC02 0%, #46a302 100%)"
+                                    : feedback === "wrong"
+                                      ? "linear-gradient(135deg, #FF4B4B 0%, #D82A2A 100%)"
+                                      : isVowel
+                                        ? "linear-gradient(135deg, #FF6B8A 0%, #FF4B8A 100%)"
+                                        : "linear-gradient(135deg, #1CB0F6 0%, #0a8ed4 100%)",
+                                  borderColor: feedback === "correct"
+                                    ? "#3e8e01"
+                                    : feedback === "wrong"
+                                      ? "#b81d1d"
+                                      : isVowel
+                                        ? "#C82A52"
+                                        : "#086CA5",
+                                }}
+                              >
+                                <span className="text-white text-3xl sm:text-4xl font-black drop-shadow-sm">
+                                  {selectedLetters[slot]?.toLowerCase()}
                                 </span>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-
-                    {feedback === "correct" && (
-                      <motion.p
-                        initial={{ opacity: 0, y: 5 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="mt-3 text-[#58CC02] text-lg"
-                      >
-                        ✨ "{currentTarget.syllable.toLowerCase()}" — Great match!
-                      </motion.p>
-                    )}
-                    {feedback === "wrong" && (
-                      <motion.p
-                        initial={{ opacity: 0, y: 5 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="mt-3 text-[#FF4B4B] text-lg"
-                      >
-                        Try again!
-                      </motion.p>
-                    )}
-                  </motion.div>
-                </AnimatePresence>
-
-                {/* Reset button */}
-                {selectedLetters.length > 0 &&
-                  !feedback &&
-                  !completedTargets.has(currentTarget.syllable) && (
-                    <div className="text-center mb-4">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={resetSelection}
-                        className="text-gray-500"
-                      >
-                        <RotateCcw className="w-4 h-4 mr-1" />
-                        Clear
-                      </Button>
+                                <span className="text-white/80 text-[9px] uppercase font-bold tracking-wider mt-0.5">
+                                  {isVowel ? "vowel" : "cons."}
+                                </span>
+                              </motion.div>
+                            ) : (
+                              <span className="text-gray-300 dark:text-gray-600 text-xl font-bold opacity-50">
+                                {patternPlaceholder(currentTarget.pattern)[slot]}
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
 
-                {/* Letter Pool */}
-                {!completedTargets.has(currentTarget.syllable) && (
-                  <div className="grid grid-cols-4 sm:grid-cols-6 gap-3 mb-4">
-                    {letterPool.map((item, i) => {
-                      const timesInTarget = currentTarget.syllable
-                        .split("")
-                        .filter((ch) => ch === item.letter).length;
-                      const timesSelected = selectedLetters.filter(
-                        (l) => l === item.letter
-                      ).length;
+                  {feedback === "correct" && (
+                    <motion.p
+                      initial={{ opacity: 0, y: 5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="mt-3 text-[#58CC02] text-lg"
+                    >
+                      ✨ "{currentTarget.syllable.toLowerCase()}" — Great match!
+                    </motion.p>
+                  )}
+                  {feedback === "wrong" && (
+                    <motion.p
+                      initial={{ opacity: 0, y: 5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="mt-3 text-[#FF4B4B] text-lg"
+                    >
+                      Try again!
+                    </motion.p>
+                  )}
+                </motion.div>
+              </AnimatePresence>
 
-                      // A letter is "selected" visually only if it's used up its count in the target
-                      // Or if it's a distractor that's been clicked at least once
-                      const isVisuallySelected = timesInTarget > 0
-                        ? timesSelected >= timesInTarget
-                        : timesSelected > 0;
-
-                      const isDisabled =
-                        timesInTarget > 0 &&
-                        timesSelected >= timesInTarget &&
-                        selectedLetters.length < slotCount &&
-                        !feedback;
-
-                      return (
-                        <motion.button
-                          key={item.id}
-                          initial={{ opacity: 0, scale: 0 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          transition={{
-                            delay: i * 0.02,
-                            type: "spring",
-                            stiffness: 300,
-                          }}
-                          onClick={() =>
-                            !isDisabled && handleLetterClick(item.letter)
-                          }
-                          disabled={!!feedback || isDisabled}
-                          className={`aspect-square rounded-[1rem] flex flex-col items-center justify-center transition-all shadow-md active:scale-95 cursor-pointer relative border-b-[4px] select-none ${isVisuallySelected
-                            ? "opacity-30 border-b-2 translate-y-[2px] pointer-events-none"
-                            : "active:border-b-0 active:translate-y-[4px]"
-                            }`}
-                          style={{
-                            background:
-                              playingLetter === item.letter
-                                ? "linear-gradient(135deg, #FFC800 0%, #FF9600 100%)"
-                                : item.isVowel
-                                  ? "linear-gradient(135deg, #FF6B8A 0%, #FF4B8A 100%)"
-                                  : "linear-gradient(135deg, #1CB0F6 0%, #0a8ed4 100%)",
-                            borderColor: isVisuallySelected
-                              ? "transparent"
-                              : playingLetter === item.letter
-                                ? "#C99C00"
-                                : item.isVowel
-                                  ? "#C82A52"
-                                  : "#086CA5",
-                          } as React.CSSProperties}
-                        >
-                          <span className="text-white text-3xl sm:text-4xl font-black drop-shadow-sm">
-                            {item.letter}{item.letter.toLowerCase()}
-                          </span>
-                          <span className="text-white/80 text-[9px] uppercase font-bold tracking-wider mt-0.5">
-                            {item.isVowel ? "vowel" : "cons."}
-                          </span>
-                        </motion.button>
-                      );
-                    })}
+              {/* Reset button */}
+              {selectedLetters.length > 0 &&
+                !feedback &&
+                !completedTargets.has(currentTarget.syllable) && (
+                  <div className="text-center mb-4">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={resetSelection}
+                      className="text-gray-500"
+                    >
+                      <RotateCcw className="w-4 h-4 mr-1" />
+                      Clear
+                    </Button>
                   </div>
                 )}
 
-                {/* Navigation Arrows */}
-                <div className="flex justify-between items-center mt-4">
-                  <Button
-                    onClick={goPrev}
-                    disabled={currentIndex === 0}
-                    variant="outline"
-                    size="lg"
-                    className="rounded-xl px-6 py-5 border-2 disabled:opacity-30"
-                    style={{ borderColor: accent.primary, color: accent.primary }}
-                  >
-                    <ArrowLeft className="w-5 h-5 mr-1" />
-                    Back
-                  </Button>
-                  <Button
-                    onClick={goNext}
-                    disabled={currentIndex === targets.length - 1}
-                    variant="outline"
-                    size="lg"
-                    className="rounded-xl px-6 py-5 border-2 disabled:opacity-30"
-                    style={{ borderColor: accent.primary, color: accent.primary }}
-                  >
-                    Next
-                    <ArrowRight className="w-5 h-5 ml-1" />
-                  </Button>
+              {/* Letter Pool */}
+              {!completedTargets.has(currentTarget.syllable) && (
+                <div className="grid grid-cols-4 sm:grid-cols-6 gap-3 mb-4">
+                  {letterPool.map((item, i) => {
+                    const timesInTarget = currentTarget.syllable
+                      .split("")
+                      .filter((ch) => ch === item.letter).length;
+                    const timesSelected = selectedLetters.filter(
+                      (l) => l === item.letter
+                    ).length;
+
+                    // A letter is "selected" visually only if it's used up its count in the target
+                    // Or if it's a distractor that's been clicked at least once
+                    const isVisuallySelected = timesInTarget > 0
+                      ? timesSelected >= timesInTarget
+                      : timesSelected > 0;
+
+                    const isDisabled =
+                      timesInTarget > 0 &&
+                      timesSelected >= timesInTarget &&
+                      selectedLetters.length < slotCount &&
+                      !feedback;
+
+                    return (
+                      <motion.button
+                        key={item.id}
+                        initial={{ opacity: 0, scale: 0 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{
+                          delay: i * 0.02,
+                          type: "spring",
+                          stiffness: 300,
+                        }}
+                        onClick={() =>
+                          !isDisabled && handleLetterClick(item.letter)
+                        }
+                        disabled={!!feedback || isDisabled}
+                        className={`aspect-square rounded-[1rem] flex flex-col items-center justify-center transition-all shadow-md active:scale-95 cursor-pointer relative border-b-[4px] select-none ${isVisuallySelected
+                          ? "opacity-30 border-b-2 translate-y-[2px] pointer-events-none"
+                          : "active:border-b-0 active:translate-y-[4px]"
+                          }`}
+                        style={{
+                          background:
+                            playingLetter === item.letter
+                              ? "linear-gradient(135deg, #FFC800 0%, #FF9600 100%)"
+                              : item.isVowel
+                                ? "linear-gradient(135deg, #FF6B8A 0%, #FF4B8A 100%)"
+                                : "linear-gradient(135deg, #1CB0F6 0%, #0a8ed4 100%)",
+                          borderColor: isVisuallySelected
+                            ? "transparent"
+                            : playingLetter === item.letter
+                              ? "#C99C00"
+                              : item.isVowel
+                                ? "#C82A52"
+                                : "#086CA5",
+                        } as React.CSSProperties}
+                      >
+                        <span className="text-white text-3xl sm:text-4xl font-black drop-shadow-sm">
+                          {item.letter}{item.letter.toLowerCase()}
+                        </span>
+                        <span className="text-white/80 text-[9px] uppercase font-bold tracking-wider mt-0.5">
+                          {item.isVowel ? "vowel" : "cons."}
+                        </span>
+                      </motion.button>
+                    );
+                  })}
                 </div>
-              </>
-            )}
-          </>
-        )}
-      </div>
+              )}
+
+              {/* Navigation Arrows */}
+              <div className="flex justify-between items-center mt-4">
+                <Button
+                  onClick={goPrev}
+                  disabled={currentIndex === 0}
+                  variant="outline"
+                  size="lg"
+                  className="rounded-xl px-6 py-5 border-2 disabled:opacity-30"
+                  style={{ borderColor: accent.primary, color: accent.primary }}
+                >
+                  <ArrowLeft className="w-5 h-5 mr-1" />
+                  Back
+                </Button>
+                <Button
+                  onClick={goNext}
+                  disabled={currentIndex === targets.length - 1}
+                  variant="outline"
+                  size="lg"
+                  className="rounded-xl px-6 py-5 border-2 disabled:opacity-30"
+                  style={{ borderColor: accent.primary, color: accent.primary }}
+                >
+                  Next
+                  <ArrowRight className="w-5 h-5 ml-1" />
+                </Button>
+              </div>
+            </>
+          )}
+        </>
+      )}
+    </div>
   );
 
   if (embedded) {
