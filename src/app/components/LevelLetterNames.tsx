@@ -501,13 +501,13 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
                         whileTap={{ scale: isMatched ? 1 : 0.98 }}
                         onClick={() => handleSpeakerMatchClick(letter)}
                         disabled={isMatched || !!wrongMatchPair}
-                        className={`p-4 rounded-[1.5rem] flex items-center justify-center transition-all border-b-4 border-2 shadow-sm ${isMatched
-                          ? "bg-gray-100 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700/50 text-gray-400 dark:text-gray-500 translate-y-[2px] opacity-50 cursor-default"
+                        className={`p-4 rounded-[1.5rem] flex items-center justify-center transition-all border-b-[6px] border-2 shadow-sm ${isMatched
+                          ? "bg-gray-100 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700/50 text-gray-400 dark:text-gray-500 translate-y-[4px] border-b-2 opacity-50 cursor-default"
                           : isWrong
                             ? "bg-red-50 border-red-500 text-red-500 animate-shake"
                             : isSelected
-                              ? "bg-blue-50 border-blue-500 text-blue-600 shadow-md translate-y-[2px]"
-                              : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-gray-300 hover:shadow-md cursor-pointer"
+                              ? "bg-blue-50 border-blue-500 text-blue-600 shadow-md translate-y-[4px] border-b-2"
+                              : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-gray-300 hover:shadow-md cursor-pointer active:border-b-2 active:translate-y-[4px]"
                           }`}
                       >
                         <Volume2 className="w-8 h-8" />
@@ -530,16 +530,16 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
                         whileTap={{ scale: isMatched ? 1 : 0.98 }}
                         onClick={() => handleLetterMatchClick(letter)}
                         disabled={isMatched || !!wrongMatchPair}
-                        className={`p-4 rounded-[1.5rem] flex items-center justify-center transition-all border-b-4 border-2 shadow-sm font-black text-2xl uppercase ${isMatched
-                          ? "bg-gray-100 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700/50 text-gray-400 dark:text-gray-500 translate-y-[2px] opacity-50 cursor-default"
+                        className={`p-4 rounded-[1.5rem] flex items-center justify-center transition-all border-b-[6px] border-2 shadow-sm font-black text-2xl ${isMatched
+                          ? "bg-gray-100 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700/50 text-gray-400 dark:text-gray-500 translate-y-[4px] border-b-2 opacity-50 cursor-default"
                           : isWrong
                             ? "bg-red-50 border-red-500 text-red-500 animate-shake"
                             : isSelected
-                              ? "bg-blue-50 border-blue-500 text-blue-600 shadow-md translate-y-[2px]"
-                              : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-100 hover:border-gray-300 hover:shadow-md cursor-pointer"
+                              ? "bg-blue-50 border-blue-500 text-blue-600 shadow-md translate-y-[4px] border-b-2"
+                              : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-100 hover:border-gray-300 hover:shadow-md cursor-pointer active:border-b-2 active:translate-y-[4px]"
                           }`}
                       >
-                        {letter}
+                        {letter}{letter.toLowerCase()}
                       </motion.button>
                     );
                   })}
@@ -704,13 +704,10 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
               <Button
                 disabled={isSaving}
                 onClick={handleFinish}
-                size="lg"
-                className="rounded-2xl px-10 py-6 text-lg text-white font-bold w-full shadow-xl animate-bounce"
-                style={{
-                  background: `linear-gradient(135deg, ${accent.primary} 0%, ${accent.dark} 100%)`,
-                }}
+                className="text-white shadow-lg hover:shadow-xl font-bold rounded-xl px-8 py-6 text-lg transition-all hover:scale-105 active:scale-95 border-b-4 border-[#3c8c01] cursor-pointer inline-flex items-center justify-center gap-2 w-full sm:w-auto"
+                style={{ background: "linear-gradient(135deg, #58CC02 0%, #46A302 100%)" }}
               >
-                {isSaving ? "Saving..." : "Back to Levels"}
+                {isSaving ? "Saving..." : "Continue"} <ArrowRight className="w-6 h-6" />
               </Button>
             </motion.div>
           )}

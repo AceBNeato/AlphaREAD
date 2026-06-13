@@ -346,7 +346,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
                     return (
                       <div key={w} className={`flex items-center justify-between p-4 rounded-2xl transition-all ${isDone ? 'bg-green-50 dark:bg-green-900/20' : 'bg-white dark:bg-gray-800'} shadow-sm border-2 ${isCurrent ? 'border-pink-400 shadow-md' : isIndexMatch ? 'border-indigo-400 bg-indigo-50/20 dark:bg-indigo-950/10' : isDone ? 'border-green-200' : 'border-transparent'}`}>
                         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
-                          <span className="text-3xl font-bold w-20 text-left tracking-widest uppercase flex items-center gap-1.5" style={{ color: isDone ? '#58CC02' : accent.primary }}>
+                          <span className={`text-3xl font-bold w-20 text-left tracking-widest flex items-center gap-1.5 ${w.length === 3 ? 'lowercase' : 'uppercase'}`} style={{ color: isDone ? '#58CC02' : accent.primary }}>
                             {w}
                             {isIndexMatch && !isDone && <span className="w-2 h-2 rounded-full bg-indigo-500 animate-ping" />}
                           </span>
@@ -483,14 +483,10 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
                     navigate("/levels");
                   }
                 }}
-                size="lg"
-                className="rounded-xl px-8 py-6 text-lg text-white w-full sm:w-auto"
-                style={{
-                  background: `linear-gradient(135deg, ${accent.primary} 0%, ${accent.dark} 100%)`,
-                }}
+                className="text-white shadow-lg hover:shadow-xl font-bold rounded-xl px-8 py-6 text-lg transition-all hover:scale-105 active:scale-95 border-b-4 border-[#3c8c01] cursor-pointer inline-flex items-center justify-center gap-2 w-full sm:w-auto"
+                style={{ background: "linear-gradient(135deg, #58CC02 0%, #46A302 100%)" }}
               >
-                {onComplete ? <ArrowRight className="w-5 h-5 mr-2" /> : <Home className="w-5 h-5 mr-2" />}
-                {onComplete ? (isSubPhase ? "Next Challenge" : "Next Phase") : "Back to Levels"}
+                Continue <ArrowRight className="w-6 h-6" />
               </Button>
             </div>
           </motion.div>

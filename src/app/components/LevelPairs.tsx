@@ -263,8 +263,8 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
                         boxShadow: isCurrent && !isDone ? `0 0 0 3px ${accent.primary}60` : undefined,
                       }}
                     >
-                      <span className="text-white text-3xl sm:text-4xl lg:text-5xl font-black drop-shadow-sm uppercase">
-                        {l}
+                      <span className="text-white text-3xl sm:text-4xl lg:text-5xl font-black drop-shadow-sm">
+                        {l}{l.toLowerCase()}
                       </span>
                       {isCurrent && !isDone && (
                         <span className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-400 rounded-full border-2 border-white" />

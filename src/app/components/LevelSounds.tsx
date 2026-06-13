@@ -1,13 +1,11 @@
 import { useState, useMemo, useRef, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router";
-import { Home, Sparkles, Mic, CheckCircle2, AlertCircle, PlayCircle, ChevronRight, MicOff } from "lucide-react";
+import { Home, Sparkles, CheckCircle2, AlertCircle, Volume2, ChevronRight, Shuffle, RotateCcw, ArrowRight } from "lucide-react";
 import { Button } from "./ui/button";
 import { motion, AnimatePresence } from "motion/react";
-import { getLetterPhonetic } from "../data/levels";
 import { supabase } from "../../lib/supabase";
-import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
-import { AudioVisualizer } from "./AudioVisualizer";
 import { playSound } from "../utils/soundEffects";
+import { Confetti } from "./ui/Confetti";
 
 // QWERTY keyboard layout
 const QWERTY_ROWS = [
@@ -29,18 +27,19 @@ export function LevelSounds({ levelId, accent }: LevelSoundsProps) {
   // Logic states
   const [shuffledLetters] = useState(() => [...ALL_LETTERS].sort(() => Math.random() - 0.5));
   const [currentSetIdx, setCurrentSetIdx] = useState(0); // 0, 1, 2, 3
-  const [phase, setPhase] = useState<"review" | "eval">("review");
+  const [phase, setPhase] = useState<"review" | "eval" | "complete">("review");
   const [reviewedLetters, setReviewedLetters] = useState<Set<string>>(new Set());
 
-  // Eval states
-  const [evalIndex, setEvalIndex] = useState(0);
-  const [evalFeedback, setEvalFeedback] = useState<"correct" | "wrong" | null>(null);
+  // Match states
+  const [matchColumns, setMatchColumns] = useState<{ left: string[]; right: string[] }>({ left: [], right: [] });
+  const [matchedPairs, setMatchedPairs] = useState<Set<string>>(new Set());
+  const [selectedSpeakerMatch, setSelectedSpeakerMatch] = useState<string | null>(null);
+  const [selectedLetterMatch, setSelectedLetterMatch] = useState<string | null>(null);
+  const [wrongMatchPair, setWrongMatchPair] = useState<[string, string] | null>(null);
 
   const [clickedLetter, setClickedLetter] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
-
-  const [lastHeard, setLastHeard] = useState<string | null>(null);
-  const [evaluatingLetter, setEvaluatingLetter] = useState<string | null>(null);
+  const [showConfetti, setShowConfetti] = useState(false);
 
   const evaluationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -63,77 +62,88 @@ export function LevelSounds({ levelId, accent }: LevelSoundsProps) {
     return shuffledLetters.slice(start, end);
   };
 
-  const getLettersForCurrentEval = () => {
-    const end = setSizes.slice(0, currentSetIdx + 1).reduce((a, b) => a + b, 0);
-    return shuffledLetters.slice(0, end);
-  };
-
-  const currentEvalLetters = getLettersForCurrentEval();
   const currentSetLetters = getLettersForCurrentSet();
-  const currentEvalLetter = currentEvalLetters[evalIndex];
-
-  const isMobile = useMemo(() => /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent), []);
-
-  useSpeechRecognition({
-    evaluatingWord: evaluatingLetter,
-    enabled: !!evaluatingLetter,
-    onResult: (target, status, transcript) => {
-      setLastHeard(transcript);
-      const tLower = transcript.toLowerCase();
-      const phonetic = getLetterPhonetic(target).toLowerCase();
-      
-      const isCorrect = status === "correct" || status === "close" || tLower.includes(target.toLowerCase()) || tLower.includes(phonetic);
-
-      clearEvalTimeout();
-
-      if (isCorrect) {
-        playSound("correct", 0.4);
-        setEvalFeedback("correct");
-        evaluationTimeoutRef.current = setTimeout(() => {
-          if (evalIndex < currentEvalLetters.length - 1) {
-            setEvalIndex(prev => Math.min(prev + 1, currentEvalLetters.length - 1));
-            setEvalFeedback(null);
-            setEvaluatingLetter(null);
-          } else {
-            handleSetComplete();
-            setEvaluatingLetter(null);
-          }
-        }, 1500);
-      } else {
-        playSound("wrong", 0.35);
-        setEvalFeedback("wrong");
-        evaluationTimeoutRef.current = setTimeout(() => {
-            setEvalFeedback(null);
-            setEvaluatingLetter(null);
-        }, 2000);
-      }
-    },
-    onError: () => setEvaluatingLetter(null),
-    onSilenceTimeout: () => {
-      clearEvalTimeout();
-      playSound("wrong", 0.35);
-      setEvalFeedback("wrong");
-      evaluationTimeoutRef.current = setTimeout(() => {
-          setEvalFeedback(null);
-          setEvaluatingLetter(null);
-      }, 1500);
-    }
-  });
-
+  const matchProgress = matchColumns.left.length > 0 ? (matchedPairs.size / matchColumns.left.length) * 100 : 0;
 
   const handleLetterClick = (letter: string) => {
     if (phase !== "review") return;
-
     playSound("click", 0.2);
     setClickedLetter(letter);
     setReviewedLetters(prev => new Set(prev).add(letter));
-
     const audio = new Audio(`${(import.meta as any).env.BASE_URL}audio/alphasounds-${letter.toLowerCase()}.mp3`);
     audio.play().catch(() => { });
+    setTimeout(() => setClickedLetter(null), 1000);
+  };
 
-    setTimeout(() => {
-      setClickedLetter(null);
-    }, 1000);
+  const startMatchPhase = () => {
+    const targets = [...currentSetLetters].sort(() => Math.random() - 0.5);
+    setMatchColumns({
+      left: [...targets].sort(() => Math.random() - 0.5),
+      right: [...targets].sort(() => Math.random() - 0.5)
+    });
+    setMatchedPairs(new Set());
+    setSelectedSpeakerMatch(null);
+    setSelectedLetterMatch(null);
+    setWrongMatchPair(null);
+    setPhase("eval");
+  };
+
+  const handleMatchShuffle = () => {
+    clearEvalTimeout();
+    setMatchColumns(prev => ({
+      left: [...prev.left].sort(() => Math.random() - 0.5),
+      right: [...prev.right].sort(() => Math.random() - 0.5)
+    }));
+    setMatchedPairs(new Set());
+    setSelectedSpeakerMatch(null);
+    setSelectedLetterMatch(null);
+    setWrongMatchPair(null);
+  };
+
+  const handleMatchReset = () => {
+    clearEvalTimeout();
+    setMatchedPairs(new Set());
+    setSelectedSpeakerMatch(null);
+    setSelectedLetterMatch(null);
+    setWrongMatchPair(null);
+  };
+
+  const playNameAudio = (letter: string) => {
+    const audio = new Audio(`${(import.meta as any).env.BASE_URL}audio/alphasounds-${letter.toLowerCase()}.mp3`);
+    audio.play().catch(() => {});
+  };
+
+  const checkMatch = (left: string, right: string) => {
+    if (left === right) {
+      playSound("correct", 0.4);
+      const next = new Set(matchedPairs).add(left);
+      setMatchedPairs(next);
+      setSelectedSpeakerMatch(null);
+      setSelectedLetterMatch(null);
+    } else {
+      playSound("wrong", 0.35);
+      setWrongMatchPair([left, right]);
+      evaluationTimeoutRef.current = setTimeout(() => {
+        setWrongMatchPair(null);
+        setSelectedSpeakerMatch(null);
+        setSelectedLetterMatch(null);
+      }, 900);
+    }
+  };
+
+  const handleSpeakerMatchClick = (letter: string) => {
+    if (matchedPairs.has(letter) || wrongMatchPair) return;
+    playSound("click", 0.2);
+    playNameAudio(letter);
+    setSelectedSpeakerMatch(letter);
+    if (selectedLetterMatch) checkMatch(letter, selectedLetterMatch);
+  };
+
+  const handleLetterMatchClick = (letter: string) => {
+    if (matchedPairs.has(letter) || wrongMatchPair) return;
+    playSound("click", 0.2);
+    setSelectedLetterMatch(letter);
+    if (selectedSpeakerMatch) checkMatch(selectedSpeakerMatch, letter);
   };
 
   const handleGoBack = () => {
@@ -148,11 +158,10 @@ export function LevelSounds({ levelId, accent }: LevelSoundsProps) {
       setCurrentSetIdx(prev => Math.min(prev + 1, setSizes.length - 1));
       setPhase("review");
       setReviewedLetters(new Set());
-      setEvalIndex(0);
-      setEvalFeedback(null);
     } else {
       playSound("complete", 0.5);
-      saveFinalProgress();
+      setShowConfetti(true);
+      setPhase("complete");
     }
   };
 
@@ -170,7 +179,6 @@ export function LevelSounds({ levelId, accent }: LevelSoundsProps) {
           });
         }
       }
-
       const completedLevels = JSON.parse(localStorage.getItem("completedLevels") || "[]");
       if (!completedLevels.includes(levelId)) {
         completedLevels.push(levelId);
@@ -186,11 +194,12 @@ export function LevelSounds({ levelId, accent }: LevelSoundsProps) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-cyan-50 to-indigo-50 dark:bg-none dark:bg-[#0d141c] pb-12">
+      <Confetti active={showConfetti} />
       <div className="sticky top-0 z-10 bg-white/80 dark:bg-[#0d141c]/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 px-4 py-3">
         <div className="max-w-2xl mx-auto flex items-center gap-3">
           <Button variant="ghost" size="sm" onClick={handleGoBack} className="rounded-full"><Home className="w-5 h-5" /></Button>
           <div className="flex-1 text-center">
-            <h2 className="text-xl" style={{ color: accent.primary }}>Level 2: Letter Sounds</h2>
+            <h2 className="text-xl" style={{ color: accent.primary }}>Level 1: Letter Sounds</h2>
           </div>
         </div>
       </div>
@@ -198,11 +207,13 @@ export function LevelSounds({ levelId, accent }: LevelSoundsProps) {
       <div className="max-w-2xl mx-auto px-4 py-6">
         <div className="text-center mb-6">
           <h2 className="text-2xl mb-1" style={{ color: accent.primary }}>
-            {phase === "review" ? `Review Set ${currentSetIdx + 1}` : `Voice Evaluation`}
+            {phase === "review" ? `Review Set ${currentSetIdx + 1}` : phase === "eval" ? `Listen & Match` : `Level Complete!`}
           </h2>
-          <p className="text-gray-500 dark:text-gray-400 text-sm">
-            {phase === "review" ? `Tap each letter to hear its sound! (${reviewedLetters.size}/${currentSetLetters.length})` : `Say the sound for letter "${currentEvalLetter}"`}
-          </p>
+          {phase === "review" && (
+            <p className="text-gray-500 dark:text-gray-400 text-sm">
+              Tap each letter to hear its sound! ({reviewedLetters.size}/{currentSetLetters.length})
+            </p>
+          )}
         </div>
 
         <AnimatePresence mode="wait">
@@ -218,7 +229,7 @@ export function LevelSounds({ levelId, accent }: LevelSoundsProps) {
                       const isReviewed = reviewedLetters.has(letter);
                       return (
                         <motion.button key={letter} initial={{ opacity: 0.3, scale: 1 }} animate={{ opacity: isCurrentSet ? 1 : 0.2, scale: isClicked ? 1.1 : 1 }} onClick={() => isCurrentSet && handleLetterClick(letter)} className={`relative w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex flex-col items-center justify-center transition-all shadow-md ${isCurrentSet ? 'cursor-pointer hover:shadow-lg active:scale-90' : 'cursor-not-allowed'}`} style={{ background: isClicked ? `linear-gradient(135deg, ${accent.primary} 0%, ${accent.dark} 100%)` : isVowel ? "linear-gradient(135deg, #FF6B8A 0%, #FF4B8A 100%)" : "linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%)" } as React.CSSProperties}>
-                          <span className={`text-2xl sm:text-3xl ${isClicked || isVowel ? "text-white" : "text-gray-700 dark:text-gray-800"}`}>{letter}</span>
+                          <span className={`text-2xl sm:text-3xl font-black ${isClicked || isVowel ? "text-white" : "text-gray-700 dark:text-gray-800"}`}>{letter}{letter.toLowerCase()}</span>
                           {isReviewed && isCurrentSet && <CheckCircle2 className="absolute top-1 right-1 w-4 h-4 text-green-500 bg-white rounded-full" />}
                         </motion.button>
                       );
@@ -227,55 +238,75 @@ export function LevelSounds({ levelId, accent }: LevelSoundsProps) {
                 ))}
               </div>
               <div className="text-center mt-8">
-                <Button disabled={reviewedLetters.size < currentSetLetters.length} onClick={() => setPhase("eval")} size="lg" className="rounded-xl px-12 py-6 text-lg text-white shadow-xl" style={{ background: reviewedLetters.size < currentSetLetters.length ? '#cbd5e1' : `linear-gradient(135deg, ${accent.primary} 0%, ${accent.dark} 100%)` }}>
-                  Start Evaluation <ChevronRight className="ml-2 w-5 h-5" />
+                <Button disabled={reviewedLetters.size < currentSetLetters.length} onClick={startMatchPhase} size="lg" className="rounded-xl px-12 py-6 text-lg text-white shadow-xl" style={{ background: reviewedLetters.size < currentSetLetters.length ? '#cbd5e1' : `linear-gradient(135deg, ${accent.primary} 0%, ${accent.dark} 100%)` }}>
+                  Start Match <ChevronRight className="ml-2 w-5 h-5" />
                 </Button>
               </div>
             </motion.div>
-          ) : (
-            <motion.div key="eval" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 1.1 }} className="max-w-md mx-auto bg-white dark:bg-gray-800 rounded-3xl p-8 shadow-2xl border-4" style={{ borderColor: accent.primary }}>
-              <div className="text-center">
-                <div className="text-8xl font-bold mb-4" style={{ color: accent.primary }}>{currentEvalLetter}</div>
-                <div className="flex justify-center gap-4 mb-8">
-                  <Button variant="outline" onClick={() => { const audio = new Audio(`${(import.meta as any).env.BASE_URL}audio/alphasounds-${currentEvalLetter.toLowerCase()}.mp3`); audio.play(); }} className="rounded-full h-12 w-12 p-0"><PlayCircle className="w-6 h-6 text-blue-500" /></Button>
-                </div>
-                <div className="flex justify-center mb-8">
-                  <button
-                    onClick={() => {
-                      if (evaluatingLetter === currentEvalLetter) {
-                        setEvaluatingLetter(null);
-                      } else {
-                        setEvaluatingLetter(currentEvalLetter);
-                      }
-                    }}
-                    disabled={(evaluatingLetter !== null && evaluatingLetter !== currentEvalLetter) || evalFeedback === "correct"}
-                    className={`w-32 h-32 rounded-full flex flex-col items-center justify-center text-white shadow-xl transition-all relative z-10 ${
-                      evaluatingLetter ? "bg-red-500 animate-pulse" : evalFeedback === "correct" ? "bg-green-500" : "bg-blue-500 hover:bg-blue-600 hover:scale-105 active:scale-95"
-                    }`}
-                  >
-                    {evaluatingLetter ? <Mic className="w-14 h-14 mb-1" /> : evalFeedback === "correct" ? <CheckCircle2 className="w-14 h-14" /> : <MicOff className="w-14 h-14 mb-1" />}
-                    <span className="text-[12px] uppercase font-bold tracking-widest">{evaluatingLetter ? "Listening" : "Speak"}</span>
-                  </button>
-                </div>
-
-                {evaluatingLetter && (
-                  <div className="flex flex-col sm:flex-row items-center justify-center gap-2 mb-4 mt-2">
-                    <AudioVisualizer isListening={!!evaluatingLetter} isMobile={isMobile} />
-                    {lastHeard && (
-                      <span className="p-1 bg-gray-200 rounded text-[10px] font-mono text-gray-700 ml-1 truncate max-w-[120px]">
-                        [Heard: {lastHeard}]
-                      </span>
-                    )}
-                  </div>
-                )}
-
-                {evalFeedback && (
-                  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className={`flex items-center justify-center gap-2 font-bold text-lg mb-4 ${evalFeedback === 'correct' ? 'text-green-500' : 'text-red-500'}`}>
-                    {evalFeedback === 'correct' ? <><CheckCircle2 /> Correct!</> : <><AlertCircle /> Try again!</>}
-                  </motion.div>
-                )}
-                <div className="text-gray-400 text-sm">Letter {evalIndex + 1} of {currentEvalLetters.length}</div>
+          ) : phase === "eval" ? (
+            <motion.div key="eval" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 1.05 }} className="w-full">
+              <div className="w-full h-3 bg-gray-200/80 dark:bg-gray-800 rounded-full overflow-hidden mb-8 shadow-inner border border-gray-100 dark:border-gray-700/30">
+                <motion.div initial={{ width: 0 }} animate={{ width: `${matchProgress}%` }} transition={{ duration: 0.3, ease: "easeOut" }} className="h-full rounded-full" style={{ background: `linear-gradient(90deg, ${accent.primary}, ${accent.dark})` }} />
               </div>
+
+              <div className="text-center mb-8">
+                <p className="text-gray-500 dark:text-gray-400 text-sm mb-6">
+                  Tap a speaker to hear a letter sound, then choose the matching letter.
+                </p>
+
+                <div className="flex justify-center gap-3 w-full">
+                  <Button variant="outline" size="sm" onClick={handleMatchShuffle} className="rounded-full flex items-center gap-2 border-amber-300">
+                    <Shuffle className="w-4 h-4 text-amber-600" /> Shuffle
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={handleMatchReset} className="rounded-full flex items-center gap-2 border-amber-300">
+                    <RotateCcw className="w-4 h-4 text-amber-600" /> Reset
+                  </Button>
+                  <Button size="sm" onClick={handleSetComplete} disabled={matchedPairs.size < matchColumns.left.length} className="rounded-full flex items-center gap-2 text-white shadow-md active:scale-95 transition-all" style={{ background: matchedPairs.size >= matchColumns.left.length ? `linear-gradient(135deg, ${accent.primary}, ${accent.dark})` : "gray" }}>
+                    Next <ArrowRight className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+
+              <div className="flex justify-center gap-6 max-w-2xl mx-auto mb-10 px-4">
+                {/* Left Column: TTS Speakers */}
+                <div className="flex flex-col gap-4 flex-1">
+                  {matchColumns.left.map((letter) => {
+                    const isMatched = matchedPairs.has(letter);
+                    const isSelected = selectedSpeakerMatch === letter;
+                    const isWrong = wrongMatchPair && wrongMatchPair[0] === letter;
+
+                    return (
+                      <motion.button key={`speaker-${letter}`} whileHover={{ scale: isMatched ? 1 : 1.02 }} whileTap={{ scale: isMatched ? 1 : 0.98 }} onClick={() => handleSpeakerMatchClick(letter)} disabled={isMatched || !!wrongMatchPair} className={`p-4 rounded-[1.5rem] flex items-center justify-center transition-all border-b-[6px] border-2 shadow-sm ${isMatched ? "bg-gray-100 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700/50 text-gray-400 dark:text-gray-500 translate-y-[4px] border-b-2 opacity-50 cursor-default" : isWrong ? "bg-red-50 border-red-500 text-red-500 animate-shake" : isSelected ? "bg-blue-50 border-blue-500 text-blue-600 shadow-md translate-y-[4px] border-b-2" : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-gray-300 hover:shadow-md cursor-pointer active:border-b-2 active:translate-y-[4px]"}`}>
+                        <Volume2 className="w-8 h-8" />
+                      </motion.button>
+                    );
+                  })}
+                </div>
+
+                {/* Right Column: Letters */}
+                <div className="flex flex-col gap-4 flex-1">
+                  {matchColumns.right.map((letter) => {
+                    const isMatched = matchedPairs.has(letter);
+                    const isSelected = selectedLetterMatch === letter;
+                    const isWrong = wrongMatchPair && wrongMatchPair[1] === letter;
+
+                    return (
+                      <motion.button key={`letter-${letter}`} whileHover={{ scale: isMatched ? 1 : 1.02 }} whileTap={{ scale: isMatched ? 1 : 0.98 }} onClick={() => handleLetterMatchClick(letter)} disabled={isMatched || !!wrongMatchPair} className={`p-4 rounded-[1.5rem] flex items-center justify-center transition-all border-b-[6px] border-2 shadow-sm font-black text-2xl ${isMatched ? "bg-gray-100 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700/50 text-gray-400 dark:text-gray-500 translate-y-[4px] border-b-2 opacity-50 cursor-default" : isWrong ? "bg-red-50 border-red-500 text-red-500 animate-shake" : isSelected ? "bg-blue-50 border-blue-500 text-blue-600 shadow-md translate-y-[4px] border-b-2" : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-100 hover:border-gray-300 hover:shadow-md cursor-pointer active:border-b-2 active:translate-y-[4px]"}`}>
+                        {letter}{letter.toLowerCase()}
+                      </motion.button>
+                    );
+                  })}
+                </div>
+              </div>
+            </motion.div>
+          ) : (
+            <motion.div key="complete" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-12">
+              <Sparkles className="w-20 h-20 text-yellow-400 mx-auto mb-6" />
+              <h3 className="text-3xl font-black mb-4" style={{ color: accent.primary }}>All Sets Complete!</h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-8">You mastered the letter sounds!</p>
+              <Button onClick={saveFinalProgress} disabled={isSaving} className="text-white shadow-lg hover:shadow-xl font-bold rounded-xl px-8 py-6 text-lg transition-all hover:scale-105 active:scale-95 border-b-4 border-[#3c8c01] cursor-pointer inline-flex items-center justify-center gap-2 w-full sm:w-auto" style={{ background: "linear-gradient(135deg, #58CC02 0%, #46A302 100%)" }}>
+                {isSaving ? "Saving..." : "Continue"} <ArrowRight className="w-6 h-6" />
+              </Button>
             </motion.div>
           )}
         </AnimatePresence>
