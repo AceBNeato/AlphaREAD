@@ -20,15 +20,19 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
   , []);
 
   const STEPS = useMemo(() => [
-    { type: "review" as const, start: 0, end: 12 },
-    { type: "match" as const, start: 0, end: 6 },
-    { type: "match" as const, start: 6, end: 12 },
-    { type: "review" as const, start: 12, end: 26 },
-    { type: "match" as const, start: 12, end: 19 },
-    { type: "match" as const, start: 19, end: 26 },
-    { type: "match" as const, start: 0, end: 8 },
-    { type: "match" as const, start: 8, end: 17 },
-    { type: "match" as const, start: 17, end: 26 },
+    { type: "review" as const, start: 0, end: 6 },   // A-F review
+    { type: "match" as const, start: 0, end: 6 },    // A-F match
+    { type: "review" as const, start: 6, end: 12 },  // G-L review
+    { type: "match" as const, start: 6, end: 12 },   // G-L match
+    { type: "review" as const, start: 12, end: 19 }, // M-S review
+    { type: "match" as const, start: 12, end: 19 },  // M-S match
+    { type: "review" as const, start: 19, end: 26 }, // T-Z review
+    { type: "match" as const, start: 19, end: 26 },  // T-Z match
+    
+    // Final Comprehensive Test
+    { type: "match" as const, start: 0, end: 8 },    // A-H match
+    { type: "match" as const, start: 8, end: 17 },   // I-Q match
+    { type: "match" as const, start: 17, end: 26 },  // R-Z match
   ], []);
 
   const [currentStep, setCurrentStep] = useState(0);
