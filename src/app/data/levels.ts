@@ -299,7 +299,7 @@ export const levels: Level[] = [
   {
     id: 1,
     title: "Alphabet Master",
-    subtitle: "Alphabet review and voice evaluation",
+    subtitle: "Alphabet review and sound matching",
     type: "pairs",
     letters: allLetters,
     locked: false,
