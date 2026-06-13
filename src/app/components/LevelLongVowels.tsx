@@ -350,11 +350,11 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
 
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 dark:bg-none dark:bg-[#0d141c] pb-12 flex flex-col">
+    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 dark:bg-none dark:bg-[#0d141c] pb-12 flex flex-col overflow-x-hidden">
       <Confetti active={showConfetti} />
 
       <div className="sticky top-0 z-10 bg-white/80 dark:bg-[#0d141c]/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 px-4 py-3">
-        <div className="max-w-4xl mx-auto flex items-center justify-between gap-3">
+        <div className="max-w-4xl mx-auto flex items-center justify-between gap-3 w-full">
           <Button variant="ghost" size="sm" onClick={handleGoBack} className="rounded-full">
             <Home className="w-5 h-5" />
           </Button>
@@ -503,7 +503,7 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
               </div>
 
               <div className="w-full text-center mb-8">
-                <div className="space-y-3 bg-white/50 dark:bg-gray-800/50 p-4 rounded-3xl backdrop-blur-sm border-2 border-dashed border-gray-200 dark:border-gray-700 max-h-[60vh] overflow-y-auto">
+                <div className="space-y-3 bg-white/50 dark:bg-gray-800/50 p-4 rounded-3xl backdrop-blur-sm border-2 border-dashed border-gray-200 dark:border-gray-700">
                   {activePatterns.map((p, idx) => {
                     const isDone = completedPatterns.has(p.pattern);
                     const isEval = evaluatingPatternId === p.pattern;
@@ -616,7 +616,7 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
               </div>
 
               <div className="w-full text-center mb-8">
-                <div className="space-y-3 bg-white/50 dark:bg-gray-800/50 p-4 rounded-3xl backdrop-blur-sm border-2 border-dashed border-gray-200 dark:border-gray-700 max-h-[60vh] overflow-y-auto">
+                <div className="space-y-3 bg-white/50 dark:bg-gray-800/50 p-4 rounded-3xl backdrop-blur-sm border-2 border-dashed border-gray-200 dark:border-gray-700">
                   {activeWords.map((w, idx) => {
                     const isDone = completedWords.has(w.word);
                     const isEval = evaluatingWordId === w.word;
@@ -747,7 +747,7 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
               </div>
 
               <div className="w-full text-center mb-8">
-                <div className="space-y-3 bg-white/50 dark:bg-gray-800/50 p-4 rounded-3xl backdrop-blur-sm border-2 border-dashed border-gray-200 dark:border-gray-700 max-h-[60vh] overflow-y-auto">
+                <div className="space-y-3 bg-white/50 dark:bg-gray-800/50 p-4 rounded-3xl backdrop-blur-sm border-2 border-dashed border-gray-200 dark:border-gray-700">
                   {activeSentences.map((s, idx) => {
                     const isDone = completedSentences.has(s);
                     const isEval = evaluatingSentenceId === s;

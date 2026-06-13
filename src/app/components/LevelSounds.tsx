@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { supabase } from "../../lib/supabase";
 import { playSound } from "../utils/soundEffects";
 import { Confetti } from "./ui/Confetti";
+import { MatchButton } from "./MatchButton";
 
 // QWERTY keyboard layout
 const QWERTY_ROWS = [
@@ -267,33 +268,51 @@ export function LevelSounds({ levelId, accent }: LevelSoundsProps) {
                 </div>
               </div>
 
-              <div className="flex justify-center gap-6 max-w-2xl mx-auto mb-10 px-4">
+              <div className="flex justify-center gap-4 max-w-full mx-auto mb-10 px-4 overflow-x-hidden">
                 {/* Left Column: TTS Speakers */}
-                <div className="flex flex-col gap-4 flex-1">
+                <div className="flex flex-col gap-4 flex-1 min-w-0">
                   {matchColumns.left.map((letter) => {
                     const isMatched = matchedPairs.has(letter);
                     const isSelected = selectedSpeakerMatch === letter;
                     const isWrong = wrongMatchPair && wrongMatchPair[0] === letter;
 
                     return (
-                      <motion.button key={`speaker-${letter}`} whileHover={{ scale: isMatched ? 1 : 1.02 }} whileTap={{ scale: isMatched ? 1 : 0.98 }} onClick={() => handleSpeakerMatchClick(letter)} disabled={isMatched || !!wrongMatchPair} className={`p-4 rounded-[1.5rem] flex items-center justify-center transition-all border-b-[6px] border-2 shadow-sm ${isMatched ? "bg-gray-100 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700/50 text-gray-400 dark:text-gray-500 translate-y-[4px] border-b-2 opacity-50 cursor-default" : isWrong ? "bg-red-50 border-red-500 text-red-500 animate-shake" : isSelected ? "bg-blue-50 border-blue-500 text-blue-600 shadow-md translate-y-[4px] border-b-2" : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-gray-300 hover:shadow-md cursor-pointer active:border-b-2 active:translate-y-[4px]"}`}>
-                        <Volume2 className="w-8 h-8" />
-                      </motion.button>
+                      <MatchButton
+                        key={`speaker-${letter}`}
+                        gradientStart={accent.primary}
+                        gradientEnd={accent.dark}
+                        isMatched={isMatched}
+                        isSelected={isSelected}
+                        isWrong={isWrong}
+                        onClick={() => handleSpeakerMatchClick(letter)}
+                        disabled={!!wrongMatchPair}
+                      >
+                        <Volume2 className={`w-8 h-8 ${isMatched ? "opacity-50" : ""}`} />
+                        {isSelected && <span className="absolute inset-0 bg-white/20 rounded-[1.5rem]" />}
+                      </MatchButton>
                     );
                   })}
                 </div>
 
                 {/* Right Column: Letters */}
-                <div className="flex flex-col gap-4 flex-1">
+                <div className="flex flex-col gap-4 flex-1 min-w-0">
                   {matchColumns.right.map((letter) => {
                     const isMatched = matchedPairs.has(letter);
                     const isSelected = selectedLetterMatch === letter;
                     const isWrong = wrongMatchPair && wrongMatchPair[1] === letter;
 
                     return (
-                      <motion.button key={`letter-${letter}`} whileHover={{ scale: isMatched ? 1 : 1.02 }} whileTap={{ scale: isMatched ? 1 : 0.98 }} onClick={() => handleLetterMatchClick(letter)} disabled={isMatched || !!wrongMatchPair} className={`p-4 rounded-[1.5rem] flex items-center justify-center transition-all border-b-[6px] border-2 shadow-sm font-black text-2xl ${isMatched ? "bg-gray-100 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700/50 text-gray-400 dark:text-gray-500 translate-y-[4px] border-b-2 opacity-50 cursor-default" : isWrong ? "bg-red-50 border-red-500 text-red-500 animate-shake" : isSelected ? "bg-blue-50 border-blue-500 text-blue-600 shadow-md translate-y-[4px] border-b-2" : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-100 hover:border-gray-300 hover:shadow-md cursor-pointer active:border-b-2 active:translate-y-[4px]"}`}>
+                      <MatchButton
+                        key={`letter-${letter}`}
+                        isMatched={isMatched}
+                        isSelected={isSelected}
+                        isWrong={isWrong}
+                        onClick={() => handleLetterMatchClick(letter)}
+                        disabled={!!wrongMatchPair}
+                        className="font-black text-2xl tracking-widest"
+                      >
                         {letter}{letter.toLowerCase()}
-                      </motion.button>
+                      </MatchButton>
                     );
                   })}
                 </div>

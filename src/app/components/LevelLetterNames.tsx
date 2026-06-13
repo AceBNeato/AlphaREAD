@@ -9,6 +9,7 @@ import { shuffle, allLetters, LETTER_NAMES, LETTER_TTS } from "../data/levels";
 import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
 import { AudioVisualizer } from "./AudioVisualizer";
 import { playSound } from "../utils/soundEffects";
+import { MatchButton } from "./MatchButton";
 
 interface LevelLetterNamesProps {
   levelId: number;
@@ -486,61 +487,51 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
                 </div>
               </div>
 
-              <div className="flex justify-center gap-6 max-w-2xl mx-auto mb-10 px-4">
+              <div className="flex justify-center gap-4 max-w-full mx-auto mb-10 px-4 overflow-x-hidden">
                 {/* Left Column: TTS Speakers */}
-                <div className="flex flex-col gap-4 flex-1">
+                <div className="flex flex-col gap-4 flex-1 min-w-0">
                   {matchColumns.left.map((letter) => {
                     const isMatched = matchedPairs.has(letter);
                     const isSelected = selectedSpeakerMatch === letter;
-                    const isWrong = wrongMatchPair && wrongMatchPair[0] === letter;
+                    const isWrong = !!(wrongMatchPair && wrongMatchPair[0] === letter);
 
                     return (
-                      <motion.button
+                      <MatchButton
                         key={`speaker-${letter}`}
-                        whileHover={{ scale: isMatched ? 1 : 1.02 }}
-                        whileTap={{ scale: isMatched ? 1 : 0.98 }}
+                        gradientStart={accent.primary}
+                        gradientEnd={accent.dark}
+                        isMatched={isMatched}
+                        isSelected={isSelected}
+                        isWrong={isWrong}
                         onClick={() => handleSpeakerMatchClick(letter)}
-                        disabled={isMatched || !!wrongMatchPair}
-                        className={`p-4 rounded-[1.5rem] flex items-center justify-center transition-all border-b-[6px] border-2 shadow-sm ${isMatched
-                          ? "bg-gray-100 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700/50 text-gray-400 dark:text-gray-500 translate-y-[4px] border-b-2 opacity-50 cursor-default"
-                          : isWrong
-                            ? "bg-red-50 border-red-500 text-red-500 animate-shake"
-                            : isSelected
-                              ? "bg-blue-50 border-blue-500 text-blue-600 shadow-md translate-y-[4px] border-b-2"
-                              : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-gray-300 hover:shadow-md cursor-pointer active:border-b-2 active:translate-y-[4px]"
-                          }`}
+                        disabled={!!wrongMatchPair}
                       >
-                        <Volume2 className="w-8 h-8" />
-                      </motion.button>
+                        <Volume2 className={`w-8 h-8 ${isMatched ? "opacity-50" : ""}`} />
+                        {isSelected && <span className="absolute inset-0 bg-white/20 rounded-[1.5rem]" />}
+                      </MatchButton>
                     );
                   })}
                 </div>
 
                 {/* Right Column: Letters */}
-                <div className="flex flex-col gap-4 flex-1">
+                <div className="flex flex-col gap-4 flex-1 min-w-0">
                   {matchColumns.right.map((letter) => {
                     const isMatched = matchedPairs.has(letter);
                     const isSelected = selectedLetterMatch === letter;
-                    const isWrong = wrongMatchPair && wrongMatchPair[1] === letter;
+                    const isWrong = !!(wrongMatchPair && wrongMatchPair[1] === letter);
 
                     return (
-                      <motion.button
+                      <MatchButton
                         key={`letter-${letter}`}
-                        whileHover={{ scale: isMatched ? 1 : 1.02 }}
-                        whileTap={{ scale: isMatched ? 1 : 0.98 }}
+                        isMatched={isMatched}
+                        isSelected={isSelected}
+                        isWrong={isWrong}
                         onClick={() => handleLetterMatchClick(letter)}
-                        disabled={isMatched || !!wrongMatchPair}
-                        className={`p-4 rounded-[1.5rem] flex items-center justify-center transition-all border-b-[6px] border-2 shadow-sm font-black text-2xl ${isMatched
-                          ? "bg-gray-100 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700/50 text-gray-400 dark:text-gray-500 translate-y-[4px] border-b-2 opacity-50 cursor-default"
-                          : isWrong
-                            ? "bg-red-50 border-red-500 text-red-500 animate-shake"
-                            : isSelected
-                              ? "bg-blue-50 border-blue-500 text-blue-600 shadow-md translate-y-[4px] border-b-2"
-                              : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-100 hover:border-gray-300 hover:shadow-md cursor-pointer active:border-b-2 active:translate-y-[4px]"
-                          }`}
+                        disabled={!!wrongMatchPair}
+                        className="font-black text-2xl tracking-widest"
                       >
                         {letter}{letter.toLowerCase()}
-                      </motion.button>
+                      </MatchButton>
                     );
                   })}
                 </div>
@@ -603,7 +594,7 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
               </div>
 
               <div className="w-full text-center mb-8">
-                <div className="space-y-3 bg-white/50 dark:bg-gray-800/50 p-4 rounded-3xl backdrop-blur-sm border-2 border-dashed border-gray-200 dark:border-gray-700 max-h-[60vh] overflow-y-auto">
+                <div className="space-y-3 bg-white/50 dark:bg-gray-800/50 p-4 rounded-3xl backdrop-blur-sm border-2 border-dashed border-gray-200 dark:border-gray-700">
                   {shuffledVoiceLetters.map((l, idx) => {
                     const isDone = completedVoiceLetters.has(l);
                     const isEval = evaluatingLetter === l;

@@ -318,7 +318,7 @@ export function LevelSyllableBuilder({
 
 
   const innerContent = (
-    <div className={`max-w-2xl mx-auto px-4 ${embedded ? "py-2" : "py-6"}`}>
+    <div className={`max-w-2xl mx-auto px-4 w-full overflow-x-hidden ${embedded ? "py-2" : "py-6"}`}>
       {/* SUB-LEVEL PICKER — shown when Level 2 has both VC and CV */}
       {!selectedSubPattern && patterns.length > 1 ? (
         <motion.div
@@ -691,11 +691,11 @@ export function LevelSyllableBuilder({
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-yellow-50 to-pink-50 dark:bg-none dark:bg-[#0d141c]">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-yellow-50 to-pink-50 dark:bg-none dark:bg-[#0d141c] overflow-x-hidden">
       <Confetti active={showConfetti} />
       {/* Header */}
       <div className="sticky top-0 z-10 bg-white/80 dark:bg-[#0d141c]/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 px-4 py-3">
-        <div className="max-w-2xl mx-auto flex items-center gap-3">
+        <div className="max-w-2xl mx-auto flex items-center gap-3 w-full">
           <Button
             variant="ghost"
             size="sm"

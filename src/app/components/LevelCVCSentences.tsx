@@ -190,12 +190,12 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete }: L
   const isFinalSet = currentSetIndex === totalSets - 1;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 dark:bg-none dark:bg-[#0d141c] pb-12 flex flex-col">
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 dark:bg-none dark:bg-[#0d141c] pb-12 flex flex-col overflow-x-hidden">
       <Confetti active={showConfetti} />
 
       {/* Header */}
       <div className="sticky top-0 z-10 bg-white/80 dark:bg-[#0d141c]/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 px-4 py-3">
-        <div className="max-w-4xl mx-auto flex items-center justify-between gap-3">
+        <div className="max-w-4xl mx-auto flex items-center justify-between gap-3 w-full">
           {!isSubPhase ? (
             <Button variant="ghost" size="sm" onClick={handleGoBack} className="rounded-full">
               <Home className="w-5 h-5" />
@@ -268,7 +268,7 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete }: L
 
               {/* Sentence List — identical layout to Lesson 5 */}
               <div className="w-full text-center mb-8">
-                <div className="space-y-3 bg-white/50 dark:bg-gray-800/50 p-4 rounded-3xl backdrop-blur-sm border-2 border-dashed border-gray-200 dark:border-gray-700 max-h-[60vh] overflow-y-auto">
+                <div className="space-y-3 bg-white/50 dark:bg-gray-800/50 p-4 rounded-3xl backdrop-blur-sm border-2 border-dashed border-gray-200 dark:border-gray-700">
                   {activeSentences.map((s) => {
                     const isDone = completedSentences.has(s);
                     const isEval = evaluatingSentenceId === s;

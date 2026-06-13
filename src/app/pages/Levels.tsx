@@ -78,8 +78,8 @@ export default function Levels() {
 
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#e8f9f0] to-[#f0fdf4] dark:bg-none dark:bg-[#0d141c]">
-      <div className="max-w-5xl mx-auto px-4 py-8">
+    <div className="min-h-screen bg-gradient-to-b from-[#e8f9f0] to-[#f0fdf4] dark:bg-none dark:bg-[#0d141c] overflow-x-hidden">
+      <div className="max-w-5xl mx-auto px-4 py-8 w-full">
         {/* Top Bar */}
         <div className="flex items-center justify-between mb-8">
           <Link

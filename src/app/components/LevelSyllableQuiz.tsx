@@ -11,6 +11,7 @@ import { Confetti } from "./ui/Confetti";
 import { playSound } from "../utils/soundEffects";
 
 import { LevelSyllableBuilder } from "./LevelSyllableBuilder";
+import { MatchButton } from "./MatchButton";
 
 type Pattern = "VC" | "CV";
 
@@ -146,7 +147,7 @@ function MatchPhase({
       initial={{ opacity: 0, x: 50 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: -50 }}
-      className="w-full max-w-xl mx-auto flex flex-col items-center"
+      className="w-full max-w-4xl mx-auto flex flex-col items-center overflow-x-hidden"
     >
       <Confetti active={showConfetti} />
 
@@ -187,65 +188,47 @@ function MatchPhase({
       </div>
 
       {/* Two-column match */}
-      <div className="w-full grid grid-cols-2 gap-3 mb-6">
+      <div className="w-full grid grid-cols-2 gap-3 mb-6 max-w-full overflow-x-hidden">
         {/* Left: speaker buttons */}
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-3 min-w-0">
           {leftCol.map((syl) => {
             const isDone = matchedPairs.has(syl);
             const isSelected = selectedLeft === syl;
             const isWrong = isWrongLeft(syl);
             return (
-              <motion.button
+              <MatchButton
                 key={`left-${syl}`}
-                whileHover={{ scale: isDone ? 1 : 1.02 }}
-                whileTap={{ scale: isDone ? 1 : 0.98 }}
-                onClick={() => !isDone && handleLeftClick(syl)}
-                disabled={isDone}
-                className={`relative p-4 rounded-[1.5rem] flex items-center justify-center gap-2 font-bold transition-all shadow-md border-2 border-b-[6px] ${isDone
-                    ? "opacity-50 grayscale cursor-default bg-gray-100 border-gray-200 text-gray-400 translate-y-[4px] border-b-2"
-                    : isWrong
-                      ? "animate-shake bg-red-50 text-red-500 border-red-500"
-                      : isSelected
-                        ? "bg-blue-50 border-blue-500 text-blue-600 shadow-md translate-y-[4px] border-b-2"
-                        : "text-white cursor-pointer hover:shadow-lg active:border-b-2 active:translate-y-[4px]"
-                  }`}
-                style={{
-                  background: isWrong ? undefined : isSelected ? undefined : isDone ? undefined : `linear-gradient(135deg, ${accent.primary}, ${accent.dark})`,
-                  borderColor: isWrong ? undefined : isSelected ? undefined : isDone ? undefined : accent.dark,
-                }}
+                gradientStart={accent.primary}
+                gradientEnd={accent.dark}
+                isMatched={isDone}
+                isSelected={isSelected}
+                isWrong={isWrong}
+                onClick={() => handleLeftClick(syl)}
               >
                 <Volume2 className={`w-8 h-8 ${isDone ? "opacity-50" : ""}`} />
                 {isSelected && <span className="absolute inset-0 bg-white/20 rounded-[1.5rem]" />}
-              </motion.button>
+              </MatchButton>
             );
           })}
         </div>
 
         {/* Right: word buttons */}
-        <div className="flex flex-col gap-3 flex-1">
+        <div className="flex flex-col gap-3 flex-1 min-w-0">
           {rightCol.map((syl) => {
             const isDone = matchedPairs.has(syl);
             const isSelected = selectedRight === syl;
             const isWrong = isWrongRight(syl);
             return (
-              <motion.button
+              <MatchButton
                 key={`right-${syl}`}
-                whileHover={{ scale: isDone ? 1 : 1.02 }}
-                whileTap={{ scale: isDone ? 1 : 0.98 }}
-                onClick={() => !isDone && handleRightClick(syl)}
-                disabled={isDone}
-                className={`p-4 rounded-[1.5rem] flex items-center justify-center font-black text-2xl tracking-widest transition-all shadow-md border-2 border-b-[6px] ${isDone
-                    ? "opacity-50 grayscale bg-gray-100 text-gray-400 border-gray-200 cursor-default translate-y-[4px] border-b-2"
-                    : isWrong
-                      ? "animate-shake bg-red-50 text-red-600 border-red-500"
-                      : isSelected
-                        ? "bg-blue-50 text-blue-600 border-blue-500 shadow-md translate-y-[4px] border-b-2"
-                        : "bg-white text-gray-700 hover:border-gray-300 hover:shadow-lg cursor-pointer active:border-b-2 active:translate-y-[4px]"
-                  }`}
-                style={{ borderColor: isSelected || isWrong || isDone ? undefined : accent.primary + "80" }}
+                isMatched={isDone}
+                isSelected={isSelected}
+                isWrong={isWrong}
+                onClick={() => handleRightClick(syl)}
+                className="font-black text-2xl tracking-widest"
               >
                 {syl.toLowerCase()}
-              </motion.button>
+              </MatchButton>
             );
           })}
         </div>
@@ -316,12 +299,12 @@ export function LevelSyllableQuiz({ pattern, levelId, accent, onComplete }: Leve
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-yellow-50 to-pink-50 dark:bg-none dark:bg-[#0d141c] pb-12 flex flex-col">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-yellow-50 to-pink-50 dark:bg-none dark:bg-[#0d141c] pb-12 flex flex-col overflow-x-hidden">
       <Confetti active={showFinalConfetti} />
 
       {/* Header */}
       <div className="sticky top-0 z-10 bg-white/80 dark:bg-[#0d141c]/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 px-4 py-3">
-        <div className="max-w-4xl mx-auto flex items-center gap-3">
+        <div className="max-w-4xl mx-auto flex items-center gap-3 w-full">
           <Button variant="ghost" size="sm"
             onClick={() => {
               if (window.confirm("Leave? Progress won't be saved.")) navigate("/levels");
