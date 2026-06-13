@@ -455,6 +455,7 @@ export function LevelSyllableBuilder({
                                   ? "#FF6B8A"
                                   : "#1CB0F6",
                               }}
+                            >
                               {ch.toLowerCase()}
                             </span>
                           ))}
