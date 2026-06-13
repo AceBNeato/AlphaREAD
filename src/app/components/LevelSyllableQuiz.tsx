@@ -147,7 +147,7 @@ function MatchPhase({
       initial={{ opacity: 0, x: 50 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: -50 }}
-      className="w-full max-w-4xl mx-auto flex flex-col items-center overflow-x-hidden"
+      className="w-full max-w-4xl mx-auto flex flex-col items-center"
     >
       <Confetti active={showConfetti} />
 

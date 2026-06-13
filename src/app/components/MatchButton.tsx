@@ -25,7 +25,7 @@ export function MatchButton({
   className = "",
 }: MatchButtonProps) {
   const base = `p-3 sm:p-4 rounded-xl sm:rounded-[1.5rem] flex items-center justify-center transition-all shadow-md border-2 border-b-[6px] ${className}`;
-  
+
   // Clean, premium 3D design mapping
   const finalClass = isMatched
     ? "opacity-50 grayscale cursor-default bg-gray-100 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700/50 text-gray-400 dark:text-gray-500 translate-y-[4px] border-b-2"
