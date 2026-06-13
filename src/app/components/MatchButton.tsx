@@ -51,7 +51,8 @@ export function MatchButton({
       whileHover={{ scale: isMatched ? 1 : 1.02 }}
       whileTap={{ scale: isMatched ? 1 : 0.98 }}
       onClick={onClick}
-      disabled={isMatched || disabled}
+      disabled={isMatched}
+      aria-disabled={disabled}
       className={`${base} ${finalClass}`}
       style={style as any}
     >

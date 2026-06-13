@@ -111,7 +111,7 @@ export function LevelSounds({ levelId, accent }: LevelSoundsProps) {
 
   const playNameAudio = (letter: string) => {
     const audio = new Audio(`${(import.meta as any).env.BASE_URL}audio/alphasounds-${letter.toLowerCase()}.mp3`);
-    audio.play().catch(() => {});
+    audio.play().catch(() => { });
   };
 
   const checkMatch = (left: string, right: string) => {

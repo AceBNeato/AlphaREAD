@@ -188,7 +188,7 @@ function MatchPhase({
       </div>
 
       {/* Two-column match */}
-      <div className="w-full grid grid-cols-2 gap-3 mb-6 max-w-full overflow-x-hidden">
+      <div className="w-full grid grid-cols-2 gap-3 mb-6 max-w-full">
         {/* Left: speaker buttons */}
         <div className="flex flex-col gap-3 min-w-0">
           {leftCol.map((syl) => {
