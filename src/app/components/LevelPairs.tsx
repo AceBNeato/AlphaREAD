@@ -3,7 +3,7 @@ import { useNavigate } from "react-router";
 import { Button } from "./ui/button";
 import { allLetters as ALL_LETTERS } from "../data/levels";
 import { motion, AnimatePresence } from "motion/react";
-import { ChevronRight, Home, ArrowRight, ArrowLeft, Shuffle, RotateCcw } from "lucide-react";
+import { ChevronRight, Home, ArrowRight, ArrowLeft, Volume2 } from "lucide-react";
 import { playSound } from "../utils/soundEffects";
 
 interface LevelPairsProps {
@@ -20,11 +20,15 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
   , []);
 
   const STEPS = useMemo(() => [
-    { type: "review" as const, start: 0, end: 12 },  // A-L review
-    { type: "grid" as const, start: 0, end: 12 },    // A-L eval grid
-    { type: "review" as const, start: 12, end: 26 }, // M-Z review
-    { type: "grid" as const, start: 12, end: 26 },   // M-Z eval grid
-    { type: "grid" as const, start: 0, end: 26 },    // Full A-Z final grid
+    { type: "review" as const, start: 0, end: 12 },
+    { type: "match" as const, start: 0, end: 6 },
+    { type: "match" as const, start: 6, end: 12 },
+    { type: "review" as const, start: 12, end: 26 },
+    { type: "match" as const, start: 12, end: 19 },
+    { type: "match" as const, start: 19, end: 26 },
+    { type: "match" as const, start: 0, end: 8 },
+    { type: "match" as const, start: 8, end: 17 },
+    { type: "match" as const, start: 17, end: 26 },
   ], []);
 
   const [currentStep, setCurrentStep] = useState(0);
@@ -37,17 +41,24 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
   const [currentPairIndex, setCurrentPairIndex] = useState(0);
   const [clickedLetter, setClickedLetter] = useState<string | null>(null);
 
-  // For Grid Eval Phase
-  const [gridShuffled, setGridShuffled] = useState<string[]>([]);
-  const [gridCompleted, setGridCompleted] = useState<Set<string>>(new Set());
-  // Track current index for teacher Next/Reset in grid
-  const [gridIndex, setGridIndex] = useState(0);
+  // Match Phase States
+  const [matchColumns, setMatchColumns] = useState<{ left: string[]; right: string[] }>({ left: [], right: [] });
+  const [matchedPairs, setMatchedPairs] = useState<Set<string>>(new Set());
+  const [selectedSpeakerMatch, setSelectedSpeakerMatch] = useState<string | null>(null);
+  const [selectedLetterMatch, setSelectedLetterMatch] = useState<string | null>(null);
+  const [wrongMatchPair, setWrongMatchPair] = useState<[string, string] | null>(null);
 
   useEffect(() => {
-    if (step.type === "grid") {
-      setGridShuffled([...activeLetters].sort(() => Math.random() - 0.5));
-      setGridCompleted(new Set());
-      setGridIndex(0);
+    if (step.type === "match") {
+      const targets = [...activeLetters].sort(() => Math.random() - 0.5);
+      setMatchColumns({
+        left: [...targets].sort(() => Math.random() - 0.5),
+        right: [...targets].sort(() => Math.random() - 0.5)
+      });
+      setMatchedPairs(new Set());
+      setSelectedSpeakerMatch(null);
+      setSelectedLetterMatch(null);
+      setWrongMatchPair(null);
     }
   }, [currentStep, activeLetters, step.type]);
 
@@ -75,13 +86,7 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
     audio.play().catch(() => { });
     setTimeout(() => setClickedLetter(null), 1000);
 
-    if (step.type === "grid") {
-      setGridCompleted(prev => {
-        const next = new Set(prev);
-        next.add(letter);
-        return next;
-      });
-    }
+    // grid logic removed
   };
 
   const handleGoBack = () => {
@@ -106,28 +111,37 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
     }
   };
 
-  const handleShuffle = () => {
-    setGridShuffled(prev => [...prev].sort(() => Math.random() - 0.5));
-    setGridCompleted(new Set());
-    setGridIndex(0);
-  };
-
-  const handleGridReset = () => {
-    setGridCompleted(new Set());
-    setGridIndex(0);
-  };
-
-  const handleGridNext = () => {
-    // Mark current as done, advance to next
-    const current = gridShuffled[gridIndex];
-    if (current) {
-      setGridCompleted(prev => {
-        const next = new Set(prev);
-        next.add(current);
-        return next;
-      });
+  const checkMatch = (left: string, right: string) => {
+    if (left === right) {
+      playSound("correct", 0.4);
+      setMatchedPairs(prev => new Set(prev).add(left));
+      setSelectedSpeakerMatch(null);
+      setSelectedLetterMatch(null);
+    } else {
+      playSound("wrong", 0.35);
+      setWrongMatchPair([left, right]);
+      setTimeout(() => {
+        setWrongMatchPair(null);
+        setSelectedSpeakerMatch(null);
+        setSelectedLetterMatch(null);
+      }, 900);
     }
-    setGridIndex(prev => Math.min(prev + 1, gridShuffled.length - 1));
+  };
+
+  const handleSpeakerMatchClick = (letter: string) => {
+    if (matchedPairs.has(letter) || wrongMatchPair) return;
+    playSound("click", 0.2);
+    const audio = new Audio(`${(import.meta as any).env.BASE_URL}audio/alphasounds-${letter.toLowerCase()}.mp3`);
+    audio.play().catch(() => {});
+    setSelectedSpeakerMatch(letter);
+    if (selectedLetterMatch) checkMatch(letter, selectedLetterMatch);
+  };
+
+  const handleLetterMatchClick = (letter: string) => {
+    if (matchedPairs.has(letter) || wrongMatchPair) return;
+    playSound("click", 0.2);
+    setSelectedLetterMatch(letter);
+    if (selectedSpeakerMatch) checkMatch(selectedSpeakerMatch, letter);
   };
 
   return (
@@ -203,79 +217,47 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
               </div>
             </motion.div>
 
-          ) : step.type === "grid" ? (
-            <motion.div key={`grid-${currentStep}`} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }}>
+          ) : step.type === "match" ? (
+            <motion.div key={`match-${currentStep}`} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }}>
               <div className="text-center mb-6">
-                <h2 className="text-2xl font-bold" style={{ color: accent.primary }}>Evaluation Grid</h2>
-                <p className="text-gray-500">Tap every letter to hear its sound!</p>
+                <h2 className="text-2xl font-bold" style={{ color: accent.primary }}>Listen & Match</h2>
+                <p className="text-gray-500">Tap a speaker, then tap the matching letter!</p>
               </div>
 
-              {/* Teacher Controls Row */}
-              <div className="flex justify-center gap-3 mb-6">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleShuffle}
-                  className="flex items-center gap-1.5 border-indigo-300 text-indigo-600 hover:bg-indigo-50 dark:border-indigo-700 dark:text-indigo-400 dark:hover:bg-indigo-900/20"
-                >
-                  <Shuffle className="w-4 h-4" /> Shuffle
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleGridReset}
-                  className="flex items-center gap-1.5 border-amber-300 text-amber-600 hover:bg-amber-50 dark:border-amber-700 dark:text-amber-400"
-                >
-                  <RotateCcw className="w-4 h-4" /> Reset
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={handleGridNext}
-                  disabled={gridCompleted.size >= gridShuffled.length}
-                  className="flex items-center gap-1.5 text-white"
-                  style={{ background: `linear-gradient(135deg, ${accent.primary}, ${accent.dark})` }}
-                >
-                  Next <ArrowRight className="w-4 h-4" />
-                </Button>
-              </div>
+              <div className="flex justify-center gap-6 max-w-2xl mx-auto mb-10 px-4">
+                {/* Left Column: TTS Speakers */}
+                <div className="flex flex-col gap-4 flex-1">
+                  {matchColumns.left.map((letter) => {
+                    const isMatched = matchedPairs.has(letter);
+                    const isSelected = selectedSpeakerMatch === letter;
+                    const isWrong = wrongMatchPair && wrongMatchPair[0] === letter;
 
-              {/* Grid Layout */}
-              <div className={`grid gap-3 sm:gap-4 mx-auto mb-12 ${gridShuffled.length > 15 ? 'grid-cols-4 sm:grid-cols-6 lg:grid-cols-7' : 'grid-cols-3 sm:grid-cols-4 lg:grid-cols-6'}`}>
-                {gridShuffled.map((l, idx) => {
-                  const isDone = gridCompleted.has(l);
-                  const isClicked = clickedLetter === l;
-                  const isCurrent = idx === gridIndex;
+                    return (
+                      <motion.button key={`speaker-${letter}`} whileHover={{ scale: isMatched ? 1 : 1.02 }} whileTap={{ scale: isMatched ? 1 : 0.98 }} onClick={() => handleSpeakerMatchClick(letter)} disabled={isMatched || !!wrongMatchPair} className={`p-4 rounded-[1.5rem] flex items-center justify-center transition-all border-b-[6px] border-2 shadow-sm ${isMatched ? "bg-gray-100 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700/50 text-gray-400 dark:text-gray-500 translate-y-[4px] border-b-2 opacity-50 cursor-default" : isWrong ? "bg-red-50 border-red-500 text-red-500 animate-shake" : isSelected ? "bg-blue-50 border-blue-500 text-blue-600 shadow-md translate-y-[4px] border-b-2" : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-gray-300 hover:shadow-md cursor-pointer active:border-b-2 active:translate-y-[4px]"}`}>
+                        <Volume2 className="w-8 h-8" />
+                      </motion.button>
+                    );
+                  })}
+                </div>
 
-                  return (
-                    <button
-                      key={l}
-                      onClick={() => handleLetterClick(l)}
-                      className={`relative aspect-square rounded-2xl flex flex-col items-center justify-center transition-all shadow-md active:scale-95 cursor-pointer select-none ${isClicked ? "border-b-0 translate-y-[4px]" : "border-b-4"}`}
-                      style={{
-                        background: isClicked
-                          ? "linear-gradient(135deg, #FFC800 0%, #FF9600 100%)"
-                          : isDone
-                            ? "linear-gradient(135deg, #58CC02 0%, #46A302 100%)"
-                            : isCurrent
-                              ? `linear-gradient(135deg, ${accent.primary}, ${accent.dark})`
-                              : "linear-gradient(135deg, #1CB0F6 0%, #0a8ed4 100%)",
-                        borderColor: isClicked ? "transparent" : isDone ? "#3c8c01" : isCurrent ? accent.dark : "#086CA5",
-                        boxShadow: isCurrent && !isDone ? `0 0 0 3px ${accent.primary}60` : undefined,
-                      }}
-                    >
-                      <span className="text-white text-3xl sm:text-4xl lg:text-5xl font-black drop-shadow-sm">
-                        {l}{l.toLowerCase()}
-                      </span>
-                      {isCurrent && !isDone && (
-                        <span className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-400 rounded-full border-2 border-white" />
-                      )}
-                    </button>
-                  );
-                })}
+                {/* Right Column: Letters */}
+                <div className="flex flex-col gap-4 flex-1">
+                  {matchColumns.right.map((letter) => {
+                    const isMatched = matchedPairs.has(letter);
+                    const isSelected = selectedLetterMatch === letter;
+                    const isWrong = wrongMatchPair && wrongMatchPair[1] === letter;
+
+                    return (
+                      <motion.button key={`letter-${letter}`} whileHover={{ scale: isMatched ? 1 : 1.02 }} whileTap={{ scale: isMatched ? 1 : 0.98 }} onClick={() => handleLetterMatchClick(letter)} disabled={isMatched || !!wrongMatchPair} className={`p-4 rounded-[1.5rem] flex items-center justify-center transition-all border-b-[6px] border-2 shadow-sm font-black text-2xl ${isMatched ? "bg-gray-100 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700/50 text-gray-400 dark:text-gray-500 translate-y-[4px] border-b-2 opacity-50 cursor-default" : isWrong ? "bg-red-50 border-red-500 text-red-500 animate-shake" : isSelected ? "bg-blue-50 border-blue-500 text-blue-600 shadow-md translate-y-[4px] border-b-2" : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-100 hover:border-gray-300 hover:shadow-md cursor-pointer active:border-b-2 active:translate-y-[4px]"}`}>
+                        {letter}{letter.toLowerCase()}
+                      </motion.button>
+                    );
+                  })}
+                </div>
               </div>
 
               <div className="text-center min-h-[80px]">
-                {gridCompleted.size === gridShuffled.length ? (
+                {matchedPairs.size === matchColumns.left.length && matchColumns.left.length > 0 ? (
                   currentStep < STEPS.length - 1 ? (
                     <Button
                       onClick={handleStepNext}
@@ -294,7 +276,12 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
                     </Button>
                   )
                 ) : (
-                  <p className="text-gray-400 font-medium">Tap {gridShuffled.length - gridCompleted.size} more letters to continue...</p>
+                  <>
+                    {wrongMatchPair && (
+                      <motion.p initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="text-red-500 font-bold text-lg mb-2">Not quite, try again!</motion.p>
+                    )}
+                    <p className="text-gray-400 font-medium">Match {matchColumns.left.length - matchedPairs.size} more pairs to continue...</p>
+                  </>
                 )}
               </div>
             </motion.div>
