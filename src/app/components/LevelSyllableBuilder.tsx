@@ -455,8 +455,7 @@ export function LevelSyllableBuilder({
                                   ? "#FF6B8A"
                                   : "#1CB0F6",
                               }}
-                            >
-                              {currentTarget.pattern === "CVC" ? ch.toLowerCase() : ch}
+                              {ch.toLowerCase()}
                             </span>
                           ))}
                         </span>
@@ -484,7 +483,7 @@ export function LevelSyllableBuilder({
                       >
                         <CheckCircle2 className="w-5 h-5" />
                         <span>
-                          Completed! — "{currentTarget.pattern === "CVC" ? currentTarget.syllable.toLowerCase() : currentTarget.syllable}"
+                          Completed! — "{currentTarget.syllable.toLowerCase()}"
                         </span>
                       </motion.div>
                     )}
@@ -528,8 +527,8 @@ export function LevelSyllableBuilder({
                                           : "#086CA5",
                                   }}
                                 >
-                                  <span className="text-white text-2xl sm:text-3xl font-black drop-shadow-sm">
-                                    {currentTarget.pattern === "CVC" ? selectedLetters[slot]?.toLowerCase() : selectedLetters[slot]}
+                                  <span className="text-white text-3xl sm:text-4xl font-black drop-shadow-sm">
+                                    {selectedLetters[slot]?.toLowerCase()}
                                   </span>
                                   <span className="text-white/80 text-[9px] uppercase font-bold tracking-wider mt-0.5">
                                     {isVowel ? "vowel" : "cons."}
@@ -552,7 +551,7 @@ export function LevelSyllableBuilder({
                         animate={{ opacity: 1, y: 0 }}
                         className="mt-3 text-[#58CC02] text-lg"
                       >
-                        ✨ "{currentTarget.pattern === "CVC" ? currentTarget.syllable.toLowerCase() : currentTarget.syllable}" — Great match!
+                        ✨ "{currentTarget.syllable.toLowerCase()}" — Great match!
                       </motion.p>
                     )}
                     {feedback === "wrong" && (
@@ -586,7 +585,7 @@ export function LevelSyllableBuilder({
 
                 {/* Letter Pool */}
                 {!completedTargets.has(currentTarget.syllable) && (
-                  <div className="grid grid-cols-5 sm:grid-cols-7 gap-2 mb-4">
+                  <div className="grid grid-cols-4 sm:grid-cols-6 gap-3 mb-4">
                     {letterPool.map((item, i) => {
                       const timesInTarget = currentTarget.syllable
                         .split("")
@@ -641,7 +640,7 @@ export function LevelSyllableBuilder({
                                   : "#086CA5",
                           } as React.CSSProperties}
                         >
-                          <span className="text-white text-2xl font-black drop-shadow-sm">
+                          <span className="text-white text-3xl sm:text-4xl font-black drop-shadow-sm">
                             {item.letter}{item.letter.toLowerCase()}
                           </span>
                           <span className="text-white/80 text-[9px] uppercase font-bold tracking-wider mt-0.5">
