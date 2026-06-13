@@ -24,13 +24,13 @@ export function MatchButton({
   children,
   className = "",
 }: MatchButtonProps) {
-  const base = `p-4 rounded-[1.5rem] flex items-center justify-center transition-all shadow-md border-2 border-b-[6px] ${className}`;
+  const base = `p-3 sm:p-4 rounded-xl sm:rounded-[1.5rem] flex items-center justify-center transition-all shadow-md border-2 border-b-[6px] ${className}`;
   
   // Clean, premium 3D design mapping
   const finalClass = isMatched
     ? "opacity-50 grayscale cursor-default bg-gray-100 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700/50 text-gray-400 dark:text-gray-500 translate-y-[4px] border-b-2"
     : isWrong
-      ? "animate-shake bg-red-50 text-red-500 border-red-500"
+      ? "animate-shake bg-red-500 text-white border-red-700"
       : isSelected
         ? "bg-blue-50 border-blue-500 text-blue-600 shadow-md translate-y-[4px] border-b-2"
         : "bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-lg cursor-pointer active:border-b-2 active:translate-y-[4px]";

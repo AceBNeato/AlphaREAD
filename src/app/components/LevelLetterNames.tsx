@@ -23,13 +23,10 @@ interface Question {
 
 const STEPS = [
   { id: 1, type: "review" as const, letters: ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"], title: "Review A-L" },
-  { id: 2, type: "match" as const, letters: ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"], title: "Match A-L", count: 6 },
-  { id: 3, type: "voice" as const, letters: ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"], title: "Speak A-L", count: 6 },
-  { id: 4, type: "review" as const, letters: ["M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"], title: "Review M-Z" },
-  { id: 5, type: "match" as const, letters: ["M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"], title: "Match M-Z", count: 7 },
-  { id: 6, type: "voice" as const, letters: ["M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"], title: "Speak M-Z", count: 7 },
-  { id: 7, type: "match" as const, letters: ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"], title: "Final Match", count: 10 },
-  { id: 8, type: "voice" as const, letters: ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"], title: "Final Speak", count: 10 },
+  { id: 2, type: "voice" as const, letters: ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"], title: "Speak A-L", count: 6 },
+  { id: 3, type: "review" as const, letters: ["M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"], title: "Review M-Z" },
+  { id: 4, type: "voice" as const, letters: ["M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"], title: "Speak M-Z", count: 7 },
+  { id: 5, type: "voice" as const, letters: ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"], title: "Final Speak", count: 10 },
 ];
 
 export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
@@ -41,13 +38,6 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
   // Review states
   const [currentPairIndex, setCurrentPairIndex] = useState(0);
   const [clickedLetter, setClickedLetter] = useState<string | null>(null);
-
-  // Match states (Duolingo style)
-  const [matchColumns, setMatchColumns] = useState<{ left: string[]; right: string[] }>({ left: [], right: [] });
-  const [selectedSpeakerMatch, setSelectedSpeakerMatch] = useState<string | null>(null);
-  const [selectedLetterMatch, setSelectedLetterMatch] = useState<string | null>(null);
-  const [matchedPairs, setMatchedPairs] = useState<Set<string>>(new Set());
-  const [wrongMatchPair, setWrongMatchPair] = useState<[string, string] | null>(null);
 
 
 
@@ -102,44 +92,6 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
   }, [step]);
 
   const currentPair = currentSetPairs[currentPairIndex] || [];
-
-  const matchProgress = matchColumns.left.length > 0 ? (matchedPairs.size / matchColumns.left.length) * 100 : 0;
-
-  // Generate Match columns when step changes
-  useEffect(() => {
-    if (step.type === "match") {
-      const targets = shuffle([...step.letters]).slice(0, step.count || step.letters.length);
-      setMatchColumns({
-        left: shuffle([...targets]),
-        right: shuffle([...targets])
-      });
-      setMatchedPairs(new Set());
-      setSelectedSpeakerMatch(null);
-      setSelectedLetterMatch(null);
-      setWrongMatchPair(null);
-    }
-  }, [currentStep, step]);
-
-  // Match controls
-  const handleMatchShuffle = () => {
-    clearEvalTimeout();
-    setMatchColumns(prev => ({
-      left: shuffle([...prev.left]),
-      right: shuffle([...prev.right])
-    }));
-    setMatchedPairs(new Set());
-    setSelectedSpeakerMatch(null);
-    setSelectedLetterMatch(null);
-    setWrongMatchPair(null);
-  };
-
-  const handleMatchReset = () => {
-    clearEvalTimeout();
-    setMatchedPairs(new Set());
-    setSelectedSpeakerMatch(null);
-    setSelectedLetterMatch(null);
-    setWrongMatchPair(null);
-  };
 
   // Update shuffled letters when step changes
   useEffect(() => {
@@ -243,67 +195,11 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
     setTimeout(() => setClickedLetter(null), 1000);
   };
 
-  const handleSpeakerMatchClick = (letter: string) => {
-    if (matchedPairs.has(letter) || wrongMatchPair) return;
-    playSound("click", 0.2);
-    playNameTTS(letter);
-    setSelectedSpeakerMatch(letter);
-
-    if (selectedLetterMatch) {
-      checkMatch(letter, selectedLetterMatch);
-    }
-  };
-
-  const handleLetterMatchClick = (letter: string) => {
-    if (matchedPairs.has(letter) || wrongMatchPair) return;
-    playSound("click", 0.2);
-    setSelectedLetterMatch(letter);
-
-    if (selectedSpeakerMatch) {
-      checkMatch(selectedSpeakerMatch, letter);
-    }
-  };
-
-  const checkMatch = (speaker: string, letter: string) => {
-    if (speaker === letter) {
-      // Correct Match
-      setTimeout(() => {
-        playSound("correct", 0.4);
-      }, 200);
-
-      setMatchedPairs(prev => new Set(prev).add(speaker));
-      setSelectedSpeakerMatch(null);
-      setSelectedLetterMatch(null);
-
-      // Next step if all matched
-      if (matchedPairs.size + 1 === matchColumns.left.length) {
-        clearEvalTimeout();
-        evaluationTimeoutRef.current = setTimeout(() => {
-          handleStepNext();
-        }, 1500);
-      }
-    } else {
-      // Wrong Match
-      playSound("wrong", 0.35);
-      setWrongMatchPair([speaker, letter]);
-      clearEvalTimeout();
-      evaluationTimeoutRef.current = setTimeout(() => {
-        setWrongMatchPair(null);
-        setSelectedSpeakerMatch(null);
-        setSelectedLetterMatch(null);
-      }, 1000);
-    }
-  };
-
   const handleStepNext = () => {
     clearEvalTimeout();
     if (currentStep < STEPS.length - 1) {
       setCurrentStep((prev) => Math.min(prev + 1, STEPS.length - 1));
       setCurrentPairIndex(0);
-      setMatchedPairs(new Set());
-      setSelectedSpeakerMatch(null);
-      setSelectedLetterMatch(null);
-      setWrongMatchPair(null);
       setEvaluatingLetter(null);
     } else {
       playSound("complete", 0.5);
@@ -437,124 +333,6 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
                   >
                     Next Challenge! <Sparkles className="w-5 h-5 ml-2" />
                   </Button>
-                )}
-              </div>
-            </motion.div>
-          )}
-
-          {!showConfetti && step.type === "match" && (
-            <motion.div
-              key={`match-${currentStep}`}
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 1.05 }}
-              className="w-full"
-            >
-              <div className="w-full h-3 bg-gray-200/80 dark:bg-gray-800 rounded-full overflow-hidden mb-8 shadow-inner border border-gray-100 dark:border-gray-700/30">
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: `${matchProgress}%` }}
-                  transition={{ duration: 0.3, ease: "easeOut" }}
-                  className="h-full rounded-full"
-                  style={{
-                    background: `linear-gradient(90deg, ${accent.primary}, ${accent.dark})`,
-                  }}
-                />
-              </div>
-
-              <div className="text-center mb-8">
-                <h2 className="text-2xl font-black text-gray-800 dark:text-gray-100 mb-2">
-                  Listen and Match!
-                </h2>
-                <p className="text-gray-500 dark:text-gray-400 text-sm mb-6">
-                  Tap a speaker to hear a letter name, then choose the matching letter.
-                </p>
-
-                {/* Match Controls */}
-                <div className="flex justify-center gap-3 w-full">
-                  <Button variant="outline" size="sm" onClick={handleMatchShuffle} className="rounded-full flex items-center gap-2 border-amber-300">
-                    <Shuffle className="w-4 h-4 text-amber-600" /> Shuffle
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={handleMatchReset} className="rounded-full flex items-center gap-2 border-amber-300">
-                    <RotateCcw className="w-4 h-4 text-amber-600" /> Reset
-                  </Button>
-                  <Button size="sm" onClick={handleStepNext} disabled={matchedPairs.size < matchColumns.left.length} className="rounded-full flex items-center gap-2 text-white shadow-md active:scale-95 transition-all" style={{ background: matchedPairs.size >= matchColumns.left.length ? `linear-gradient(135deg, ${accent.primary}, ${accent.dark})` : "gray" }}>
-                    Next <ArrowRight className="w-4 h-4" />
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={handleStepNext} className="rounded-full flex items-center gap-2 border-amber-300">
-                    Skip <SkipForward className="w-4 h-4 text-amber-600" />
-                  </Button>
-                </div>
-              </div>
-
-              <div className="flex justify-center gap-4 max-w-full mx-auto mb-10 px-4 overflow-x-hidden">
-                {/* Left Column: TTS Speakers */}
-                <div className="flex flex-col gap-4 flex-1 min-w-0">
-                  {matchColumns.left.map((letter) => {
-                    const isMatched = matchedPairs.has(letter);
-                    const isSelected = selectedSpeakerMatch === letter;
-                    const isWrong = !!(wrongMatchPair && wrongMatchPair[0] === letter);
-
-                    return (
-                      <MatchButton
-                        key={`speaker-${letter}`}
-                        gradientStart={accent.primary}
-                        gradientEnd={accent.dark}
-                        isMatched={isMatched}
-                        isSelected={isSelected}
-                        isWrong={isWrong}
-                        onClick={() => handleSpeakerMatchClick(letter)}
-                        disabled={!!wrongMatchPair}
-                      >
-                        <Volume2 className={`w-8 h-8 ${isMatched ? "opacity-50" : ""}`} />
-                        {isSelected && <span className="absolute inset-0 bg-white/20 rounded-[1.5rem]" />}
-                      </MatchButton>
-                    );
-                  })}
-                </div>
-
-                {/* Right Column: Letters */}
-                <div className="flex flex-col gap-4 flex-1 min-w-0">
-                  {matchColumns.right.map((letter) => {
-                    const isMatched = matchedPairs.has(letter);
-                    const isSelected = selectedLetterMatch === letter;
-                    const isWrong = !!(wrongMatchPair && wrongMatchPair[1] === letter);
-
-                    return (
-                      <MatchButton
-                        key={`letter-${letter}`}
-                        isMatched={isMatched}
-                        isSelected={isSelected}
-                        isWrong={isWrong}
-                        onClick={() => handleLetterMatchClick(letter)}
-                        disabled={!!wrongMatchPair}
-                        className="font-black text-2xl tracking-widest"
-                      >
-                        {letter}{letter.toLowerCase()}
-                      </MatchButton>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div className="text-center min-h-[40px]">
-                {wrongMatchPair && (
-                  <motion.p
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="text-red-500 font-bold text-lg"
-                  >
-                    Not quite, try again!
-                  </motion.p>
-                )}
-                {matchedPairs.size > 0 && matchedPairs.size === matchColumns.left.length && (
-                  <motion.p
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="text-[#58CC02] font-bold text-lg"
-                  >
-                    ✨ All matched!
-                  </motion.p>
                 )}
               </div>
             </motion.div>
