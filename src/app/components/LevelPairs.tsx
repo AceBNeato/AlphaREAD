@@ -249,7 +249,6 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
                         disabled={!!wrongMatchPair}
                       >
                         <Volume2 className={`w-8 h-8 ${isMatched ? "opacity-50" : ""}`} />
-                        {isSelected && <span className="absolute inset-0 bg-white/20 rounded-[1.5rem]" />}
                       </MatchButton>
                     );
                   })}
