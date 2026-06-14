@@ -196,13 +196,9 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete }: L
       {/* Header */}
       <div className="sticky top-0 z-10 bg-white/80 dark:bg-[#0d141c]/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 px-4 py-3">
         <div className="max-w-4xl mx-auto flex items-center justify-between gap-3 w-full">
-          {!isSubPhase ? (
-            <Button variant="ghost" size="sm" onClick={handleGoBack} className="rounded-full">
-              <Home className="w-5 h-5" />
-            </Button>
-          ) : (
-            <div className="w-9" />
-          )}
+          <Button variant="ghost" size="sm" onClick={handleGoBack} className="rounded-full flex-shrink-0">
+            <Home className="w-5 h-5" />
+          </Button>
           <h2 className="text-lg font-bold tracking-tight text-center flex-1" style={{ color: accent.primary }}>
             Sentences Quiz (Set {currentSetIndex + 1}/{totalSets})
           </h2>
