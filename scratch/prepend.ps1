@@ -1,0 +1,2 @@
+$content = Get-Content -Raw src\app\data\blends.ts
+$content = "export interface BlendWord { word: string; highlights: number[]; }`nexport interface BlendPattern { name: string; pattern: string; words: BlendWord[]; }`nexport interface BlendCategory { name: string; patterns: BlendPattern[]; }`n`nexport const BLENDS_DATA: BlendCategory[] = " + $content + ";`n"; Set-Content -Path src\app\data\blends.ts -Value $content

@@ -4,7 +4,7 @@ export interface Letter {
   image: string;
 }
 
-export type LevelType = "pairs" | "sounds" | "syllable-builder" | "voice-evaluation" | "combined-cvc" | "letter-names" | "long-vowels";
+export type LevelType = "pairs" | "sounds" | "syllable-builder" | "voice-evaluation" | "combined-cvc" | "letter-names" | "long-vowels" | "blends";
 export type SyllablePattern = "CV" | "VC" | "CVC";
 
 export interface Level {
@@ -339,6 +339,15 @@ export const levels: Level[] = [
     title: "Long Vowels",
     subtitle: "Say Your Name Vowels",
     type: "long-vowels",
+    letters: allLetters,
+    locked: true,
+    completed: false,
+  },
+  {
+    id: 6,
+    title: "Consonant Blends",
+    subtitle: "Blends and Digraphs",
+    type: "blends",
     letters: allLetters,
     locked: true,
     completed: false,
