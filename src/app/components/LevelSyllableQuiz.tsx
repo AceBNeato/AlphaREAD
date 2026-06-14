@@ -206,7 +206,7 @@ function MatchPhase({
                 onClick={() => handleLeftClick(syl)}
               >
                 <Volume2 className={`w-8 h-8 ${isDone ? "opacity-50" : ""}`} />
-                {isSelected && <span className="absolute inset-0 bg-white/20 rounded-[1.5rem]" />}
+                {isSelected && !isWrong && <span className="absolute inset-0 bg-white/20 rounded-[1.5rem]" />}
               </MatchButton>
             );
           })}

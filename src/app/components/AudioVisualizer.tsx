@@ -15,11 +15,11 @@ export function AudioVisualizer({ isListening, isMobile = false }: AudioVisualiz
   // Mobile View: Pure CSS Keyframe Animations
   if (isMobile) {
     const mobileBars = [
-      { height: '20px', delay: '0ms', color: 'bg-pink-500' },
-      { height: '28px', delay: '100ms', color: 'bg-pink-400' },
-      { height: '36px', delay: '200ms', color: 'bg-pink-500' },
-      { height: '28px', delay: '300ms', color: 'bg-pink-400' },
-      { height: '20px', delay: '400ms', color: 'bg-pink-500' },
+      { height: '16px', delay: '0ms', color: 'bg-pink-500' },
+      { height: '22px', delay: '100ms', color: 'bg-pink-400' },
+      { height: '28px', delay: '200ms', color: 'bg-pink-500' },
+      { height: '22px', delay: '300ms', color: 'bg-pink-400' },
+      { height: '16px', delay: '400ms', color: 'bg-pink-500' },
     ];
 
     return (

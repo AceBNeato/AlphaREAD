@@ -115,7 +115,7 @@ export function LevelBlends({ levelId, accent }: LevelBlendsProps) {
 
   const evaluatingTargetForMic = useMemo(() => {
     if (currentPhase === "patterns" && evaluatingPatternId) {
-      return allPatternsRaw.find(p => p.pattern === evaluatingPatternId)?.vowel || null;
+      return allPatternsRaw.find(p => p.pattern === evaluatingPatternId)?.category || null;
     }
     if (currentPhase === "words" && evaluatingWordId) {
       return evaluatingWordId;
