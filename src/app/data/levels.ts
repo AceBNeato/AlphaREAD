@@ -570,9 +570,7 @@ export const LONG_VOWELS_DATA: LongVowelVowelData[] = [
         name: "Magic E",
         pattern: "e_e",
         words: [
-          { word: "these", highlights: [2, 4] },
           { word: "pete", highlights: [1, 3] },
-          { word: "theme", highlights: [2, 4] },
           { word: "here", highlights: [1, 3] },
           { word: "eve", highlights: [0, 2] }
         ]
