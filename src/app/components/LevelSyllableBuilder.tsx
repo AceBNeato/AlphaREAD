@@ -35,16 +35,20 @@ interface LevelSyllableBuilderProps {
   embedded?: boolean;
 }
 
-const patternLabels: Record<SyllablePattern, string> = {
+const patternLabels: Record<string, string> = {
   CV: "Consonant + Vowel",
   VC: "Vowel + Consonant",
   CVC: "Consonant + Vowel + Consonant",
+  LONG_VOWEL: "Long Vowel Word",
+  LETTER: "Letter",
 };
 
-const patternColors: Record<SyllablePattern, string> = {
+const patternColors: Record<string, string> = {
   CV: "#FF9600",
   VC: "#CE82FF",
   CVC: "#FF4B8A",
+  LONG_VOWEL: "#FF4B8A",
+  LETTER: "#1CB0F6",
 };
 
 export function LevelSyllableBuilder({

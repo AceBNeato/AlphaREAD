@@ -3,16 +3,18 @@ import { useNavigate } from "react-router";
 import { Button } from "./ui/button";
 import { allLetters as ALL_LETTERS } from "../data/levels";
 import { motion, AnimatePresence } from "motion/react";
-import { ChevronRight, Home, ArrowRight, ArrowLeft, Volume2 } from "lucide-react";
+import { ChevronRight, Home, ArrowRight, Volume2 } from "lucide-react";
 import { playSound } from "../utils/soundEffects";
 import { MatchButton } from "./MatchButton";
+import { LevelReviewGrid } from "./LevelReviewGrid";
+import { LevelListenType } from "./LevelListenType";
 
 interface LevelPairsProps {
   levelId: number;
   accent: { primary: string; dark: string; lightBg: string };
 }
 
-export function LevelPairs({ levelId, accent }: LevelPairsProps) {
+export function LevelLettersMaster({ levelId, accent }: LevelPairsProps) {
   const navigate = useNavigate();
 
   // ALPHABET strictly ordered A-Z
@@ -21,30 +23,41 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
   , []);
 
   const STEPS = useMemo(() => [
-    { type: "review" as const, start: 0, end: 6 },   // A-F review
-    { type: "match" as const, start: 0, end: 6 },    // A-F match
-    { type: "review" as const, start: 6, end: 12 },  // G-L review
-    { type: "match" as const, start: 6, end: 12 },   // G-L match
-    { type: "review" as const, start: 12, end: 19 }, // M-S review
-    { type: "match" as const, start: 12, end: 19 },  // M-S match
-    { type: "review" as const, start: 19, end: 26 }, // T-Z review
-    { type: "match" as const, start: 19, end: 26 },  // T-Z match
+    { type: "review" as const, start: 0, end: 6 },
+    { type: "match" as const, start: 0, end: 6 },
+    { type: "type" as const, start: 0, end: 6 },
+
+    { type: "review" as const, start: 6, end: 12 },
+    { type: "match" as const, start: 6, end: 12 },
+    { type: "type" as const, start: 6, end: 12 },
+
+    { type: "review" as const, start: 12, end: 18 },
+    { type: "match" as const, start: 12, end: 18 },
+    { type: "type" as const, start: 12, end: 18 },
+
+    { type: "review" as const, start: 18, end: 26 },
+    { type: "match" as const, start: 18, end: 26 },
+    { type: "type" as const, start: 18, end: 26 },
     
     // Final Comprehensive Test
-    { type: "match" as const, start: 0, end: 8 },    // A-H match
-    { type: "match" as const, start: 8, end: 17 },   // I-Q match
-    { type: "match" as const, start: 17, end: 26 },  // R-Z match
+    { type: "review" as const, start: 0, end: 26 },
+    { type: "match" as const, start: 0, end: 26 },
+    { type: "type" as const, start: 0, end: 26 },
   ], []);
 
   const [currentStep, setCurrentStep] = useState(0);
   const step = STEPS[currentStep];
 
-  const activeLetters = useMemo(() =>
-    ALPHABET.slice(step.start, step.end)
-  , [ALPHABET, step]);
-
-  const [currentPairIndex, setCurrentPairIndex] = useState(0);
-  const [clickedLetter, setClickedLetter] = useState<string | null>(null);
+  const activeLetters = useMemo(() => {
+    // Review and Match should present the items. Wait, the user said "shuffle review phase".
+    // We will shuffle active letters specifically for the phases that need it.
+    const letters = ALPHABET.slice(step.start, step.end);
+    if (step.type === "review") {
+      // Return randomly ordered array to shuffle the review grid
+      return [...letters].sort(() => Math.random() - 0.5);
+    }
+    return letters;
+  }, [ALPHABET, step]);
 
   // Match Phase States
   const [matchColumns, setMatchColumns] = useState<{ left: string[]; right: string[] }>({ left: [], right: [] });
@@ -55,7 +68,7 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
 
   useEffect(() => {
     if (step.type === "match") {
-      const targets = [...activeLetters].sort(() => Math.random() - 0.5);
+      const targets = [...ALPHABET.slice(step.start, step.end)].sort(() => Math.random() - 0.5);
       setMatchColumns({
         left: [...targets].sort(() => Math.random() - 0.5),
         right: [...targets].sort(() => Math.random() - 0.5)
@@ -65,34 +78,7 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
       setSelectedLetterMatch(null);
       setWrongMatchPair(null);
     }
-  }, [currentStep, activeLetters, step.type]);
-
-  // Generate pairs for the current set review
-  const currentSetPairs = useMemo(() => {
-    if (step.type !== "review") return [];
-    const p: [string, string][] = [];
-    for (let i = 0; i < activeLetters.length; i += 2) {
-      if (i + 1 < activeLetters.length) {
-        p.push([activeLetters[i], activeLetters[i + 1]]);
-      } else {
-        p.push([activeLetters[i], ""]);
-      }
-    }
-    return p;
-  }, [activeLetters, step]);
-
-  const currentPair = currentSetPairs[currentPairIndex] || [];
-
-  const handleLetterClick = (letter: string) => {
-    if (!letter) return;
-    playSound("click", 0.25);
-    setClickedLetter(letter);
-    const audio = new Audio(`${(import.meta as any).env.BASE_URL}audio/alphasounds-${letter.toLowerCase()}.mp3`);
-    audio.play().catch(() => { });
-    setTimeout(() => setClickedLetter(null), 1000);
-
-    // grid logic removed
-  };
+  }, [currentStep, ALPHABET, step.type, step.start, step.end]);
 
   const handleGoBack = () => {
     const confirmExit = window.confirm("Are you sure you want to leave?");
@@ -101,10 +87,8 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
   };
 
   const handleStepNext = () => {
-    playSound("click", 0.2);
     if (currentStep < STEPS.length - 1) {
       setCurrentStep(prev => Math.min(prev + 1, STEPS.length - 1));
-      setCurrentPairIndex(0);
     } else {
       playSound("complete", 0.5);
       const completedLevels = JSON.parse(localStorage.getItem("completedLevels") || "[]");
@@ -135,7 +119,6 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
 
   const handleSpeakerMatchClick = (letter: string) => {
     if (matchedPairs.has(letter) || wrongMatchPair) return;
-    playSound("click", 0.2);
     const audio = new Audio(`${(import.meta as any).env.BASE_URL}audio/alphasounds-${letter.toLowerCase()}.mp3`);
     audio.play().catch(() => {});
     setSelectedSpeakerMatch(letter);
@@ -144,7 +127,6 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
 
   const handleLetterMatchClick = (letter: string) => {
     if (matchedPairs.has(letter) || wrongMatchPair) return;
-    playSound("click", 0.2);
     setSelectedLetterMatch(letter);
     if (selectedSpeakerMatch) checkMatch(selectedSpeakerMatch, letter);
   };
@@ -166,62 +148,34 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
         <AnimatePresence mode="wait">
           {step.type === "review" ? (
             <motion.div key={`review-${currentStep}`} initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -50 }}>
-              <div className="text-center mb-8">
-                <h2 className="text-2xl font-bold" style={{ color: accent.primary }}>Review Phase</h2>
-                <p className="text-gray-500">Tap the letter to hear its sound</p>
-              </div>
-
-              {/* Big letter cards — responsive */}
-              <div className="flex justify-center gap-6 sm:gap-12 lg:gap-20 mb-12">
-                {currentPair.map((l: string) => l ? (
-                  <motion.div key={l} initial={{ scale: 0 }} animate={{ scale: 1 }} className="flex-1 max-w-[180px] sm:max-w-[240px] lg:max-w-[280px]">
-                    <div
-                      onClick={() => handleLetterClick(l)}
-                      className="aspect-square rounded-full shadow-xl flex items-center justify-center cursor-pointer transition-all hover:scale-105 active:scale-95 border-b-[8px] hover:shadow-2xl select-none"
-                      style={{ background: `linear-gradient(135deg, ${accent.primary}, ${accent.dark})`, borderColor: accent.dark }}
-                    >
-                      <div className="flex items-baseline justify-center pb-2">
-                        <span className="text-white text-7xl sm:text-9xl lg:text-[10rem] font-black tracking-tight">{l}</span>
-                        <span className="text-white/90 text-5xl sm:text-7xl lg:text-8xl font-bold tracking-tight">{l.toLowerCase()}</span>
-                      </div>
-                    </div>
-                    <p className="text-center mt-3 text-gray-400 text-sm font-medium">Tap to hear</p>
-                  </motion.div>
-                ) : null)}
-              </div>
-
-              <div className="flex justify-between items-center max-w-sm mx-auto gap-3">
-                <Button
-                  variant="outline"
-                  size="lg"
-                  onClick={() => setCurrentPairIndex((prev: number) => Math.max(0, prev - 1))}
-                  disabled={currentPairIndex === 0}
-                  className="flex-1 py-6 text-base"
-                >
-                  <ArrowLeft className="mr-2" /> Back
-                </Button>
-                {currentPairIndex < currentSetPairs.length - 1 ? (
-                  <Button
-                    size="lg"
-                    onClick={() => setCurrentPairIndex((prev: number) => Math.min(prev + 1, currentSetPairs.length - 1))}
-                    className="flex-1 py-6 text-base text-white"
-                    style={{ background: `linear-gradient(135deg, ${accent.primary}, ${accent.dark})` }}
-                  >
-                    Next <ArrowRight className="ml-2" />
-                  </Button>
-                ) : (
-                  <Button
-                    size="lg"
-                    onClick={handleStepNext}
-                    className="flex-1 py-6 text-base text-white shadow-lg border-b-4 border-[#3c8c01]"
-                    style={{ background: 'linear-gradient(135deg, #58cc02 0%, #46a302 100%)' }}
-                  >
-                    Eval Grid <ChevronRight className="w-5 h-5" />
-                  </Button>
-                )}
-              </div>
+              <LevelReviewGrid
+                items={activeLetters}
+                accent={accent}
+                title="Review Grid"
+                subtitle="Tap each letter to hear its sound!"
+                onComplete={handleStepNext}
+                playItemSound={(item) => {
+                  const audio = new Audio(`${(import.meta as any).env.BASE_URL}audio/alphasounds-${item.toLowerCase()}.mp3`);
+                  audio.play().catch(() => {});
+                }}
+              />
             </motion.div>
-
+          ) : step.type === "type" ? (
+            <motion.div key={`type-${currentStep}`} initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -50 }}>
+               <LevelListenType
+                  levelId={levelId}
+                  patterns={["LETTER" as any]}
+                  accent={accent}
+                  onComplete={handleStepNext}
+                  customTargets={ALPHABET.slice(step.start, step.end).map(l => ({
+                    syllable: l,
+                    letters: [l],
+                    pattern: "LETTER" as any
+                  }))}
+                  isSubPhase={true}
+                  embedded={true}
+               />
+            </motion.div>
           ) : step.type === "match" ? (
             <motion.div key={`match-${currentStep}`} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }}>
               <div className="text-center mb-6">
