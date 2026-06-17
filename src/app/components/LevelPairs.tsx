@@ -18,7 +18,7 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
   // ALPHABET strictly ordered A-Z
   const ALPHABET = useMemo(() =>
     [...ALL_LETTERS].sort((a, b) => a.letter.localeCompare(b.letter)).map(l => l.letter)
-    , []);
+  , []);
 
   const STEPS = useMemo(() => [
     { type: "review" as const, start: 0, end: 6 },   // A-F review
@@ -29,7 +29,7 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
     { type: "match" as const, start: 12, end: 19 },  // M-S match
     { type: "review" as const, start: 19, end: 26 }, // T-Z review
     { type: "match" as const, start: 19, end: 26 },  // T-Z match
-
+    
     // Final Comprehensive Test
     { type: "match" as const, start: 0, end: 8 },    // A-H match
     { type: "match" as const, start: 8, end: 17 },   // I-Q match
@@ -41,7 +41,7 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
 
   const activeLetters = useMemo(() =>
     ALPHABET.slice(step.start, step.end)
-    , [ALPHABET, step]);
+  , [ALPHABET, step]);
 
   const [currentPairIndex, setCurrentPairIndex] = useState(0);
   const [clickedLetter, setClickedLetter] = useState<string | null>(null);
@@ -137,7 +137,7 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
     if (matchedPairs.has(letter) || wrongMatchPair) return;
     playSound("click", 0.2);
     const audio = new Audio(`${(import.meta as any).env.BASE_URL}audio/alphasounds-${letter.toLowerCase()}.mp3`);
-    audio.play().catch(() => { });
+    audio.play().catch(() => {});
     setSelectedSpeakerMatch(letter);
     if (selectedLetterMatch) checkMatch(letter, selectedLetterMatch);
   };
