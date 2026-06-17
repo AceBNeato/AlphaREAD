@@ -236,9 +236,9 @@ function MatchPhase({
       </div>
 
       {/* Two-column match */}
-      <div className="w-full grid grid-cols-2 gap-3 mb-6 max-w-full">
+      <div className="flex justify-center gap-4 sm:gap-8 w-full max-w-2xl mx-auto mb-10 px-2 sm:px-4">
         {/* Left: speaker buttons */}
-        <div className="flex flex-col gap-3 min-w-0">
+        <div className="flex flex-col gap-3 sm:gap-4 flex-1 min-w-0">
           {leftCol.map((syl) => {
             const isDone = matchedPairs.has(syl);
             const isSelected = selectedLeft === syl;
@@ -260,7 +260,7 @@ function MatchPhase({
         </div>
 
         {/* Right: word buttons */}
-        <div className="flex flex-col gap-3 flex-1 min-w-0">
+        <div className="flex flex-col gap-3 sm:gap-4 flex-1 min-w-0">
           {rightCol.map((syl) => {
             const isDone = matchedPairs.has(syl);
             const isSelected = selectedRight === syl;
@@ -272,7 +272,7 @@ function MatchPhase({
                 isSelected={isSelected}
                 isWrong={isWrong}
                 onClick={() => handleRightClick(syl)}
-                className="font-black text-2xl tracking-widest"
+                className="font-black text-2xl sm:text-3xl tracking-widest"
               >
                 {syl.toLowerCase()}
               </MatchButton>
@@ -493,7 +493,7 @@ export function LevelSyllableQuiz({ pattern, levelId, accent, onComplete }: Leve
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-yellow-50 to-pink-50 dark:bg-none dark:bg-[#0d141c] pb-12 flex flex-col overflow-x-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-yellow-50 to-pink-50 dark:bg-none dark:bg-[#0d141c] flex flex-col overflow-x-hidden">
       <Confetti active={showFinalConfetti} />
 
       {/* Header */}
