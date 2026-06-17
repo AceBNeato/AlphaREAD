@@ -531,187 +531,180 @@ export function LevelSyllableBuilder({
                                 <span className="text-white text-3xl sm:text-4xl font-black drop-shadow-sm">
                                   {selectedLetters[slot]?.toLowerCase()}
                                 </span>
-                                <span className="text-white/80 text-[9px] uppercase font-bold tracking-wider mt-0.5">
-                                  {isVowel ? "vowel" : "cons."}
-                                </span>
                               </motion.div>
-                            ) : (
-                              <span className="text-gray-300 dark:text-gray-600 text-xl font-bold opacity-50">
-                                {patternPlaceholder(currentTarget.pattern)[slot]}
-                              </span>
-                            )}
+                            ) : null}
                           </div>
                         );
                       })}
                     </div>
                   )}
 
-                  {feedback === "correct" && (
-                    <motion.p
-                      initial={{ opacity: 0, y: 5 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="mt-3 text-[#58CC02] text-lg"
-                    >
-                      ✨ "{currentTarget.syllable.toLowerCase()}" — Great match!
-                    </motion.p>
-                  )}
-                  {feedback === "wrong" && (
-                    <motion.p
-                      initial={{ opacity: 0, y: 5 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="mt-3 text-[#FF4B4B] text-lg"
-                    >
-                      Try again!
-                    </motion.p>
-                  )}
-                </motion.div>
+                            {feedback === "correct" && (
+                              <motion.p
+                                initial={{ opacity: 0, y: 5 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="mt-3 text-[#58CC02] text-lg"
+                              >
+                                ✨ "{currentTarget.syllable.toLowerCase()}" — Great match!
+                              </motion.p>
+                            )}
+                            {feedback === "wrong" && (
+                              <motion.p
+                                initial={{ opacity: 0, y: 5 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="mt-3 text-[#FF4B4B] text-lg"
+                              >
+                                Try again!
+                              </motion.p>
+                            )}
+                          </motion.div>
               </AnimatePresence>
 
               {/* Reset button */}
-              {selectedLetters.length > 0 &&
-                !feedback &&
-                !completedTargets.has(currentTarget.syllable) && (
-                  <div className="text-center mb-4">
+                  {selectedLetters.length > 0 &&
+                    !feedback &&
+                    !completedTargets.has(currentTarget.syllable) && (
+                      <div className="text-center mb-4">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={resetSelection}
+                          className="text-gray-500"
+                        >
+                          <RotateCcw className="w-4 h-4 mr-1" />
+                          Clear
+                        </Button>
+                      </div>
+                    )}
+
+                  {/* Letter Pool */}
+                  {!completedTargets.has(currentTarget.syllable) && (
+                    <div className="grid grid-cols-4 sm:grid-cols-6 gap-3 mb-4">
+                      {letterPool.map((item, i) => {
+                        const timesInTarget = currentTarget.syllable
+                          .split("")
+                          .filter((ch) => ch === item.letter).length;
+                        const timesSelected = selectedLetters.filter(
+                          (l) => l === item.letter
+                        ).length;
+
+                        // A letter is "selected" visually only if it's used up its count in the target
+                        // Or if it's a distractor that's been clicked at least once
+                        const isVisuallySelected = timesInTarget > 0
+                          ? timesSelected >= timesInTarget
+                          : timesSelected > 0;
+
+                        const isDisabled =
+                          timesInTarget > 0 &&
+                          timesSelected >= timesInTarget &&
+                          selectedLetters.length < slotCount &&
+                          !feedback;
+
+                        return (
+                          <motion.button
+                            key={item.id}
+                            initial={{ opacity: 0, scale: 0 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{
+                              delay: i * 0.02,
+                              type: "spring",
+                              stiffness: 300,
+                            }}
+                            onClick={() =>
+                              !isDisabled && handleLetterClick(item.letter)
+                            }
+                            disabled={!!feedback || isDisabled}
+                            className={`aspect-square rounded-[1rem] flex flex-col items-center justify-center transition-all shadow-md active:scale-95 cursor-pointer relative border-b-[4px] select-none ${isVisuallySelected
+                              ? "opacity-30 border-b-2 translate-y-[2px] pointer-events-none"
+                              : "active:border-b-0 active:translate-y-[4px]"
+                              }`}
+                            style={{
+                              background:
+                                playingLetter === item.letter
+                                  ? "linear-gradient(135deg, #FFC800 0%, #FF9600 100%)"
+                                  : item.isVowel
+                                    ? "linear-gradient(135deg, #FF6B8A 0%, #FF4B8A 100%)"
+                                    : "linear-gradient(135deg, #1CB0F6 0%, #0a8ed4 100%)",
+                              borderColor: isVisuallySelected
+                                ? "transparent"
+                                : playingLetter === item.letter
+                                  ? "#C99C00"
+                                  : item.isVowel
+                                    ? "#C82A52"
+                                    : "#086CA5",
+                            } as React.CSSProperties}
+                          >
+                            <span className="text-white text-3xl sm:text-4xl font-black drop-shadow-sm">
+                              {item.letter}{item.letter.toLowerCase()}
+                            </span>
+                            <span className="text-white/80 text-[9px] uppercase font-bold tracking-wider mt-0.5">
+                              {item.isVowel ? "vowel" : "cons."}
+                            </span>
+                          </motion.button>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* Navigation Arrows */}
+                  <div className="flex justify-between items-center mt-4">
                     <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={resetSelection}
-                      className="text-gray-500"
+                      onClick={goPrev}
+                      disabled={currentIndex === 0}
+                      variant="outline"
+                      size="lg"
+                      className="rounded-xl px-6 py-5 border-2 disabled:opacity-30"
+                      style={{ borderColor: accent.primary, color: accent.primary }}
                     >
-                      <RotateCcw className="w-4 h-4 mr-1" />
-                      Clear
+                      <ArrowLeft className="w-5 h-5 mr-1" />
+                      Back
+                    </Button>
+                    <Button
+                      onClick={goNext}
+                      disabled={currentIndex === targets.length - 1}
+                      variant="outline"
+                      size="lg"
+                      className="rounded-xl px-6 py-5 border-2 disabled:opacity-30"
+                      style={{ borderColor: accent.primary, color: accent.primary }}
+                    >
+                      Next
+                      <ArrowRight className="w-5 h-5 ml-1" />
                     </Button>
                   </div>
-                )}
-
-              {/* Letter Pool */}
-              {!completedTargets.has(currentTarget.syllable) && (
-                <div className="grid grid-cols-4 sm:grid-cols-6 gap-3 mb-4">
-                  {letterPool.map((item, i) => {
-                    const timesInTarget = currentTarget.syllable
-                      .split("")
-                      .filter((ch) => ch === item.letter).length;
-                    const timesSelected = selectedLetters.filter(
-                      (l) => l === item.letter
-                    ).length;
-
-                    // A letter is "selected" visually only if it's used up its count in the target
-                    // Or if it's a distractor that's been clicked at least once
-                    const isVisuallySelected = timesInTarget > 0
-                      ? timesSelected >= timesInTarget
-                      : timesSelected > 0;
-
-                    const isDisabled =
-                      timesInTarget > 0 &&
-                      timesSelected >= timesInTarget &&
-                      selectedLetters.length < slotCount &&
-                      !feedback;
-
-                    return (
-                      <motion.button
-                        key={item.id}
-                        initial={{ opacity: 0, scale: 0 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{
-                          delay: i * 0.02,
-                          type: "spring",
-                          stiffness: 300,
-                        }}
-                        onClick={() =>
-                          !isDisabled && handleLetterClick(item.letter)
-                        }
-                        disabled={!!feedback || isDisabled}
-                        className={`aspect-square rounded-[1rem] flex flex-col items-center justify-center transition-all shadow-md active:scale-95 cursor-pointer relative border-b-[4px] select-none ${isVisuallySelected
-                          ? "opacity-30 border-b-2 translate-y-[2px] pointer-events-none"
-                          : "active:border-b-0 active:translate-y-[4px]"
-                          }`}
-                        style={{
-                          background:
-                            playingLetter === item.letter
-                              ? "linear-gradient(135deg, #FFC800 0%, #FF9600 100%)"
-                              : item.isVowel
-                                ? "linear-gradient(135deg, #FF6B8A 0%, #FF4B8A 100%)"
-                                : "linear-gradient(135deg, #1CB0F6 0%, #0a8ed4 100%)",
-                          borderColor: isVisuallySelected
-                            ? "transparent"
-                            : playingLetter === item.letter
-                              ? "#C99C00"
-                              : item.isVowel
-                                ? "#C82A52"
-                                : "#086CA5",
-                        } as React.CSSProperties}
-                      >
-                        <span className="text-white text-3xl sm:text-4xl font-black drop-shadow-sm">
-                          {item.letter}{item.letter.toLowerCase()}
-                        </span>
-                        <span className="text-white/80 text-[9px] uppercase font-bold tracking-wider mt-0.5">
-                          {item.isVowel ? "vowel" : "cons."}
-                        </span>
-                      </motion.button>
-                    );
-                  })}
-                </div>
-              )}
-
-              {/* Navigation Arrows */}
-              <div className="flex justify-between items-center mt-4">
-                <Button
-                  onClick={goPrev}
-                  disabled={currentIndex === 0}
-                  variant="outline"
-                  size="lg"
-                  className="rounded-xl px-6 py-5 border-2 disabled:opacity-30"
-                  style={{ borderColor: accent.primary, color: accent.primary }}
-                >
-                  <ArrowLeft className="w-5 h-5 mr-1" />
-                  Back
-                </Button>
-                <Button
-                  onClick={goNext}
-                  disabled={currentIndex === targets.length - 1}
-                  variant="outline"
-                  size="lg"
-                  className="rounded-xl px-6 py-5 border-2 disabled:opacity-30"
-                  style={{ borderColor: accent.primary, color: accent.primary }}
-                >
-                  Next
-                  <ArrowRight className="w-5 h-5 ml-1" />
-                </Button>
-              </div>
-            </>
+                </>
           )}
-        </>
+              </>
       )}
-    </div>
-  );
+            </div>
+          );
 
-  if (embedded) {
+          if (embedded) {
     if (allDone) return null;
-    return innerContent;
+          return innerContent;
   }
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-yellow-50 to-pink-50 dark:bg-none dark:bg-[#0d141c] overflow-x-hidden">
-      <Confetti active={showConfetti} />
-      {/* Header */}
-      <div className="sticky top-0 z-10 bg-white/80 dark:bg-[#0d141c]/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 px-4 py-3">
-        <div className="max-w-2xl mx-auto flex items-center gap-3 w-full">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleGoBack}
-            className="rounded-full"
-          >
-            <Home className="w-5 h-5" />
-          </Button>
-          <div className="flex-1 text-center pr-8">
-            <h2 className="text-lg font-bold tracking-tight" style={{ color: accent.primary }}>
-              {levelId === 3 ? "CVC Word Builder" : "Syllable Builder"}
-            </h2>
+          return (
+          <div className="min-h-screen bg-gradient-to-br from-orange-50 via-yellow-50 to-pink-50 dark:bg-none dark:bg-[#0d141c] overflow-x-hidden">
+            <Confetti active={showConfetti} />
+            {/* Header */}
+            <div className="sticky top-0 z-10 bg-white/80 dark:bg-[#0d141c]/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 px-4 py-3">
+              <div className="max-w-2xl mx-auto flex items-center gap-3 w-full">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleGoBack}
+                  className="rounded-full"
+                >
+                  <Home className="w-5 h-5" />
+                </Button>
+                <div className="flex-1 text-center pr-8">
+                  <h2 className="text-lg font-bold tracking-tight" style={{ color: accent.primary }}>
+                    {levelId === 3 ? "CVC Word Builder" : "Syllable Builder"}
+                  </h2>
+                </div>
+              </div>
+            </div>
+            {innerContent}
           </div>
-        </div>
-      </div>
-      {innerContent}
-    </div>
-  );
+          );
 }
