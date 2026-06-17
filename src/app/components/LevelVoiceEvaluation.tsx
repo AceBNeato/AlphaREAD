@@ -32,11 +32,10 @@ interface LevelVoiceEvaluationProps {
   accent: { primary: string; dark: string; lightBg: string };
   customWords?: string[];
   isSubPhase?: boolean;
-  embedded?: boolean;
   onComplete?: () => void;
 }
 
-export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase, embedded, onComplete }: LevelVoiceEvaluationProps) {
+export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase, onComplete }: LevelVoiceEvaluationProps) {
   const navigate = useNavigate();
   const [words, setWords] = useState<string[]>(() => customWords ? customWords : shuffle(CVC_WORDS).slice(0, 10));
 
@@ -226,8 +225,38 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
     navigate("/levels", { replace: true });
   };
 
-  const innerContent = (
-    <div className={`max-w-2xl mx-auto w-full px-4 flex flex-col items-center ${embedded ? 'py-2' : 'py-12'}`}>
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:bg-none dark:bg-[#0d141c] overflow-x-hidden">
+      <Confetti active={showConfetti} />
+      {/* Header */}
+      <div className="sticky top-0 z-10 bg-white/80 dark:bg-[#0d141c]/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 px-4 py-3">
+        <div className="max-w-2xl mx-auto flex items-center justify-between gap-3 w-full">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleGoBack}
+            className="rounded-full"
+          >
+            <Home className="w-5 h-5" />
+          </Button>
+
+          <h2 className="text-lg font-bold tracking-tight text-center flex-1" style={{ color: accent.primary }}>
+            Voice Evaluation
+          </h2>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowShyTip(true)}
+            className="rounded-full flex items-center gap-1.5 border-pink-200 dark:border-gray-700 hover:bg-pink-50 dark:hover:bg-pink-900/20 text-pink-500 font-medium text-xs px-3 py-1.5 shadow-sm"
+          >
+            <span>🗣️</span>
+            <span className="hidden sm:inline">Shy Learner?</span>
+          </Button>
+        </div>
+      </div>
+
+      {/* iOS warning */}
       {isIOS && (
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4 mx-4 text-amber-800 text-sm flex items-center gap-3">
           <AlertCircle className="w-5 h-5 flex-shrink-0" />
@@ -503,45 +532,6 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
           </div>
         )}
       </AnimatePresence>
-    </div>
-  );
-
-  if (embedded) {
-    if (showCompletionScreen) return null;
-    return innerContent;
-  }
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:bg-none dark:bg-[#0d141c] overflow-x-hidden">
-      <Confetti active={showConfetti} />
-      {/* Header */}
-      <div className="sticky top-0 z-10 bg-white/80 dark:bg-[#0d141c]/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 px-4 py-3">
-        <div className="max-w-2xl mx-auto flex items-center justify-between gap-3 w-full">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleGoBack}
-            className="rounded-full flex-shrink-0"
-          >
-            <Home className="w-5 h-5" />
-          </Button>
-
-          <h2 className="text-lg font-bold tracking-tight text-center flex-1" style={{ color: accent.primary }}>
-            Voice Evaluation
-          </h2>
-
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowShyTip(true)}
-            className="rounded-full flex items-center gap-1.5 border-pink-200 dark:border-gray-700 hover:bg-pink-50 dark:hover:bg-pink-900/20 text-pink-500 font-medium text-xs px-3 py-1.5 shadow-sm flex-shrink-0"
-          >
-            <span>🗣️</span>
-            <span className="hidden sm:inline">Shy Learner?</span>
-          </Button>
-        </div>
-      </div>
-      {innerContent}
     </div>
   );
 }

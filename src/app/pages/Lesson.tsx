@@ -1,7 +1,7 @@
 import { useParams, useNavigate } from "react-router";
 import { Button } from "../components/ui/button";
 import { levels } from "../data/levels";
-import { LevelLettersMaster } from "../components/LevelLettersMaster";
+import { LevelPairs } from "../components/LevelPairs";
 import { LevelSyllableBuilder } from "../components/LevelSyllableBuilder";
 import { LevelSyllablesMaster } from "../components/LevelSyllablesMaster";
 import { LevelCVCMaster } from "../components/LevelCVCMaster";
@@ -46,7 +46,7 @@ export default function Lesson() {
 
   switch (level.type) {
     case "pairs":
-      return <LevelLettersMaster levelId={level.id} accent={accent} />;
+      return <LevelPairs levelId={level.id} accent={accent} />;
     case "syllable-builder":
       return <LevelSyllablesMaster levelId={level.id} accent={accent} />;
     case "voice-evaluation":
