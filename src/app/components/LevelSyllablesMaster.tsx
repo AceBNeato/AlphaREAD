@@ -119,7 +119,6 @@ export function LevelSyllablesMaster({ levelId, accent }: LevelSyllablesMasterPr
             <div className="flex-1 min-w-0 text-center sm:text-left">
               <div className="flex flex-col sm:flex-row items-center gap-2">
                 <h3 className="text-xl font-black text-[#CE82FF]">Vowel + Consonant (VC)</h3>
-                {isVCDone && <CheckCircle2 className="w-5 h-5 text-[#58CC02] flex-shrink-0" />}
               </div>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
                 Build & pronounce syllables like <span className="font-bold">AB, IM, OT</span>
@@ -145,7 +144,6 @@ export function LevelSyllablesMaster({ levelId, accent }: LevelSyllablesMasterPr
             <div className="flex-1 min-w-0 text-center sm:text-left">
               <div className="flex flex-col sm:flex-row items-center gap-2">
                 <h3 className="text-xl font-black text-[#FF9600]">Consonant + Vowel (CV)</h3>
-                {isCVDone && <CheckCircle2 className="w-5 h-5 text-[#58CC02] flex-shrink-0" />}
               </div>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
                 Build & pronounce syllables like <span className="font-bold">BA, MI, TO</span>

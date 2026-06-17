@@ -8,6 +8,7 @@ import {
   Sparkles,
   CheckCircle2,
   Volume2,
+  FastForward
 } from "lucide-react";
 import { Button } from "./ui/button";
 import {
@@ -299,11 +300,11 @@ export function LevelSyllableBuilder({
   const patternPlaceholder = (pattern: SyllablePattern): string[] => {
     switch (pattern) {
       case "CV":
-        return ["C", "V"];
+        return ["", ""];
       case "VC":
-        return ["V", "C"];
+        return ["", ""];
       case "CVC":
-        return ["C", "V", "C"];
+        return ["", "", ""];
     }
   };
 
@@ -422,6 +423,16 @@ export function LevelSyllableBuilder({
                   transition={{ duration: 0.25 }}
                   className="text-center mb-4"
                 >
+                  {/* Navigation Controls */}
+                  <div className="flex justify-center items-center w-full gap-3 sm:gap-4 max-w-sm mx-auto mb-6">
+                    <Button variant="outline" size="sm" onClick={resetSelection} className="flex-1 rounded-xl font-bold text-gray-600">
+                      <RotateCcw className="w-4 h-4 mr-1" /> Reset
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => onComplete?.()} className="flex-1 rounded-xl font-bold text-amber-600 border-amber-200 bg-amber-50 hover:bg-amber-100">
+                      <FastForward className="w-4 h-4 mr-1" /> Skip
+                    </Button>
+                  </div>
+
                   {/* Target info */}
                   <div className="mb-2 text-sm text-gray-500 dark:text-gray-400">
                     Syllable {currentIndex + 1} of {targets.length}
@@ -566,23 +577,6 @@ export function LevelSyllableBuilder({
                   )}
                 </motion.div>
               </AnimatePresence>
-
-              {/* Reset button */}
-              {selectedLetters.length > 0 &&
-                !feedback &&
-                !completedTargets.has(currentTarget.syllable) && (
-                  <div className="text-center mb-4">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={resetSelection}
-                      className="text-gray-500"
-                    >
-                      <RotateCcw className="w-4 h-4 mr-1" />
-                      Clear
-                    </Button>
-                  </div>
-                )}
 
               {/* Letter Pool */}
               {!completedTargets.has(currentTarget.syllable) && (
