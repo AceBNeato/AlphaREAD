@@ -84,9 +84,10 @@ export function LevelSyllableBuilder({
         }
       });
     });
-    // Add a few extra distractors
+    // Add a few extra distractors up to 12 total
     const allPool = [...CONSONANTS, ...VOWELS].filter((l) => !added.has(l));
-    const extras = shuffle(allPool).slice(0, 4);
+    const distractorsNeeded = Math.max(0, 12 - letters.length);
+    const extras = shuffle(allPool).slice(0, distractorsNeeded);
     extras.forEach((l) => {
       letters.push({
         id: `x-${l}`,
