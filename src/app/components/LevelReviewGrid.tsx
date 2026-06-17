@@ -11,6 +11,7 @@ interface LevelReviewGridProps {
   subtitle?: string;
   onComplete: () => void;
   playItemSound: (item: string) => void;
+  formatAsBox?: boolean;
 }
 
 export function LevelReviewGrid({
@@ -18,16 +19,14 @@ export function LevelReviewGrid({
   accent,
   title = "Review Phase",
   subtitle = "Tap each item to hear its sound!",
+  formatAsBox = false,
   onComplete,
   playItemSound
 }: LevelReviewGridProps) {
   const [playedItems, setPlayedItems] = useState<Set<string>>(new Set());
 
   const handleItemClick = (item: string) => {
-    // Only play click sound if it's the generic click, but user asked to remove button SFX if clicked!
-    // So we just call the dedicated sound player for the item.
     playItemSound(item);
-    
     setPlayedItems(prev => {
       const next = new Set(prev);
       next.add(item);
@@ -51,6 +50,11 @@ export function LevelReviewGrid({
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 w-full mb-8">
         {items.map((item, index) => {
           const isPlayed = playedItems.has(item);
+          // If formatAsBox is true and item is a single letter, format it as "Aa"
+          const displayItem = formatAsBox && item.length === 1 
+            ? `${item.toUpperCase()}${item.toLowerCase()}` 
+            : item;
+
           return (
             <motion.button
               key={`${item}-${index}`}
@@ -58,7 +62,7 @@ export function LevelReviewGrid({
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: index * 0.05 }}
               onClick={() => handleItemClick(item)}
-              className={`aspect-video rounded-2xl flex flex-col items-center justify-center transition-all shadow-md active:scale-95 cursor-pointer border-b-[4px] select-none ${
+              className={`${formatAsBox ? 'aspect-square' : 'aspect-video'} rounded-2xl flex flex-col items-center justify-center transition-all shadow-md active:scale-95 cursor-pointer border-b-[4px] select-none ${
                 isPlayed ? "border-b-2 translate-y-[2px] opacity-80" : ""
               }`}
               style={{
@@ -67,7 +71,7 @@ export function LevelReviewGrid({
               }}
             >
               <span className="text-white text-4xl sm:text-5xl font-black drop-shadow-sm mb-1 tracking-widest">
-                {item}
+                {displayItem}
               </span>
               <PlayCircle className="w-6 h-6 text-white/50" />
             </motion.button>

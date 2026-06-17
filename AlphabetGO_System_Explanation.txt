@@ -1,0 +1,131 @@
+================================================================================
+                        ALPHABETGO - SYSTEM EXPLANATION
+================================================================================
+
+TABLE OF CONTENTS
+--------------------------------------------------------------------------------
+1. System Overview
+   1.1. Purpose and Scope
+   1.2. Technology Stack
+2. Architecture Overview
+   2.1. The Master-Phase Pattern
+   2.2. State Machine Logic
+3. Detailed Component Breakdown
+   3.1. LevelLettersMaster.tsx (The Orchestrator)
+   3.2. LevelListenType.tsx (The Embedded Activity)
+   3.3. Other Phase Components
+4. Core Systems
+   4.1. Audio & Speech Handling
+   4.2. UI Feedback & Micro-animations
+
+
+================================================================================
+1. SYSTEM OVERVIEW
+================================================================================
+
+1.1. Purpose and Scope
+AlphabetGO is an interactive, web-based educational curriculum platform. It is 
+specifically designed to teach early literacy skills to children, progressing 
+from basic letter recognition and phonics (Lesson 1) up through syllable 
+construction (Lesson 2) and reading full Consonant-Vowel-Consonant (CVC) words 
+in sentences (Lesson 3).
+
+1.2. Technology Stack
+The application is built utilizing modern, highly-interactive web technologies:
+* React & TypeScript: Serves as the core framework, providing strong typing 
+  for robust code and utilizing functional components to manage complex UI states.
+* Tailwind CSS: Used for rapid, inline styling, providing a highly responsive 
+  and vibrant design system (e.g., dynamic gradients, rounded UI elements).
+* Framer Motion (motion/react): Powers the dynamic micro-animations. This is 
+  crucial for a premium feel, providing smooth transitions between lesson phases 
+  and tactile feedback (like shaking on incorrect answers).
+* Web Audio & Speech API: Heavily relies on both pre-recorded local MP3 audio 
+  files and the browser's built-in Text-To-Speech (TTS) engine for phonetic 
+  pronunciation.
+
+
+================================================================================
+2. ARCHITECTURE OVERVIEW
+================================================================================
+
+2.1. The Master-Phase Pattern
+Recently, the system's curriculum interface was standardized to enforce a strict, 
+unified instructional flow across all modules. Instead of having fragmented, 
+standalone pages for every activity, the app utilizes a "Master-Phase" pattern.
+
+* Master Components: These are top-level controllers (e.g., LevelLettersMaster) 
+  that do not contain specific game logic themselves. Instead, they act as 
+  orchestrators.
+* Embedded UI Phases: Individual learning activities (like typing, matching, or 
+  reviewing) are built as reusable, "dumb" components. They accept an 
+  `embedded=true` prop, which hides redundant global navigation UI, allowing 
+  them to be seamlessly plugged into the Master Component's flow.
+
+2.2. State Machine Logic
+Master components act as State Machines. They maintain an array of `STEPS` 
+(e.g., Review -> Match -> Type) and manage the progression of the student through 
+these steps. When a child completes an embedded phase, the component calls an 
+`onComplete` callback, signaling the Master to transition to the next step.
+
+
+================================================================================
+3. DETAILED COMPONENT BREAKDOWN
+================================================================================
+
+3.1. LevelLettersMaster.tsx (The Orchestrator)
+This component manages "Lesson 1 — Alphabet Master". 
+* Chunking Logic: To prevent overwhelming the student, it breaks the 26 letters 
+  of the alphabet into manageable chunks (e.g., 6 letters at a time: A-F, G-L).
+* The Loop: For each chunk, it cycles through three distinct instructional phases:
+  1. Review Phase: Embeds `<LevelReviewGrid />`. Introduces the letters visually. 
+     The student taps each letter to hear its phonetic sound.
+  2. Match Phase: A built-in interactive game where the user matches a speaker 
+     icon (sound) on the left column to the correct written letter on the right.
+  3. Type Phase: Embeds `<LevelListenType />` to test the student's ability to 
+     recall and spell the letter they hear from memory.
+* Final Test: After looping through all chunks, it runs a final, comprehensive 
+  test phase covering all 26 letters from start to finish.
+
+3.2. LevelListenType.tsx (The Embedded Activity)
+This is a highly interactive "Listen and Spell" game component used across 
+multiple lessons (Letters, Syllables, CVC words).
+* Gameplay Loop: 
+  - The student is presented with empty slots and a scrambled letter pool at 
+    the bottom (which includes the target letters plus random distractors).
+  - They tap the large central speaker button to hear the target sound.
+  - They tap letters from the pool to spell what they heard.
+* Validation: It tracks the `selectedLetters` against the `currentTarget.syllable`. 
+  Once the slots are filled, it evaluates the answer and triggers the appropriate 
+  feedback loop (success or failure).
+
+3.3. Other Phase Components
+* LevelSyllableBuilder.tsx: The "Builder" phase component. Specifically designed 
+  for Lesson 2, where students drag or combine Consonants and Vowels to form 
+  new syllable sounds.
+* LevelCVCSentences.tsx: The culminating phase component for Lesson 3. Students 
+  take the CVC words they have learned and identify them within the context of 
+  a full, readable sentence.
+
+
+================================================================================
+4. CORE SYSTEMS
+================================================================================
+
+4.1. Audio & Speech Handling
+The audio system is highly robust and designed with fallbacks:
+* Primary Source: Studio-recorded local audio files (e.g., `cv-ba.MP3` or 
+  `alphasounds-a.mp3`).
+* Fallback Source: If a local file is missing, the `playTTS` function elegantly 
+  falls back to the browser's `speechSynthesis` API.
+* Phonetic Parsing: It uses a `getPhoneticPronunciation` helper function before 
+  passing text to the TTS engine. This ensures the engine sounds out phonics 
+  (e.g., "ah" for A) instead of just reading the literal letter name ("ay").
+
+4.2. UI Feedback & Micro-animations
+To keep young users engaged, the system relies heavily on visceral feedback:
+* Success States: Spelling a word correctly triggers the `<Confetti />` overlay, 
+  plays an uplifting chime (`playSound("correct")`), colors the slots a vibrant 
+  green gradient, and slightly scales up the text.
+* Failure States: Incorrect answers turn the slots red, trigger a jarring 
+  `animate-shake` CSS animation, play a failure sound, and briefly lock the UI 
+  before resetting the slots so the student can try again.
