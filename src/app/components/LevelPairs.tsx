@@ -276,20 +276,24 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
               <div className="flex flex-wrap justify-center gap-4 sm:gap-6 lg:gap-8 mb-12 w-full max-w-3xl mx-auto">
                 {reviewOrder.map((l: string) => {
                   const isVowel = VOWELS.has(l);
-                  const bgStart = isVowel ? "#FF4B8A" : "#1CB0F6";
-                  const bgEnd = isVowel ? "#CE82FF" : "#0A8ED4";
+                  const bgStart = isVowel ? "#FF6B8A" : "#1CB0F6";
+                  const bgEnd = isVowel ? "#FF4B8A" : "#0a8ed4";
+                  const borderColor = isVowel ? "#C82A52" : "#086CA5";
 
                   return (
                     <motion.div key={l} initial={{ scale: 0 }} animate={{ scale: 1 }} className="flex flex-col items-center w-[100px] sm:w-[130px]">
                       <div
                         onClick={() => handleLetterClick(l)}
-                        className="w-full aspect-square rounded-2xl shadow-lg flex items-center justify-center cursor-pointer transition-all hover:scale-105 active:scale-95 border-b-[6px] hover:shadow-xl select-none"
-                        style={{ background: `linear-gradient(135deg, ${bgStart}, ${bgEnd})`, borderColor: bgEnd }}
+                        className="w-full aspect-square rounded-[1.5rem] shadow-lg flex flex-col items-center justify-center cursor-pointer transition-all hover:scale-105 active:scale-95 border-b-[6px] hover:shadow-xl select-none"
+                        style={{ background: `linear-gradient(135deg, ${bgStart}, ${bgEnd})`, borderColor: borderColor }}
                       >
                         <div className="flex items-baseline justify-center">
-                          <span className="text-white text-5xl sm:text-6xl font-black tracking-tight">{l}</span>
-                          <span className="text-white/90 text-3xl sm:text-4xl font-bold tracking-tight">{l.toLowerCase()}</span>
+                          <span className="text-white text-5xl sm:text-6xl font-black drop-shadow-sm">{l}</span>
+                          <span className="text-white/90 text-3xl sm:text-4xl font-bold drop-shadow-sm ml-1">{l.toLowerCase()}</span>
                         </div>
+                        <span className="text-white/90 text-[11px] sm:text-[13px] uppercase font-bold tracking-widest mt-2 bg-black/10 px-2 py-0.5 rounded-full">
+                          {isVowel ? "vowel" : "cons."}
+                        </span>
                       </div>
                     </motion.div>
                   );
@@ -321,6 +325,25 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
               <div className="text-center mb-6">
                 <h2 className="text-3xl font-bold" style={{ color: accent.primary }}>Listen & Match</h2>
                 <p className="text-gray-500 mt-2">Tap a speaker, then tap the matching letter!</p>
+                
+                {/* Navigation Controls moved to top */}
+                <div className="flex justify-center items-center w-full gap-3 sm:gap-4 max-w-md mx-auto mt-6">
+                  <Button variant="outline" size="sm" onClick={setupMatchPhase} className="flex-1 rounded-xl font-bold text-gray-600">
+                    <Shuffle className="w-4 h-4 mr-1" /> Shuffle
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={handleStepNext} className="flex-1 rounded-xl font-bold text-amber-600 border-amber-200 bg-amber-50 hover:bg-amber-100">
+                    <FastForward className="w-4 h-4 mr-1" /> Skip
+                  </Button>
+                  
+                  <Button
+                    onClick={handleStepNext}
+                    disabled={matchedPairs.size !== matchColumns.left.length || matchColumns.left.length === 0}
+                    className={`flex-1 rounded-xl font-bold text-white shadow-md border-b-4 ${matchedPairs.size === matchColumns.left.length ? 'border-[#3c8c01] hover:scale-105 active:scale-95' : 'opacity-50 grayscale cursor-not-allowed'}`}
+                    style={{ background: 'linear-gradient(135deg, #58cc02 0%, #46a302 100%)' }}
+                  >
+                    Next <ChevronRight className="w-4 h-4 ml-1" />
+                  </Button>
+                </div>
               </div>
 
               <div className="flex justify-center gap-4 sm:gap-8 w-full max-w-2xl mx-auto mb-10 px-2 sm:px-4">
@@ -375,25 +398,6 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
               {wrongMatchPair && (
                 <motion.p initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="text-red-500 font-bold text-lg mb-4 text-center">Not quite, try again!</motion.p>
               )}
-
-              {/* Navigation Controls */}
-              <div className="flex justify-center items-center w-full gap-3 sm:gap-4 max-w-md mt-auto">
-                <Button variant="outline" size="lg" onClick={setupMatchPhase} className="flex-1 rounded-xl font-bold text-gray-600">
-                  <Shuffle className="w-5 h-5 mr-1" /> Shuffle
-                </Button>
-                <Button variant="outline" size="lg" onClick={handleStepNext} className="flex-1 rounded-xl font-bold text-amber-600 border-amber-200 bg-amber-50 hover:bg-amber-100">
-                  <FastForward className="w-5 h-5 mr-1" /> Skip
-                </Button>
-                
-                <Button
-                  onClick={handleStepNext}
-                  disabled={matchedPairs.size !== matchColumns.left.length || matchColumns.left.length === 0}
-                  className={`flex-1 rounded-xl font-bold text-white shadow-lg border-b-4 ${matchedPairs.size === matchColumns.left.length ? 'border-[#3c8c01] hover:scale-105 active:scale-95' : 'opacity-50 grayscale cursor-not-allowed'}`}
-                  style={{ background: 'linear-gradient(135deg, #58cc02 0%, #46a302 100%)' }}
-                >
-                  Next <ChevronRight className="w-5 h-5 ml-1" />
-                </Button>
-              </div>
             </motion.div>
 
           ) : step.type === "type" ? (
@@ -401,6 +405,25 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
               <div className="text-center mb-8">
                 <h2 className="text-3xl font-bold" style={{ color: accent.primary }}>Listen & Type</h2>
                 <p className="text-gray-500 mt-2">Tap the speaker, then type the letter!</p>
+                
+                {/* Navigation Controls moved to top */}
+                <div className="flex justify-center items-center w-full gap-3 sm:gap-4 max-w-md mx-auto mt-6">
+                  <Button variant="outline" size="sm" onClick={handleShuffleType} disabled={currentTypeIndex >= typeOrder.length} className="flex-1 rounded-xl font-bold text-gray-600">
+                    <Shuffle className="w-4 h-4 mr-1" /> Shuffle
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={handleStepNext} className="flex-1 rounded-xl font-bold text-amber-600 border-amber-200 bg-amber-50 hover:bg-amber-100">
+                    <FastForward className="w-4 h-4 mr-1" /> Skip
+                  </Button>
+                  
+                  <Button
+                    onClick={handleStepNext}
+                    disabled={currentTypeIndex < typeOrder.length}
+                    className={`flex-1 rounded-xl font-bold text-white shadow-md border-b-4 ${currentTypeIndex >= typeOrder.length ? 'border-[#3c8c01] hover:scale-105 active:scale-95' : 'opacity-50 grayscale cursor-not-allowed'}`}
+                    style={{ background: 'linear-gradient(135deg, #58cc02 0%, #46a302 100%)' }}
+                  >
+                    {currentStep === STEPS.length - 1 ? 'Finish!' : 'Next'} <ChevronRight className="w-4 h-4 ml-1" />
+                  </Button>
+                </div>
               </div>
 
               <div className="flex flex-col items-center justify-center flex-1 w-full max-w-md mx-auto mb-12">
@@ -457,25 +480,6 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
                     <h3 className="text-2xl font-bold text-gray-800">Typing Complete!</h3>
                   </motion.div>
                 )}
-              </div>
-
-              {/* Navigation Controls */}
-              <div className="flex justify-center items-center w-full gap-3 sm:gap-4 max-w-md mt-auto">
-                <Button variant="outline" size="lg" onClick={handleShuffleType} disabled={currentTypeIndex >= typeOrder.length} className="flex-1 rounded-xl font-bold text-gray-600">
-                  <Shuffle className="w-5 h-5 mr-1" /> Shuffle
-                </Button>
-                <Button variant="outline" size="lg" onClick={handleStepNext} className="flex-1 rounded-xl font-bold text-amber-600 border-amber-200 bg-amber-50 hover:bg-amber-100">
-                  <FastForward className="w-5 h-5 mr-1" /> Skip
-                </Button>
-                
-                <Button
-                  onClick={handleStepNext}
-                  disabled={currentTypeIndex < typeOrder.length}
-                  className={`flex-1 rounded-xl font-bold text-white shadow-lg border-b-4 ${currentTypeIndex >= typeOrder.length ? 'border-[#3c8c01] hover:scale-105 active:scale-95' : 'opacity-50 grayscale cursor-not-allowed'}`}
-                  style={{ background: 'linear-gradient(135deg, #58cc02 0%, #46a302 100%)' }}
-                >
-                  {currentStep === STEPS.length - 1 ? 'Finish!' : 'Next'} <ChevronRight className="w-5 h-5 ml-1" />
-                </Button>
               </div>
             </motion.div>
 
