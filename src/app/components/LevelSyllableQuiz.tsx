@@ -493,7 +493,7 @@ export function LevelSyllableQuiz({ pattern, levelId, accent, onComplete }: Leve
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-yellow-50 to-pink-50 dark:bg-none dark:bg-[#0d141c] pb-12 flex flex-col overflow-x-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-yellow-50 to-pink-50 dark:bg-none dark:bg-[#0d141c] flex flex-col overflow-x-hidden">
       <Confetti active={showFinalConfetti} />
 
       {/* Header */}
