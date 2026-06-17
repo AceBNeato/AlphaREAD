@@ -401,18 +401,7 @@ export function LevelSyllableBuilder({
 
           {!allDone && (
             <>
-              {/* Progress Bar */}
-              <div className="w-full h-3 bg-gray-200/80 dark:bg-gray-800 rounded-full overflow-hidden mb-4 shadow-inner border border-gray-100 dark:border-gray-700/30">
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: `${progress}%` }}
-                  transition={{ duration: 0.4, ease: "easeOut" }}
-                  className="h-full rounded-full"
-                  style={{
-                    background: `linear-gradient(90deg, ${accent.primary}, ${accent.dark})`,
-                  }}
-                />
-              </div>
+
               {/* Current Target Card */}
               <AnimatePresence mode="wait">
                 <motion.div
@@ -424,12 +413,36 @@ export function LevelSyllableBuilder({
                   className="text-center mb-4"
                 >
                   {/* Navigation Controls */}
-                  <div className="flex justify-center items-center w-full gap-3 sm:gap-4 max-w-sm mx-auto mb-6">
-                    <Button variant="outline" size="sm" onClick={resetSelection} className="flex-1 rounded-xl font-bold text-gray-600">
-                      <RotateCcw className="w-4 h-4 mr-1" /> Reset
+                  <div className="flex justify-center items-center w-full gap-2 sm:gap-3 max-w-lg mx-auto mb-6">
+                    <Button
+                      onClick={goPrev}
+                      disabled={currentIndex === 0}
+                      variant="outline"
+                      size="sm"
+                      className="flex-1 rounded-xl font-bold border-2 disabled:opacity-30 px-2"
+                      style={{ borderColor: accent.primary, color: accent.primary }}
+                    >
+                      <ArrowLeft className="w-4 h-4 sm:mr-1" />
+                      <span className="hidden sm:inline">Back</span>
                     </Button>
-                    <Button variant="outline" size="sm" onClick={() => onComplete?.()} className="flex-1 rounded-xl font-bold text-amber-600 border-amber-200 bg-amber-50 hover:bg-amber-100">
-                      <FastForward className="w-4 h-4 mr-1" /> Skip
+                    <Button variant="outline" size="sm" onClick={resetSelection} className="flex-1 rounded-xl font-bold border-2 text-gray-600 px-2" style={{ borderColor: '#d1d5db' }}>
+                      <RotateCcw className="w-4 h-4 sm:mr-1" />
+                      <span className="hidden sm:inline">Reset</span>
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => onComplete?.()} className="flex-1 rounded-xl font-bold border-2 text-amber-600 bg-amber-50 hover:bg-amber-100 px-2" style={{ borderColor: '#fcd34d' }}>
+                      <FastForward className="w-4 h-4 sm:mr-1" />
+                      <span className="hidden sm:inline">Skip</span>
+                    </Button>
+                    <Button
+                      onClick={goNext}
+                      disabled={currentIndex === targets.length - 1}
+                      variant="outline"
+                      size="sm"
+                      className="flex-1 rounded-xl font-bold border-2 disabled:opacity-30 px-2"
+                      style={{ borderColor: accent.primary, color: accent.primary }}
+                    >
+                      <span className="hidden sm:inline">Next</span>
+                      <ArrowRight className="w-4 h-4 sm:ml-1" />
                     </Button>
                   </div>
 
@@ -486,19 +499,7 @@ export function LevelSyllableBuilder({
                     </span>
                   </div>
 
-                  {/* Completed badge */}
-                  {completedTargets.has(currentTarget.syllable) && (
-                    <motion.div
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      className="flex items-center justify-center gap-2 mb-4 text-[#58CC02]"
-                    >
-                      <CheckCircle2 className="w-5 h-5" />
-                      <span>
-                        Completed! — "{currentTarget.syllable.toLowerCase()}"
-                      </span>
-                    </motion.div>
-                  )}
+
 
                   {/* Selected letters display */}
                   {!completedTargets.has(currentTarget.syllable) && (
@@ -647,31 +648,7 @@ export function LevelSyllableBuilder({
                 </div>
               )}
 
-              {/* Navigation Arrows */}
-              <div className="flex justify-between items-center mt-4">
-                <Button
-                  onClick={goPrev}
-                  disabled={currentIndex === 0}
-                  variant="outline"
-                  size="lg"
-                  className="rounded-xl px-6 py-5 border-2 disabled:opacity-30"
-                  style={{ borderColor: accent.primary, color: accent.primary }}
-                >
-                  <ArrowLeft className="w-5 h-5 mr-1" />
-                  Back
-                </Button>
-                <Button
-                  onClick={goNext}
-                  disabled={currentIndex === targets.length - 1}
-                  variant="outline"
-                  size="lg"
-                  className="rounded-xl px-6 py-5 border-2 disabled:opacity-30"
-                  style={{ borderColor: accent.primary, color: accent.primary }}
-                >
-                  Next
-                  <ArrowRight className="w-5 h-5 ml-1" />
-                </Button>
-              </div>
+
             </>
           )}
         </>
