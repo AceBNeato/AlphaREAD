@@ -655,17 +655,6 @@ export const LONG_VOWELS_DATA: LongVowelVowelData[] = [
           { word: "flute", highlights: [2, 4] },
           { word: "june", highlights: [1, 3] }
         ]
-      },
-      {
-        name: "Vowel Team",
-        pattern: "ue / ui",
-        words: [
-          { word: "blue", highlights: [2, 3] },
-          { word: "glue", highlights: [2, 3] },
-          { word: "fruit", highlights: [2, 3] },
-          { word: "juice", highlights: [1, 2, 4] },
-          { word: "suit", highlights: [1, 2] }
-        ]
       }
     ]
   }

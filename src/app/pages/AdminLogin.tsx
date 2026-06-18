@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
-import { Lock, ArrowLeft, Loader2, Mail, ShieldCheck } from "lucide-react";
+import { Lock, ArrowLeft, Loader2, Mail, ShieldCheck, KeyRound } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { supabase } from "../../lib/supabase";
 
@@ -21,17 +21,22 @@ export default function AdminLogin() {
     setSuccessMsg("");
 
     try {
-      const { error: authError } = await supabase.auth.signInWithOtp({
-        email: email.trim().toLowerCase(),
-        options: { shouldCreateUser: true }
-      });
+      // Just check if they exist as an admin. We don't send an email anymore.
+      const emailClean = email.trim().toLowerCase();
+      const { data: admin, error: dbError } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("email", emailClean)
+        .eq("role", "admin")
+        .maybeSingle();
 
-      if (authError) throw authError;
+      if (dbError || !admin) {
+         throw new Error("No administrator found with this email.");
+      }
 
       setStep("otp");
-      setSuccessMsg("Verification code sent to your email.");
     } catch (err: any) {
-      setError(err.message || "Failed to send verification code.");
+      setError(err.message || "Failed to verify admin email.");
     } finally {
       setLoading(false);
     }
@@ -45,36 +50,19 @@ export default function AdminLogin() {
 
     try {
       const emailClean = email.trim().toLowerCase();
+      const codeClean = otpCode.trim().toUpperCase();
 
-      const { data: authData, error: authError } = await supabase.auth.verifyOtp({
-        email: emailClean,
-        token: otpCode,
-        type: 'email'
-      });
-
-      if (authError || !authData.session) {
-        throw new Error(authError?.message || "Invalid or expired OTP code.");
-      }
-
-      // Now authenticated, check if they are an admin
+      // Verify email + access code against the database
       const { data: admin, error: dbError } = await supabase
         .from("profiles")
         .select("*")
         .eq("email", emailClean)
+        .eq("pin_hash", codeClean)
         .eq("role", "admin")
         .maybeSingle();
 
       if (dbError || !admin) {
-        await supabase.auth.signOut();
-        throw new Error("You are not authorized as an Administrator.");
-      }
-
-      // Link auth_id if needed
-      if (!admin.auth_id) {
-        await supabase
-          .from("profiles")
-          .update({ auth_id: authData.session.user.id })
-          .eq("id", admin.id);
+        throw new Error("Invalid admin email or access code.");
       }
 
       localStorage.setItem("userProfile", JSON.stringify({
@@ -115,7 +103,7 @@ export default function AdminLogin() {
           Admin Access
         </h2>
         <p className="text-sm text-gray-400 mb-8 leading-relaxed">
-          {step === "email" ? "Enter your administrator email to receive a secure login code." : "Enter the 6-digit code sent to your email."}
+          {step === "email" ? "Enter your administrator email to continue." : "Enter your 8-character Admin Access Code."}
         </p>
 
         {step === "email" ? (
@@ -146,20 +134,20 @@ export default function AdminLogin() {
               className="w-full py-6 text-lg font-bold rounded-2xl bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-900/20 transition-all flex items-center justify-center gap-2"
             >
               {loading && <Loader2 className="w-5 h-5 animate-spin" />}
-              {loading ? "Sending..." : "Send Secure Code"}
+              {loading ? "Verifying..." : "Continue"}
             </Button>
           </form>
         ) : (
           <form onSubmit={handleVerifyOtp} className="flex flex-col gap-6 animate-in slide-in-from-right duration-300">
             <div className="relative">
+              <KeyRound className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
               <input
                 type="text"
-                inputMode="numeric"
                 maxLength={8}
                 required
                 value={otpCode}
-                onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 8))}
-                placeholder="00000000"
+                onChange={(e) => setOtpCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8))}
+                placeholder="ADMIN123"
                 autoFocus
                 className={`w-full text-center text-4xl font-mono tracking-[0.25em] p-4 bg-gray-950 border-2 rounded-2xl outline-none transition-colors text-white ${error
                     ? "border-red-500 text-red-500 focus:border-red-500"

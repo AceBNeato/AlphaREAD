@@ -145,7 +145,7 @@ BEGIN
 END;
 $$;
 
--- 8. Seed the initial Admin (Change 'admin@alphabetgo.com' to your actual email before running!)
-INSERT INTO public.profiles (id, first_name, last_name, role, email) 
-SELECT gen_random_uuid(), 'Master', 'Admin', 'admin', 'businessneato@gmail.com'
+-- 8. Seed the initial Admin
+INSERT INTO public.profiles (id, first_name, last_name, role, email, pin_hash) 
+SELECT gen_random_uuid(), 'Master', 'Admin', 'admin', 'businessneato@gmail.com', 'ADMIN123'
 WHERE NOT EXISTS (SELECT 1 FROM public.profiles WHERE role = 'admin' LIMIT 1);

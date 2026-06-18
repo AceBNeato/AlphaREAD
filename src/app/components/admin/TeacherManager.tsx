@@ -3,7 +3,7 @@ import { supabase } from "../../../lib/supabase";
 import { useNavigate } from "react-router";
 import { 
   GraduationCap, Search, Filter, Plus, X, UserPlus, 
-  Eye, EyeOff, Save, Edit, Trash2, Smartphone 
+  Eye, EyeOff, Save, Edit, Trash2, Smartphone, RefreshCw, Copy, Check 
 } from "lucide-react";
 import { Button } from "../ui/button";
 
@@ -26,7 +26,8 @@ export function TeacherManager({ teachers, onRefresh }: TeacherManagerProps) {
   const [isCreatingTeacher, setIsCreatingTeacher] = useState(false);
   const [teacherEmail, setTeacherEmail] = useState("");
   const [teacherAlias, setTeacherAlias] = useState("");
-  const [teacherPin, setTeacherPin] = useState("");
+  const [createdCode, setCreatedCode] = useState<string | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const [editingTeacherId, setEditingTeacherId] = useState<string | null>(null);
   const [editTeacherEmail, setEditTeacherEmail] = useState("");
@@ -44,12 +45,19 @@ export function TeacherManager({ teachers, onRefresh }: TeacherManagerProps) {
     });
   };
 
+  const generateAccessCode = () => {
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    return Array.from({ length: 8 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
+  };
+
   const handleCreateTeacher = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!teacherEmail.trim() || !teacherAlias.trim()) return;
 
     try {
       const teacherId = crypto.randomUUID();
+      const accessCode = generateAccessCode();
+
       const { error } = await supabase.from("profiles").insert({
         id: teacherId,
         first_name: teacherAlias.trim(),
@@ -57,23 +65,49 @@ export function TeacherManager({ teachers, onRefresh }: TeacherManagerProps) {
         role: "teacher",
         email: teacherEmail.trim().toLowerCase(),
         alias: teacherAlias.trim(),
-        avatar: "👩‍🏫"
+        avatar: "👩‍🏫",
+        pin_hash: accessCode
       });
 
       if (error) throw error;
 
-      // Simulate sending email by opening the user's default mail client prefilled with credentials
-      const subject = encodeURIComponent("Your Alphabet GO Teacher Access");
-      const body = encodeURIComponent(`Hello ${teacherAlias.trim()},\n\nYou have been added as a teacher to Alphabet GO.\n\nYour login email is: ${teacherEmail.trim().toLowerCase()}\n\nYou can log in securely using your email. A secure OTP code will be sent to your inbox.\n\nBest,\nAdmin`);
+      // Open the user's mail client with the access code
+      const subject = encodeURIComponent("Your AlphabetGO Teacher Access Code");
+      const body = encodeURIComponent(
+        `Hello ${teacherAlias.trim()},\n\nYou have been registered as a teacher on AlphabetGO.\n\nEmail: ${teacherEmail.trim().toLowerCase()}\nAccess Code: ${accessCode}\n\nUse these credentials to log in at the AlphabetGO portal.\n\nBest,\nAdmin`
+      );
       window.open(`mailto:${teacherEmail.trim().toLowerCase()}?subject=${subject}&body=${body}`, "_blank");
 
-      setIsCreatingTeacher(false);
-      setTeacherEmail("");
-      setTeacherAlias("");
-      onRefresh();
+      // Show the code to admin before closing
+      setCreatedCode(accessCode);
+      setTimeout(() => {
+        setCreatedCode(null);
+        setIsCreatingTeacher(false);
+        setTeacherEmail("");
+        setTeacherAlias("");
+        onRefresh();
+      }, 8000);
     } catch (err: any) {
       alert(`Failed to register teacher: ${err.message}`);
     }
+  };
+
+  const regenerateCode = async (teacherId: string) => {
+    if (!window.confirm("Generate a new access code for this teacher? The old one will stop working.")) return;
+    const newCode = generateAccessCode();
+    const { error } = await supabase.from("profiles").update({ pin_hash: newCode }).eq("id", teacherId);
+    if (error) {
+      alert("Failed to regenerate code.");
+    } else {
+      alert(`New access code: ${newCode}\n\nPlease share this with the teacher.`);
+      onRefresh();
+    }
+  };
+
+  const copyCode = (code: string, id: string) => {
+    navigator.clipboard.writeText(code);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
   };
 
   const startEditingTeacher = (teacher: any) => {
@@ -166,41 +200,57 @@ export function TeacherManager({ teachers, onRefresh }: TeacherManagerProps) {
 
       {isCreatingTeacher && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <form onSubmit={handleCreateTeacher} className="bg-gray-900 border border-gray-700 rounded-3xl p-6 sm:p-8 max-w-md w-full relative animate-in zoom-in duration-200 shadow-2xl">
-            <button 
-              type="button"
-              onClick={() => setIsCreatingTeacher(false)}
-              className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors"
-            >
-              <X className="w-6 h-6" />
-            </button>
-            <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-              <UserPlus className="w-5 h-5 text-blue-400" />
-              Register New Teacher
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-              <div>
-                <label className="block text-xs text-gray-400 font-bold mb-1.5">Alias/Name</label>
-                <input
-                  type="text" required placeholder="e.g. Teacher Sarah"
-                  value={teacherAlias} onChange={(e) => setTeacherAlias(e.target.value)}
-                  className="w-full px-4 py-3 bg-gray-950 border border-gray-800 rounded-xl text-white outline-none focus:border-blue-500 transition-colors"
-                />
+          {createdCode ? (
+            <div className="bg-gray-900 border border-green-800 rounded-3xl p-6 sm:p-8 max-w-md w-full relative animate-in zoom-in duration-200 shadow-2xl text-center">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-green-500/10 flex items-center justify-center border border-green-500/20">
+                <Check className="w-8 h-8 text-green-400" />
               </div>
-              <div>
-                <label className="block text-xs text-gray-400 font-bold mb-1.5">Email</label>
-                <input
-                  type="email" required placeholder="sarah@school.com"
-                  value={teacherEmail} onChange={(e) => setTeacherEmail(e.target.value)}
-                  className="w-full px-4 py-3 bg-gray-950 border border-gray-800 rounded-xl text-white outline-none focus:border-blue-500 transition-colors"
-                />
+              <h3 className="text-xl font-bold text-white mb-2">Teacher Registered!</h3>
+              <p className="text-sm text-gray-400 mb-4">Share this access code with the teacher. Your email client has been opened.</p>
+              <div className="bg-gray-950 border border-gray-800 rounded-2xl p-4 mb-4">
+                <p className="text-xs text-gray-500 mb-1">ACCESS CODE</p>
+                <p className="text-3xl font-mono font-black tracking-[0.3em] text-green-400">{createdCode}</p>
               </div>
+              <p className="text-xs text-yellow-400/70">This dialog will close automatically...</p>
             </div>
-            <div className="flex gap-3 mt-6">
-              <Button type="button" variant="outline" onClick={() => setIsCreatingTeacher(false)} className="border-gray-700 hover:bg-gray-800 text-gray-300 flex-1 py-3 transition-colors">Cancel</Button>
-              <Button type="submit" className="bg-blue-600 hover:bg-blue-500 text-white flex-1 py-3">Register Teacher</Button>
-            </div>
-          </form>
+          ) : (
+            <form onSubmit={handleCreateTeacher} className="bg-gray-900 border border-gray-700 rounded-3xl p-6 sm:p-8 max-w-md w-full relative animate-in zoom-in duration-200 shadow-2xl">
+              <button 
+                type="button"
+                onClick={() => setIsCreatingTeacher(false)}
+                className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+              <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+                <UserPlus className="w-5 h-5 text-blue-400" />
+                Register New Teacher
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-xs text-gray-400 font-bold mb-1.5">Alias/Name</label>
+                  <input
+                    type="text" required placeholder="e.g. Teacher Sarah"
+                    value={teacherAlias} onChange={(e) => setTeacherAlias(e.target.value)}
+                    className="w-full px-4 py-3 bg-gray-950 border border-gray-800 rounded-xl text-white outline-none focus:border-blue-500 transition-colors"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-400 font-bold mb-1.5">Email</label>
+                  <input
+                    type="email" required placeholder="sarah@school.com"
+                    value={teacherEmail} onChange={(e) => setTeacherEmail(e.target.value)}
+                    className="w-full px-4 py-3 bg-gray-950 border border-gray-800 rounded-xl text-white outline-none focus:border-blue-500 transition-colors"
+                  />
+                </div>
+              </div>
+              <p className="text-xs text-gray-500 mb-4 leading-relaxed">An 8-character access code will be auto-generated and your email client will open so you can send it to the teacher.</p>
+              <div className="flex gap-3">
+                <Button type="button" variant="outline" onClick={() => setIsCreatingTeacher(false)} className="border-gray-700 hover:bg-gray-800 text-gray-300 flex-1 py-3 transition-colors">Cancel</Button>
+                <Button type="submit" className="bg-blue-600 hover:bg-blue-500 text-white flex-1 py-3">Register & Send Code</Button>
+              </div>
+            </form>
+          )}
         </div>
       )}
 
@@ -211,13 +261,14 @@ export function TeacherManager({ teachers, onRefresh }: TeacherManagerProps) {
               <tr className="bg-gray-800/60 border-b border-gray-800 text-xs font-bold text-gray-300 uppercase tracking-wider">
                 <th className="py-4 px-6">Alias / Name</th>
                 <th className="py-4 px-6">Email</th>
+                <th className="py-4 px-6">Access Code</th>
                 <th className="py-4 px-6 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-800 text-sm">
               {teachers.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="py-8 px-6 text-center text-gray-500">No teachers registered yet.</td>
+                  <td colSpan={5} className="py-8 px-6 text-center text-gray-500">No teachers registered yet.</td>
                 </tr>
               ) : (
                 teachers
@@ -252,6 +303,25 @@ export function TeacherManager({ teachers, onRefresh }: TeacherManagerProps) {
                         ) : (
                           teacher.email
                         )}
+                      </td>
+                      <td className="py-4 px-6">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-mono text-green-400 font-bold tracking-wider">
+                            {isCodeVisible ? (teacher.pin_hash || "—") : "••••••••"}
+                          </span>
+                          <button onClick={() => toggleVisibility(teacher.id)} className="text-gray-400 hover:text-white p-1">
+                            {isCodeVisible ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                          </button>
+                          {isCodeVisible && teacher.pin_hash && (
+                            <button
+                              onClick={() => copyCode(teacher.pin_hash, teacher.id)}
+                              className="text-gray-400 hover:text-white p-1"
+                              title="Copy code"
+                            >
+                              {copiedId === teacher.id ? <Check className="w-3.5 h-3.5 text-green-400" /> : <Copy className="w-3.5 h-3.5" />}
+                            </button>
+                          )}
+                        </div>
                       </td>
                       <td className="py-4 px-6 text-right">
                         <div className="flex items-center justify-end gap-2">

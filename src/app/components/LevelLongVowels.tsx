@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useNavigate } from "react-router";
-import { Home, Volume2, Mic, MicOff, CheckCircle2, XCircle, Sparkles, ArrowRight, ArrowLeft, AlertCircle, RotateCcw, SkipForward, FastForward } from "lucide-react";
+import { Home, Volume2, Mic, MicOff, CheckCircle2, XCircle, Sparkles, ArrowRight, ArrowLeft, AlertCircle, RotateCcw, SkipForward, FastForward, Shuffle } from "lucide-react";
 import { Button } from "./ui/button";
 import { motion, AnimatePresence } from "motion/react";
 import { supabase } from "../../lib/supabase";
@@ -8,6 +8,7 @@ import { Confetti } from "./ui/Confetti";
 import { LONG_VOWELS_DATA, LONG_VOWELS_SENTENCES, LongVowelWord, LETTER_NAMES, LETTER_TTS, shuffle } from "../data/levels";
 import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
 import { AudioVisualizer } from "./AudioVisualizer";
+import { MatchButton } from "./MatchButton";
 import { playSound } from "../utils/soundEffects";
 import { playTTS as playTTSUtil } from "../utils/tts";
 
@@ -16,7 +17,7 @@ interface LevelLongVowelsProps {
   accent: { primary: string; dark: string; lightBg: string };
 }
 
-type Phase = "review" | "patterns" | "words" | "sentences";
+type Phase = "review" | "match" | "patterns" | "words" | "sentences";
 
 const VOWELS = ["A", "E", "I", "O", "U"];
 
@@ -79,6 +80,83 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
     setSentenceTranscriptsMap({});
   }, [sentenceSetIdx]);
 
+  
+  // Match Phase State
+  const [matchColumns, setMatchColumns] = useState<{ left: string[]; right: string[] }>({ left: [], right: [] });
+  const [matchedPairs, setMatchedPairs] = useState<Set<string>>(new Set());
+  const [selectedSpeakerMatch, setSelectedSpeakerMatch] = useState<string | null>(null);
+  const [selectedLetterMatch, setSelectedLetterMatch] = useState<string | null>(null);
+  const [wrongMatchPair, setWrongMatchPair] = useState<[string, string] | null>(null);
+
+  const setupMatchPhase = useCallback(() => {
+    // Generate match pairs
+    const pairs: string[] = [];
+    const shuffledPatterns = shuffle([...allPatternsRaw]).slice(0, 5);
+    shuffledPatterns.forEach(p => pairs.push(p.pattern));
+    
+    setMatchColumns({
+      left: shuffle([...pairs]),
+      right: shuffle([...pairs])
+    });
+    setMatchedPairs(new Set());
+    setSelectedSpeakerMatch(null);
+    setSelectedLetterMatch(null);
+    setWrongMatchPair(null);
+  }, [allPatternsRaw]);
+
+  useEffect(() => {
+    if (currentPhase === "match") {
+      setupMatchPhase();
+    }
+  }, [currentPhase, setupMatchPhase]);
+
+  const checkMatch = useCallback((speaker: string, letter: string) => {
+    if (speaker === letter) {
+      playSound("correct", 0.4);
+      setMatchedPairs(prev => new Set(prev).add(speaker));
+      setSelectedSpeakerMatch(null);
+      setSelectedLetterMatch(null);
+      if (matchedPairs.size + 1 === matchColumns.left.length) {
+        setShowConfetti(true);
+      }
+    } else {
+      playSound("wrong", 0.35);
+      setWrongMatchPair([speaker, letter]);
+      setTimeout(() => {
+        setWrongMatchPair(null);
+        setSelectedSpeakerMatch(null);
+        setSelectedLetterMatch(null);
+      }, 1000);
+    }
+  }, [matchColumns.left.length, matchedPairs.size]);
+
+  const handleSpeakerMatchClick = (pattern: string) => {
+    if (matchedPairs.has(pattern) || wrongMatchPair) return;
+    playSound("click", 0.2);
+    playTTS(pattern);
+    if (selectedSpeakerMatch === pattern) {
+      setSelectedSpeakerMatch(null);
+    } else {
+      setSelectedSpeakerMatch(pattern);
+      if (selectedLetterMatch) {
+        checkMatch(pattern, selectedLetterMatch);
+      }
+    }
+  };
+
+  const handleLetterMatchClick = (pattern: string) => {
+    if (matchedPairs.has(pattern) || wrongMatchPair) return;
+    playSound("click", 0.2);
+    if (selectedLetterMatch === pattern) {
+      setSelectedLetterMatch(null);
+    } else {
+      setSelectedLetterMatch(pattern);
+      if (selectedSpeakerMatch) {
+        checkMatch(selectedSpeakerMatch, pattern);
+      }
+    }
+  };
+
   // Voice Eval States
   const [evaluatingPatternId, setEvaluatingPatternId] = useState<string | null>(null);
   const [completedPatterns, setCompletedPatterns] = useState<Set<string>>(new Set());
@@ -138,7 +216,7 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
   };
 
   const handleNextQuiz = useCallback(() => {
-    if (currentPhase === "patterns" || currentPhase === "words" || currentPhase === "sentences") {
+    if (currentPhase === "match" || currentPhase === "patterns" || currentPhase === "words" || currentPhase === "sentences") {
       setShowConfetti(true);
     }
   }, [currentPhase]);
@@ -257,7 +335,8 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
     setEvaluatingSentenceId(null);
     if (currentPhase === "sentences") setCurrentPhase("words");
     else if (currentPhase === "words") setCurrentPhase("patterns");
-    else if (currentPhase === "patterns") setCurrentPhase("review");
+    else if (currentPhase === "patterns") setCurrentPhase("match");
+    else if (currentPhase === "match") setCurrentPhase("review");
     else navigate(-1);
   };
 
@@ -266,7 +345,9 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
     setEvaluatingPatternId(null);
     setEvaluatingWordId(null);
     setEvaluatingSentenceId(null);
-    if (currentPhase === "patterns") {
+    if (currentPhase === "match") {
+      setupMatchPhase();
+    } else if (currentPhase === "patterns") {
       setCompletedPatterns(new Set());
       setPatternFeedbackMap({});
       setPatternTranscriptsMap({});
@@ -286,7 +367,10 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
     setEvaluatingPatternId(null);
     setEvaluatingWordId(null);
     setEvaluatingSentenceId(null);
-    if (currentPhase === "patterns") {
+    if (currentPhase === "match") {
+      setMatchedPairs(new Set(matchColumns.left));
+      handleNextQuiz();
+    } else if (currentPhase === "patterns") {
       setCompletedPatterns(new Set(activePatterns.map(p => p.pattern)));
       handleNextQuiz();
     } else if (currentPhase === "words") {
@@ -341,7 +425,7 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
 
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 dark:bg-none dark:bg-[#0d141c] pb-12 flex flex-col overflow-x-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 dark:bg-none dark:bg-[#0d141c] flex flex-col overflow-x-hidden">
       <Confetti active={showConfetti} />
 
       <div className="sticky top-0 z-10 bg-white/80 dark:bg-[#0d141c]/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 px-4 py-3">
@@ -350,19 +434,23 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
             <Home className="w-5 h-5" />
           </Button>
           <h2 className="text-lg font-bold tracking-tight text-center flex-1" style={{ color: accent.primary }}>
-            {currentPhase === "review" && `Long ${VOWELS[reviewIdx]} Review`}
-            {currentPhase === "patterns" && `All Vowel Patterns Quiz`}
-            {currentPhase === "words" && `Words Quiz (Set ${wordSetIdx + 1}/${totalWordSets})`}
+            {currentPhase === "review" && `Long Vowels Review`}
+            {currentPhase === "match" && `Listen & Match`}
+            {currentPhase === "patterns" && `Say the Name`}
+            {currentPhase === "words" && `Read the Words`}
+            {currentPhase === "sentences" && `Read the Sentences`}
           </h2>
-          <span className="text-xs font-bold text-gray-500 bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full uppercase">
-            {currentPhase === "review" && `Vowel ${reviewIdx + 1}/5`}
-            {currentPhase === "patterns" && `${patternIdx + 1}/${activePatterns.length}`}
-            {currentPhase === "words" && `${wordIdx + 1}/${activeWords.length}`}
+          <span className="text-sm font-bold" style={{ color: accent.primary }}>
+            {currentPhase === "review" && `Step 1/5`}
+            {currentPhase === "match" && `Step 2/5`}
+            {currentPhase === "patterns" && `Step 3/5`}
+            {currentPhase === "words" && `Step 4/5`}
+            {currentPhase === "sentences" && `Step 5/5`}
           </span>
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 py-8 flex-1 flex flex-col justify-start w-full">
+      <div className="max-w-4xl mx-auto px-4 py-4 flex-1 flex flex-col justify-start w-full">
         <AnimatePresence mode="wait">
           {!showConfetti && currentPhase === "review" && activeVowelData ? (
             <motion.div
@@ -372,14 +460,50 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
               exit={{ opacity: 0, scale: 1.02 }}
               className="w-full flex-1 flex flex-col"
             >
+
               <div className="text-center mb-8">
-                <h2 className="text-3xl font-black text-gray-800 dark:text-gray-100 mb-2">
-                  Long {VOWELS[reviewIdx]} Combinations
-                </h2>
                 <p className="text-gray-500 dark:text-gray-400 text-sm">
                   Review the patterns. Tap any word or heading to hear it spoken!
                 </p>
+                <div className="flex justify-center items-center w-full gap-3 sm:gap-4 max-w-sm mx-auto mt-6">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={reviewIdx === 0}
+                    onClick={() => setReviewIdx((prev) => Math.max(prev - 1, 0))}
+                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#086ca5] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2 disabled:opacity-50 disabled:grayscale disabled:pointer-events-none"
+                    style={{
+                      background: "linear-gradient(135deg, rgb(28, 176, 246) 0%, rgb(10, 142, 212) 100%)",
+                    }}
+                  >
+                    <ArrowLeft className="w-4 h-4 mr-1" /> Back
+                  </Button>
+                  {reviewIdx < 4 ? (
+                    <Button
+                      size="sm"
+                      onClick={() => setReviewIdx((prev) => Math.min(prev + 1, 4))}
+                      className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#3c8c01] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
+                      style={{
+                        background: "linear-gradient(135deg, rgb(88, 204, 2) 0%, rgb(70, 163, 2) 100%)",
+                      }}
+                    >
+                      Next <ArrowRight className="w-4 h-4 ml-1" />
+                    </Button>
+                  ) : (
+                    <Button
+                      size="sm"
+                      onClick={() => setCurrentPhase("match")}
+                      className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#3c8c01] hover:scale-105 active:scale-95 px-2 transition-all animate-pulse h-9 py-2"
+                      style={{
+                        background: "linear-gradient(135deg, rgb(88, 204, 2) 0%, rgb(70, 163, 2) 100%)",
+                      }}
+                    >
+                      Proceed <ArrowRight className="w-4 h-4 ml-1" />
+                    </Button>
+                  )}
+                </div>
               </div>
+
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch mb-8 flex-1">
                 {activeVowelData.patterns.map((pattern) => {
@@ -428,37 +552,108 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
                 })}
               </div>
 
-              <div className="flex justify-between items-center gap-4 mt-6">
-                <Button
-                  variant="outline"
-                  size="lg"
-                  disabled={reviewIdx === 0}
-                  onClick={() => setReviewIdx((prev) => Math.max(prev - 1, 0))}
-                  className="rounded-2xl flex-1 py-6 border-2 font-bold max-w-[200px]"
-                >
-                  <ArrowLeft className="w-5 h-5 mr-2" /> Back
-                </Button>
 
-                {reviewIdx < 4 ? (
+            </motion.div>
+                    ) : !showConfetti && currentPhase === "match" ? (
+            <motion.div key={`phase-match`} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="flex flex-col items-center w-full">
+              <div className="text-center mb-6">
+                <p className="text-gray-500 mt-2">Tap a speaker, then tap the matching pattern!</p>
+                {/* Controls */}
+                <div className="flex justify-center items-center w-full gap-2 sm:gap-3 max-w-lg mx-auto mb-6 mt-6">
                   <Button
-                    size="lg"
-                    onClick={() => setReviewIdx((prev) => Math.min(prev + 1, 4))}
-                    className="rounded-2xl flex-1 py-6 font-bold text-white shadow-lg"
-                    style={{ background: `linear-gradient(135deg, ${accent.primary}, ${accent.dark})` }}
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setMatchColumns(prev => ({
+                        left: [...prev.left].sort(() => Math.random() - 0.5),
+                        right: [...prev.right].sort(() => Math.random() - 0.5)
+                      }));
+                    }}
+                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#8b40b8] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
+                    style={{ background: "linear-gradient(135deg, rgb(206, 130, 255) 0%, rgb(165, 89, 214) 100%)" }}
                   >
-                    Next Vowel <ArrowRight className="w-5 h-5 ml-2" />
+                    <Shuffle className="w-4 h-4 sm:mr-1" />
+                    <span className="hidden sm:inline">Shuffle</span>
                   </Button>
-                ) : (
                   <Button
-                    size="lg"
-                    onClick={() => setCurrentPhase("patterns")}
-                    className="rounded-2xl flex-1 py-6 font-bold text-white shadow-lg animate-pulse"
-                    style={{ background: `linear-gradient(135deg, ${accent.primary}, ${accent.dark})` }}
+                    variant="outline"
+                    size="sm"
+                    onClick={handleReset}
+                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#b81d1d] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
+                    style={{ background: "linear-gradient(135deg, rgb(255, 75, 75) 0%, rgb(216, 42, 42) 100%)" }}
                   >
-                    Start Pattern Quiz! <ArrowRight className="w-5 h-5 ml-2" />
+                    <RotateCcw className="w-4 h-4 sm:mr-1" />
+                    <span className="hidden sm:inline">Reset</span>
                   </Button>
-                )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleSkip}
+                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#c99c00] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
+                    style={{ background: "linear-gradient(135deg, rgb(255, 200, 0) 0%, rgb(255, 150, 0) 100%)" }}
+                  >
+                    <FastForward className="w-4 h-4 sm:mr-1" />
+                    <span className="hidden sm:inline">Skip</span>
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={handleNextQuiz}
+                    disabled={matchedPairs.size !== matchColumns.left.length || matchColumns.left.length === 0}
+                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#3c8c01] hover:scale-105 active:scale-95 px-2 transition-all disabled:opacity-50 disabled:grayscale disabled:pointer-events-none h-9 py-2"
+                    style={{ background: "linear-gradient(135deg, rgb(88, 204, 2) 0%, rgb(70, 163, 2) 100%)" }}
+                  >
+                    <span className="hidden sm:inline">Next</span>
+                    <ArrowRight className="w-4 h-4 sm:ml-1" />
+                  </Button>
+                </div>
               </div>
+
+              <div className="flex justify-center gap-4 sm:gap-8 w-full max-w-2xl mx-auto mb-10 px-2 sm:px-4">
+                <div className="flex flex-col gap-3 sm:gap-4 flex-1 min-w-0">
+                  {matchColumns.left.map((pattern) => {
+                    const isMatched = matchedPairs.has(pattern);
+                    const isSelected = selectedSpeakerMatch === pattern;
+                    const isWrong = !!(wrongMatchPair && wrongMatchPair[0] === pattern);
+                    return (
+                      <MatchButton
+                        key={`speaker-${pattern}`}
+                        gradientStart={accent.primary}
+                        gradientEnd={accent.dark}
+                        isMatched={isMatched}
+                        isSelected={isSelected}
+                        isWrong={isWrong}
+                        onClick={() => handleSpeakerMatchClick(pattern)}
+                        disabled={!!wrongMatchPair}
+                      >
+                        <Volume2 className={`w-8 h-8 ${isMatched ? "opacity-50" : ""}`} />
+                      </MatchButton>
+                    );
+                  })}
+                </div>
+                <div className="flex flex-col gap-3 sm:gap-4 flex-1 min-w-0">
+                  {matchColumns.right.map((pattern) => {
+                    const isMatched = matchedPairs.has(pattern);
+                    const isSelected = selectedLetterMatch === pattern;
+                    const isWrong = !!(wrongMatchPair && wrongMatchPair[1] === pattern);
+                    return (
+                      <MatchButton
+                        key={`pattern-${pattern}`}
+                        isMatched={isMatched}
+                        isSelected={isSelected}
+                        isWrong={isWrong}
+                        onClick={() => handleLetterMatchClick(pattern)}
+                        disabled={!!wrongMatchPair}
+                        className="font-black text-2xl sm:text-3xl tracking-widest"
+                      >
+                        {pattern}
+                      </MatchButton>
+                    );
+                  })}
+                </div>
+              </div>
+              {wrongMatchPair && (
+                <motion.p initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="text-red-500 font-bold text-lg mb-4 text-center">Not quite, try again!</motion.p>
+              )}
             </motion.div>
           ) : !showConfetti && currentPhase === "patterns" ? (
             <motion.div
@@ -468,10 +663,7 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
               exit={{ opacity: 0, scale: 1.05 }}
               className="w-full max-w-2xl mx-auto flex flex-col items-center"
             >
-              <div className="text-center mb-8">
-                <h2 className="text-3xl font-black text-gray-800 dark:text-gray-100 mb-2">
-                  What Sound is this? 🗣️
-                </h2>
+              <div className="text-center mb-6">
                 <p className="text-gray-500 dark:text-gray-400 text-sm">
                   Say the correct long vowel name 2 times out loud.
                 </p>
@@ -482,14 +674,14 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={handleBack}
-                  className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#086ca5] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
+                  onClick={() => setActivePatterns(prev => shuffle([...prev]))}
+                  className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#8b40b8] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
                   style={{
-                    background: "linear-gradient(135deg, rgb(28, 176, 246) 0%, rgb(10, 142, 212) 100%)",
+                    background: "linear-gradient(135deg, rgb(206, 130, 255) 0%, rgb(165, 89, 214) 100%)",
                   }}
                 >
-                  <ArrowLeft className="w-4 h-4 sm:mr-1" />
-                  <span className="hidden sm:inline">Back</span>
+                  <Shuffle className="w-4 h-4 sm:mr-1" />
+                  <span className="hidden sm:inline">Shuffle</span>
                 </Button>
                 <Button
                   variant="outline"
@@ -554,9 +746,7 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
                           <span className="text-3xl font-bold min-w-[60px] text-left tracking-widest uppercase flex items-center gap-1.5" style={{ color: isDone || vFeedback === "correct" ? '#58CC02' : accent.primary }}>
                             {p.pattern}
                           </span>
-                          <span className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1 sm:mt-0">
-                            {p.name}
-                          </span>
+
                         </div>
 
                         <div className="flex items-center gap-3">
@@ -617,10 +807,7 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
               exit={{ opacity: 0, scale: 1.05 }}
               className="w-full max-w-2xl mx-auto flex flex-col items-center"
             >
-              <div className="text-center mb-8">
-                <h2 className="text-3xl font-black text-gray-800 dark:text-gray-100 mb-2">
-                  Read the Words! 🗣️
-                </h2>
+              <div className="text-center mb-6">
                 <p className="text-gray-500 dark:text-gray-400 text-sm">
                   Say each long word out loud into the microphone.
                 </p>
@@ -631,14 +818,14 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={handleBack}
-                  className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#086ca5] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
+                  onClick={() => setActiveWords(prev => shuffle([...prev]))}
+                  className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#8b40b8] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
                   style={{
-                    background: "linear-gradient(135deg, rgb(28, 176, 246) 0%, rgb(10, 142, 212) 100%)",
+                    background: "linear-gradient(135deg, rgb(206, 130, 255) 0%, rgb(165, 89, 214) 100%)",
                   }}
                 >
-                  <ArrowLeft className="w-4 h-4 sm:mr-1" />
-                  <span className="hidden sm:inline">Back</span>
+                  <Shuffle className="w-4 h-4 sm:mr-1" />
+                  <span className="hidden sm:inline">Shuffle</span>
                 </Button>
                 <Button
                   variant="outline"
@@ -703,9 +890,7 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
                           <span className="text-3xl font-bold min-w-[60px] text-left tracking-widest uppercase flex items-center gap-1.5" style={{ color: isDone || vFeedback === "correct" ? '#58CC02' : accent.primary }}>
                             {w.word}
                           </span>
-                          <span className="text-[10px] font-bold text-gray-300 uppercase tracking-widest mt-1 sm:mt-0">
-                            Long {w.vowel}
-                          </span>
+
                         </div>
 
                         <div className="flex items-center gap-3">
@@ -784,10 +969,7 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
               exit={{ opacity: 0, scale: 1.05 }}
               className="w-full max-w-2xl mx-auto flex flex-col items-center"
             >
-              <div className="text-center mb-8">
-                <h2 className="text-3xl font-black text-gray-800 dark:text-gray-100 mb-2">
-                  Read the Sentences! 🗣️
-                </h2>
+              <div className="text-center mb-6">
                 <p className="text-gray-500 dark:text-gray-400 text-sm">
                   Say each sentence out loud into the microphone.
                 </p>
@@ -798,14 +980,14 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={handleBack}
-                  className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#086ca5] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
+                  onClick={() => setActiveSentences(prev => shuffle([...prev]))}
+                  className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#8b40b8] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
                   style={{
-                    background: "linear-gradient(135deg, rgb(28, 176, 246) 0%, rgb(10, 142, 212) 100%)",
+                    background: "linear-gradient(135deg, rgb(206, 130, 255) 0%, rgb(165, 89, 214) 100%)",
                   }}
                 >
-                  <ArrowLeft className="w-4 h-4 sm:mr-1" />
-                  <span className="hidden sm:inline">Back</span>
+                  <Shuffle className="w-4 h-4 sm:mr-1" />
+                  <span className="hidden sm:inline">Shuffle</span>
                 </Button>
                 <Button
                   variant="outline"
@@ -956,11 +1138,13 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
               </motion.div>
 
               <h3 className="text-3xl font-black mb-4" style={{ color: accent.primary }}>
-                {currentPhase === "patterns" ? "Patterns Mastered!" : currentPhase === "words" ? (wordSetIdx === totalWordSets - 1 ? "Words Mastered!" : "Set Complete!") : sentenceSetIdx === totalSentenceSets - 1 ? "Lesson Mastered!" : "Set Complete!"}
+                {currentPhase === "match" ? "Matching Complete!" : currentPhase === "patterns" ? "Patterns Mastered!" : currentPhase === "words" ? (wordSetIdx === totalWordSets - 1 ? "Words Mastered!" : "Set Complete!") : sentenceSetIdx === totalSentenceSets - 1 ? "Lesson Mastered!" : "Set Complete!"}
               </h3>
 
               <p className="text-gray-600 dark:text-gray-400 mb-8 leading-relaxed">
-                {currentPhase === "patterns"
+                {currentPhase === "match"
+                  ? "You matched all the patterns! Ready to say them out loud?"
+                  : currentPhase === "patterns"
                   ? "You correctly identified all the long vowel patterns! Ready to read some words?"
                   : currentPhase === "words"
                     ? (wordSetIdx === totalWordSets - 1
@@ -971,7 +1155,19 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
                       : "You successfully read 10 sentences! Ready for the next set?")}
               </p>
 
-              {currentPhase === "patterns" ? (
+              {currentPhase === "match" ? (
+                <Button
+                  onClick={() => {
+                    setCurrentPhase("patterns");
+                    setShowConfetti(false);
+                  }}
+                  size="lg"
+                  className="rounded-2xl px-10 py-6 text-lg text-white font-bold w-full shadow-xl animate-bounce"
+                  style={{ background: `linear-gradient(135deg, ${accent.primary} 0%, ${accent.dark} 100%)` }}
+                >
+                  Start Say the Name <ArrowRight className="ml-2 w-5 h-5" />
+                </Button>
+              ) : currentPhase === "patterns" ? (
                 <Button
                   onClick={() => {
                     setCurrentPhase("words");

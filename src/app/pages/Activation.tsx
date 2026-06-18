@@ -32,10 +32,10 @@ export default function Activation() {
   const [successMsg, setSuccessMsg] = useState("");
 
   // Step state
-  const [authStep, setAuthStep] = useState<"initial" | "teacher-otp" | "student-pin">("initial");
+  const [authStep, setAuthStep] = useState<"initial" | "teacher-code" | "student-pin">("initial");
   
-  // Teacher OTP
-  const [otpCode, setOtpCode] = useState("");
+  // Teacher Access Code
+  const [accessCode, setAccessCode] = useState("");
   
   // Student PIN
   const [studentPin, setStudentPin] = useState("");
@@ -94,35 +94,10 @@ export default function Activation() {
     setLoading(true);
     setError("");
     setSuccessMsg("");
-
     if (isEmail) {
-      // ── Teacher Path: Check if teacher profile exists, then send OTP ──
-      try {
-        const emailClean = userInput.trim().toLowerCase();
-        
-        // Use an RPC or check if we can query the profile.
-        // Wait, since we are not authenticated yet, we can't select from profiles if RLS blocks it.
-        // But we allowed select by email if auth.jwt()->>'email' = email... which doesn't help BEFORE login.
-        // Actually, Supabase signInWithOtp will just send an email. If the user doesn't exist in our profiles table,
-        // they will just sign in and have an empty dashboard. 
-        // Let's just send the OTP directly to reduce attack surface and prevent email enumeration.
-        
-        const { error: authError } = await supabase.auth.signInWithOtp({
-          email: emailClean,
-          options: {
-            shouldCreateUser: true, // Allow implicit sign up
-          }
-        });
-
-        if (authError) throw authError;
-
-        setAuthStep("teacher-otp");
-        setSuccessMsg("A secure 6-digit code has been sent to your email.");
-      } catch (err: any) {
-        setError(err.message || "Failed to send verification code.");
-      } finally {
-        setLoading(false);
-      }
+      // ── Teacher/Admin Path: Go to access code entry ──
+      setAuthStep("teacher-code");
+      setLoading(false);
     } else {
       // ── Student Path: Proceed to PIN entry ──
       // We don't check the DB yet, we check it securely inside the RPC later.
@@ -131,66 +106,48 @@ export default function Activation() {
     }
   };
 
-  // ── Verification for Teacher OTP ──
-  const handleVerifyTeacherOtp = async (e: React.FormEvent) => {
+  // ── Verification for Teacher/Admin Access Code ──
+  const handleVerifyAccessCode = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (otpCode.length < 6) return;
+    if (accessCode.length < 6) return;
 
     setLoading(true);
     setError("");
 
     try {
       const emailClean = userInput.trim().toLowerCase();
+      const codeClean = accessCode.trim().toUpperCase();
 
-      const { data: authData, error: authError } = await supabase.auth.verifyOtp({
-        email: emailClean,
-        token: otpCode,
-        type: 'email'
-      });
-
-      if (authError || !authData.session) {
-        throw new Error(authError?.message || "Invalid or expired OTP code.");
-      }
-
-      // Now authenticated, check if they have a profile created by admin
-      const { data: teacher, error: dbError } = await supabase
+      // Verify email + access code against the database
+      const { data: profile, error: dbError } = await supabase
         .from("profiles")
         .select("*")
         .eq("email", emailClean)
+        .eq("pin_hash", codeClean)
         .in("role", ["teacher", "admin"])
         .maybeSingle();
 
-      if (dbError || !teacher) {
-        // Sign out if no authorized profile exists
-        await supabase.auth.signOut();
-        throw new Error("You are not registered in the system. Contact the administrator.");
-      }
-
-      // If auth_id is not set, link it via RLS policy
-      if (!teacher.auth_id) {
-        await supabase
-          .from("profiles")
-          .update({ auth_id: authData.session.user.id })
-          .eq("id", teacher.id);
+      if (dbError || !profile) {
+        throw new Error("Invalid email or access code. Contact your administrator.");
       }
 
       // Log user in locally
       localStorage.setItem("userProfile", JSON.stringify({
-        id: teacher.id,
-        name: teacher.alias || teacher.first_name || "Teacher",
-        avatar: teacher.role === "admin" ? "🛡️" : "👩‍🏫",
-        role: teacher.role,
-        createdAt: teacher.created_at
+        id: profile.id,
+        name: profile.alias || profile.first_name || "Teacher",
+        avatar: profile.role === "admin" ? "🛡️" : "👩‍🏫",
+        role: profile.role,
+        createdAt: profile.created_at
       }));
 
-      if (teacher.role === "admin") {
+      if (profile.role === "admin") {
         navigate("/admin", { replace: true });
       } else {
         navigate("/teacher-dashboard", { replace: true });
       }
     } catch (err: any) {
       setError(err.message || "Verification failed.");
-      setOtpCode("");
+      setAccessCode("");
     } finally {
       setLoading(false);
     }
@@ -333,14 +290,14 @@ export default function Activation() {
                   )}
                 </Button>
               </form>
-            ) : authStep === "teacher-otp" ? (
-              /* Step 2A: Teacher enters OTP sent to their email */
-              <form onSubmit={handleVerifyTeacherOtp} className="space-y-6 animate-in slide-in-from-right duration-300">
+            ) : authStep === "teacher-code" ? (
+              /* Step 2A: Teacher enters their access code */
+              <form onSubmit={handleVerifyAccessCode} className="space-y-6 animate-in slide-in-from-right duration-300">
                 <button
                   type="button"
                   onClick={() => {
                     setAuthStep("initial");
-                    setOtpCode("");
+                    setAccessCode("");
                     setError("");
                     setSuccessMsg("");
                   }}
@@ -350,33 +307,26 @@ export default function Activation() {
                 </button>
 
                 <div>
-                  <h3 className="text-lg font-bold text-white mb-1">Verify Your Email</h3>
+                  <h3 className="text-lg font-bold text-white mb-1">Enter Access Code</h3>
                   <p className="text-xs text-gray-400 leading-relaxed mb-4">
-                    Enter the 6-digit verification code sent to{" "}
+                    Enter the 8-character access code provided by your administrator for{" "}
                     <span className="text-indigo-400 font-semibold">{userInput}</span>.
                   </p>
                 </div>
 
                 <div className="relative">
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+                  <KeyRound className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
                   <input
                     type="text"
-                    inputMode="numeric"
                     maxLength={8}
                     required
                     autoFocus
-                    value={otpCode}
-                    onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 8))}
-                    placeholder="00000000"
-                    className="w-full pl-12 pr-4 py-4 rounded-2xl bg-gray-950 border border-gray-800 focus:border-indigo-500 text-white font-mono tracking-[0.5em] text-center text-3xl outline-none"
+                    value={accessCode}
+                    onChange={(e) => setAccessCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8))}
+                    placeholder="AB3X9PK2"
+                    className="w-full pl-12 pr-4 py-4 rounded-2xl bg-gray-950 border border-gray-800 focus:border-indigo-500 text-white font-mono tracking-[0.4em] text-center text-2xl outline-none"
                   />
                 </div>
-
-                {successMsg && (
-                  <p className="text-green-400 text-sm text-center font-semibold bg-green-950/20 border border-green-900/30 py-2 rounded-xl">
-                    {successMsg}
-                  </p>
-                )}
 
                 {error && (
                   <p className="text-red-400 text-sm text-center font-semibold bg-red-950/20 border border-red-900/30 py-2 rounded-xl animate-shake">
@@ -386,7 +336,7 @@ export default function Activation() {
 
                 <Button
                   type="submit"
-                  disabled={loading || otpCode.length < 6}
+                  disabled={loading || accessCode.length < 6}
                   className="w-full py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-indigo-950/30"
                 >
                   {loading && <Loader2 className="w-5 h-5 animate-spin" />}
