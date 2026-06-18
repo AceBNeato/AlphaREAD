@@ -531,7 +531,7 @@ export function LevelSyllableQuiz({ pattern, levelId, accent, onComplete }: Leve
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 py-6 flex-1 flex flex-col justify-center w-full">
+      <div className="max-w-4xl mx-auto px-4 py-6 flex-1 flex flex-col w-full">
         <AnimatePresence mode="wait">
           {showFinalConfetti ? (
             <motion.div
