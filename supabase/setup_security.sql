@@ -72,6 +72,19 @@ BEGIN
 END;
 $$;
 
+CREATE OR REPLACE FUNCTION public.get_profile_id_by_auth(p_uid UUID)
+RETURNS UUID
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_id UUID;
+BEGIN
+  SELECT id INTO v_id FROM public.profiles WHERE auth_id = p_uid LIMIT 1;
+  RETURN v_id;
+END;
+$$;
+
 -- 5. RLS Policies for Profiles
 -- Allow admins to do anything
 CREATE POLICY "Admin full access profiles" ON public.profiles
@@ -83,7 +96,7 @@ CREATE POLICY "Teacher read own and students" ON public.profiles
   FOR SELECT
   USING (
     (auth.uid() = auth_id) OR 
-    (role = 'student' AND teacher_id = (SELECT id FROM public.profiles WHERE auth_id = auth.uid() LIMIT 1))
+    (role = 'student' AND teacher_id = public.get_profile_id_by_auth(auth.uid()))
   );
 
 -- Allow a newly authenticated user to view their own profile by email
@@ -108,7 +121,7 @@ CREATE POLICY "Teacher read student progress" ON public.progress
   FOR SELECT
   USING (
     public.is_teacher(auth.uid()) AND student_id IN (
-      SELECT id FROM public.profiles WHERE teacher_id = (SELECT id FROM public.profiles WHERE auth_id = auth.uid() LIMIT 1)
+      SELECT id FROM public.profiles WHERE teacher_id = public.get_profile_id_by_auth(auth.uid())
     )
   );
 

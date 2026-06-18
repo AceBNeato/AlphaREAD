@@ -153,7 +153,7 @@ export default function TeacherDashboard() {
             <Button 
               onClick={handleLogout}
               variant="outline"
-              className="border-gray-700 hover:bg-gray-700 text-gray-300 font-bold px-4 py-2.5 rounded-xl flex items-center gap-2 transition-all"
+              className="bg-transparent border-gray-700 hover:bg-gray-700 text-gray-300 font-bold px-4 py-2.5 rounded-xl flex items-center gap-2 transition-all"
             >
               <LogOut className="w-4 h-4" /> Log Out
             </Button>

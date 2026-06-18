@@ -78,7 +78,7 @@ export default function AdminDashboard() {
       .from("profiles")
       .select("*")
       .eq("role", "teacher")
-      .order("alias", { ascending: true });
+      .order("first_name", { ascending: true });
     setTeachers(teachersData || []);
 
     // Fetch Students with Teacher details
@@ -114,7 +114,7 @@ export default function AdminDashboard() {
             <Button
               onClick={() => fetchData()}
               variant="outline"
-              className="border-gray-800 hover:bg-gray-850 text-gray-300 font-bold px-3 py-2 rounded-xl flex items-center gap-2"
+              className="bg-transparent border-gray-800 hover:bg-gray-850 text-gray-300 font-bold px-3 py-2 rounded-xl flex items-center gap-2"
               title="Refresh Data"
             >
               <RefreshCw className="w-4 h-4" />
@@ -125,7 +125,7 @@ export default function AdminDashboard() {
                 navigate("/", { replace: true });
               }}
               variant="outline"
-              className="border-gray-800 hover:bg-gray-850 text-gray-300 font-bold px-4 py-2 rounded-xl"
+              className="bg-transparent border-gray-800 hover:bg-gray-850 text-gray-300 font-bold px-4 py-2 rounded-xl"
             >
               Sign Out
             </Button>

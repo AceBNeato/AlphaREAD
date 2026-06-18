@@ -162,7 +162,7 @@ export function StudentManager({ students, teachers, onRefresh }: StudentManager
             <Button 
               variant="outline" 
               onClick={() => setIsFilterOpen(!isFilterOpen)}
-              className="border-gray-800 text-gray-400 hover:text-white px-3"
+              className="bg-transparent border-gray-800 text-gray-400 hover:text-white px-3"
             >
               <Filter className="w-4 h-4" />
             </Button>
@@ -200,7 +200,7 @@ export function StudentManager({ students, teachers, onRefresh }: StudentManager
                       <option value="">All Teachers</option>
                       <option value="unassigned">Unassigned</option>
                       {teachers.map(t => (
-                        <option key={t.id} value={t.id}>{t.alias}</option>
+                        <option key={t.id} value={t.id}>{t.first_name}</option>
                       ))}
                     </select>
                   </div>
@@ -285,7 +285,7 @@ export function StudentManager({ students, teachers, onRefresh }: StudentManager
                 >
                   <option value="">-- No Teacher --</option>
                   {teachers.map(t => (
-                    <option key={t.id} value={t.id}>{t.alias}</option>
+                    <option key={t.id} value={t.id}>{t.first_name}</option>
                   ))}
                 </select>
               </div>
@@ -313,7 +313,7 @@ export function StudentManager({ students, teachers, onRefresh }: StudentManager
               />
             </div>
             <div className="flex gap-3">
-              <Button type="button" variant="outline" onClick={() => setIsCreatingStudent(false)} className="border-gray-700 hover:bg-gray-800 text-gray-300 flex-1 py-3 transition-colors">Cancel</Button>
+              <Button type="button" variant="outline" onClick={() => setIsCreatingStudent(false)} className="bg-transparent border-gray-700 hover:bg-gray-800 text-gray-300 flex-1 py-3 transition-colors">Cancel</Button>
               <Button type="submit" className="bg-blue-600 hover:bg-blue-500 text-white flex-1 py-3">Register Student</Button>
             </div>
           </form>
@@ -447,11 +447,11 @@ export function StudentManager({ students, teachers, onRefresh }: StudentManager
                           >
                             <option value="">-- No Teacher --</option>
                             {teachers.map(t => (
-                              <option key={t.id} value={t.id}>{t.alias}</option>
+                              <option key={t.id} value={t.id}>{t.first_name}</option>
                             ))}
                           </select>
                         ) : (
-                          linkedTeacher ? linkedTeacher.alias : <span className="text-gray-500 font-normal">Unassigned</span>
+                          linkedTeacher ? linkedTeacher.first_name : <span className="text-gray-500 font-normal">Unassigned</span>
                         )}
                       </td>
 

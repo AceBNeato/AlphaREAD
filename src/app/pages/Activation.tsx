@@ -155,7 +155,7 @@ export default function Activation() {
       // Log user in locally
       localStorage.setItem("userProfile", JSON.stringify({
         id: profile.id,
-        name: profile.alias || profile.first_name || "Teacher",
+        name: profile.first_name || "Teacher",
         avatar: profile.role === "admin" ? "🛡️" : "👩‍🏫",
         role: profile.role,
         createdAt: profile.created_at

@@ -64,7 +64,6 @@ export function TeacherManager({ teachers, onRefresh }: TeacherManagerProps) {
         last_name: "Teacher",
         role: "teacher",
         email: teacherEmail.trim().toLowerCase(),
-        alias: teacherAlias.trim(),
         avatar: "👩‍🏫",
         pin_hash: accessCode
       });
@@ -113,7 +112,7 @@ export function TeacherManager({ teachers, onRefresh }: TeacherManagerProps) {
   const startEditingTeacher = (teacher: any) => {
     setEditingTeacherId(teacher.id);
     setEditTeacherEmail(teacher.email || "");
-    setEditTeacherAlias(teacher.alias || "");
+    setEditTeacherAlias(teacher.first_name || "");
   };
 
   const saveTeacherEdit = async (id: string) => {
@@ -123,7 +122,6 @@ export function TeacherManager({ teachers, onRefresh }: TeacherManagerProps) {
       .from("profiles")
       .update({
         email: editTeacherEmail.trim().toLowerCase(),
-        alias: editTeacherAlias.trim(),
         first_name: editTeacherAlias.trim()
       })
       .eq("id", id);
@@ -173,7 +171,7 @@ export function TeacherManager({ teachers, onRefresh }: TeacherManagerProps) {
             <Button 
               variant="outline" 
               onClick={() => setIsFilterOpen(!isFilterOpen)}
-              className="border-gray-800 text-gray-400 hover:text-white px-3"
+              className="bg-transparent border-gray-800 text-gray-400 hover:text-white px-3"
             >
               <Filter className="w-4 h-4" />
             </Button>
@@ -246,7 +244,7 @@ export function TeacherManager({ teachers, onRefresh }: TeacherManagerProps) {
               </div>
               <p className="text-xs text-gray-500 mb-4 leading-relaxed">An 8-character access code will be auto-generated and your email client will open so you can send it to the teacher.</p>
               <div className="flex gap-3">
-                <Button type="button" variant="outline" onClick={() => setIsCreatingTeacher(false)} className="border-gray-700 hover:bg-gray-800 text-gray-300 flex-1 py-3 transition-colors">Cancel</Button>
+                <Button type="button" variant="outline" onClick={() => setIsCreatingTeacher(false)} className="bg-transparent border-gray-700 hover:bg-gray-800 text-gray-300 flex-1 py-3 transition-colors">Cancel</Button>
                 <Button type="submit" className="bg-blue-600 hover:bg-blue-500 text-white flex-1 py-3">Register & Send Code</Button>
               </div>
             </form>
@@ -273,7 +271,7 @@ export function TeacherManager({ teachers, onRefresh }: TeacherManagerProps) {
               ) : (
                 teachers
                   .filter(t => 
-                    (t.alias || "").toLowerCase().includes(searchQuery.toLowerCase()) || 
+                    (t.first_name || "").toLowerCase().includes(searchQuery.toLowerCase()) || 
                     (t.email || "").toLowerCase().includes(searchQuery.toLowerCase())
                   )
                   .map((teacher) => {
@@ -290,7 +288,7 @@ export function TeacherManager({ teachers, onRefresh }: TeacherManagerProps) {
                             className="px-2 py-1 bg-gray-950 border border-gray-800 rounded text-white font-bold"
                           />
                         ) : (
-                          teacher.alias || "No Name"
+                          teacher.first_name || "No Name"
                         )}
                       </td>
                       <td className="py-4 px-6 font-mono text-gray-300">
@@ -338,7 +336,7 @@ export function TeacherManager({ teachers, onRefresh }: TeacherManagerProps) {
                                 onClick={() => {
                                   localStorage.setItem("userProfile", JSON.stringify({
                                     id: "teacher-preview",
-                                    name: teacher.alias || "Teacher",
+                                    name: teacher.first_name || "Teacher",
                                     avatar: "👨‍🏫",
                                     role: "teacher-preview",
                                     returnTo: "/admin",
