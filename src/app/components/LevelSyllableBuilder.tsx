@@ -24,7 +24,7 @@ import { supabase } from "../../lib/supabase";
 import { Confetti } from "./ui/Confetti";
 import { getPhoneticPronunciation } from "../data/levels";
 import { playSound } from "../utils/soundEffects";
-
+import { playTTS as playTTSUtil } from "../utils/tts";
 
 interface LevelSyllableBuilderProps {
   levelId: number;
@@ -155,12 +155,7 @@ export function LevelSyllableBuilder({
       audio.play().catch(() => {
         // Fallback to Google TTS if file missing
         const phoneticText = getPhoneticText(text, pattern);
-        if ('speechSynthesis' in window) {
-          window.speechSynthesis.cancel();
-          const utterance = new SpeechSynthesisUtterance(phoneticText);
-          utterance.rate = 0.85;
-          window.speechSynthesis.speak(utterance);
-        }
+        playTTSUtil(phoneticText);
       });
       return;
     }
@@ -171,30 +166,19 @@ export function LevelSyllableBuilder({
       audio.play().catch(() => {
         // Fallback to Google TTS if file missing
         const phoneticText = getPhoneticText(text, pattern);
-        if ('speechSynthesis' in window) {
-          window.speechSynthesis.cancel();
-          const utterance = new SpeechSynthesisUtterance(phoneticText);
-          utterance.rate = 0.85;
-          window.speechSynthesis.speak(utterance);
-        }
+        playTTSUtil(phoneticText);
       });
       return;
     }
 
     // CVC: no local audio files — use Google TTS
     const phoneticText = getPhoneticText(text, pattern);
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(phoneticText);
-      utterance.rate = 0.85;
-      window.speechSynthesis.speak(utterance);
-    }
+    playTTSUtil(phoneticText);
   };
 
   const handleLetterClick = (letter: string) => {
     if (feedback || allDone || completedTargets.has(currentTarget.syllable)) return;
 
-    playSound("click", 0.2);
     // Play audio for the letter
     const audio = new Audio(`${(import.meta as any).env.BASE_URL}audio/alphasounds-${letter.toLowerCase()}.mp3`);
     audio.play().catch(() => {
@@ -322,6 +306,7 @@ export function LevelSyllableBuilder({
 
   const innerContent = (
     <div className={`max-w-2xl mx-auto px-4 w-full overflow-x-hidden ${embedded ? "py-2" : "py-6"}`}>
+      <Confetti active={showConfetti} />
       {/* SUB-LEVEL PICKER — shown when Level 2 has both VC and CV */}
       {!selectedSubPattern && patterns.length > 1 ? (
         <motion.div
@@ -425,17 +410,17 @@ export function LevelSyllableBuilder({
                       <ArrowLeft className="w-4 h-4 sm:mr-1" />
                       <span className="hidden sm:inline">Back</span>
                     </Button>
-                    <Button 
-                      onClick={resetSelection} 
-                      className="flex-1 rounded-xl font-bold text-white shadow-md border-b-4 border-[#b81d1d] hover:scale-105 active:scale-95 px-2" 
+                    <Button
+                      onClick={resetSelection}
+                      className="flex-1 rounded-xl font-bold text-white shadow-md border-b-4 border-[#b81d1d] hover:scale-105 active:scale-95 px-2"
                       style={{ background: 'linear-gradient(135deg, #ff4b4b 0%, #d82a2a 100%)' }}
                     >
                       <RotateCcw className="w-4 h-4 sm:mr-1" />
                       <span className="hidden sm:inline">Reset</span>
                     </Button>
-                    <Button 
-                      onClick={() => onComplete?.()} 
-                      className="flex-1 rounded-xl font-bold text-white shadow-md border-b-4 border-[#c99c00] hover:scale-105 active:scale-95 px-2" 
+                    <Button
+                      onClick={() => onComplete?.()}
+                      className="flex-1 rounded-xl font-bold text-white shadow-md border-b-4 border-[#c99c00] hover:scale-105 active:scale-95 px-2"
                       style={{ background: 'linear-gradient(135deg, #ffc800 0%, #ff9600 100%)' }}
                     >
                       <FastForward className="w-4 h-4 sm:mr-1" />
@@ -466,85 +451,112 @@ export function LevelSyllableBuilder({
                   >
 
 
-                    {/* Show the actual target syllable */}
-                    <div className="flex items-center gap-2">
-                      <span
-                        className="text-4xl sm:text-5xl tracking-widest"
-                        style={{ color: patternColors[currentTarget.pattern] }}
-                      >
-                        {currentTarget.syllable.split("").map((ch, i) => (
-                          <span
-                            key={i}
-                            style={{
-                              color: VOWELS.includes(ch)
-                                ? "#FF6B8A"
-                                : "#1CB0F6",
-                            }}
-                          >
-                            {ch.toLowerCase()}
-                          </span>
-                        ))}
-                      </span>
-                      {(completedTargets.has(currentTarget.syllable) || feedback === "correct") && (
-                        <button
-                          onClick={() => playTTS(currentTarget.syllable, currentTarget.pattern)}
-                          className="ml-4 p-3 bg-blue-100 hover:bg-blue-200 text-blue-600 rounded-full transition-colors active:scale-95 flex-shrink-0 cursor-pointer"
-                        >
-                          <Volume2 className="w-6 h-6" />
-                        </button>
-                      )}
-                    </div>
-
-                    <span className="text-xs text-gray-500 dark:text-gray-400">
-                      Tap letters below in the correct order
-                    </span>
-                    {/* Selected letters display */}
+                    {/* Show the actual target syllable only when not completed */}
                     {!completedTargets.has(currentTarget.syllable) && (
-                      <motion.div
-                        animate={{
-                          x: feedback === "wrong" ? [-10, 10, -10, 10, 0] : 0,
-                          scale: feedback === "correct" ? [1, 1.05, 1] : 1
-                        }}
-                        className="flex justify-center gap-2 mt-2 mb-4"
-                      >
-                        {Array.from({ length: slotCount }).map((_, slot) => {
-                          const isVowel = ["A", "E", "I", "O", "U"].includes(selectedLetters[slot]);
-                          return (
-                            <div
-                              key={slot}
-                              className={`w-16 h-16 sm:w-20 sm:h-20 rounded-2xl flex items-center justify-center transition-all ${!selectedLetters[slot]
-                                ? "border-4 border-dashed border-gray-300 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-800/30"
-                                : ""
-                                }`}
+                      <div className="flex items-center gap-2">
+                        <span
+                          className="text-4xl sm:text-5xl tracking-widest cursor-pointer hover:scale-105 active:scale-95 transition-transform"
+                          onClick={() => playTTS(currentTarget.syllable, currentTarget.pattern)}
+                          style={{ color: patternColors[currentTarget.pattern] }}
+                          title="Click to hear again"
+                        >
+                          {currentTarget.syllable.split("").map((ch, i) => (
+                            <span
+                              key={i}
+                              style={{
+                                color: VOWELS.includes(ch)
+                                  ? "#FF6B8A"
+                                  : "#1CB0F6",
+                              }}
                             >
-                              {selectedLetters[slot] ? (
-                                <motion.div
-                                  initial={{ scale: 0, y: -10 }}
-                                  animate={{ scale: 1, y: 0 }}
-                                  className={`w-full h-full rounded-2xl flex flex-col items-center justify-center border-b-[4px] select-none shadow-md ${feedback === "correct" ? "bg-green-100 border-green-400 text-green-700" :
-                                    feedback === "wrong" ? "bg-red-50 border-red-400 text-red-600" : ""
-                                    }`}
-                                  style={{
-                                    background: feedback ? undefined :
-                                      isVowel ? "linear-gradient(135deg, #FF6B8A 0%, #FF4B8A 100%)" : "linear-gradient(135deg, #1CB0F6 0%, #0a8ed4 100%)",
-                                    borderColor: feedback ? undefined :
-                                      isVowel ? "#C82A52" : "#086CA5",
-                                  }}
-                                >
-                                  <span className={`text-4xl sm:text-5xl font-black drop-shadow-sm ${feedback ? "" : "text-white"}`}>
-                                    {selectedLetters[slot]?.toLowerCase()}
-                                  </span>
+                              {ch.toLowerCase()}
+                            </span>
+                          ))}
+                        </span>
+                      </div>
+                    )}
 
-                                </motion.div>
-                              ) : (
-                                <span className="text-gray-300 dark:text-gray-600 text-2xl font-bold opacity-50">
-                                  {patternPlaceholder(currentTarget.pattern)[slot]}
-                                </span>
-                              )}
-                            </div>
-                          );
-                        })}
+                    {completedTargets.has(currentTarget.syllable) ? (
+                      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center justify-center py-4 w-full">
+                        <h3 className="text-[10px] font-bold text-gray-400 mb-3 uppercase tracking-widest">Built Syllables</h3>
+                        <div className="flex flex-wrap justify-center gap-3 max-w-sm">
+                          {targets.filter(t => completedTargets.has(t.syllable)).map((target, idx) => (
+                            <button
+                              key={target.syllable}
+                              onClick={() => playTTS(target.syllable, target.pattern)}
+                              className="flex items-center gap-2 px-4 py-2 bg-white rounded-2xl shadow-md border-b-[4px] hover:scale-105 active:scale-95 transition-all"
+                              style={{ borderColor: patternColors[target.pattern] }}
+                            >
+                              <div className="font-black text-3xl tracking-wide flex">
+                                {target.syllable.split("").map((ch, i) => (
+                                  <span
+                                    key={i}
+                                    style={{
+                                      color: ["A", "E", "I", "O", "U"].includes(ch.toUpperCase())
+                                        ? "#FF6B8A"
+                                        : "#1CB0F6",
+                                    }}
+                                  >
+                                    {ch.toLowerCase()}
+                                  </span>
+                                ))}
+                              </div>
+                              <Volume2 className="w-5 h-5 opacity-50" style={{ color: patternColors[target.pattern] }} />
+                            </button>
+                          ))}
+                        </div>
                       </motion.div>
+                    ) : (
+                      <>
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                          Tap letters below in the correct order
+                        </span>
+                        <motion.div
+                          animate={{
+                            x: feedback === "wrong" ? [-10, 10, -10, 10, 0] : 0,
+                            scale: feedback === "correct" ? [1, 1.05, 1] : 1
+                          }}
+                          className="flex justify-center gap-2 mt-2 mb-4"
+                        >
+                          {Array.from({ length: slotCount }).map((_, slot) => {
+                            const isVowel = ["A", "E", "I", "O", "U"].includes(selectedLetters[slot]);
+                            return (
+                              <div
+                                key={slot}
+                                className={`w-16 h-16 sm:w-20 sm:h-20 rounded-2xl flex items-center justify-center transition-all ${!selectedLetters[slot]
+                                  ? "border-4 border-dashed border-gray-300 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-800/30"
+                                  : ""
+                                  }`}
+                              >
+                                {selectedLetters[slot] ? (
+                                  <motion.div
+                                    initial={{ scale: 0, y: -10 }}
+                                    animate={{ scale: 1, y: 0 }}
+                                    className={`w-full h-full rounded-2xl flex flex-col items-center justify-center border-b-[4px] select-none shadow-md ${feedback === "correct" ? "bg-green-100 border-green-400 text-green-700" :
+                                      feedback === "wrong" ? "bg-red-50 border-red-400 text-red-600" : ""
+                                      }`}
+                                    style={{
+                                      background: feedback ? undefined :
+                                        isVowel ? "linear-gradient(135deg, #FF6B8A 0%, #FF4B8A 100%)" : "linear-gradient(135deg, #1CB0F6 0%, #0a8ed4 100%)",
+                                      borderColor: feedback ? undefined :
+                                        isVowel ? "#C82A52" : "#086CA5",
+                                    }}
+                                  >
+                                    <span className={`text-4xl sm:text-5xl font-black drop-shadow-sm ${feedback ? "" : "text-white"}`}>
+                                      {selectedLetters[slot]?.toLowerCase()}
+                                    </span>
+
+                                  </motion.div>
+                                ) : (
+                                  <span className="text-gray-300 dark:text-gray-600 text-2xl font-bold opacity-50">
+                                    {patternPlaceholder(currentTarget.pattern)[slot]}
+                                  </span>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </motion.div>
+                      </>
                     )}
                   </div>
 
@@ -577,15 +589,8 @@ export function LevelSyllableBuilder({
                       !feedback;
 
                     return (
-                      <motion.button
+                      <button
                         key={item.id}
-                        initial={{ opacity: 0, scale: 0 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{
-                          delay: i * 0.02,
-                          type: "spring",
-                          stiffness: 300,
-                        }}
                         onClick={() =>
                           !isDisabled && handleLetterClick(item.letter)
                         }
@@ -614,7 +619,7 @@ export function LevelSyllableBuilder({
                           {item.letter}{item.letter.toLowerCase()}
                         </span>
 
-                      </motion.button>
+                      </button>
                     );
                   })}
                 </div>
@@ -635,7 +640,6 @@ export function LevelSyllableBuilder({
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-yellow-50 to-pink-50 dark:bg-none dark:bg-[#0d141c] overflow-x-hidden">
-      <Confetti active={showConfetti} />
       {/* Header */}
       <div className="sticky top-0 z-10 bg-white/80 dark:bg-[#0d141c]/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 px-4 py-3">
         <div className="max-w-2xl mx-auto flex items-center gap-3 w-full">

@@ -66,32 +66,34 @@ interface UseSpeechRecognitionProps {
 // ... (HOMOPHONES block remains) ...
 const HOMOPHONES: Record<string, string[]> = {
   // Alphabet phonetic homophones
-  "A": ["a", "ay", "hey", "eight"],
-  "B": ["b", "bee", "be"],
-  "C": ["c", "see", "sea"],
-  "D": ["d", "dee", "the"],
-  "E": ["e", "ee", 'ih'],
-  "F": ["f", "eff", "if", "half"],
-  "G": ["g", "gee", "jee"],
-  "H": ["h", "aitch", "hatch", "age", "each"],
-  "I": ["i", "eye", "hi"],
-  "J": ["j", "jay"],
-  "K": ["k", "kay", "okay"],
+  // Vowels — expanded to cover common Web Speech API phonetic outputs for single-letter sounds
+  "A": ["a", "ay", "hey", "eight", "ah", "eh", "aye", "ha"],
+  "E": ["e", "ee", "ih", "eh", "ea"],
+  "I": ["i", "eye", "hi", "ai", "aye", "aye"],
+  "O": ["o", "oh", "ow", "oe"],
+  "U": ["u", "you", "yu", "uh", "yoo"],
+  // Consonants
+  "B": ["b", "bee", "be", "bi"],
+  "C": ["c", "see", "sea", "si"],
+  "D": ["d", "dee", "the", "di"],
+  "F": ["f", "eff", "if", "half", "ef"],
+  "G": ["g", "gee", "jee", "ji"],
+  "H": ["h", "aitch", "age", "each", "haitch"],
+  "J": ["j", "jay", "jai"],
+  "K": ["k", "kay", "okay", "kei"],
   "L": ["l", "ell", "el"],
   "M": ["m", "em", "am", "him"],
   "N": ["n", "en", "an", "and", "in"],
-  "O": ["o", "oh"],
-  "P": ["p", "pee", "pea"],
-  "Q": ["q", "cue", "queue"],
-  "R": ["r", "are", "our"],
-  "S": ["s", "ess", "yes", "is"],
-  "T": ["t", "tee", "tea"],
-  "U": ["u", "you", "yu"],
-  "V": ["v", "vee", "we"],
-  "W": ["w", "double u", "double you"],
-  "X": ["x", "ex", "axe", "text"],
-  "Y": ["y", "why", "while"],
-  "Z": ["z", "zee", "zed", "c"],
+  "P": ["p", "pee", "pea", "pi"],
+  "Q": ["q", "cue", "queue", "kyu"],
+  "R": ["r", "are", "our", "ar"],
+  "S": ["s", "ess", "yes", "is", "es"],
+  "T": ["t", "tee", "tea", "ti"],
+  "V": ["v", "vee", "vi"],
+  "W": ["w", "double u", "double you", "dub"],
+  "X": ["x", "ex", "axe", "text", "eks"],
+  "Y": ["y", "why", "wye", "wi"],
+  "Z": ["z", "zee", "zed", "ze"],
 
   // Common CV/VC homophones
   "PI": ["pie", "pee", "p"],
@@ -372,35 +374,51 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, singleSho
       }
     };
 
-    try {
-      recognition.start();
-      
-      const isPhrase = evaluatingWord.toUpperCase().replace(/[.,!?]/g, "").trim().includes(" ");
-      const timeoutDuration = isPhrase ? 10000 : 5000;
+    // In singleShot mode, add a 200ms warm-up delay before starting recognition.
+    // The Web Speech API's audio pipeline needs ~100-200ms to fully initialize.
+    // Without this, very short sounds like a single letter name ("A", "B") said
+    // immediately after tapping the mic get clipped and are never captured.
+    let startupTimerId: NodeJS.Timeout | null = null;
 
-      timeoutRef.current = setTimeout(() => {
-        if (!isActive || hasMatched) return;
-        if (DEBUG) console.log(`[AlphabetGO Debug] ⏱️ Timeout reached (${timeoutDuration}ms) for "${evaluatingWord}". Evaluating final state...`);
-        if (recognitionRef.current) {
-          try { recognitionRef.current.stop(); } catch (e) { }
-        }
-        hasMatched = true;
-        // If timeout passes and we never got a correct match, THEN we fail them
-        if (resultReceivedRef.current && latestTranscript) {
-          if (DEBUG) console.log(`[AlphabetGO Debug] 👎 Forcing "wrong" feedback with transcript: "${latestTranscript}"`);
-          onResultRef.current(evaluatingWord, "wrong", latestTranscript);
-        } else {
-          if (DEBUG) console.log(`[AlphabetGO Debug] 🤫 No speech detected (silence timeout).`);
-          onSilenceTimeoutRef.current();
-        }
-      }, timeoutDuration);
-    } catch (error) {
-      if (DEBUG) console.error("[AlphabetGO Debug] ❌ Error starting recognition:", error);
-      onErrorRef.current();
+    const doStart = () => {
+      if (!isActive) return;
+      try {
+        recognition.start();
+
+        const isPhrase = evaluatingWord.toUpperCase().replace(/[.,!?]/g, "").trim().includes(" ");
+        const timeoutDuration = isPhrase ? 10000 : 5000;
+
+        timeoutRef.current = setTimeout(() => {
+          if (!isActive || hasMatched) return;
+          if (DEBUG) console.log(`[AlphabetGO Debug] ⏱️ Timeout reached (${timeoutDuration}ms) for "${evaluatingWord}". Evaluating final state...`);
+          if (recognitionRef.current) {
+            try { recognitionRef.current.stop(); } catch (e) { }
+          }
+          hasMatched = true;
+          if (resultReceivedRef.current && latestTranscript) {
+            if (DEBUG) console.log(`[AlphabetGO Debug] 👎 Forcing "wrong" feedback with transcript: "${latestTranscript}"`);
+            onResultRef.current(evaluatingWord, "wrong", latestTranscript);
+          } else {
+            if (DEBUG) console.log(`[AlphabetGO Debug] 🤫 No speech detected (silence timeout).`);
+            onSilenceTimeoutRef.current();
+          }
+        }, timeoutDuration);
+      } catch (error) {
+        if (DEBUG) console.error("[AlphabetGO Debug] ❌ Error starting recognition:", error);
+        onErrorRef.current();
+      }
+    };
+
+    if (singleShot) {
+      // 200ms delay — lets the browser open the mic fully before the student speaks
+      startupTimerId = setTimeout(doStart, 200);
+    } else {
+      doStart();
     }
 
     return () => {
       isActive = false;
+      if (startupTimerId) clearTimeout(startupTimerId);
       cleanup();
     };
   }, [evaluatingWord, enabled, cleanup]);

@@ -3,7 +3,7 @@ import { useNavigate } from "react-router";
 import { Button } from "./ui/button";
 import { allLetters as ALL_LETTERS } from "../data/levels";
 import { motion, AnimatePresence } from "motion/react";
-import { ChevronRight, Home, ArrowRight, Shuffle, FastForward, Volume2 } from "lucide-react";
+import { ChevronRight, Home, ArrowRight, Shuffle, FastForward, Volume2, RotateCcw } from "lucide-react";
 import { playSound } from "../utils/soundEffects";
 import { MatchButton } from "./MatchButton";
 
@@ -114,10 +114,8 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
 
   // Listen & Type Phase States
   const [typeOrder, setTypeOrder] = useState<string[]>([]);
-  const [currentTypeIndex, setCurrentTypeIndex] = useState(0);
-  const [typeInput, setTypeInput] = useState("");
-  const [isTypeCorrect, setIsTypeCorrect] = useState<boolean | null>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [typeInputs, setTypeInputs] = useState<Record<string, string>>({});
+  const [typeStatus, setTypeStatus] = useState<Record<string, boolean | null>>({});
 
   useEffect(() => {
     if (step.type === "type") {
@@ -126,71 +124,46 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
   }, [baseActiveLetters, step.type]);
 
   const setupTypePhase = () => {
-    setTypeOrder([...baseActiveLetters].sort(() => Math.random() - 0.5));
-    setCurrentTypeIndex(0);
-    setTypeInput("");
-    setIsTypeCorrect(null);
+    const sorted = [...baseActiveLetters].sort(() => Math.random() - 0.5);
+    setTypeOrder(sorted);
+    setTypeInputs({});
+    setTypeStatus({});
   };
 
   const handleShuffleType = () => {
-    // Only shuffle the remaining items
-    const remaining = typeOrder.slice(currentTypeIndex);
-    const shuffled = [...remaining].sort(() => Math.random() - 0.5);
-    setTypeOrder(prev => [...prev.slice(0, currentTypeIndex), ...shuffled]);
+    // Shuffle all items since they are all displayed at once
+    setTypeOrder(prev => [...prev].sort(() => Math.random() - 0.5));
   };
 
-  const currentTypeLetter = typeOrder[currentTypeIndex];
-
-  const playTypeSound = () => {
-    if (!currentTypeLetter) return;
-    const audio = new Audio(`${(import.meta as any).env.BASE_URL}audio/alphasounds-${currentTypeLetter.toLowerCase()}.mp3`);
+  const playTypeSound = (letter: string) => {
+    if (!letter) return;
+    const audio = new Audio(`${(import.meta as any).env.BASE_URL}audio/alphasounds-${letter.toLowerCase()}.mp3`);
     audio.play().catch(() => {});
   };
 
-  // Play sound automatically when new letter appears
-  useEffect(() => {
-    if (step.type === "type" && currentTypeLetter && isTypeCorrect === null) {
-      // Delay slightly for transition
-      const t = setTimeout(() => {
-        playTypeSound();
-        inputRef.current?.focus();
-      }, 500);
-      return () => clearTimeout(t);
-    }
-  }, [step.type, currentTypeLetter, currentTypeIndex]);
-
-  const handleTypeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    
-    // Disallow typing more than 1 character
+  const handleTypeChange = (letter: string, val: string) => {
     if (val.length > 1) return;
     
-    setTypeInput(val);
+    setTypeInputs(prev => ({ ...prev, [letter]: val }));
     
-    if (val.length === 1 && currentTypeLetter) {
-      if (val.toLowerCase() === currentTypeLetter.toLowerCase()) {
+    if (val.length === 1) {
+      if (val.toLowerCase() === letter.toLowerCase()) {
         playSound("correct", 0.4);
-        setIsTypeCorrect(true);
-        setTimeout(() => {
-          setIsTypeCorrect(null);
-          setTypeInput("");
-          if (currentTypeIndex < typeOrder.length - 1) {
-            setCurrentTypeIndex(prev => prev + 1);
-          } else {
-            // Reached end of type phase, wait for user to click Next
-            setCurrentTypeIndex(prev => prev + 1);
-          }
-        }, 1000);
+        setTypeStatus(prev => ({ ...prev, [letter]: true }));
       } else {
         playSound("wrong", 0.35);
-        setIsTypeCorrect(false);
+        setTypeStatus(prev => ({ ...prev, [letter]: false }));
         setTimeout(() => {
-          setIsTypeCorrect(null);
-          setTypeInput("");
+          setTypeStatus(prev => ({ ...prev, [letter]: null }));
+          setTypeInputs(prev => ({ ...prev, [letter]: "" }));
         }, 800);
       }
+    } else {
+      setTypeStatus(prev => ({ ...prev, [letter]: null }));
     }
   };
+
+  const isTypePhaseComplete = typeOrder.length > 0 && typeOrder.every(letter => typeStatus[letter] === true);
 
   const handleGoBack = () => {
     const confirmExit = window.confirm("Are you sure you want to leave?");
@@ -328,11 +301,23 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
                 {/* Navigation Controls moved to top */}
                 <div className="flex justify-center items-center w-full gap-3 sm:gap-4 max-w-md mx-auto mt-6">
                   <Button 
-                    onClick={setupMatchPhase} 
+                    onClick={() => {
+                      setMatchColumns(prev => ({
+                        left: [...prev.left].sort(() => Math.random() - 0.5),
+                        right: [...prev.right].sort(() => Math.random() - 0.5)
+                      }));
+                    }} 
                     className="flex-1 rounded-xl font-bold text-white shadow-md border-b-4 border-[#8b40b8] hover:scale-105 active:scale-95 px-2"
                     style={{ background: 'linear-gradient(135deg, #ce82ff 0%, #a559d6 100%)' }}
                   >
                     <Shuffle className="w-4 h-4 mr-1" /> Shuffle
+                  </Button>
+                  <Button 
+                    onClick={setupMatchPhase} 
+                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-4 border-[#e11d48] hover:scale-105 active:scale-95 px-2"
+                    style={{ background: 'linear-gradient(135deg, #fb7185 0%, #e11d48 100%)' }}
+                  >
+                    <RotateCcw className="w-4 h-4 mr-1" /> Reset
                   </Button>
                   <Button 
                     onClick={handleStepNext} 
@@ -416,11 +401,17 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
                 <div className="flex justify-center items-center w-full gap-3 sm:gap-4 max-w-md mx-auto mt-6">
                   <Button 
                     onClick={handleShuffleType} 
-                    disabled={currentTypeIndex >= typeOrder.length} 
-                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-4 border-[#8b40b8] hover:scale-105 active:scale-95 disabled:opacity-50 disabled:grayscale disabled:pointer-events-none px-2"
+                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-4 border-[#8b40b8] hover:scale-105 active:scale-95 px-2"
                     style={{ background: 'linear-gradient(135deg, #ce82ff 0%, #a559d6 100%)' }}
                   >
                     <Shuffle className="w-4 h-4 mr-1" /> Shuffle
+                  </Button>
+                  <Button 
+                    onClick={setupTypePhase} 
+                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-4 border-[#e11d48] hover:scale-105 active:scale-95 px-2"
+                    style={{ background: 'linear-gradient(135deg, #fb7185 0%, #e11d48 100%)' }}
+                  >
+                    <RotateCcw className="w-4 h-4 mr-1" /> Reset
                   </Button>
                   <Button 
                     onClick={handleStepNext} 
@@ -432,8 +423,8 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
                   
                   <Button
                     onClick={handleStepNext}
-                    disabled={currentTypeIndex < typeOrder.length}
-                    className={`flex-1 rounded-xl font-bold text-white shadow-md border-b-4 ${currentTypeIndex >= typeOrder.length ? 'border-[#3c8c01] hover:scale-105 active:scale-95' : 'opacity-50 grayscale cursor-not-allowed'}`}
+                    disabled={!isTypePhaseComplete}
+                    className={`flex-1 rounded-xl font-bold text-white shadow-md border-b-4 ${isTypePhaseComplete ? 'border-[#3c8c01] hover:scale-105 active:scale-95' : 'opacity-50 grayscale cursor-not-allowed'}`}
                     style={{ background: 'linear-gradient(135deg, #58cc02 0%, #46a302 100%)' }}
                   >
                     {currentStep === STEPS.length - 1 ? 'Finish!' : 'Next'} <ChevronRight className="w-4 h-4 ml-1" />
@@ -441,60 +432,54 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
                 </div>
               </div>
 
-              <div className="flex flex-col items-center justify-center flex-1 w-full max-w-md mx-auto mb-12">
-                {currentTypeIndex < typeOrder.length ? (
-                  <>
-                    <motion.div 
-                      key={`type-speaker-${currentTypeIndex}`}
-                      initial={{ scale: 0.8, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      className="mb-8"
-                    >
-                      <button
-                        onClick={playTypeSound}
-                        className="w-32 h-32 rounded-full shadow-xl flex items-center justify-center bg-white border-4 transition-transform hover:scale-105 active:scale-95"
-                        style={{ borderColor: accent.primary, color: accent.primary }}
+              <div className="flex justify-center gap-4 sm:gap-8 w-full max-w-2xl mx-auto mb-10 px-2 sm:px-4">
+                {/* Left Column: TTS Speakers */}
+                <div className="flex flex-col gap-3 sm:gap-4 flex-1 min-w-0">
+                  {typeOrder.map((letter) => {
+                    const isCorrect = typeStatus[letter] === true;
+                    return (
+                      <MatchButton
+                        key={`speaker-${letter}`}
+                        gradientStart={accent.primary}
+                        gradientEnd={accent.dark}
+                        isMatched={isCorrect} // grays it out if correct
+                        isSelected={false}
+                        isWrong={false}
+                        onClick={() => playTypeSound(letter)}
                       >
-                        <Volume2 className="w-16 h-16" />
-                      </button>
-                    </motion.div>
+                        <Volume2 className={`w-8 h-8 ${isCorrect ? "opacity-50" : ""}`} />
+                      </MatchButton>
+                    );
+                  })}
+                </div>
 
-                    <motion.div
-                      animate={{ 
-                        x: isTypeCorrect === false ? [-10, 10, -10, 10, 0] : 0,
-                        scale: isTypeCorrect === true ? [1, 1.1, 1] : 1
-                      }}
-                      className="w-full relative"
-                    >
-                      <input
-                        ref={inputRef}
-                        type="text"
-                        value={typeInput}
-                        onChange={handleTypeChange}
-                        placeholder="?"
-                        autoComplete="off"
-                        autoCorrect="off"
-                        autoCapitalize="off"
-                        spellCheck="false"
-                        disabled={isTypeCorrect === true}
-                        className={`w-full text-center text-7xl font-black py-8 rounded-3xl border-8 outline-none transition-colors shadow-inner
-                          ${isTypeCorrect === true ? 'bg-green-100 border-green-400 text-green-700' : 
-                            isTypeCorrect === false ? 'bg-red-50 border-red-400 text-red-600' : 
-                            'bg-gray-50 border-gray-200 text-gray-800 focus:border-blue-400 focus:bg-white'}
-                        `}
-                      />
-                    </motion.div>
+                {/* Right Column: Inputs */}
+                <div className="flex flex-col gap-3 sm:gap-4 flex-1 min-w-0">
+                  {typeOrder.map((letter) => {
+                    const status = typeStatus[letter];
+                    const val = typeInputs[letter] || "";
                     
-                    <p className="mt-6 text-gray-400 font-medium">
-                      {typeOrder.length - currentTypeIndex} letters remaining
-                    </p>
-                  </>
-                ) : (
-                  <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} className="text-center">
-                    <div className="w-24 h-24 bg-green-100 text-green-500 rounded-full flex items-center justify-center mx-auto mb-4 text-5xl">✓</div>
-                    <h3 className="text-2xl font-bold text-gray-800">Typing Complete!</h3>
-                  </motion.div>
-                )}
+                    return (
+                      <motion.div
+                        key={`input-${letter}`}
+                        animate={{ x: status === false ? [-5, 5, -5, 5, 0] : 0 }}
+                        className="w-full h-14 sm:h-16 flex"
+                      >
+                        <input
+                          type="text"
+                          value={val}
+                          onChange={(e) => handleTypeChange(letter, e.target.value)}
+                          disabled={status === true}
+                          className={`w-full h-full text-center text-2xl sm:text-3xl font-black rounded-lg sm:rounded-2xl border-2 sm:border-b-[4px] outline-none transition-all shadow-sm
+                            ${status === true ? 'bg-gray-100 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700/50 text-green-600 dark:text-green-500 opacity-50 grayscale' : 
+                              status === false ? 'bg-red-50 border-red-400 text-red-600' : 
+                              'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-200 focus:border-blue-400'}
+                          `}
+                        />
+                      </motion.div>
+                    );
+                  })}
+                </div>
               </div>
             </motion.div>
 

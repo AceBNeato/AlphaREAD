@@ -15,6 +15,7 @@ import {
   Shuffle,
   Loader2,
   SkipForward,
+  FastForward,
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { CVC_WORDS, shuffle, getPhoneticPronunciation } from "../data/levels";
@@ -25,6 +26,7 @@ import { evaluateSyllable, isSyllableTarget } from "../utils/PhonemeEvaluator";
 import { playSound } from "../utils/soundEffects";
 import { AudioVisualizer } from "./AudioVisualizer";
 import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
+import { playTTS } from "../utils/tts";
 
 
 interface LevelVoiceEvaluationProps {
@@ -103,7 +105,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
     setShowCompletionScreen(true);
   };
 
-  const playTTS = async (text: string) => {
+  const handlePlayTTS = async (text: string) => {
     // For CV/VC syllables, look up the phonetically correct TTS string
     // so "PI" says "Pee", "BA" says "Bah", "AB" says "Ab" — not the letter names.
     let speakText = text.toLowerCase();
@@ -115,12 +117,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
       const phonetic = getPhoneticPronunciation(upper, pattern as any);
       if (phonetic !== upper) speakText = phonetic;
     }
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(speakText);
-      utterance.rate = 0.85;
-      window.speechSynthesis.speak(utterance);
-    }
+    playTTS(speakText);
   };
 
   const progress = (completedWords.size / words.length) * 100;
@@ -276,53 +273,56 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
 
         {!showCompletionScreen ? (
           <>
-            {/* Progress Bar */}
-            <div className="w-full h-3 bg-gray-200/80 dark:bg-gray-800 rounded-full overflow-hidden mb-6 shadow-inner border border-gray-100 dark:border-gray-700/30">
-              <motion.div
-                initial={{ width: 0 }}
-                animate={{ width: `${progress}%` }}
-                transition={{ duration: 0.4, ease: "easeOut" }}
-                className="h-full rounded-full"
-                style={{
-                  background: `linear-gradient(90deg, ${accent.primary}, ${accent.dark})`,
-                }}
-              />
-            </div>
 
             {/* Teacher Controls Row */}
-            <div className="flex justify-center gap-3 mb-6">
+            <div className="flex justify-center items-center w-full gap-2 sm:gap-3 max-w-lg mx-auto mb-6">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={handleShuffle}
-                className="flex items-center gap-1.5 border-indigo-300 text-indigo-600 hover:bg-indigo-50 dark:border-indigo-700 dark:text-indigo-400 dark:hover:bg-indigo-900/20"
+                className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#883fba] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
+                style={{
+                  background: "linear-gradient(135deg, #ce82ff 0%, #a559d6 100%)",
+                }}
               >
-                <Shuffle className="w-4 h-4" /> Shuffle
+                <Shuffle className="w-4 h-4 sm:mr-1" />
+                <span className="hidden sm:inline">Shuffle</span>
               </Button>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={handleReset}
-                className="flex items-center gap-1.5 border-amber-300 text-amber-600 hover:bg-amber-50 dark:border-amber-700 dark:text-amber-400"
+                className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#b81d1d] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
+                style={{
+                  background: "linear-gradient(135deg, rgb(255, 75, 75) 0%, rgb(216, 42, 42) 100%)",
+                }}
               >
-                <RotateCcw className="w-4 h-4" /> Reset
-              </Button>
-              <Button
-                size="sm"
-                onClick={handleNext}
-                disabled={completedWords.size < words.length}
-                className="flex items-center gap-1.5 text-white shadow-md active:scale-95"
-                style={{ background: completedWords.size >= words.length ? `linear-gradient(135deg, ${accent.primary}, ${accent.dark})` : "gray" }}
-              >
-                Next <ArrowRight className="w-4 h-4" />
+                <RotateCcw className="w-4 h-4 sm:mr-1" />
+                <span className="hidden sm:inline">Reset</span>
               </Button>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={handleSkip}
-                className="flex items-center gap-1.5 border-amber-300 text-amber-600 hover:bg-amber-50 dark:border-amber-700 dark:text-amber-400"
+                className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#c99c00] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
+                style={{
+                  background: "linear-gradient(135deg, rgb(255, 200, 0) 0%, rgb(255, 150, 0) 100%)",
+                }}
               >
-                Skip <SkipForward className="w-4 h-4" />
+                <FastForward className="w-4 h-4 sm:mr-1" />
+                <span className="hidden sm:inline">Skip</span>
+              </Button>
+              <Button
+                size="sm"
+                onClick={handleNext}
+                disabled={completedWords.size < words.length}
+                className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#3c8c01] hover:scale-105 active:scale-95 px-2 transition-all disabled:opacity-50 disabled:grayscale disabled:pointer-events-none h-9 py-2"
+                style={{
+                  background: "linear-gradient(135deg, rgb(88, 204, 2) 0%, rgb(70, 163, 2) 100%)",
+                }}
+              >
+                <span className="hidden sm:inline">Next</span>
+                <ArrowRight className="w-4 h-4 sm:ml-1" />
               </Button>
             </div>
 
@@ -435,7 +435,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
                 <motion.button
                   key={i}
                   whileTap={{ scale: 0.95 }}
-                  onClick={() => playTTS(word)}
+                  onClick={() => handlePlayTTS(word)}
                   className="px-4 py-2.5 rounded-full text-white text-lg font-bold flex items-center gap-2 shadow-md cursor-pointer transition-all hover:brightness-105 active:brightness-95 border-b-4 border-black/20"
                   style={{
                     background: `linear-gradient(135deg, ${accent.primary}, ${accent.dark})`,

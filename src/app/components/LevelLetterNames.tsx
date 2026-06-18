@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useNavigate } from "react-router";
-import { Home, Volume2, ArrowLeft, ArrowRight, Sparkles, CheckCircle2, XCircle, Mic, MicOff, AlertCircle, Shuffle, RotateCcw, SkipForward } from "lucide-react";
+import { Home, Volume2, ArrowLeft, ArrowRight, Sparkles, CheckCircle2, XCircle, Mic, MicOff, AlertCircle, RotateCcw, SkipForward, FastForward } from "lucide-react";
 import { Button } from "./ui/button";
 import { motion, AnimatePresence } from "motion/react";
 import { supabase } from "../../lib/supabase";
@@ -9,6 +9,7 @@ import { shuffle, allLetters, LETTER_NAMES, LETTER_TTS } from "../data/levels";
 import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
 import { AudioVisualizer } from "./AudioVisualizer";
 import { playSound } from "../utils/soundEffects";
+import { playTTS as playTTSUtil } from "../utils/tts";
 import { MatchButton } from "./MatchButton";
 
 interface LevelLetterNamesProps {
@@ -53,6 +54,10 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
   const [isSaving, setIsSaving] = useState(false);
 
   const evaluationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  // Tracks whether the 200ms mic warm-up has elapsed (singleShot mode).
+  // Prevents students from speaking before the browser is ready to listen.
+  const [micReady, setMicReady] = useState(false);
+  const micReadyTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const clearEvalTimeout = useCallback(() => {
     if (evaluationTimeoutRef.current) {
@@ -62,20 +67,18 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
   }, []);
 
   useEffect(() => {
-    return () => clearEvalTimeout();
+    return () => {
+      clearEvalTimeout();
+      if (micReadyTimerRef.current) clearTimeout(micReadyTimerRef.current);
+    };
   }, [clearEvalTimeout]);
 
   const isMobile = useMemo(() => /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent), []);
 
   // TTS utility
   const playNameTTS = (letter: string) => {
-    if ("speechSynthesis" in window) {
-      window.speechSynthesis.cancel();
-      const name = LETTER_TTS[letter] || letter;
-      const utterance = new SpeechSynthesisUtterance(name);
-      utterance.rate = 0.85;
-      window.speechSynthesis.speak(utterance);
-    }
+    const name = LETTER_TTS[letter] || letter;
+    playTTSUtil(name);
   };
 
   const currentSetPairs = useMemo(() => {
@@ -162,13 +165,9 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
     }
   });
 
-  const handleVoiceShuffle = () => {
-    clearEvalTimeout();
-    setEvaluatingLetter(null);
-    setShuffledVoiceLetters(shuffle([...step.letters]));
-    setCompletedVoiceLetters(new Set());
-    setVoiceFeedbackMap({});
-    setVoiceTranscriptsMap({});
+  const handleBack = () => {
+    playSound("click", 0.2);
+    navigate(-1);
   };
 
   const handleVoiceReset = () => {
@@ -356,20 +355,56 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
               </div>
 
               {/* Controls */}
-              <div className="flex justify-center gap-3 w-full mb-6">
-                <Button variant="outline" size="sm" onClick={handleVoiceShuffle} className="rounded-full flex items-center gap-2 border-gray-300">
-                  <Shuffle className="w-4 h-4 text-gray-600" /> Shuffle
-                </Button>
-                <Button variant="outline" size="sm" onClick={handleVoiceReset} className="rounded-full flex items-center gap-2 border-gray-300">
-                  <RotateCcw className="w-4 h-4 text-gray-600" /> Reset
-                </Button>
-                <Button size="sm" onClick={handleVoiceNext} disabled={completedVoiceLetters.size < shuffledVoiceLetters.length} className="rounded-full flex items-center gap-2 text-white shadow-md active:scale-95 transition-all" style={{ background: completedVoiceLetters.size >= shuffledVoiceLetters.length ? `linear-gradient(135deg, ${accent.primary}, ${accent.dark})` : "gray" }}>
-                  Next <ArrowRight className="w-4 h-4" />
-                </Button>
-                <Button variant="outline" size="sm" onClick={handleVoiceNext} className="rounded-full flex items-center gap-2 border-gray-300">
-                  Skip <SkipForward className="w-4 h-4 text-gray-600" />
-                </Button>
-              </div>
+            <div className="flex justify-center items-center w-full gap-2 sm:gap-3 max-w-lg mx-auto mb-6">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleBack}
+                className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#086ca5] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
+                style={{
+                  background: "linear-gradient(135deg, rgb(28, 176, 246) 0%, rgb(10, 142, 212) 100%)",
+                }}
+              >
+                <ArrowLeft className="w-4 h-4 sm:mr-1" />
+                <span className="hidden sm:inline">Back</span>
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleVoiceReset}
+                className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#b81d1d] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
+                style={{
+                  background: "linear-gradient(135deg, rgb(255, 75, 75) 0%, rgb(216, 42, 42) 100%)",
+                }}
+              >
+                <RotateCcw className="w-4 h-4 sm:mr-1" />
+                <span className="hidden sm:inline">Reset</span>
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleVoiceNext}
+                className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#c99c00] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
+                style={{
+                  background: "linear-gradient(135deg, rgb(255, 200, 0) 0%, rgb(255, 150, 0) 100%)",
+                }}
+              >
+                <FastForward className="w-4 h-4 sm:mr-1" />
+                <span className="hidden sm:inline">Skip</span>
+              </Button>
+              <Button
+                size="sm"
+                onClick={handleStepNext}
+                disabled={completedVoiceLetters.size < shuffledVoiceLetters.length}
+                className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#3c8c01] hover:scale-105 active:scale-95 px-2 transition-all disabled:opacity-50 disabled:grayscale disabled:pointer-events-none h-9 py-2"
+                style={{
+                  background: "linear-gradient(135deg, rgb(88, 204, 2) 0%, rgb(70, 163, 2) 100%)",
+                }}
+              >
+                <span className="hidden sm:inline">Next</span>
+                <ArrowRight className="w-4 h-4 sm:ml-1" />
+              </Button>
+            </div>
 
               <div className="w-full text-center mb-8">
                 <div className="space-y-3 bg-white/50 dark:bg-gray-800/50 p-4 rounded-3xl backdrop-blur-sm border-2 border-dashed border-gray-200 dark:border-gray-700">
@@ -399,17 +434,21 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
                         </div>
 
                         <div className="flex items-center gap-3">
-                          {isEval && (
-                            <div className="flex items-center gap-2 mt-1 sm:mt-0 flex-wrap">
-                              <span className="text-pink-500 text-sm font-bold animate-pulse">Listening...</span>
-                              <AudioVisualizer isListening={!!evaluatingLetter} isMobile={isMobile} />
-                              {vTranscript && (
-                                <span className="p-1 bg-gray-200 rounded text-[10px] font-mono text-gray-700 ml-1 truncate max-w-[120px]">
-                                  [Heard: {vTranscript}]
-                                </span>
+                              {isEval && (
+                                <div className="flex items-center gap-2 mt-1 sm:mt-0 flex-wrap">
+                                  {micReady ? (
+                                    <span className="text-pink-500 text-sm font-bold animate-pulse">Listening...</span>
+                                  ) : (
+                                    <span className="text-amber-500 text-sm font-bold animate-pulse">Get ready...</span>
+                                  )}
+                                  {micReady && <AudioVisualizer isListening={!!evaluatingLetter} isMobile={isMobile} />}
+                                  {vTranscript && (
+                                    <span className="p-1 bg-gray-200 rounded text-[10px] font-mono text-gray-700 ml-1 truncate max-w-[120px]">
+                                      [Heard: {vTranscript}]
+                                    </span>
+                                  )}
+                                </div>
                               )}
-                            </div>
-                          )}
 
                           <button
                             onClick={() => {
@@ -417,8 +456,12 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
                                 setEvaluatingLetter(null);
                               } else if (!isDone) {
                                 setEvaluatingLetter(l);
-                                setVoiceFeedbackMap(prev => ({ ...prev, [l]: null }));
+                              setVoiceFeedbackMap(prev => ({ ...prev, [l]: null }));
                                 setVoiceTranscriptsMap(prev => ({ ...prev, [l]: "" }));
+                                // Start the mic-ready countdown — mirrors the 200ms warmup in useSpeechRecognition
+                                setMicReady(false);
+                                if (micReadyTimerRef.current) clearTimeout(micReadyTimerRef.current);
+                                micReadyTimerRef.current = setTimeout(() => setMicReady(true), 220);
                               }
                             }}
                             disabled={(evaluatingLetter !== null && !isEval) || isDone}

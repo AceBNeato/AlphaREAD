@@ -1,8 +1,8 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { useNavigate } from "react-router";
 import {
-  Home, Mic, MicOff, CheckCircle2, XCircle, Sparkles, ArrowRight,
-  Shuffle, RotateCcw, SkipForward, Volume2
+  Home, Mic, MicOff, CheckCircle2, XCircle, Sparkles, ArrowRight, ArrowLeft,
+  RotateCcw, SkipForward, FastForward, Volume2, Shuffle
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { motion, AnimatePresence } from "motion/react";
@@ -11,6 +11,7 @@ import { Confetti } from "./ui/Confetti";
 import { CVC_SENTENCES } from "../data/levels";
 import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
 import { playSound } from "../utils/soundEffects";
+import { playTTS as playTTSUtil } from "../utils/tts";
 
 interface LevelCVCSentencesProps {
   levelId: number;
@@ -60,12 +61,7 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete }: L
   }, [currentSetIndex]);
 
   const playTTS = (text: string) => {
-    if ("speechSynthesis" in window) {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = 0.85;
-      window.speechSynthesis.speak(utterance);
-    }
+    playTTSUtil(text);
   };
 
   // Voice result handler (matches Lesson 5 pattern)
@@ -200,22 +196,11 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete }: L
             <Home className="w-5 h-5" />
           </Button>
           <h2 className="text-lg font-bold tracking-tight text-center flex-1" style={{ color: accent.primary }}>
-            Sentences Quiz (Set {currentSetIndex + 1}/{totalSets})
+            Sentences Quiz (Set {currentSetIndex + 1}/{totalSets}) Read the Sentences
           </h2>
           <span className="text-xs font-bold text-gray-500 bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full uppercase">
             {completedSentences.size}/{activeSentences.length}
           </span>
-        </div>
-        {/* Progress bar */}
-        <div className="max-w-4xl mx-auto mt-2 px-1">
-          <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-            <motion.div
-              animate={{ width: `${activeSentences.length > 0 ? (completedSentences.size / activeSentences.length) * 100 : 0}%` }}
-              transition={{ duration: 0.3 }}
-              className="h-full rounded-full"
-              style={{ background: `linear-gradient(90deg, ${accent.primary}, ${accent.dark})` }}
-            />
-          </div>
         </div>
       </div>
 
@@ -230,35 +215,61 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete }: L
               exit={{ opacity: 0, scale: 1.05 }}
               className="w-full max-w-2xl mx-auto flex flex-col items-center"
             >
-              {/* Title */}
               <div className="text-center mb-8">
-                <h2 className="text-3xl font-black text-gray-800 dark:text-gray-100 mb-2">
-                  Read the Sentences! 🗣️
-                </h2>
                 <p className="text-gray-500 dark:text-gray-400 text-sm">
                   Say each sentence out loud into the microphone.
                 </p>
               </div>
 
               {/* Controls — identical to Lesson 5 */}
-              <div className="flex justify-center gap-3 w-full mb-6">
-                <Button variant="outline" size="sm" onClick={handleShuffle} className="rounded-full flex items-center gap-2 border-emerald-300">
-                  <Shuffle className="w-4 h-4 text-emerald-600" /> Shuffle
+              <div className="flex justify-center items-center w-full gap-2 sm:gap-3 max-w-lg mx-auto mb-6">
+                <Button
+                variant="outline"
+                size="sm"
+                onClick={handleShuffle}
+                className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#883fba] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
+                style={{
+                  background: "linear-gradient(135deg, #ce82ff 0%, #a559d6 100%)",
+                }}
+              >
+                <Shuffle className="w-4 h-4 sm:mr-1" />
+                <span className="hidden sm:inline">Shuffle</span>
+              </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleReset}
+                  className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#b81d1d] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
+                  style={{
+                    background: "linear-gradient(135deg, rgb(255, 75, 75) 0%, rgb(216, 42, 42) 100%)",
+                  }}
+                >
+                  <RotateCcw className="w-4 h-4 sm:mr-1" />
+                  <span className="hidden sm:inline">Reset</span>
                 </Button>
-                <Button variant="outline" size="sm" onClick={handleReset} className="rounded-full flex items-center gap-2 border-emerald-300">
-                  <RotateCcw className="w-4 h-4 text-emerald-600" /> Reset
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleSkip}
+                  className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#c99c00] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
+                  style={{
+                    background: "linear-gradient(135deg, rgb(255, 200, 0) 0%, rgb(255, 150, 0) 100%)",
+                  }}
+                >
+                  <FastForward className="w-4 h-4 sm:mr-1" />
+                  <span className="hidden sm:inline">Skip</span>
                 </Button>
                 <Button
                   size="sm"
                   onClick={handleNextQuiz}
                   disabled={completedSentences.size < activeSentences.length}
-                  className="rounded-full flex items-center gap-2 text-white shadow-md active:scale-95 transition-all"
-                  style={{ background: completedSentences.size >= activeSentences.length ? `linear-gradient(135deg, ${accent.primary}, ${accent.dark})` : "gray" }}
+                  className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#3c8c01] hover:scale-105 active:scale-95 px-2 transition-all disabled:opacity-50 disabled:grayscale disabled:pointer-events-none h-9 py-2"
+                  style={{
+                    background: "linear-gradient(135deg, rgb(88, 204, 2) 0%, rgb(70, 163, 2) 100%)",
+                  }}
                 >
-                  Next <ArrowRight className="w-4 h-4" />
-                </Button>
-                <Button variant="outline" size="sm" onClick={handleSkip} className="rounded-full flex items-center gap-2 border-emerald-300">
-                  Skip <SkipForward className="w-4 h-4 text-emerald-600" />
+                  <span className="hidden sm:inline">Next</span>
+                  <ArrowRight className="w-4 h-4 sm:ml-1" />
                 </Button>
               </div>
 

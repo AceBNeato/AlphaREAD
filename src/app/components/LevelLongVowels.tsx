@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useNavigate } from "react-router";
-import { Home, Volume2, Mic, MicOff, CheckCircle2, XCircle, Sparkles, ArrowRight, ArrowLeft, AlertCircle, Shuffle, RotateCcw, SkipForward } from "lucide-react";
+import { Home, Volume2, Mic, MicOff, CheckCircle2, XCircle, Sparkles, ArrowRight, ArrowLeft, AlertCircle, RotateCcw, SkipForward, FastForward } from "lucide-react";
 import { Button } from "./ui/button";
 import { motion, AnimatePresence } from "motion/react";
 import { supabase } from "../../lib/supabase";
@@ -9,6 +9,7 @@ import { LONG_VOWELS_DATA, LONG_VOWELS_SENTENCES, LongVowelWord, LETTER_NAMES, L
 import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
 import { AudioVisualizer } from "./AudioVisualizer";
 import { playSound } from "../utils/soundEffects";
+import { playTTS as playTTSUtil } from "../utils/tts";
 
 interface LevelLongVowelsProps {
   levelId: number;
@@ -132,13 +133,8 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
   }, [reviewIdx]);
 
   const playTTS = (text: string) => {
-    if ("speechSynthesis" in window) {
-      window.speechSynthesis.cancel();
-      const ttsText = text.length === 1 ? (LETTER_TTS[text] || text) : text.toLowerCase();
-      const utterance = new SpeechSynthesisUtterance(ttsText);
-      utterance.rate = 0.85;
-      window.speechSynthesis.speak(utterance);
-    }
+    const ttsText = text.length === 1 ? (LETTER_TTS[text] || text) : text.toLowerCase();
+    playTTSUtil(ttsText);
   };
 
   const handleNextQuiz = useCallback(() => {
@@ -253,27 +249,16 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
     }
   });
 
-  const handleShuffle = () => {
+  const handleBack = () => {
+    playSound("click", 0.2);
     clearEvalTimeout();
     setEvaluatingPatternId(null);
     setEvaluatingWordId(null);
     setEvaluatingSentenceId(null);
-    if (currentPhase === "patterns") {
-      setActivePatterns(shuffle([...allPatternsRaw]));
-      setCompletedPatterns(new Set());
-      setPatternFeedbackMap({});
-      setPatternTranscriptsMap({});
-    } else if (currentPhase === "words") {
-      setActiveWords(shuffle([...activeWords]));
-      setCompletedWords(new Set());
-      setWordFeedbackMap({});
-      setWordTranscriptsMap({});
-    } else if (currentPhase === "sentences") {
-      setActiveSentences(shuffle([...activeSentences]));
-      setCompletedSentences(new Set());
-      setSentenceFeedbackMap({});
-      setSentenceTranscriptsMap({});
-    }
+    if (currentPhase === "sentences") setCurrentPhase("words");
+    else if (currentPhase === "words") setCurrentPhase("patterns");
+    else if (currentPhase === "patterns") setCurrentPhase("review");
+    else navigate(-1);
   };
 
   const handleReset = () => {
@@ -487,18 +472,54 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
               </div>
 
               {/* Controls */}
-              <div className="flex justify-center gap-3 w-full mb-6">
-                <Button variant="outline" size="sm" onClick={handleShuffle} className="rounded-full flex items-center gap-2 border-amber-300">
-                  <Shuffle className="w-4 h-4 text-amber-600" /> Shuffle
+              <div className="flex justify-center items-center w-full gap-2 sm:gap-3 max-w-lg mx-auto mb-6">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleBack}
+                  className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#086ca5] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
+                  style={{
+                    background: "linear-gradient(135deg, rgb(28, 176, 246) 0%, rgb(10, 142, 212) 100%)",
+                  }}
+                >
+                  <ArrowLeft className="w-4 h-4 sm:mr-1" />
+                  <span className="hidden sm:inline">Back</span>
                 </Button>
-                <Button variant="outline" size="sm" onClick={handleReset} className="rounded-full flex items-center gap-2 border-amber-300">
-                  <RotateCcw className="w-4 h-4 text-amber-600" /> Reset
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleReset}
+                  className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#b81d1d] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
+                  style={{
+                    background: "linear-gradient(135deg, rgb(255, 75, 75) 0%, rgb(216, 42, 42) 100%)",
+                  }}
+                >
+                  <RotateCcw className="w-4 h-4 sm:mr-1" />
+                  <span className="hidden sm:inline">Reset</span>
                 </Button>
-                <Button size="sm" onClick={handleNextQuiz} disabled={completedPatterns.size < activePatterns.length} className="rounded-full flex items-center gap-2 text-white shadow-md active:scale-95 transition-all" style={{ background: completedPatterns.size >= activePatterns.length ? `linear-gradient(135deg, ${accent.primary}, ${accent.dark})` : "gray" }}>
-                  Next <ArrowRight className="w-4 h-4" />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleSkip}
+                  className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#c99c00] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
+                  style={{
+                    background: "linear-gradient(135deg, rgb(255, 200, 0) 0%, rgb(255, 150, 0) 100%)",
+                  }}
+                >
+                  <FastForward className="w-4 h-4 sm:mr-1" />
+                  <span className="hidden sm:inline">Skip</span>
                 </Button>
-                <Button variant="outline" size="sm" onClick={handleSkip} className="rounded-full flex items-center gap-2 border-amber-300">
-                  Skip <SkipForward className="w-4 h-4 text-amber-600" />
+                <Button
+                  size="sm"
+                  onClick={handleNextQuiz}
+                  disabled={completedPatterns.size < activePatterns.length}
+                  className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#3c8c01] hover:scale-105 active:scale-95 px-2 transition-all disabled:opacity-50 disabled:grayscale disabled:pointer-events-none h-9 py-2"
+                  style={{
+                    background: "linear-gradient(135deg, rgb(88, 204, 2) 0%, rgb(70, 163, 2) 100%)",
+                  }}
+                >
+                  <span className="hidden sm:inline">Next</span>
+                  <ArrowRight className="w-4 h-4 sm:ml-1" />
                 </Button>
               </div>
 
@@ -600,18 +621,54 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
               </div>
 
               {/* Controls */}
-              <div className="flex justify-center gap-3 w-full mb-6">
-                <Button variant="outline" size="sm" onClick={handleShuffle} className="rounded-full flex items-center gap-2 border-amber-300">
-                  <Shuffle className="w-4 h-4 text-amber-600" /> Shuffle
+              <div className="flex justify-center items-center w-full gap-2 sm:gap-3 max-w-lg mx-auto mb-6">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleBack}
+                  className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#086ca5] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
+                  style={{
+                    background: "linear-gradient(135deg, rgb(28, 176, 246) 0%, rgb(10, 142, 212) 100%)",
+                  }}
+                >
+                  <ArrowLeft className="w-4 h-4 sm:mr-1" />
+                  <span className="hidden sm:inline">Back</span>
                 </Button>
-                <Button variant="outline" size="sm" onClick={handleReset} className="rounded-full flex items-center gap-2 border-amber-300">
-                  <RotateCcw className="w-4 h-4 text-amber-600" /> Reset
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleReset}
+                  className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#b81d1d] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
+                  style={{
+                    background: "linear-gradient(135deg, rgb(255, 75, 75) 0%, rgb(216, 42, 42) 100%)",
+                  }}
+                >
+                  <RotateCcw className="w-4 h-4 sm:mr-1" />
+                  <span className="hidden sm:inline">Reset</span>
                 </Button>
-                <Button size="sm" onClick={handleNextQuiz} disabled={completedWords.size < activeWords.length} className="rounded-full flex items-center gap-2 text-white shadow-md active:scale-95 transition-all" style={{ background: completedWords.size >= activeWords.length ? `linear-gradient(135deg, ${accent.primary}, ${accent.dark})` : "gray" }}>
-                  Next <ArrowRight className="w-4 h-4" />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleSkip}
+                  className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#c99c00] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
+                  style={{
+                    background: "linear-gradient(135deg, rgb(255, 200, 0) 0%, rgb(255, 150, 0) 100%)",
+                  }}
+                >
+                  <FastForward className="w-4 h-4 sm:mr-1" />
+                  <span className="hidden sm:inline">Skip</span>
                 </Button>
-                <Button variant="outline" size="sm" onClick={handleSkip} className="rounded-full flex items-center gap-2 border-amber-300">
-                  Skip <SkipForward className="w-4 h-4 text-amber-600" />
+                <Button
+                  size="sm"
+                  onClick={handleNextQuiz}
+                  disabled={completedWords.size < activeWords.length}
+                  className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#3c8c01] hover:scale-105 active:scale-95 px-2 transition-all disabled:opacity-50 disabled:grayscale disabled:pointer-events-none h-9 py-2"
+                  style={{
+                    background: "linear-gradient(135deg, rgb(88, 204, 2) 0%, rgb(70, 163, 2) 100%)",
+                  }}
+                >
+                  <span className="hidden sm:inline">Next</span>
+                  <ArrowRight className="w-4 h-4 sm:ml-1" />
                 </Button>
               </div>
 
@@ -731,18 +788,54 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
               </div>
 
               {/* Controls */}
-              <div className="flex justify-center gap-3 w-full mb-6">
-                <Button variant="outline" size="sm" onClick={handleShuffle} className="rounded-full flex items-center gap-2 border-amber-300">
-                  <Shuffle className="w-4 h-4 text-amber-600" /> Shuffle
+              <div className="flex justify-center items-center w-full gap-2 sm:gap-3 max-w-lg mx-auto mb-6">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleBack}
+                  className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#086ca5] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
+                  style={{
+                    background: "linear-gradient(135deg, rgb(28, 176, 246) 0%, rgb(10, 142, 212) 100%)",
+                  }}
+                >
+                  <ArrowLeft className="w-4 h-4 sm:mr-1" />
+                  <span className="hidden sm:inline">Back</span>
                 </Button>
-                <Button variant="outline" size="sm" onClick={handleReset} className="rounded-full flex items-center gap-2 border-amber-300">
-                  <RotateCcw className="w-4 h-4 text-amber-600" /> Reset
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleReset}
+                  className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#b81d1d] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
+                  style={{
+                    background: "linear-gradient(135deg, rgb(255, 75, 75) 0%, rgb(216, 42, 42) 100%)",
+                  }}
+                >
+                  <RotateCcw className="w-4 h-4 sm:mr-1" />
+                  <span className="hidden sm:inline">Reset</span>
                 </Button>
-                <Button size="sm" onClick={handleNextQuiz} disabled={completedSentences.size < activeSentences.length} className="rounded-full flex items-center gap-2 text-white shadow-md active:scale-95 transition-all" style={{ background: completedSentences.size >= activeSentences.length ? `linear-gradient(135deg, ${accent.primary}, ${accent.dark})` : "gray" }}>
-                  Next <ArrowRight className="w-4 h-4" />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleSkip}
+                  className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#c99c00] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
+                  style={{
+                    background: "linear-gradient(135deg, rgb(255, 200, 0) 0%, rgb(255, 150, 0) 100%)",
+                  }}
+                >
+                  <FastForward className="w-4 h-4 sm:mr-1" />
+                  <span className="hidden sm:inline">Skip</span>
                 </Button>
-                <Button variant="outline" size="sm" onClick={handleSkip} className="rounded-full flex items-center gap-2 border-amber-300">
-                  Skip <SkipForward className="w-4 h-4 text-amber-600" />
+                <Button
+                  size="sm"
+                  onClick={handleNextQuiz}
+                  disabled={completedSentences.size < activeSentences.length}
+                  className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#3c8c01] hover:scale-105 active:scale-95 px-2 transition-all disabled:opacity-50 disabled:grayscale disabled:pointer-events-none h-9 py-2"
+                  style={{
+                    background: "linear-gradient(135deg, rgb(88, 204, 2) 0%, rgb(70, 163, 2) 100%)",
+                  }}
+                >
+                  <span className="hidden sm:inline">Next</span>
+                  <ArrowRight className="w-4 h-4 sm:ml-1" />
                 </Button>
               </div>
 
