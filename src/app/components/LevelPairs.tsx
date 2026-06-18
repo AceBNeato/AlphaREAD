@@ -263,12 +263,11 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 py-8 flex-1 flex flex-col w-full">
+      <div className="max-w-4xl mx-auto px-4 flex-1 flex flex-col w-full">
         <AnimatePresence mode="wait">
           {step.type === "review" ? (
             <motion.div key={`review-${currentStep}`} initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -50 }} className="flex flex-col items-center">
               <div className="text-center mb-8">
-                <h2 className="text-3xl font-bold" style={{ color: accent.primary }}>Review Phase</h2>
                 <p className="text-gray-500 mt-2">Tap the letters to hear their sounds</p>
 
                 {/* Navigation Controls moved to top */}
@@ -320,7 +319,6 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
           ) : step.type === "match" ? (
             <motion.div key={`match-${currentStep}`} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="flex flex-col items-center w-full">
               <div className="text-center mb-6">
-                <h2 className="text-3xl font-bold" style={{ color: accent.primary }}>Listen & Match</h2>
                 <p className="text-gray-500 mt-2">Tap a speaker, then tap the matching letter!</p>
                 
                 {/* Navigation Controls moved to top */}
@@ -400,7 +398,6 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
           ) : step.type === "type" ? (
             <motion.div key={`type-${currentStep}`} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="flex flex-col items-center w-full">
               <div className="text-center mb-8">
-                <h2 className="text-3xl font-bold" style={{ color: accent.primary }}>Listen & Type</h2>
                 <p className="text-gray-500 mt-2">Tap the speaker, then type the letter!</p>
                 
                 {/* Navigation Controls moved to top */}

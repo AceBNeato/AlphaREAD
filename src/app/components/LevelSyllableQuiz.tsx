@@ -80,7 +80,6 @@ function ReviewPhase({ items, pattern, accent, onNext }: { items: string[]; patt
   return (
     <motion.div initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -50 }} className="flex flex-col items-center w-full h-full">
       <div className="text-center mb-8">
-        <h2 className="text-3xl font-bold" style={{ color: accent.primary }}>Review Phase</h2>
         <p className="text-gray-500 mt-2">Tap the syllables to hear their sounds</p>
 
         {/* Navigation Controls moved to top */}
@@ -215,9 +214,6 @@ function MatchPhase({
       <Confetti active={showConfetti} />
 
       <div className="text-center mb-6">
-        <h2 className="text-3xl font-black text-gray-800 dark:text-gray-100 mb-1" style={{ color: accent.primary }}>
-          Listen & Match!
-        </h2>
         <p className="text-gray-500 dark:text-gray-400 text-sm mt-2">
           Tap a speaker, then tap the matching word!
         </p>
@@ -358,7 +354,6 @@ function TypePhase({ items, pattern, accent, onNext }: { items: string[]; patter
   return (
     <motion.div initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -50 }} className="flex flex-col items-center w-full">
       <div className="text-center mb-8">
-        <h2 className="text-3xl font-bold" style={{ color: accent.primary }}>Listen & Type</h2>
         <p className="text-gray-500 mt-2">Tap the speaker, then type the syllable!</p>
         
         {/* Navigation Controls */}
@@ -527,7 +522,7 @@ export function LevelSyllableQuiz({ pattern, levelId, accent, onComplete }: Leve
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 py-6 flex-1 flex flex-col w-full">
+      <div className="max-w-4xl mx-auto px-4 flex-1 flex flex-col w-full">
         <AnimatePresence mode="wait">
           {showFinalConfetti ? (
             <motion.div
