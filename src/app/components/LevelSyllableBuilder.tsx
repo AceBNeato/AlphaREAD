@@ -19,7 +19,6 @@ import {
   type SyllablePattern,
   type SyllableTarget,
 } from "../data/levels";
-import Swal from "sweetalert2";
 import { motion, AnimatePresence } from "motion/react";
 import { supabase } from "../../lib/supabase";
 import { Confetti } from "./ui/Confetti";
@@ -214,17 +213,6 @@ export function LevelSyllableBuilder({
           setFeedback("correct");
           setShowConfetti(true);
 
-          Swal.fire({
-            icon: 'success',
-            title: 'Great match!',
-            text: `"${currentTarget.syllable.toLowerCase()}"`,
-            timer: 2000,
-            showConfirmButton: false,
-            backdrop: `
-              rgba(0,0,123,0.1)
-            `
-          });
-
           // Add the 1-second delay for the TTS so the final letter sound finishes first
           if (ttsTimeoutRef.current) clearTimeout(ttsTimeoutRef.current);
           ttsTimeoutRef.current = setTimeout(() => {
@@ -246,13 +234,6 @@ export function LevelSyllableBuilder({
         } else {
           playSound("wrong", 0.35);
           setFeedback("wrong");
-
-          Swal.fire({
-            icon: 'error',
-            title: 'Try again!',
-            timer: 1000,
-            showConfirmButton: false,
-          });
 
           if (wrongTimeoutRef.current) clearTimeout(wrongTimeoutRef.current);
           wrongTimeoutRef.current = setTimeout(() => {
@@ -519,59 +500,23 @@ export function LevelSyllableBuilder({
 
                   {/* Selected letters display */}
                   {!completedTargets.has(currentTarget.syllable) && (
-                    <div className="flex justify-center gap-2 mt-2 mb-4">
-                      {Array.from({ length: slotCount }).map((_, slot) => {
-                        const isVowel = ["A", "E", "I", "O", "U"].includes(selectedLetters[slot]);
-                        return (
-                          <div
-                            key={slot}
-                            className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center transition-all ${!selectedLetters[slot]
-                              ? "border-3 border-dashed border-gray-300 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-800/30"
-                              : feedback === "correct"
-                                ? "scale-105"
-                                : feedback === "wrong"
-                                  ? "animate-shake"
-                                  : ""
-                              }`}
-                          >
-                            {selectedLetters[slot] ? (
-                              <motion.div
-                                initial={{ scale: 0, y: -10 }}
-                                animate={{ scale: 1, y: 0 }}
-                                className="w-full h-full rounded-2xl flex flex-col items-center justify-center border-b-[4px] select-none shadow-md"
-                                style={{
-                                  background: feedback === "correct"
-                                    ? "linear-gradient(135deg, #58CC02 0%, #46a302 100%)"
-                                    : feedback === "wrong"
-                                      ? "linear-gradient(135deg, #FF4B4B 0%, #D82A2A 100%)"
-                                      : isVowel
-                                        ? "linear-gradient(135deg, #FF6B8A 0%, #FF4B8A 100%)"
-                                        : "linear-gradient(135deg, #1CB0F6 0%, #0a8ed4 100%)",
-                                  borderColor: feedback === "correct"
-                                    ? "#3e8e01"
-                                    : feedback === "wrong"
-                                      ? "#b81d1d"
-                                      : isVowel
-                                        ? "#C82A52"
-                                        : "#086CA5",
-                                }}
-                              >
-                                <span className="text-white text-3xl sm:text-4xl font-black drop-shadow-sm">
-                                  {selectedLetters[slot]?.toLowerCase()}
-                                </span>
-                                <span className="text-white/80 text-[9px] uppercase font-bold tracking-wider mt-0.5">
-                                  {isVowel ? "vowel" : "cons."}
-                                </span>
-                              </motion.div>
-                            ) : (
-                              <span className="text-gray-300 dark:text-gray-600 text-xl font-bold opacity-50">
-                                {patternPlaceholder(currentTarget.pattern)[slot]}
-                              </span>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
+                    <motion.div
+                      animate={{
+                        x: feedback === "wrong" ? [-10, 10, -10, 10, 0] : 0,
+                        scale: feedback === "correct" ? [1, 1.05, 1] : 1
+                      }}
+                      className={`w-full text-center text-7xl font-black py-8 rounded-3xl border-8 transition-colors shadow-inner flex items-center justify-center tracking-widest mb-8 min-h-[160px]
+                        ${feedback === "correct" ? 'bg-green-100 border-green-400 text-green-700' :
+                          feedback === "wrong" ? 'bg-red-50 border-red-400 text-red-600' :
+                            'bg-gray-50 border-gray-200 text-gray-800'}
+                      `}
+                    >
+                      {Array.from({ length: slotCount }).map((_, slot) => (
+                        <span key={slot} className={selectedLetters[slot] ? "" : "text-gray-300 dark:text-gray-500 opacity-50"}>
+                          {selectedLetters[slot] ? selectedLetters[slot].toLowerCase() : patternPlaceholder(currentTarget.pattern)[slot]}
+                        </span>
+                      ))}
+                    </motion.div>
                   )}
 
 
