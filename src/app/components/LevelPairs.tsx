@@ -263,7 +263,7 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 flex-1 flex flex-col w-full">
+      <div className="max-w-4xl mx-auto px-4 py-8 flex-1 flex flex-col w-full">
         <AnimatePresence mode="wait">
           {step.type === "review" ? (
             <motion.div key={`review-${currentStep}`} initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -50 }} className="flex flex-col items-center">
@@ -272,7 +272,11 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
 
                 {/* Navigation Controls moved to top */}
                 <div className="flex justify-center items-center w-full gap-3 sm:gap-4 max-w-sm mx-auto mt-6">
-                  <Button variant="outline" size="sm" onClick={handleShuffleReview} className="flex-1 rounded-xl font-bold text-gray-600">
+                  <Button 
+                    onClick={handleShuffleReview} 
+                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-4 border-[#8b40b8] hover:scale-105 active:scale-95 px-2"
+                    style={{ background: 'linear-gradient(135deg, #ce82ff 0%, #a559d6 100%)' }}
+                  >
                     <Shuffle className="w-4 h-4 mr-1" /> Shuffle
                   </Button>
                   <Button
@@ -323,10 +327,18 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
                 
                 {/* Navigation Controls moved to top */}
                 <div className="flex justify-center items-center w-full gap-3 sm:gap-4 max-w-md mx-auto mt-6">
-                  <Button variant="outline" size="sm" onClick={setupMatchPhase} className="flex-1 rounded-xl font-bold text-gray-600">
+                  <Button 
+                    onClick={setupMatchPhase} 
+                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-4 border-[#8b40b8] hover:scale-105 active:scale-95 px-2"
+                    style={{ background: 'linear-gradient(135deg, #ce82ff 0%, #a559d6 100%)' }}
+                  >
                     <Shuffle className="w-4 h-4 mr-1" /> Shuffle
                   </Button>
-                  <Button variant="outline" size="sm" onClick={handleStepNext} className="flex-1 rounded-xl font-bold text-amber-600 border-amber-200 bg-amber-50 hover:bg-amber-100">
+                  <Button 
+                    onClick={handleStepNext} 
+                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-4 border-[#c99c00] hover:scale-105 active:scale-95 px-2"
+                    style={{ background: 'linear-gradient(135deg, #ffc800 0%, #ff9600 100%)' }}
+                  >
                     <FastForward className="w-4 h-4 mr-1" /> Skip
                   </Button>
                   
@@ -402,10 +414,19 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
                 
                 {/* Navigation Controls moved to top */}
                 <div className="flex justify-center items-center w-full gap-3 sm:gap-4 max-w-md mx-auto mt-6">
-                  <Button variant="outline" size="sm" onClick={handleShuffleType} disabled={currentTypeIndex >= typeOrder.length} className="flex-1 rounded-xl font-bold text-gray-600">
+                  <Button 
+                    onClick={handleShuffleType} 
+                    disabled={currentTypeIndex >= typeOrder.length} 
+                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-4 border-[#8b40b8] hover:scale-105 active:scale-95 disabled:opacity-50 disabled:grayscale disabled:pointer-events-none px-2"
+                    style={{ background: 'linear-gradient(135deg, #ce82ff 0%, #a559d6 100%)' }}
+                  >
                     <Shuffle className="w-4 h-4 mr-1" /> Shuffle
                   </Button>
-                  <Button variant="outline" size="sm" onClick={handleStepNext} className="flex-1 rounded-xl font-bold text-amber-600 border-amber-200 bg-amber-50 hover:bg-amber-100">
+                  <Button 
+                    onClick={handleStepNext} 
+                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-4 border-[#c99c00] hover:scale-105 active:scale-95 px-2"
+                    style={{ background: 'linear-gradient(135deg, #ffc800 0%, #ff9600 100%)' }}
+                  >
                     <FastForward className="w-4 h-4 mr-1" /> Skip
                   </Button>
                   

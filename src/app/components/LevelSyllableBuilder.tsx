@@ -419,29 +419,33 @@ export function LevelSyllableBuilder({
                     <Button
                       onClick={goPrev}
                       disabled={currentIndex === 0}
-                      variant="outline"
-                      size="sm"
-                      className="flex-1 rounded-xl font-bold border-2 disabled:opacity-30 px-2"
-                      style={{ borderColor: accent.primary, color: accent.primary }}
+                      className="flex-1 rounded-xl font-bold text-white shadow-md border-b-4 border-[#086ca5] hover:scale-105 active:scale-95 disabled:opacity-50 disabled:grayscale disabled:pointer-events-none px-2"
+                      style={{ background: 'linear-gradient(135deg, #1cb0f6 0%, #0a8ed4 100%)' }}
                     >
                       <ArrowLeft className="w-4 h-4 sm:mr-1" />
                       <span className="hidden sm:inline">Back</span>
                     </Button>
-                    <Button variant="outline" size="sm" onClick={resetSelection} className="flex-1 rounded-xl font-bold border-2 text-gray-600 px-2" style={{ borderColor: '#d1d5db' }}>
+                    <Button 
+                      onClick={resetSelection} 
+                      className="flex-1 rounded-xl font-bold text-white shadow-md border-b-4 border-[#b81d1d] hover:scale-105 active:scale-95 px-2" 
+                      style={{ background: 'linear-gradient(135deg, #ff4b4b 0%, #d82a2a 100%)' }}
+                    >
                       <RotateCcw className="w-4 h-4 sm:mr-1" />
                       <span className="hidden sm:inline">Reset</span>
                     </Button>
-                    <Button variant="outline" size="sm" onClick={() => onComplete?.()} className="flex-1 rounded-xl font-bold border-2 text-amber-600 bg-amber-50 hover:bg-amber-100 px-2" style={{ borderColor: '#fcd34d' }}>
+                    <Button 
+                      onClick={() => onComplete?.()} 
+                      className="flex-1 rounded-xl font-bold text-white shadow-md border-b-4 border-[#c99c00] hover:scale-105 active:scale-95 px-2" 
+                      style={{ background: 'linear-gradient(135deg, #ffc800 0%, #ff9600 100%)' }}
+                    >
                       <FastForward className="w-4 h-4 sm:mr-1" />
                       <span className="hidden sm:inline">Skip</span>
                     </Button>
                     <Button
                       onClick={goNext}
                       disabled={currentIndex === targets.length - 1}
-                      variant="outline"
-                      size="sm"
-                      className="flex-1 rounded-xl font-bold border-2 disabled:opacity-30 px-2"
-                      style={{ borderColor: accent.primary, color: accent.primary }}
+                      className="flex-1 rounded-xl font-bold text-white shadow-md border-b-4 border-[#3c8c01] hover:scale-105 active:scale-95 disabled:opacity-50 disabled:grayscale disabled:pointer-events-none px-2"
+                      style={{ background: 'linear-gradient(135deg, #58cc02 0%, #46a302 100%)' }}
                     >
                       <span className="hidden sm:inline">Next</span>
                       <ArrowRight className="w-4 h-4 sm:ml-1" />
@@ -518,7 +522,7 @@ export function LevelSyllableBuilder({
                                   initial={{ scale: 0, y: -10 }}
                                   animate={{ scale: 1, y: 0 }}
                                   className={`w-full h-full rounded-2xl flex flex-col items-center justify-center border-b-[4px] select-none shadow-md ${feedback === "correct" ? "bg-green-100 border-green-400 text-green-700" :
-                                      feedback === "wrong" ? "bg-red-50 border-red-400 text-red-600" : ""
+                                    feedback === "wrong" ? "bg-red-50 border-red-400 text-red-600" : ""
                                     }`}
                                   style={{
                                     background: feedback ? undefined :
