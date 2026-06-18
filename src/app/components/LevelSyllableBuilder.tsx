@@ -19,6 +19,7 @@ import {
   type SyllablePattern,
   type SyllableTarget,
 } from "../data/levels";
+import Swal from "sweetalert2";
 import { motion, AnimatePresence } from "motion/react";
 import { supabase } from "../../lib/supabase";
 import { Confetti } from "./ui/Confetti";
@@ -213,6 +214,17 @@ export function LevelSyllableBuilder({
           setFeedback("correct");
           setShowConfetti(true);
 
+          Swal.fire({
+            icon: 'success',
+            title: 'Great match!',
+            text: `"${currentTarget.syllable.toLowerCase()}"`,
+            timer: 2000,
+            showConfirmButton: false,
+            backdrop: `
+              rgba(0,0,123,0.1)
+            `
+          });
+
           // Add the 1-second delay for the TTS so the final letter sound finishes first
           if (ttsTimeoutRef.current) clearTimeout(ttsTimeoutRef.current);
           ttsTimeoutRef.current = setTimeout(() => {
@@ -234,6 +246,14 @@ export function LevelSyllableBuilder({
         } else {
           playSound("wrong", 0.35);
           setFeedback("wrong");
+
+          Swal.fire({
+            icon: 'error',
+            title: 'Try again!',
+            timer: 1000,
+            showConfirmButton: false,
+          });
+
           if (wrongTimeoutRef.current) clearTimeout(wrongTimeoutRef.current);
           wrongTimeoutRef.current = setTimeout(() => {
             setFeedback(null);
@@ -459,12 +479,7 @@ export function LevelSyllableBuilder({
                       border: `2px solid ${patternColors[currentTarget.pattern]}`,
                     }}
                   >
-                    <span
-                      className="text-xs px-3 py-1 rounded-full text-white"
-                      style={{ background: patternColors[currentTarget.pattern] }}
-                    >
-                      {patternLabels[currentTarget.pattern]}
-                    </span>
+
 
                     {/* Show the actual target syllable */}
                     <div className="flex items-center gap-2">
@@ -559,24 +574,7 @@ export function LevelSyllableBuilder({
                     </div>
                   )}
 
-                  {feedback === "correct" && (
-                    <motion.p
-                      initial={{ opacity: 0, y: 5 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="mt-3 text-[#58CC02] text-lg"
-                    >
-                      ✨ "{currentTarget.syllable.toLowerCase()}" — Great match!
-                    </motion.p>
-                  )}
-                  {feedback === "wrong" && (
-                    <motion.p
-                      initial={{ opacity: 0, y: 5 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="mt-3 text-[#FF4B4B] text-lg"
-                    >
-                      Try again!
-                    </motion.p>
-                  )}
+
                 </motion.div>
               </AnimatePresence>
 
