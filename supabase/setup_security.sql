@@ -1,6 +1,8 @@
 -- AlphabetGO Security Migration
 -- Run this in the Supabase SQL Editor
 
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
 -- 1. Create Tables if they don't exist
 CREATE TABLE IF NOT EXISTS public.profiles (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -45,13 +47,36 @@ DROP POLICY IF EXISTS "Auth link profile update" ON public.profiles;
 DROP POLICY IF EXISTS "Admin full access progress" ON public.progress;
 DROP POLICY IF EXISTS "Teacher read student progress" ON public.progress;
 
--- 4. RLS Policies for Profiles
+-- 4. RLS Helper Functions to prevent infinite recursion
+CREATE OR REPLACE FUNCTION public.is_admin(p_uid UUID)
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  RETURN EXISTS (
+    SELECT 1 FROM public.profiles WHERE auth_id = p_uid AND role = 'admin'
+  );
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.is_teacher(p_uid UUID)
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  RETURN EXISTS (
+    SELECT 1 FROM public.profiles WHERE auth_id = p_uid AND role = 'teacher'
+  );
+END;
+$$;
+
+-- 5. RLS Policies for Profiles
 -- Allow admins to do anything
 CREATE POLICY "Admin full access profiles" ON public.profiles
   FOR ALL
-  USING (
-    auth.jwt() ->> 'email' IN (SELECT email FROM public.profiles WHERE role = 'admin')
-  );
+  USING ( public.is_admin(auth.uid()) );
 
 -- Allow teachers to read their own profile and their students' profiles
 CREATE POLICY "Teacher read own and students" ON public.profiles
@@ -72,24 +97,22 @@ CREATE POLICY "Auth link profile update" ON public.profiles
   USING (auth.jwt() ->> 'email' = email AND auth_id IS NULL)
   WITH CHECK (auth.jwt() ->> 'email' = email);
 
--- 5. RLS Policies for Progress
+-- 6. RLS Policies for Progress
 -- Admins can read all progress
 CREATE POLICY "Admin full access progress" ON public.progress
   FOR ALL
-  USING (
-    auth.jwt() ->> 'email' IN (SELECT email FROM public.profiles WHERE role = 'admin')
-  );
+  USING ( public.is_admin(auth.uid()) );
 
 -- Teachers can read their students' progress
 CREATE POLICY "Teacher read student progress" ON public.progress
   FOR SELECT
   USING (
-    student_id IN (
-      SELECT id FROM public.profiles WHERE role = 'student' AND teacher_id = (SELECT id FROM public.profiles WHERE auth_id = auth.uid() LIMIT 1)
+    public.is_teacher(auth.uid()) AND student_id IN (
+      SELECT id FROM public.profiles WHERE teacher_id = (SELECT id FROM public.profiles WHERE auth_id = auth.uid() LIMIT 1)
     )
   );
 
--- 6. RPC: Secure Student Login (Bypasses RLS to verify PIN and enforce device lock)
+-- 7. RPC: Secure Student Login (Bypasses RLS to verify PIN and enforce device lock)
 CREATE OR REPLACE FUNCTION public.verify_student_login(p_code TEXT, p_pin TEXT, p_device_id TEXT)
 RETURNS JSONB
 LANGUAGE plpgsql
@@ -121,7 +144,7 @@ BEGIN
 END;
 $$;
 
--- 7. RPC: Secure Progress Recording for Students (Bypasses RLS)
+-- 8. RPC: Secure Progress Recording for Students (Bypasses RLS)
 CREATE OR REPLACE FUNCTION public.record_student_progress(p_student_id UUID, p_device_id TEXT, p_level_id INT, p_score INT)
 RETURNS VOID
 LANGUAGE plpgsql
@@ -146,7 +169,7 @@ BEGIN
 END;
 $$;
 
--- 8. RPC: Check Staff Email (Bypasses RLS for pre-check)
+-- 9. RPC: Check Staff Email (Bypasses RLS for pre-check)
 CREATE OR REPLACE FUNCTION public.check_staff_email(p_email TEXT, p_role TEXT)
 RETURNS BOOLEAN
 LANGUAGE plpgsql
@@ -159,7 +182,7 @@ BEGIN
 END;
 $$;
 
--- 9. RPC: Verify Staff Login (Bypasses RLS to verify email and access code)
+-- 10. RPC: Verify Staff Login (Bypasses RLS to verify email and access code)
 CREATE OR REPLACE FUNCTION public.verify_staff_login(p_email TEXT, p_pin TEXT)
 RETURNS JSONB
 LANGUAGE plpgsql
@@ -175,11 +198,26 @@ BEGIN
     RAISE EXCEPTION 'Invalid email or access code.';
   END IF;
 
+  -- Sync the password to Supabase Auth to guarantee signInWithPassword works
+  -- (This uses pgcrypto's bcrypt to match Supabase's hashing)
+  UPDATE auth.users 
+  SET encrypted_password = crypt(p_pin, gen_salt('bf'))
+  WHERE email = p_email;
+
+  -- Self-healing: if the auth.users account was deleted and recreated, 
+  -- their UUID changed. We must sync the new UUID back to profiles!
+  UPDATE public.profiles
+  SET auth_id = (SELECT id FROM auth.users WHERE email = p_email LIMIT 1)
+  WHERE email = p_email;
+
+  -- Re-fetch to return the fresh profile with the correct auth_id
+  SELECT * INTO v_user FROM public.profiles WHERE email = p_email;
+
   RETURN row_to_json(v_user)::jsonb;
 END;
 $$;
 
--- 10. Seed the initial Admin
+-- 11. Seed the initial Admin
 INSERT INTO public.profiles (id, first_name, last_name, role, email, pin_hash) 
 SELECT gen_random_uuid(), 'Master', 'Admin', 'admin', 'businessneato@gmail.com', 'ADMIN123'
 WHERE NOT EXISTS (SELECT 1 FROM public.profiles WHERE role = 'admin' LIMIT 1);

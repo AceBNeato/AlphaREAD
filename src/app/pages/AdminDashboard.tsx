@@ -55,11 +55,15 @@ export default function AdminDashboard() {
   const fetchData = async (silent = false) => {
     if (!silent) setLoading(true);
     // Fetch Admin profile
-    const { data: admin } = await supabase
+    const { data: admin, error: adminErr } = await supabase
       .from("profiles")
       .select("*")
       .eq("role", "admin")
       .maybeSingle();
+      
+    if (adminErr) {
+      console.error("Admin Fetch Error:", adminErr);
+    }
       
     if (!admin) {
       localStorage.removeItem("userProfile");
