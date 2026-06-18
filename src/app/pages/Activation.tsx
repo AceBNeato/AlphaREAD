@@ -134,7 +134,7 @@ export default function Activation() {
   // ── Verification for Teacher OTP ──
   const handleVerifyTeacherOtp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (otpCode.length !== 6) return;
+    if (otpCode.length < 6) return;
 
     setLoading(true);
     setError("");
@@ -362,12 +362,12 @@ export default function Activation() {
                   <input
                     type="text"
                     inputMode="numeric"
-                    maxLength={6}
+                    maxLength={8}
                     required
                     autoFocus
                     value={otpCode}
-                    onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                    placeholder="000000"
+                    onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 8))}
+                    placeholder="00000000"
                     className="w-full pl-12 pr-4 py-4 rounded-2xl bg-gray-950 border border-gray-800 focus:border-indigo-500 text-white font-mono tracking-[0.5em] text-center text-3xl outline-none"
                   />
                 </div>
@@ -386,7 +386,7 @@ export default function Activation() {
 
                 <Button
                   type="submit"
-                  disabled={loading || otpCode.length !== 6}
+                  disabled={loading || otpCode.length < 6}
                   className="w-full py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-indigo-950/30"
                 >
                   {loading && <Loader2 className="w-5 h-5 animate-spin" />}

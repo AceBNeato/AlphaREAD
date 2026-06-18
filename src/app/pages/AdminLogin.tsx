@@ -39,7 +39,7 @@ export default function AdminLogin() {
 
   const handleVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (otpCode.length !== 6) return;
+    if (otpCode.length < 6) return;
     setLoading(true);
     setError("");
 
@@ -155,11 +155,11 @@ export default function AdminLogin() {
               <input
                 type="text"
                 inputMode="numeric"
-                maxLength={6}
+                maxLength={8}
                 required
                 value={otpCode}
-                onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                placeholder="000000"
+                onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 8))}
+                placeholder="00000000"
                 autoFocus
                 className={`w-full text-center text-4xl font-mono tracking-[0.25em] p-4 bg-gray-950 border-2 rounded-2xl outline-none transition-colors text-white ${error
                     ? "border-red-500 text-red-500 focus:border-red-500"
@@ -178,7 +178,7 @@ export default function AdminLogin() {
 
             <Button
               type="submit"
-              disabled={loading || otpCode.length !== 6}
+              disabled={loading || otpCode.length < 6}
               className="w-full py-6 text-lg font-bold rounded-2xl bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-900/20 transition-all flex items-center justify-center gap-2"
             >
               {loading && <Loader2 className="w-5 h-5 animate-spin" />}
