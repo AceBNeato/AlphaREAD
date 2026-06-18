@@ -220,9 +220,15 @@ export function LevelSyllableBuilder({
             text: `"${currentTarget.syllable.toLowerCase()}"`,
             timer: 2000,
             showConfirmButton: false,
-            backdrop: `
-              rgba(0,0,123,0.1)
-            `
+            background: '#ffffff',
+            color: '#58CC02',
+            iconColor: '#58CC02',
+            customClass: {
+              popup: 'rounded-[2rem] border-[6px] border-[#58CC02] shadow-2xl',
+              title: 'text-3xl font-black',
+              htmlContainer: 'text-5xl font-black tracking-widest mt-2'
+            },
+            backdrop: `rgba(255, 255, 255, 0.4)`
           });
 
           // Add the 1-second delay for the TTS so the final letter sound finishes first
@@ -252,6 +258,14 @@ export function LevelSyllableBuilder({
             title: 'Try again!',
             timer: 1000,
             showConfirmButton: false,
+            background: '#ffffff',
+            color: '#FF4B4B',
+            iconColor: '#FF4B4B',
+            customClass: {
+              popup: 'rounded-[2rem] border-[6px] border-[#FF4B4B] shadow-2xl',
+              title: 'text-3xl font-black',
+            },
+            backdrop: `rgba(255, 255, 255, 0.4)`
           });
 
           if (wrongTimeoutRef.current) clearTimeout(wrongTimeoutRef.current);
