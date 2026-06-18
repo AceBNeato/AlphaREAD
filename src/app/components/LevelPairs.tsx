@@ -256,7 +256,7 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
           <Button variant="ghost" size="sm" onClick={handleGoBack} className="rounded-full"><Home className="w-5 h-5" /></Button>
           <div className="flex-1 text-center">
             <h2 className="text-lg font-bold" style={{ color: accent.primary }}>
-              {step.isFinal ? "Final Review" : "Alphabet Master"}
+              {step.isFinal ? "Final Review" : `Alphabet Master - ${step.type === "review" ? "Review Phase" : step.type === "match" ? "Listen and Match" : "Listen and Type"}`}
             </h2>
           </div>
           <span className="text-sm font-bold" style={{ color: accent.primary }}>Step {currentStep + 1}/{STEPS.length}</span>
@@ -270,6 +270,20 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
               <div className="text-center mb-8">
                 <h2 className="text-3xl font-bold" style={{ color: accent.primary }}>Review Phase</h2>
                 <p className="text-gray-500 mt-2">Tap the letters to hear their sounds</p>
+
+                {/* Navigation Controls moved to top */}
+                <div className="flex justify-center items-center w-full gap-3 sm:gap-4 max-w-sm mx-auto mt-6">
+                  <Button variant="outline" size="sm" onClick={handleShuffleReview} className="flex-1 rounded-xl font-bold text-gray-600">
+                    <Shuffle className="w-4 h-4 mr-1" /> Shuffle
+                  </Button>
+                  <Button
+                    onClick={handleStepNext}
+                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-4 border-[#3c8c01] hover:scale-105 active:scale-95"
+                    style={{ background: 'linear-gradient(135deg, #58cc02 0%, #46a302 100%)' }}
+                  >
+                    Proceed <ChevronRight className="w-4 h-4 ml-1" />
+                  </Button>
+                </div>
               </div>
 
               {/* Grid of all letters in the set */}
@@ -300,24 +314,7 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
                 })}
               </div>
 
-              <div className="flex justify-center items-center w-full gap-4 max-w-sm mt-auto">
-                <Button
-                  variant="outline"
-                  size="lg"
-                  onClick={handleShuffleReview}
-                  className="flex-1 py-6 text-base font-bold text-gray-600 rounded-xl"
-                >
-                  <Shuffle className="mr-2 w-5 h-5" /> Shuffle
-                </Button>
-                <Button
-                  size="lg"
-                  onClick={handleStepNext}
-                  className="flex-1 py-6 text-base text-white shadow-lg border-b-4 border-[#3c8c01] rounded-xl font-bold"
-                  style={{ background: 'linear-gradient(135deg, #58cc02 0%, #46a302 100%)' }}
-                >
-                  Proceed <ChevronRight className="ml-1 w-5 h-5" />
-                </Button>
-              </div>
+
             </motion.div>
 
           ) : step.type === "match" ? (

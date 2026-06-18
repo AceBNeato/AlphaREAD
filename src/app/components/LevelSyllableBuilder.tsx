@@ -495,54 +495,53 @@ export function LevelSyllableBuilder({
                       Tap letters below in the correct order
                     </span>
                     {/* Selected letters display */}
-                  {!completedTargets.has(currentTarget.syllable) && (
-                    <motion.div
-                      animate={{ 
-                        x: feedback === "wrong" ? [-10, 10, -10, 10, 0] : 0,
-                        scale: feedback === "correct" ? [1, 1.05, 1] : 1
-                      }}
-                      className="flex justify-center gap-2 mt-2 mb-4"
-                    >
-                      {Array.from({ length: slotCount }).map((_, slot) => {
-                        const isVowel = ["A", "E", "I", "O", "U"].includes(selectedLetters[slot]);
-                        return (
-                          <div
-                            key={slot}
-                            className={`w-16 h-16 sm:w-20 sm:h-20 rounded-2xl flex items-center justify-center transition-all ${!selectedLetters[slot]
-                              ? "border-4 border-dashed border-gray-300 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-800/30"
-                              : ""
-                              }`}
-                          >
-                            {selectedLetters[slot] ? (
-                              <motion.div
-                                initial={{ scale: 0, y: -10 }}
-                                animate={{ scale: 1, y: 0 }}
-                                className={`w-full h-full rounded-2xl flex flex-col items-center justify-center border-b-[4px] select-none shadow-md ${
-                                  feedback === "correct" ? "bg-green-100 border-green-400 text-green-700" :
-                                  feedback === "wrong" ? "bg-red-50 border-red-400 text-red-600" : ""
+                    {!completedTargets.has(currentTarget.syllable) && (
+                      <motion.div
+                        animate={{
+                          x: feedback === "wrong" ? [-10, 10, -10, 10, 0] : 0,
+                          scale: feedback === "correct" ? [1, 1.05, 1] : 1
+                        }}
+                        className="flex justify-center gap-2 mt-2 mb-4"
+                      >
+                        {Array.from({ length: slotCount }).map((_, slot) => {
+                          const isVowel = ["A", "E", "I", "O", "U"].includes(selectedLetters[slot]);
+                          return (
+                            <div
+                              key={slot}
+                              className={`w-16 h-16 sm:w-20 sm:h-20 rounded-2xl flex items-center justify-center transition-all ${!selectedLetters[slot]
+                                ? "border-4 border-dashed border-gray-300 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-800/30"
+                                : ""
                                 }`}
-                                style={{
-                                  background: feedback ? undefined :
-                                    isVowel ? "linear-gradient(135deg, #FF6B8A 0%, #FF4B8A 100%)" : "linear-gradient(135deg, #1CB0F6 0%, #0a8ed4 100%)",
-                                  borderColor: feedback ? undefined :
-                                    isVowel ? "#C82A52" : "#086CA5",
-                                }}
-                              >
-                                <span className={`text-4xl sm:text-5xl font-black drop-shadow-sm ${feedback ? "" : "text-white"}`}>
-                                  {selectedLetters[slot]?.toLowerCase()}
-                                </span>
+                            >
+                              {selectedLetters[slot] ? (
+                                <motion.div
+                                  initial={{ scale: 0, y: -10 }}
+                                  animate={{ scale: 1, y: 0 }}
+                                  className={`w-full h-full rounded-2xl flex flex-col items-center justify-center border-b-[4px] select-none shadow-md ${feedback === "correct" ? "bg-green-100 border-green-400 text-green-700" :
+                                      feedback === "wrong" ? "bg-red-50 border-red-400 text-red-600" : ""
+                                    }`}
+                                  style={{
+                                    background: feedback ? undefined :
+                                      isVowel ? "linear-gradient(135deg, #FF6B8A 0%, #FF4B8A 100%)" : "linear-gradient(135deg, #1CB0F6 0%, #0a8ed4 100%)",
+                                    borderColor: feedback ? undefined :
+                                      isVowel ? "#C82A52" : "#086CA5",
+                                  }}
+                                >
+                                  <span className={`text-4xl sm:text-5xl font-black drop-shadow-sm ${feedback ? "" : "text-white"}`}>
+                                    {selectedLetters[slot]?.toLowerCase()}
+                                  </span>
 
-                              </motion.div>
-                            ) : (
-                              <span className="text-gray-300 dark:text-gray-600 text-2xl font-bold opacity-50">
-                                {patternPlaceholder(currentTarget.pattern)[slot]}
-                              </span>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </motion.div>
-                  )} 
+                                </motion.div>
+                              ) : (
+                                <span className="text-gray-300 dark:text-gray-600 text-2xl font-bold opacity-50">
+                                  {patternPlaceholder(currentTarget.pattern)[slot]}
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </motion.div>
+                    )}
                   </div>
 
 

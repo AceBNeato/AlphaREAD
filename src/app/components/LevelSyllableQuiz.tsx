@@ -82,6 +82,20 @@ function ReviewPhase({ items, pattern, accent, onNext }: { items: string[]; patt
       <div className="text-center mb-8">
         <h2 className="text-3xl font-bold" style={{ color: accent.primary }}>Review Phase</h2>
         <p className="text-gray-500 mt-2">Tap the syllables to hear their sounds</p>
+
+        {/* Navigation Controls moved to top */}
+        <div className="flex justify-center items-center w-full gap-3 sm:gap-4 max-w-sm mx-auto mt-6">
+          <Button variant="outline" size="sm" onClick={handleShuffle} className="flex-1 rounded-xl font-bold text-gray-600">
+            <Shuffle className="w-4 h-4 mr-1" /> Shuffle
+          </Button>
+          <Button
+            onClick={onNext}
+            className="flex-1 rounded-xl font-bold text-white shadow-md border-b-4 border-[#3c8c01] hover:scale-105 active:scale-95"
+            style={{ background: 'linear-gradient(135deg, #58cc02 0%, #46a302 100%)' }}
+          >
+            Proceed <ChevronRight className="w-4 h-4 ml-1" />
+          </Button>
+        </div>
       </div>
 
       <div className="flex flex-wrap justify-center gap-4 sm:gap-6 lg:gap-8 mb-12 w-full max-w-3xl mx-auto">
@@ -111,14 +125,7 @@ function ReviewPhase({ items, pattern, accent, onNext }: { items: string[]; patt
         })}
       </div>
 
-      <div className="flex justify-center items-center w-full gap-4 max-w-sm mt-auto">
-        <Button variant="outline" size="lg" onClick={handleShuffle} className="flex-1 py-6 text-base font-bold text-gray-600 rounded-xl">
-          <Shuffle className="mr-2 w-5 h-5" /> Shuffle
-        </Button>
-        <Button size="lg" onClick={onNext} className="flex-1 py-6 text-base text-white shadow-lg border-b-4 border-[#3c8c01] rounded-xl font-bold" style={{ background: 'linear-gradient(135deg, #58cc02 0%, #46a302 100%)' }}>
-          Proceed <ChevronRight className="ml-1 w-5 h-5" />
-        </Button>
-      </div>
+
     </motion.div>
   );
 }
@@ -514,20 +521,9 @@ export function LevelSyllableQuiz({ pattern, levelId, accent, onComplete }: Leve
               {getPhaseTitle(step?.type)} — {step?.setLabel} ({totalReviewSets} sets)
             </p>
           </div>
-          <span className="text-xs font-bold text-gray-500 bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full">
-            {currentStep + 1}/{steps.length}
+          <span className="text-sm font-bold" style={{ color: accent.primary }}>
+            Step {currentStep + 1}/{steps.length}
           </span>
-        </div>
-        {/* Progress bar */}
-        <div className="max-w-4xl mx-auto mt-2">
-          <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-            <motion.div
-              animate={{ width: `${progressPct}%` }}
-              transition={{ duration: 0.3 }}
-              className="h-full rounded-full"
-              style={{ background: `linear-gradient(90deg, ${accent.primary}, ${accent.dark})` }}
-            />
-          </div>
         </div>
       </div>
 
