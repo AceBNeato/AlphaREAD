@@ -145,7 +145,40 @@ BEGIN
 END;
 $$;
 
--- 8. Seed the initial Admin
+-- 8. RPC: Check Staff Email (Bypasses RLS for pre-check)
+CREATE OR REPLACE FUNCTION public.check_staff_email(p_email TEXT, p_role TEXT)
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  RETURN EXISTS(
+    SELECT 1 FROM public.profiles WHERE email = p_email AND role = p_role
+  );
+END;
+$$;
+
+-- 9. RPC: Verify Staff Login (Bypasses RLS to verify email and access code)
+CREATE OR REPLACE FUNCTION public.verify_staff_login(p_email TEXT, p_pin TEXT)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_user public.profiles%ROWTYPE;
+BEGIN
+  SELECT * INTO v_user FROM public.profiles 
+  WHERE email = p_email AND pin_hash = p_pin AND role IN ('admin', 'teacher');
+  
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Invalid email or access code.';
+  END IF;
+
+  RETURN row_to_json(v_user)::jsonb;
+END;
+$$;
+
+-- 10. Seed the initial Admin
 INSERT INTO public.profiles (id, first_name, last_name, role, email, pin_hash) 
 SELECT gen_random_uuid(), 'Master', 'Admin', 'admin', 'businessneato@gmail.com', 'ADMIN123'
 WHERE NOT EXISTS (SELECT 1 FROM public.profiles WHERE role = 'admin' LIMIT 1);

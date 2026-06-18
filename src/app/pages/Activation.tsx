@@ -118,16 +118,13 @@ export default function Activation() {
       const emailClean = userInput.trim().toLowerCase();
       const codeClean = accessCode.trim().toUpperCase();
 
-      // Verify email + access code against the database
-      const { data: profile, error: dbError } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("email", emailClean)
-        .eq("pin_hash", codeClean)
-        .in("role", ["teacher", "admin"])
-        .maybeSingle();
+      // Verify email + access code via RPC to bypass RLS
+      const { data: profile, error: rpcError } = await supabase.rpc('verify_staff_login', {
+        p_email: emailClean,
+        p_pin: codeClean
+      });
 
-      if (dbError || !profile) {
+      if (rpcError || !profile) {
         throw new Error("Invalid email or access code. Contact your administrator.");
       }
 

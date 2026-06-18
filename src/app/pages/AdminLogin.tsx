@@ -21,16 +21,14 @@ export default function AdminLogin() {
     setSuccessMsg("");
 
     try {
-      // Just check if they exist as an admin. We don't send an email anymore.
+      // Just check if they exist as an admin using the secure RPC
       const emailClean = email.trim().toLowerCase();
-      const { data: admin, error: dbError } = await supabase
-        .from("profiles")
-        .select("id")
-        .eq("email", emailClean)
-        .eq("role", "admin")
-        .maybeSingle();
+      const { data: isValid, error: rpcError } = await supabase.rpc('check_staff_email', {
+        p_email: emailClean,
+        p_role: "admin"
+      });
 
-      if (dbError || !admin) {
+      if (rpcError || !isValid) {
          throw new Error("No administrator found with this email.");
       }
 
@@ -52,16 +50,13 @@ export default function AdminLogin() {
       const emailClean = email.trim().toLowerCase();
       const codeClean = otpCode.trim().toUpperCase();
 
-      // Verify email + access code against the database
-      const { data: admin, error: dbError } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("email", emailClean)
-        .eq("pin_hash", codeClean)
-        .eq("role", "admin")
-        .maybeSingle();
+      // Verify email + access code against the database via secure RPC
+      const { data: admin, error: rpcError } = await supabase.rpc('verify_staff_login', {
+        p_email: emailClean,
+        p_pin: codeClean
+      });
 
-      if (dbError || !admin) {
+      if (rpcError || !admin || admin.role !== 'admin') {
         throw new Error("Invalid admin email or access code.");
       }
 
