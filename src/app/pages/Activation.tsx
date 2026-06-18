@@ -128,6 +128,30 @@ export default function Activation() {
         throw new Error("Invalid email or access code. Contact your administrator.");
       }
 
+      // ── Establish Real Supabase Session for RLS ──
+      let { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email: emailClean,
+        password: codeClean
+      });
+
+      if (authError) {
+        // If they don't exist in auth.users yet, silently sign them up!
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+          email: emailClean,
+          password: codeClean
+        });
+        if (signUpError) throw new Error("Failed to establish secure session: " + signUpError.message);
+        authData = signUpData as any;
+      }
+
+      // Link auth_id if needed
+      if (!profile.auth_id && authData?.session?.user?.id) {
+        await supabase
+          .from("profiles")
+          .update({ auth_id: authData.session.user.id })
+          .eq("id", profile.id);
+      }
+
       // Log user in locally
       localStorage.setItem("userProfile", JSON.stringify({
         id: profile.id,

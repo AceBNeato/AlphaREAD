@@ -60,6 +60,31 @@ export default function AdminLogin() {
         throw new Error("Invalid admin email or access code.");
       }
 
+      // ── Establish Real Supabase Session for RLS ──
+      // We sync their custom code as a Supabase Password so RLS works
+      let { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email: emailClean,
+        password: codeClean
+      });
+
+      if (authError) {
+        // If they don't exist in auth.users yet, silently sign them up!
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+          email: emailClean,
+          password: codeClean
+        });
+        if (signUpError) throw new Error("Failed to establish secure session: " + signUpError.message);
+        authData = signUpData as any;
+      }
+
+      // Link auth_id if needed
+      if (!admin.auth_id && authData?.session?.user?.id) {
+        await supabase
+          .from("profiles")
+          .update({ auth_id: authData.session.user.id })
+          .eq("id", admin.id);
+      }
+
       localStorage.setItem("userProfile", JSON.stringify({
         id: admin.id,
         name: admin.first_name || "Admin",

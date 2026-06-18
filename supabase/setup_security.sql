@@ -40,7 +40,8 @@ ALTER TABLE public.progress ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Public profiles select" ON public.profiles;
 DROP POLICY IF EXISTS "Admin full access profiles" ON public.profiles;
 DROP POLICY IF EXISTS "Teacher read own and students" ON public.profiles;
-DROP POLICY IF EXISTS "Auth link profile" ON public.profiles;
+DROP POLICY IF EXISTS "Auth link profile read" ON public.profiles;
+DROP POLICY IF EXISTS "Auth link profile update" ON public.profiles;
 DROP POLICY IF EXISTS "Admin full access progress" ON public.progress;
 DROP POLICY IF EXISTS "Teacher read student progress" ON public.progress;
 
