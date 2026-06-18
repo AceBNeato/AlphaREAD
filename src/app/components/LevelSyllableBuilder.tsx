@@ -531,9 +531,7 @@ export function LevelSyllableBuilder({
                                 <span className={`text-4xl sm:text-5xl font-black drop-shadow-sm ${feedback ? "" : "text-white"}`}>
                                   {selectedLetters[slot]?.toLowerCase()}
                                 </span>
-                                <span className={`text-[10px] uppercase font-bold tracking-wider mt-0.5 ${feedback ? "opacity-80" : "text-white/80"}`}>
-                                  {isVowel ? "vowel" : "cons."}
-                                </span>
+
                               </motion.div>
                             ) : (
                               <span className="text-gray-300 dark:text-gray-600 text-2xl font-bold opacity-50">
@@ -612,9 +610,7 @@ export function LevelSyllableBuilder({
                         <span className="text-white text-3xl sm:text-4xl font-black drop-shadow-sm">
                           {item.letter}{item.letter.toLowerCase()}
                         </span>
-                        <span className="text-white/80 text-[9px] uppercase font-bold tracking-wider mt-0.5">
-                          {item.isVowel ? "vowel" : "cons."}
-                        </span>
+
                       </motion.button>
                     );
                   })}
