@@ -1,63 +1,149 @@
-import { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router";
-import { Home, Volume2, ArrowLeft, ArrowRight, Sparkles, CheckCircle2, XCircle, Mic, MicOff, AlertCircle, RotateCcw, SkipForward, FastForward } from "lucide-react";
 import { Button } from "./ui/button";
+import { allLetters as ALL_LETTERS, LETTER_NAMES, LETTER_TTS } from "../data/levels";
 import { motion, AnimatePresence } from "motion/react";
-import { supabase } from "../../lib/supabase";
-import { Confetti } from "./ui/Confetti";
-import { shuffle, allLetters, LETTER_NAMES, LETTER_TTS } from "../data/levels";
+import { ChevronRight, Home, ArrowRight, Shuffle, FastForward, Volume2, RotateCcw, Sparkles, Mic, MicOff, CheckCircle2, XCircle } from "lucide-react";
+import { playSound } from "../utils/soundEffects";
+import { MatchButton } from "./MatchButton";
+import { playTTS as playTTSUtil } from "../utils/tts";
 import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
 import { AudioVisualizer } from "./AudioVisualizer";
-import { playSound } from "../utils/soundEffects";
-import { playTTS as playTTSUtil } from "../utils/tts";
-import { MatchButton } from "./MatchButton";
+import { Confetti } from "./ui/Confetti";
+import { supabase } from "../../lib/supabase";
 
 interface LevelLetterNamesProps {
   levelId: number;
   accent: { primary: string; dark: string; lightBg: string };
 }
 
-interface Question {
-  targetLetter: string;
-  options: string[];
-}
-
-const STEPS = [
-  { id: 1, type: "review" as const, letters: ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"], title: "Review A-L" },
-  { id: 2, type: "voice" as const, letters: ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"], title: "Speak A-L", count: 6 },
-  { id: 3, type: "review" as const, letters: ["M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"], title: "Review M-Z" },
-  { id: 4, type: "voice" as const, letters: ["M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"], title: "Speak M-Z", count: 7 },
-  { id: 5, type: "voice" as const, letters: ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"], title: "Final Speak", count: 10 },
-];
+// Vowels for color logic
+const VOWELS = new Set(['A', 'E', 'I', 'O', 'U']);
 
 export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
   const navigate = useNavigate();
 
+  // ALPHABET strictly ordered A-Z
+  const ALPHABET = useMemo(() =>
+    [...ALL_LETTERS].sort((a, b) => a.letter.localeCompare(b.letter)).map(l => l.letter)
+  , []);
+
+  // Randomized alphabet for the final set
+  const [finalAlphabet] = useState(() => [...ALPHABET].sort(() => Math.random() - 0.5));
+
+  const STEPS = useMemo(() => [
+    { type: "review" as const, start: 0, end: 6, isFinal: false },
+    { type: "match" as const, start: 0, end: 6, isFinal: false },
+    { type: "voice" as const, start: 0, end: 6, isFinal: false },
+    { type: "type" as const, start: 0, end: 6, isFinal: false },
+
+    { type: "review" as const, start: 6, end: 12, isFinal: false },
+    { type: "match" as const, start: 6, end: 12, isFinal: false },
+    { type: "voice" as const, start: 6, end: 12, isFinal: false },
+    { type: "type" as const, start: 6, end: 12, isFinal: false },
+
+    { type: "review" as const, start: 12, end: 19, isFinal: false },
+    { type: "match" as const, start: 12, end: 19, isFinal: false },
+    { type: "voice" as const, start: 12, end: 19, isFinal: false },
+    { type: "type" as const, start: 12, end: 19, isFinal: false },
+
+    { type: "review" as const, start: 19, end: 26, isFinal: false },
+    { type: "match" as const, start: 19, end: 26, isFinal: false },
+    { type: "voice" as const, start: 19, end: 26, isFinal: false },
+    { type: "type" as const, start: 19, end: 26, isFinal: false },
+
+    // Final Comprehensive Test (Randomized batches of 6, 6, 7, 7)
+    { type: "review" as const, start: 0, end: 6, isFinal: true },
+    { type: "match" as const, start: 0, end: 6, isFinal: true },
+    { type: "voice" as const, start: 0, end: 6, isFinal: true },
+    { type: "type" as const, start: 0, end: 6, isFinal: true },
+
+    { type: "review" as const, start: 6, end: 12, isFinal: true },
+    { type: "match" as const, start: 6, end: 12, isFinal: true },
+    { type: "voice" as const, start: 6, end: 12, isFinal: true },
+    { type: "type" as const, start: 6, end: 12, isFinal: true },
+
+    { type: "review" as const, start: 12, end: 19, isFinal: true },
+    { type: "match" as const, start: 12, end: 19, isFinal: true },
+    { type: "voice" as const, start: 12, end: 19, isFinal: true },
+    { type: "type" as const, start: 12, end: 19, isFinal: true },
+
+    { type: "review" as const, start: 19, end: 26, isFinal: true },
+    { type: "match" as const, start: 19, end: 26, isFinal: true },
+    { type: "voice" as const, start: 19, end: 26, isFinal: true },
+    { type: "type" as const, start: 19, end: 26, isFinal: true },
+  ], []);
+
   const [currentStep, setCurrentStep] = useState(0);
   const step = STEPS[currentStep];
 
-  // Review states
-  const [currentPairIndex, setCurrentPairIndex] = useState(0);
-  const [clickedLetter, setClickedLetter] = useState<string | null>(null);
+  const baseActiveLetters = useMemo(() => {
+    const source = step.isFinal ? finalAlphabet : ALPHABET;
+    return source.slice(step.start, step.end);
+  }, [ALPHABET, finalAlphabet, step]);
 
+  const playNameTTS = (letter: string) => {
+    const name = LETTER_TTS[letter] || letter;
+    playTTSUtil(name);
+  };
 
+  // Global states
+  const [showConfetti, setShowConfetti] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
-  // Voice Evaluation specific states
+  // Review Phase States
+  const [reviewOrder, setReviewOrder] = useState<string[]>([]);
+  useEffect(() => {
+    if (step.type === "review") {
+      setReviewOrder(baseActiveLetters);
+    }
+  }, [baseActiveLetters, step.type]);
+
+  const handleShuffleReview = () => {
+    setReviewOrder(prev => [...prev].sort(() => Math.random() - 0.5));
+  };
+
+  const handleLetterClick = (letter: string) => {
+    if (!letter) return;
+    playNameTTS(letter);
+  };
+
+  // Match Phase States
+  const [matchColumns, setMatchColumns] = useState<{ left: string[]; right: string[] }>({ left: [], right: [] });
+  const [matchedPairs, setMatchedPairs] = useState<Set<string>>(new Set());
+  const [selectedSpeakerMatch, setSelectedSpeakerMatch] = useState<string | null>(null);
+  const [selectedLetterMatch, setSelectedLetterMatch] = useState<string | null>(null);
+  const [wrongMatchPair, setWrongMatchPair] = useState<[string, string] | null>(null);
+
+  useEffect(() => {
+    if (step.type === "match") {
+      setupMatchPhase();
+    }
+  }, [baseActiveLetters, step.type]);
+
+  const setupMatchPhase = () => {
+    const targets = [...baseActiveLetters].sort(() => Math.random() - 0.5);
+    setMatchColumns({
+      left: [...targets].sort(() => Math.random() - 0.5),
+      right: [...targets].sort(() => Math.random() - 0.5)
+    });
+    setMatchedPairs(new Set());
+    setSelectedSpeakerMatch(null);
+    setSelectedLetterMatch(null);
+    setWrongMatchPair(null);
+  };
+
+  // Voice Evaluation Phase States
   const [evaluatingLetter, setEvaluatingLetter] = useState<string | null>(null);
   const [completedVoiceLetters, setCompletedVoiceLetters] = useState<Set<string>>(new Set());
   const [voiceFeedbackMap, setVoiceFeedbackMap] = useState<Record<string, "correct" | "wrong" | "close" | null>>({});
   const [voiceTranscriptsMap, setVoiceTranscriptsMap] = useState<Record<string, string>>({});
   const [shuffledVoiceLetters, setShuffledVoiceLetters] = useState<string[]>([]);
 
-  // Global states
-  const [showConfetti, setShowConfetti] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-
   const evaluationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  // Tracks whether the 200ms mic warm-up has elapsed (singleShot mode).
-  // Prevents students from speaking before the browser is ready to listen.
   const [micReady, setMicReady] = useState(false);
   const micReadyTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const isMobile = useMemo(() => /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent), []);
 
   const clearEvalTimeout = useCallback(() => {
     if (evaluationTimeoutRef.current) {
@@ -73,40 +159,21 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
     };
   }, [clearEvalTimeout]);
 
-  const isMobile = useMemo(() => /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent), []);
-
-  // TTS utility
-  const playNameTTS = (letter: string) => {
-    const name = LETTER_TTS[letter] || letter;
-    playTTSUtil(name);
-  };
-
-  const currentSetPairs = useMemo(() => {
-    if (step.type !== "review") return [];
-    const p: [string, string][] = [];
-    for (let i = 0; i < step.letters.length; i += 2) {
-      if (i + 1 < step.letters.length) {
-        p.push([step.letters[i], step.letters[i + 1]]);
-      } else {
-        p.push([step.letters[i], ""]);
-      }
-    }
-    return p;
-  }, [step]);
-
-  const currentPair = currentSetPairs[currentPairIndex] || [];
-
-  // Update shuffled letters when step changes
   useEffect(() => {
     if (step.type === "voice") {
-      setShuffledVoiceLetters([...step.letters]);
-      setCompletedVoiceLetters(new Set());
-      setVoiceFeedbackMap({});
-      setVoiceTranscriptsMap({});
+      setupVoicePhase();
     }
-  }, [currentStep, step.type, step.letters]);
+  }, [baseActiveLetters, step.type]);
 
-  // Voice Evaluation Hook
+  const setupVoicePhase = () => {
+    setShuffledVoiceLetters([...baseActiveLetters].sort(() => Math.random() - 0.5));
+    setCompletedVoiceLetters(new Set());
+    setVoiceFeedbackMap({});
+    setVoiceTranscriptsMap({});
+    setEvaluatingLetter(null);
+    clearEvalTimeout();
+  };
+
   const handleVoiceResult = useCallback((word: string, status: "correct" | "close" | "wrong" | null, transcript: string) => {
     setVoiceTranscriptsMap(prev => ({ ...prev, [word]: transcript }));
 
@@ -138,7 +205,7 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
     } else {
       playSound("wrong", 0.35);
       const letter = word; // capture before clearing
-      setEvaluatingLetter(null); // 🛑 IMMEDIATELY stop mic from restarting
+      setEvaluatingLetter(null); // IMMEDIATELY stop mic from restarting
       setVoiceFeedbackMap(prev => ({ ...prev, [letter]: "wrong" }));
       evaluationTimeoutRef.current = setTimeout(() => {
         setVoiceFeedbackMap(prev => ({ ...prev, [letter]: null }));
@@ -156,7 +223,7 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
       if (evaluatingLetter) {
         playSound("wrong", 0.35);
         const letter = evaluatingLetter; // capture before clearing
-        setEvaluatingLetter(null); // 🛑 IMMEDIATELY clear so hook doesn't restart
+        setEvaluatingLetter(null); // IMMEDIATELY clear so hook doesn't restart
         setVoiceFeedbackMap(prev => ({ ...prev, [letter]: "wrong" }));
         evaluationTimeoutRef.current = setTimeout(() => {
           setVoiceFeedbackMap(prev => ({ ...prev, [letter]: null }));
@@ -165,51 +232,76 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
     }
   });
 
-  const handleBack = () => {
-    playSound("click", 0.2);
-    navigate(-1);
+
+  // Listen & Type Phase States
+  const [typeOrder, setTypeOrder] = useState<string[]>([]);
+  const [typeInputs, setTypeInputs] = useState<Record<string, string>>({});
+  const [typeStatus, setTypeStatus] = useState<Record<string, boolean | null>>({});
+
+  useEffect(() => {
+    if (step.type === "type") {
+      setupTypePhase();
+    }
+  }, [baseActiveLetters, step.type]);
+
+  const setupTypePhase = () => {
+    setTypeOrder([...baseActiveLetters].sort(() => Math.random() - 0.5));
+    setTypeInputs({});
+    setTypeStatus({});
   };
 
-  const handleVoiceReset = () => {
-    clearEvalTimeout();
-    setEvaluatingLetter(null);
-    setCompletedVoiceLetters(new Set());
-    setVoiceFeedbackMap({});
-    setVoiceTranscriptsMap({});
+  const handleShuffleType = () => {
+    // Only shuffle the items that are not yet correct
+    setTypeOrder(prev => {
+      const correct = prev.filter(l => typeStatus[l] === true);
+      const remaining = prev.filter(l => typeStatus[l] !== true).sort(() => Math.random() - 0.5);
+      // We can keep the correct ones in place or just append them. Appending them to the end is fine.
+      return [...correct, ...remaining];
+    });
   };
 
-  const handleVoiceNext = () => {
-    clearEvalTimeout();
-    setEvaluatingLetter(null);
-    setCompletedVoiceLetters(new Set());
-    setVoiceFeedbackMap({});
-    setVoiceTranscriptsMap({});
-    handleStepNext();
-  };
-  const handleLetterClick = (letter: string) => {
+  const playTypeSound = (letter: string) => {
     if (!letter) return;
-    playSound("click", 0.2);
-    setClickedLetter(letter);
     playNameTTS(letter);
-    setTimeout(() => setClickedLetter(null), 1000);
+  };
+
+  const handleTypeChange = (letter: string, val: string) => {
+    if (val.length > 1) return;
+    
+    setTypeInputs(prev => ({ ...prev, [letter]: val }));
+    
+    if (val.length === 1) {
+      if (val.toLowerCase() === letter.toLowerCase()) {
+        playSound("correct", 0.4);
+        setTypeStatus(prev => ({ ...prev, [letter]: true }));
+      } else {
+        playSound("wrong", 0.35);
+        setTypeStatus(prev => ({ ...prev, [letter]: false }));
+        setTimeout(() => {
+          setTypeStatus(prev => ({ ...prev, [letter]: null }));
+          setTypeInputs(prev => ({ ...prev, [letter]: "" }));
+        }, 800);
+      }
+    } else if (val.length === 0) {
+      setTypeStatus(prev => ({ ...prev, [letter]: null }));
+    }
+  };
+
+  const isTypePhaseComplete = typeOrder.length > 0 && typeOrder.every(l => typeStatus[l] === true);
+
+  const handleGoBack = () => {
+    const confirmExit = window.confirm("Are you sure you want to leave?");
+    if (!confirmExit) return;
+    navigate("/levels", { replace: true });
   };
 
   const handleStepNext = () => {
-    clearEvalTimeout();
     if (currentStep < STEPS.length - 1) {
-      setCurrentStep((prev) => Math.min(prev + 1, STEPS.length - 1));
-      setCurrentPairIndex(0);
-      setEvaluatingLetter(null);
+      setCurrentStep(prev => prev + 1);
     } else {
       playSound("complete", 0.5);
       setShowConfetti(true);
     }
-  };
-
-  const handleGoBack = () => {
-    const confirmExit = window.confirm("Are you sure you want to leave? Your progress will not be saved.");
-    if (!confirmExit) return;
-    navigate("/levels", { replace: true });
   };
 
   const handleFinish = async () => {
@@ -219,12 +311,19 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
       if (profileStr) {
         const profile = JSON.parse(profileStr);
         if (profile.id) {
-          const totalQuestions = STEPS.reduce((sum, s) => sum + (s.count || 0), 0);
-          await supabase.from("progress").insert({
-            student_id: profile.id,
-            level_id: levelId,
-            score: totalQuestions || 23,
-          });
+          const deviceId = localStorage.getItem("activated_device_id");
+          const totalQuestions = STEPS.length * 6; // Approx
+          if (profile.role === "student" && deviceId) {
+            await supabase.rpc("record_student_progress", {
+              p_student_id: profile.id,
+              p_device_id: deviceId,
+              p_level_id: levelId,
+              p_score: totalQuestions,
+            });
+          } else if (profile.role !== "student") {
+            // Do not record progress for teachers/admins previewing
+            console.log("Preview mode: progress not recorded.");
+          }
         }
       }
     } catch (err) {
@@ -242,98 +341,211 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
     navigate("/levels");
   };
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-violet-50 via-purple-50 to-indigo-50 dark:bg-none dark:bg-[#0d141c] pb-12 flex flex-col">
-      <Confetti active={showConfetti} />
+  const checkMatch = (left: string, right: string) => {
+    if (left === right) {
+      playSound("correct", 0.4);
+      setMatchedPairs(prev => new Set(prev).add(left));
+      setSelectedSpeakerMatch(null);
+      setSelectedLetterMatch(null);
+    } else {
+      playSound("wrong", 0.35);
+      setWrongMatchPair([left, right]);
+      setTimeout(() => {
+        setWrongMatchPair(null);
+        setSelectedSpeakerMatch(null);
+        setSelectedLetterMatch(null);
+      }, 900);
+    }
+  };
 
+  const handleSpeakerMatchClick = (letter: string) => {
+    if (matchedPairs.has(letter) || wrongMatchPair) return;
+    playNameTTS(letter);
+    setSelectedSpeakerMatch(letter);
+    if (selectedLetterMatch) checkMatch(letter, selectedLetterMatch);
+  };
+
+  const handleLetterMatchClick = (letter: string) => {
+    if (matchedPairs.has(letter) || wrongMatchPair) return;
+    
+    // User requested letter buttons to also have audio
+    playNameTTS(letter);
+
+    setSelectedLetterMatch(letter);
+    if (selectedSpeakerMatch) checkMatch(selectedSpeakerMatch, letter);
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-purple-50 dark:bg-none dark:bg-[#0d141c] overflow-x-hidden flex flex-col">
+      <Confetti active={showConfetti} />
+      
+      {/* Header */}
       <div className="sticky top-0 z-10 bg-white/80 dark:bg-[#0d141c]/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 px-4 py-3">
-        <div className="max-w-2xl mx-auto flex items-center justify-between gap-3">
-          <Button variant="ghost" size="sm" onClick={handleGoBack} className="rounded-full">
-            <Home className="w-5 h-5" />
-          </Button>
-          <h2 className="text-lg font-bold tracking-tight text-center flex-1" style={{ color: accent.primary }}>
-            Lesson 4: Letter Names
-          </h2>
-          <span className="text-xs font-bold text-gray-500 bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full uppercase">
-            {step.title} ({currentStep + 1}/{STEPS.length})
-          </span>
+        <div className="max-w-4xl mx-auto flex items-center gap-3 w-full">
+          <Button variant="ghost" size="sm" onClick={handleGoBack} className="rounded-full"><Home className="w-5 h-5" /></Button>
+          <div className="flex-1 text-center">
+            <h2 className="text-lg font-bold tracking-tight" style={{ color: accent.primary }}>
+              {step.type === 'review' ? 'Letter Names - Review Phase' :
+               step.type === 'match' ? 'Letter Names - Listen & Match' :
+               step.type === 'voice' ? 'Letter Names - Say the Name!' :
+               'Letter Names - Listen & Type'}
+            </h2>
+          </div>
+          <span className="text-sm font-bold" style={{ color: accent.primary }}>Step {currentStep + 1}/{STEPS.length}</span>
         </div>
       </div>
 
-      <div className="max-w-2xl mx-auto px-4 py-6 flex-1 flex flex-col justify-center w-full">
+      <div className="max-w-4xl mx-auto px-4 py-8 flex-1 flex flex-col w-full">
         <AnimatePresence mode="wait">
           {!showConfetti && step.type === "review" && (
-            <motion.div
-              key={`review-${currentStep}`}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="text-center w-full max-w-md mx-auto"
-            >
-              <div className="mb-6">
-                <h1 className="text-3xl font-black text-gray-800 dark:text-gray-100 mb-2">
-                  Meet the Letter Names!
-                </h1>
-                <p className="text-gray-500 dark:text-gray-400 text-sm">
-                  Letters have names! Tap each letter below to hear how it's named.
-                </p>
-              </div>
-
-              <div className="flex justify-center gap-6 mb-8">
-                {currentPair.map((l) => l ? (
-                  <motion.div
-                    key={l}
-                    initial={{ scale: 0.9, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    onClick={() => handleLetterClick(l)}
-                    className="flex-1 bg-white dark:bg-gray-800 rounded-[2.5rem] border-3 shadow-xl p-6 cursor-pointer hover:shadow-2xl hover:scale-[1.02] active:scale-95 transition-all select-none"
-                    style={{ borderColor: clickedLetter === l ? '#FF9600' : accent.primary }}
+            <motion.div key={`review-${currentStep}`} initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -50 }} className="flex flex-col items-center">
+              <div className="text-center mb-8">
+                <p className="text-gray-500 mt-2">Tap the letters to hear their sounds</p>
+                {/* Navigation Controls moved to top */}
+                <div className="flex justify-center items-center w-full gap-3 sm:gap-4 max-w-sm mx-auto mt-6">
+                  <Button 
+                    onClick={handleShuffleReview} 
+                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-4 border-[#8b40b8] hover:scale-105 active:scale-95 px-2"
+                    style={{ background: 'linear-gradient(135deg, #ce82ff 0%, #a559d6 100%)' }}
                   >
-                    <div className="text-8xl font-black tracking-tight mb-4" style={{ color: clickedLetter === l ? '#FF9600' : accent.primary }}>
-                      {l}
-                      <span className="text-3xl align-bottom font-medium opacity-60 ml-2">
-                        {l.toLowerCase()}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-center gap-1.5 text-sm font-bold bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-300 py-2 px-4 rounded-xl w-fit mx-auto shadow-sm">
-                      <Volume2 className="w-4 h-4" />
-                      <span>Name: "{LETTER_NAMES[l]}"</span>
-                    </div>
-                  </motion.div>
-                ) : null)}
-              </div>
-
-              <div className="flex justify-between items-center gap-4">
-                <Button
-                  variant="outline"
-                  size="lg"
-                  disabled={currentPairIndex === 0}
-                  onClick={() => setCurrentPairIndex(prev => Math.max(prev - 1, 0))}
-                  className="rounded-2xl flex-1 py-6 border-2 font-bold"
-                >
-                  <ArrowLeft className="w-5 h-5 mr-2" /> Back
-                </Button>
-
-                {currentPairIndex < currentSetPairs.length - 1 ? (
-                  <Button
-                    size="lg"
-                    onClick={() => setCurrentPairIndex(prev => Math.min(prev + 1, currentSetPairs.length - 1))}
-                    className="rounded-2xl flex-1 py-6 font-bold text-white shadow-lg"
-                    style={{ background: `linear-gradient(135deg, ${accent.primary}, ${accent.dark})` }}
-                  >
-                    Next Letters <ArrowRight className="w-5 h-5 ml-2" />
+                    <Shuffle className="w-4 h-4 mr-1" /> Shuffle
                   </Button>
-                ) : (
                   <Button
-                    size="lg"
                     onClick={handleStepNext}
-                    className="rounded-2xl flex-1 py-6 font-bold text-white shadow-lg"
-                    style={{ background: "linear-gradient(135deg, #58CC02, #46a302)" }}
+                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-4 border-[#3c8c01] hover:scale-105 active:scale-95"
+                    style={{ background: 'linear-gradient(135deg, #58cc02 0%, #46a302 100%)' }}
                   >
-                    Next Challenge! <Sparkles className="w-5 h-5 ml-2" />
+                    Proceed <ChevronRight className="w-4 h-4 ml-1" />
                   </Button>
-                )}
+                </div>
               </div>
+
+              {/* Grid of all letters in the set */}
+              <div className="flex flex-wrap justify-center gap-4 sm:gap-6 lg:gap-8 mb-12 w-full max-w-3xl mx-auto">
+                {reviewOrder.map((l: string) => {
+                  const isVowel = VOWELS.has(l);
+                  const bgStart = isVowel ? "#FF6B8A" : "#1CB0F6";
+                  const bgEnd = isVowel ? "#FF4B8A" : "#0a8ed4";
+                  const borderColor = isVowel ? "#C82A52" : "#086CA5";
+
+                  return (
+                    <motion.div key={l} initial={{ scale: 0 }} animate={{ scale: 1 }} className="flex flex-col items-center w-[100px] sm:w-[130px]">
+                      <div
+                        onClick={() => handleLetterClick(l)}
+                        className="w-full aspect-square rounded-[1.5rem] shadow-lg flex flex-col items-center justify-center cursor-pointer transition-all hover:scale-105 active:scale-95 border-b-[6px] hover:shadow-xl select-none"
+                        style={{ background: `linear-gradient(135deg, ${bgStart}, ${bgEnd})`, borderColor: borderColor }}
+                      >
+                        <div className="flex items-baseline justify-center">
+                          <span className="text-white text-5xl sm:text-6xl font-black drop-shadow-sm">{l}</span>
+                          <span className="text-white/90 text-3xl sm:text-4xl font-bold drop-shadow-sm ml-1">{l.toLowerCase()}</span>
+                        </div>
+                        <span className="text-white/90 text-[11px] sm:text-[13px] uppercase font-bold tracking-widest mt-2 bg-black/10 px-2 py-0.5 rounded-full">
+                          {isVowel ? "vowel" : "cons."}
+                        </span>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            </motion.div>
+          )}
+
+          {!showConfetti && step.type === "match" && (
+            <motion.div key={`match-${currentStep}`} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="flex flex-col items-center w-full">
+              <div className="text-center mb-6">
+                <p className="text-gray-500 mt-2">Tap a speaker, then tap the matching letter!</p>
+                {/* Navigation Controls moved to top */}
+                <div className="flex justify-center items-center w-full gap-3 sm:gap-4 max-w-md mx-auto mt-6">
+                  <Button 
+                    onClick={() => {
+                      setMatchColumns(prev => ({
+                        left: [...prev.left].sort(() => Math.random() - 0.5),
+                        right: [...prev.right].sort(() => Math.random() - 0.5)
+                      }));
+                    }} 
+                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-4 border-[#8b40b8] hover:scale-105 active:scale-95 px-2"
+                    style={{ background: 'linear-gradient(135deg, #ce82ff 0%, #a559d6 100%)' }}
+                  >
+                    <Shuffle className="w-4 h-4 mr-1" /> Shuffle
+                  </Button>
+                  <Button 
+                    onClick={setupMatchPhase} 
+                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-4 border-[#e11d48] hover:scale-105 active:scale-95 px-2"
+                    style={{ background: 'linear-gradient(135deg, #fb7185 0%, #e11d48 100%)' }}
+                  >
+                    <RotateCcw className="w-4 h-4 mr-1" /> Reset
+                  </Button>
+                  <Button 
+                    onClick={handleStepNext} 
+                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-4 border-[#c99c00] hover:scale-105 active:scale-95 px-2"
+                    style={{ background: 'linear-gradient(135deg, #ffc800 0%, #ff9600 100%)' }}
+                  >
+                    <FastForward className="w-4 h-4 mr-1" /> Skip
+                  </Button>
+                  
+                  <Button
+                    onClick={handleStepNext}
+                    disabled={matchedPairs.size !== matchColumns.left.length || matchColumns.left.length === 0}
+                    className={`flex-1 rounded-xl font-bold text-white shadow-md border-b-4 ${matchedPairs.size === matchColumns.left.length ? 'border-[#3c8c01] hover:scale-105 active:scale-95' : 'opacity-50 grayscale cursor-not-allowed'}`}
+                    style={{ background: 'linear-gradient(135deg, #58cc02 0%, #46a302 100%)' }}
+                  >
+                    Next <ChevronRight className="w-4 h-4 ml-1" />
+                  </Button>
+                </div>
+              </div>
+
+              <div className="flex justify-center gap-4 sm:gap-8 w-full max-w-2xl mx-auto mb-10 px-2 sm:px-4">
+                {/* Left Column: TTS Speakers */}
+                <div className="flex flex-col gap-3 sm:gap-4 flex-1 min-w-0">
+                  {matchColumns.left.map((letter) => {
+                    const isMatched = matchedPairs.has(letter);
+                    const isSelected = selectedSpeakerMatch === letter;
+                    const isWrong = !!(wrongMatchPair && wrongMatchPair[0] === letter);
+
+                    return (
+                      <MatchButton
+                        key={`speaker-${letter}`}
+                        gradientStart={accent.primary}
+                        gradientEnd={accent.dark}
+                        isMatched={isMatched}
+                        isSelected={isSelected}
+                        isWrong={isWrong}
+                        onClick={() => handleSpeakerMatchClick(letter)}
+                        disabled={!!wrongMatchPair}
+                      >
+                        <Volume2 className={`w-8 h-8 ${isMatched ? "opacity-50" : ""}`} />
+                      </MatchButton>
+                    );
+                  })}
+                </div>
+
+                {/* Right Column: Letters */}
+                <div className="flex flex-col gap-3 sm:gap-4 flex-1 min-w-0">
+                  {matchColumns.right.map((letter) => {
+                    const isMatched = matchedPairs.has(letter);
+                    const isSelected = selectedLetterMatch === letter;
+                    const isWrong = !!(wrongMatchPair && wrongMatchPair[1] === letter);
+
+                    return (
+                      <MatchButton
+                        key={`letter-${letter}`}
+                        isMatched={isMatched}
+                        isSelected={isSelected}
+                        isWrong={isWrong}
+                        onClick={() => handleLetterMatchClick(letter)}
+                        disabled={!!wrongMatchPair}
+                        className="font-black text-2xl sm:text-3xl tracking-widest"
+                      >
+                        {letter}{letter.toLowerCase()}
+                      </MatchButton>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {wrongMatchPair && (
+                <motion.p initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="text-red-500 font-bold text-lg mb-4 text-center">Not quite, try again!</motion.p>
+              )}
             </motion.div>
           )}
 
@@ -346,65 +558,43 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
               className="w-full max-w-2xl mx-auto flex flex-col items-center"
             >
               <div className="text-center mb-6">
-                <h2 className="text-3xl font-black text-gray-800 dark:text-gray-100 mb-2">
-                  Say the Name! 🗣️
-                </h2>
-                <p className="text-gray-500 dark:text-gray-400 text-sm">
-                  Tap the microphone and say the name of the letter loud and clear.
-                </p>
+                <p className="text-gray-500 dark:text-gray-400 text-sm">Tap the microphone and say the name of the letter loud and clear.</p>
+                {/* Navigation Controls moved to top */}
+                <div className="flex justify-center items-center w-full gap-3 sm:gap-4 max-w-md mx-auto mt-6">
+                  <Button 
+                    onClick={() => {
+                        setShuffledVoiceLetters(prev => [...prev].sort(() => Math.random() - 0.5));
+                    }} 
+                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-4 border-[#8b40b8] hover:scale-105 active:scale-95 px-2"
+                    style={{ background: 'linear-gradient(135deg, #ce82ff 0%, #a559d6 100%)' }}
+                  >
+                    <Shuffle className="w-4 h-4 mr-1" /> Shuffle
+                  </Button>
+                  <Button 
+                    onClick={setupVoicePhase} 
+                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-4 border-[#e11d48] hover:scale-105 active:scale-95 px-2"
+                    style={{ background: 'linear-gradient(135deg, #fb7185 0%, #e11d48 100%)' }}
+                  >
+                    <RotateCcw className="w-4 h-4 mr-1" /> Reset
+                  </Button>
+                  <Button 
+                    onClick={handleStepNext} 
+                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-4 border-[#c99c00] hover:scale-105 active:scale-95 px-2"
+                    style={{ background: 'linear-gradient(135deg, #ffc800 0%, #ff9600 100%)' }}
+                  >
+                    <FastForward className="w-4 h-4 mr-1" /> Skip
+                  </Button>
+                  
+                  <Button
+                    onClick={handleStepNext}
+                    disabled={completedVoiceLetters.size < shuffledVoiceLetters.length}
+                    className={`flex-1 rounded-xl font-bold text-white shadow-md border-b-4 ${completedVoiceLetters.size === shuffledVoiceLetters.length ? 'border-[#3c8c01] hover:scale-105 active:scale-95' : 'opacity-50 grayscale cursor-not-allowed'}`}
+                    style={{ background: 'linear-gradient(135deg, #58cc02 0%, #46a302 100%)' }}
+                  >
+                    Next <ChevronRight className="w-4 h-4 ml-1" />
+                  </Button>
+                </div>
               </div>
-
-              {/* Controls */}
-            <div className="flex justify-center items-center w-full gap-2 sm:gap-3 max-w-lg mx-auto mb-6">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleBack}
-                className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#086ca5] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
-                style={{
-                  background: "linear-gradient(135deg, rgb(28, 176, 246) 0%, rgb(10, 142, 212) 100%)",
-                }}
-              >
-                <ArrowLeft className="w-4 h-4 sm:mr-1" />
-                <span className="hidden sm:inline">Back</span>
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleVoiceReset}
-                className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#b81d1d] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
-                style={{
-                  background: "linear-gradient(135deg, rgb(255, 75, 75) 0%, rgb(216, 42, 42) 100%)",
-                }}
-              >
-                <RotateCcw className="w-4 h-4 sm:mr-1" />
-                <span className="hidden sm:inline">Reset</span>
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleVoiceNext}
-                className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#c99c00] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
-                style={{
-                  background: "linear-gradient(135deg, rgb(255, 200, 0) 0%, rgb(255, 150, 0) 100%)",
-                }}
-              >
-                <FastForward className="w-4 h-4 sm:mr-1" />
-                <span className="hidden sm:inline">Skip</span>
-              </Button>
-              <Button
-                size="sm"
-                onClick={handleStepNext}
-                disabled={completedVoiceLetters.size < shuffledVoiceLetters.length}
-                className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#3c8c01] hover:scale-105 active:scale-95 px-2 transition-all disabled:opacity-50 disabled:grayscale disabled:pointer-events-none h-9 py-2"
-                style={{
-                  background: "linear-gradient(135deg, rgb(88, 204, 2) 0%, rgb(70, 163, 2) 100%)",
-                }}
-              >
-                <span className="hidden sm:inline">Next</span>
-                <ArrowRight className="w-4 h-4 sm:ml-1" />
-              </Button>
-            </div>
 
               <div className="w-full text-center mb-8">
                 <div className="space-y-3 bg-white/50 dark:bg-gray-800/50 p-4 rounded-3xl backdrop-blur-sm border-2 border-dashed border-gray-200 dark:border-gray-700">
@@ -458,7 +648,6 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
                                 setEvaluatingLetter(l);
                               setVoiceFeedbackMap(prev => ({ ...prev, [l]: null }));
                                 setVoiceTranscriptsMap(prev => ({ ...prev, [l]: "" }));
-                                // Start the mic-ready countdown — mirrors the 200ms warmup in useSpeechRecognition
                                 setMicReady(false);
                                 if (micReadyTimerRef.current) clearTimeout(micReadyTimerRef.current);
                                 micReadyTimerRef.current = setTimeout(() => setMicReady(true), 220);
@@ -493,32 +682,107 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
             </motion.div>
           )}
 
+          {!showConfetti && step.type === "type" && (
+            <motion.div key={`type-${currentStep}`} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="flex flex-col items-center w-full">
+              <div className="text-center mb-8">
+                <p className="text-gray-500 mt-2">Tap the speaker, then type the letter!</p>
+                {/* Navigation Controls moved to top */}
+                <div className="flex justify-center items-center w-full gap-3 sm:gap-4 max-w-md mx-auto mt-6">
+                  <Button 
+                    onClick={handleShuffleType} 
+                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-4 border-[#8b40b8] hover:scale-105 active:scale-95 px-2"
+                    style={{ background: 'linear-gradient(135deg, #ce82ff 0%, #a559d6 100%)' }}
+                  >
+                    <Shuffle className="w-4 h-4 mr-1" /> Shuffle
+                  </Button>
+                  <Button 
+                    onClick={setupTypePhase} 
+                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-4 border-[#e11d48] hover:scale-105 active:scale-95 px-2"
+                    style={{ background: 'linear-gradient(135deg, #fb7185 0%, #e11d48 100%)' }}
+                  >
+                    <RotateCcw className="w-4 h-4 mr-1" /> Reset
+                  </Button>
+                  <Button 
+                    onClick={handleStepNext} 
+                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-4 border-[#c99c00] hover:scale-105 active:scale-95 px-2"
+                    style={{ background: 'linear-gradient(135deg, #ffc800 0%, #ff9600 100%)' }}
+                  >
+                    <FastForward className="w-4 h-4 mr-1" /> Skip
+                  </Button>
+                  
+                  <Button
+                    onClick={handleStepNext}
+                    disabled={!isTypePhaseComplete}
+                    className={`flex-1 rounded-xl font-bold text-white shadow-md border-b-4 ${isTypePhaseComplete ? 'border-[#3c8c01] hover:scale-105 active:scale-95' : 'opacity-50 grayscale cursor-not-allowed'}`}
+                    style={{ background: 'linear-gradient(135deg, #58cc02 0%, #46a302 100%)' }}
+                  >
+                    Next <ChevronRight className="w-4 h-4 ml-1" />
+                  </Button>
+                </div>
+              </div>
+
+              <div className="flex justify-center gap-4 sm:gap-8 w-full max-w-2xl mx-auto mb-10 px-2 sm:px-4">
+                {/* Left Column: TTS Speakers */}
+                <div className="flex flex-col gap-3 sm:gap-4 flex-1 min-w-0">
+                  {typeOrder.map((letter) => {
+                    const isCorrect = typeStatus[letter] === true;
+                    return (
+                      <MatchButton
+                        key={`speaker-${letter}`}
+                        gradientStart={accent.primary}
+                        gradientEnd={accent.dark}
+                        isMatched={isCorrect} // grays it out if correct
+                        isSelected={false}
+                        isWrong={false}
+                        onClick={() => playTypeSound(letter)}
+                      >
+                        <Volume2 className={`w-8 h-8 ${isCorrect ? "opacity-50" : ""}`} />
+                      </MatchButton>
+                    );
+                  })}
+                </div>
+
+                {/* Right Column: Inputs */}
+                <div className="flex flex-col gap-3 sm:gap-4 flex-1 min-w-0">
+                  {typeOrder.map((letter) => {
+                    const status = typeStatus[letter];
+                    const val = typeInputs[letter] || "";
+                    
+                    return (
+                      <motion.div
+                        key={`input-${letter}`}
+                        animate={{ x: status === false ? [-5, 5, -5, 5, 0] : 0 }}
+                        className="w-full h-14 sm:h-16 flex"
+                      >
+                        <input
+                          type="text"
+                          value={val}
+                          onChange={(e) => handleTypeChange(letter, e.target.value)}
+                          disabled={status === true}
+                          className={`w-full h-full text-center text-2xl sm:text-3xl font-black rounded-lg sm:rounded-2xl border-2 sm:border-b-[4px] outline-none transition-all shadow-sm
+                            ${status === true ? 'bg-gray-100 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700/50 text-green-600 dark:text-green-500 opacity-50 grayscale' : 
+                              status === false ? 'bg-red-50 border-red-400 text-red-600' : 
+                              'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-200 focus:border-blue-400'}
+                          `}
+                        />
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              </div>
+            </motion.div>
+          )}
+
           {showConfetti && currentStep === STEPS.length - 1 && (
-            <motion.div
-              key="completion-screen"
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="text-center py-12 max-w-md mx-auto"
-            >
-              <motion.div
-                animate={{ rotate: [0, 10, -10, 0] }}
-                transition={{ repeat: Infinity, duration: 2 }}
-                className="inline-block mb-6"
-              >
+            <motion.div key="completion-screen" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-12 max-w-md mx-auto">
+              <motion.div animate={{ rotate: [0, 10, -10, 0] }} transition={{ repeat: Infinity, duration: 2 }} className="inline-block mb-6">
                 <Sparkles className="w-20 h-20 text-[#FFC800]" />
               </motion.div>
-              <h3 className="text-3xl font-black mb-4" style={{ color: accent.primary }}>
-                Awesome Job!
-              </h3>
+              <h3 className="text-3xl font-black mb-4" style={{ color: accent.primary }}>Awesome Job!</h3>
               <p className="text-gray-600 dark:text-gray-400 mb-8 leading-relaxed">
-                You know all 26 letter names! Now you are ready to learn about the <strong>Long Vowels</strong>, where vowels say their names!
+                You know all 26 letter names!
               </p>
-              <Button
-                disabled={isSaving}
-                onClick={handleFinish}
-                className="text-white shadow-lg hover:shadow-xl font-bold rounded-xl px-8 py-6 text-lg transition-all hover:scale-105 active:scale-95 border-b-4 border-[#3c8c01] cursor-pointer inline-flex items-center justify-center gap-2 w-full sm:w-auto"
-                style={{ background: "linear-gradient(135deg, #58CC02 0%, #46A302 100%)" }}
-              >
+              <Button disabled={isSaving} onClick={handleFinish} className="text-white shadow-lg hover:shadow-xl font-bold rounded-xl px-8 py-6 text-lg transition-all hover:scale-105 active:scale-95 border-b-4 border-[#3c8c01] cursor-pointer inline-flex items-center justify-center gap-2 w-full sm:w-auto" style={{ background: "linear-gradient(135deg, #58CC02 0%, #46A302 100%)" }}>
                 {isSaving ? "Saving..." : "Continue"} <ArrowRight className="w-6 h-6" />
               </Button>
             </motion.div>

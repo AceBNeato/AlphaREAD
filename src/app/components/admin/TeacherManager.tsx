@@ -31,7 +31,6 @@ export function TeacherManager({ teachers, onRefresh }: TeacherManagerProps) {
   const [editingTeacherId, setEditingTeacherId] = useState<string | null>(null);
   const [editTeacherEmail, setEditTeacherEmail] = useState("");
   const [editTeacherAlias, setEditTeacherAlias] = useState("");
-  const [editTeacherPin, setEditTeacherPin] = useState("");
 
   const toggleVisibility = (id: string) => {
     setVisibleCodes(prev => {
@@ -47,7 +46,7 @@ export function TeacherManager({ teachers, onRefresh }: TeacherManagerProps) {
 
   const handleCreateTeacher = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!teacherEmail.trim() || !teacherAlias.trim() || teacherPin.length !== 7) return;
+    if (!teacherEmail.trim() || !teacherAlias.trim()) return;
 
     try {
       const teacherId = crypto.randomUUID();
@@ -58,21 +57,19 @@ export function TeacherManager({ teachers, onRefresh }: TeacherManagerProps) {
         role: "teacher",
         email: teacherEmail.trim().toLowerCase(),
         alias: teacherAlias.trim(),
-        pin_hash: teacherPin,
         avatar: "👩‍🏫"
       });
 
       if (error) throw error;
 
       // Simulate sending email by opening the user's default mail client prefilled with credentials
-      const subject = encodeURIComponent("Your Alphabet GO Teacher Access PIN");
-      const body = encodeURIComponent(`Hello ${teacherAlias.trim()},\n\nYou have been added as a teacher to Alphabet GO.\n\nYour login email is: ${teacherEmail.trim().toLowerCase()}\nYour 7-character access PIN is: ${teacherPin}\n\nPlease keep this secure and do not share it.\n\nBest,\nAdmin`);
+      const subject = encodeURIComponent("Your Alphabet GO Teacher Access");
+      const body = encodeURIComponent(`Hello ${teacherAlias.trim()},\n\nYou have been added as a teacher to Alphabet GO.\n\nYour login email is: ${teacherEmail.trim().toLowerCase()}\n\nYou can log in securely using your email. A secure OTP code will be sent to your inbox.\n\nBest,\nAdmin`);
       window.open(`mailto:${teacherEmail.trim().toLowerCase()}?subject=${subject}&body=${body}`, "_blank");
 
       setIsCreatingTeacher(false);
       setTeacherEmail("");
       setTeacherAlias("");
-      setTeacherPin("");
       onRefresh();
     } catch (err: any) {
       alert(`Failed to register teacher: ${err.message}`);
@@ -83,19 +80,17 @@ export function TeacherManager({ teachers, onRefresh }: TeacherManagerProps) {
     setEditingTeacherId(teacher.id);
     setEditTeacherEmail(teacher.email || "");
     setEditTeacherAlias(teacher.alias || "");
-    setEditTeacherPin(teacher.pin_hash || "");
   };
 
   const saveTeacherEdit = async (id: string) => {
-    if (!editTeacherEmail.trim() || !editTeacherAlias.trim() || editTeacherPin.length !== 7) return;
+    if (!editTeacherEmail.trim() || !editTeacherAlias.trim()) return;
 
     const { error } = await supabase
       .from("profiles")
       .update({
         email: editTeacherEmail.trim().toLowerCase(),
         alias: editTeacherAlias.trim(),
-        first_name: editTeacherAlias.trim(),
-        pin_hash: editTeacherPin
+        first_name: editTeacherAlias.trim()
       })
       .eq("id", id);
 
@@ -160,10 +155,6 @@ export function TeacherManager({ teachers, onRefresh }: TeacherManagerProps) {
 
           <Button
             onClick={() => {
-              // Generate a random 7-char alphanumeric PIN
-              const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-              const pin = Array.from({ length: 7 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
-              setTeacherPin(pin);
               setIsCreatingTeacher(true);
             }}
             className="bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl flex items-center gap-1.5 whitespace-nowrap"
@@ -205,29 +196,7 @@ export function TeacherManager({ teachers, onRefresh }: TeacherManagerProps) {
                 />
               </div>
             </div>
-            <div className="mb-6">
-              <label className="block text-xs text-gray-400 font-bold mb-1.5 flex items-center justify-between">
-                <span>Security PIN <span className="text-gray-600">(7 characters, set by Admin)</span></span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-                    setTeacherPin(Array.from({ length: 7 }, () => chars[Math.floor(Math.random() * chars.length)]).join(""));
-                  }}
-                  className="text-[10px] text-blue-400 bg-blue-900/30 px-2 py-0.5 rounded-md hover:bg-blue-900/50 transition-colors"
-                >
-                  Regenerate
-                </button>
-              </label>
-              <input
-                type="text" required maxLength={7}
-                value={teacherPin}
-                onChange={(e) => setTeacherPin(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 7))}
-                className="w-full px-4 py-3 bg-gray-950 border border-gray-800 rounded-xl text-blue-400 outline-none font-mono tracking-widest text-center focus:border-blue-500 transition-colors"
-                placeholder="e.g. A3B7X2K"
-              />
-            </div>
-            <div className="flex gap-3">
+            <div className="flex gap-3 mt-6">
               <Button type="button" variant="outline" onClick={() => setIsCreatingTeacher(false)} className="border-gray-700 hover:bg-gray-800 text-gray-300 flex-1 py-3 transition-colors">Cancel</Button>
               <Button type="submit" className="bg-blue-600 hover:bg-blue-500 text-white flex-1 py-3">Register Teacher</Button>
             </div>
@@ -242,7 +211,6 @@ export function TeacherManager({ teachers, onRefresh }: TeacherManagerProps) {
               <tr className="bg-gray-800/60 border-b border-gray-800 text-xs font-bold text-gray-300 uppercase tracking-wider">
                 <th className="py-4 px-6">Alias / Name</th>
                 <th className="py-4 px-6">Email</th>
-                <th className="py-4 px-6">Access PIN</th>
                 <th className="py-4 px-6 text-right">Actions</th>
               </tr>
             </thead>
@@ -284,27 +252,6 @@ export function TeacherManager({ teachers, onRefresh }: TeacherManagerProps) {
                         ) : (
                           teacher.email
                         )}
-                      </td>
-                      <td className="py-4 px-6">
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono text-green-400 font-bold tracking-wider">
-                            {isEditing ? (
-                              <input
-                                type="text" maxLength={7} value={editTeacherPin}
-                                onChange={(e) => setEditTeacherPin(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 7))}
-                                className="px-2 py-1 bg-gray-950 border border-gray-800 rounded text-white font-mono w-28 text-center tracking-widest"
-                                placeholder="7 chars"
-                              />
-                            ) : (
-                              isCodeVisible ? teacher.pin_hash : "•••••••"
-                            )}
-                          </span>
-                          {!isEditing && (
-                            <button onClick={() => toggleVisibility(teacher.id)} className="text-gray-400 hover:text-white">
-                              {isCodeVisible ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                            </button>
-                          )}
-                        </div>
                       </td>
                       <td className="py-4 px-6 text-right">
                         <div className="flex items-center justify-end gap-2">

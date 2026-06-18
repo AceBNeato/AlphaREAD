@@ -313,11 +313,17 @@ export function LevelBlends({ levelId, accent }: LevelBlendsProps) {
       if (profileStr) {
         const profile = JSON.parse(profileStr);
         if (profile.id) {
-          await supabase.from("progress").insert({
-            student_id: profile.id,
-            level_id: levelId,
-            score: allWordsRaw.length,
-          });
+          const deviceId = localStorage.getItem("activated_device_id");
+          if (profile.role === "student" && deviceId) {
+            await supabase.rpc("record_student_progress", {
+              p_student_id: profile.id,
+              p_device_id: deviceId,
+              p_level_id: levelId,
+              p_score: allWordsRaw.length,
+            });
+          } else if (profile.role !== "student") {
+            console.log("Preview mode: progress not recorded.");
+          }
         }
       }
     } catch (err) {

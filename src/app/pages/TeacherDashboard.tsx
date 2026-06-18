@@ -4,8 +4,6 @@ import { supabase } from "../../lib/supabase";
 import { 
   Users, 
   UserPlus, 
-  Trash2, 
-  Edit, 
   Save, 
   X, 
   Unlock, 
@@ -15,7 +13,8 @@ import {
   ExternalLink,
   GraduationCap,
   Sparkles,
-  Smartphone
+  Smartphone,
+  Edit
 } from "lucide-react";
 import { Button } from "../components/ui/button";
 
@@ -24,17 +23,6 @@ export default function TeacherDashboard() {
   const [teacherProfile, setTeacherProfile] = useState<any>(null);
   const [students, setStudents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-
-  // CRUD state
-  const [isCreating, setIsCreating] = useState(false);
-  const [newFirstName, setNewFirstName] = useState("");
-  const [newLastName, setNewLastName] = useState("");
-  const [newClassCode, setNewClassCode] = useState("A1");
-  
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editFirstName, setEditFirstName] = useState("");
-  const [editLastName, setEditLastName] = useState("");
-  const [editClassCode, setEditClassCode] = useState("");
 
   // Visibility of access codes
   const [visibleCodes, setVisibleCodes] = useState<Set<string>>(new Set());
@@ -86,87 +74,6 @@ export default function TeacherDashboard() {
       setStudents(data || []);
     }
     setLoading(false);
-  };
-
-  const generateStudentCode = () => {
-    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-    let code = "";
-    for (let i = 0; i < 6; i++) {
-      code += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return code;
-  };
-
-  const handleCreateStudent = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newFirstName.trim() || !newLastName.trim() || !newClassCode.trim()) return;
-
-    try {
-      const studentCode = generateStudentCode();
-      const studentId = crypto.randomUUID();
-
-      const { error } = await supabase.from("profiles").insert({
-        id: studentId,
-        first_name: newFirstName.trim(),
-        last_name: newLastName.trim(),
-        role: "student",
-        student_code: studentCode,
-        avatar: "👦",
-        teacher_id: teacherProfile.id,
-        class_code: newClassCode.trim().toUpperCase()
-      });
-
-      if (error) throw error;
-
-      setIsCreating(false);
-      setNewFirstName("");
-      setNewLastName("");
-      setNewClassCode("A1");
-      fetchStudents(teacherProfile.id);
-    } catch (err: any) {
-      console.error(err);
-      alert(`Failed to create student: ${err.message}`);
-    }
-  };
-
-  const startEditing = (student: any) => {
-    setEditingId(student.id);
-    setEditFirstName(student.first_name || "");
-    setEditLastName(student.last_name || "");
-    setEditClassCode(student.class_code || "A1");
-  };
-
-  const saveEdit = async (id: string) => {
-    if (!editFirstName.trim() || !editLastName.trim() || !editClassCode.trim()) return;
-
-    const { error } = await supabase
-      .from("profiles")
-      .update({
-        first_name: editFirstName.trim(),
-        last_name: editLastName.trim(),
-        class_code: editClassCode.trim().toUpperCase()
-      })
-      .eq("id", id);
-
-    if (error) {
-      console.error(error);
-      alert("Failed to update student.");
-    } else {
-      setEditingId(null);
-      fetchStudents(teacherProfile.id);
-    }
-  };
-
-  const deleteStudent = async (id: string) => {
-    if (!window.confirm("Are you sure you want to permanently delete this student?")) return;
-
-    const { error } = await supabase.from("profiles").delete().eq("id", id);
-    if (error) {
-      console.error(error);
-      alert("Failed to delete student.");
-    } else {
-      fetchStudents(teacherProfile.id);
-    }
   };
 
   const unlockDevice = async (id: string) => {
@@ -259,91 +166,10 @@ export default function TeacherDashboard() {
             <Users className="w-5 h-5 text-indigo-400" />
             My Students ({students.length})
           </h2>
-          <Button
-            onClick={() => setIsCreating(true)}
-            className="w-full sm:w-auto bg-green-600 hover:bg-green-500 text-white font-bold rounded-xl px-4 py-2.5 flex items-center justify-center gap-2"
-          >
-            <UserPlus className="w-4 h-4" /> Register Student
-          </Button>
-        </div>
-
-        {/* Create Student Form Overlay */}
-        {isCreating && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <form 
-              onSubmit={handleCreateStudent}
-              className="bg-gray-800 rounded-3xl p-6 sm:p-8 max-w-md w-full border border-gray-700 shadow-2xl relative animate-in zoom-in duration-200"
-            >
-              <button 
-                type="button"
-                onClick={() => setIsCreating(false)}
-                className="absolute top-4 right-4 text-gray-400 hover:text-white"
-              >
-                <X className="w-6 h-6" />
-              </button>
-              
-              <h3 className="text-xl font-black text-white mb-6 flex items-center gap-2">
-                <UserPlus className="w-5 h-5 text-green-400" />
-                Register New Student
-              </h3>
-
-              <div className="space-y-4 mb-6">
-                <div>
-                  <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">First Name</label>
-                  <input
-                    type="text"
-                    required
-                    value={newFirstName}
-                    onChange={(e) => setNewFirstName(e.target.value)}
-                    placeholder="e.g. John"
-                    className="w-full px-4 py-3 rounded-xl bg-gray-900 border border-gray-700 text-white outline-none focus:border-indigo-500 transition-colors"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Last Name</label>
-                  <input
-                    type="text"
-                    required
-                    value={newLastName}
-                    onChange={(e) => setNewLastName(e.target.value)}
-                    placeholder="e.g. Doe"
-                    className="w-full px-4 py-3 rounded-xl bg-gray-900 border border-gray-700 text-white outline-none focus:border-indigo-500 transition-colors"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Class Code</label>
-                  <input
-                    type="text"
-                    required
-                    value={newClassCode}
-                    onChange={(e) => setNewClassCode(e.target.value)}
-                    placeholder="e.g. A1, B3"
-                    className="w-full px-4 py-3 rounded-xl bg-gray-900 border border-gray-700 text-white outline-none focus:border-indigo-500 transition-colors uppercase"
-                  />
-                </div>
-              </div>
-
-              <div className="flex gap-3">
-                <Button 
-                  type="button" 
-                  onClick={() => setIsCreating(false)} 
-                  variant="outline"
-                  className="flex-1 py-3 text-gray-400 border-gray-700 hover:bg-gray-700"
-                >
-                  Cancel
-                </Button>
-                <Button 
-                  type="submit" 
-                  className="flex-1 bg-green-600 hover:bg-green-500 py-3 text-white"
-                >
-                  Register
-                </Button>
-              </div>
-            </form>
+          <div className="text-sm text-gray-400">
+            Contact your Administrator to register new students.
           </div>
-        )}
+        </div>
 
         {/* Students Table */}
         <div className="bg-gray-800 border border-gray-700 rounded-3xl overflow-hidden shadow-xl">
@@ -355,8 +181,8 @@ export default function TeacherDashboard() {
           ) : students.length === 0 ? (
             <div className="py-20 text-center text-gray-400">
               <span className="text-5xl block mb-4">👦👧</span>
-              <p className="text-lg font-bold text-white mb-2">No students registered yet</p>
-              <p className="text-sm max-w-sm mx-auto">Click "Register Student" above to add your first student and generate an access code.</p>
+              <p className="text-lg font-bold text-white mb-2">No students assigned to you yet.</p>
+              <p className="text-sm max-w-sm mx-auto">Please contact your administrator to assign students to your class.</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -372,7 +198,6 @@ export default function TeacherDashboard() {
                 </thead>
                 <tbody className="divide-y divide-gray-700/60 text-sm">
                   {students.map((student) => {
-                    const isEditing = editingId === student.id;
                     const isCodeVisible = visibleCodes.has(student.id);
 
                     return (
@@ -380,38 +205,12 @@ export default function TeacherDashboard() {
                         
                         {/* Class Code */}
                         <td className="py-4 px-6 font-mono font-bold text-indigo-400">
-                          {isEditing ? (
-                            <input
-                              type="text"
-                              value={editClassCode}
-                              onChange={(e) => setEditClassCode(e.target.value)}
-                              className="w-16 px-2 py-1 bg-gray-900 border border-gray-600 rounded text-white font-mono uppercase"
-                            />
-                          ) : (
-                            student.class_code || "N/A"
-                          )}
+                          {student.class_code || "N/A"}
                         </td>
 
                         {/* Name */}
                         <td className="py-4 px-6 font-semibold text-white">
-                          {isEditing ? (
-                            <div className="flex gap-2">
-                              <input
-                                type="text"
-                                value={editFirstName}
-                                onChange={(e) => setEditFirstName(e.target.value)}
-                                className="px-2 py-1 bg-gray-900 border border-gray-600 rounded text-white"
-                              />
-                              <input
-                                type="text"
-                                value={editLastName}
-                                onChange={(e) => setEditLastName(e.target.value)}
-                                className="px-2 py-1 bg-gray-900 border border-gray-600 rounded text-white"
-                              />
-                            </div>
-                          ) : (
-                            `${student.first_name} ${student.last_name}`
-                          )}
+                          {`${student.first_name} ${student.last_name}`}
                         </td>
 
                         {/* Student Access Code */}
@@ -454,42 +253,6 @@ export default function TeacherDashboard() {
                               >
                                 <Unlock className="w-4 h-4" />
                               </button>
-                            )}
-
-                            {isEditing ? (
-                              <>
-                                <button
-                                  onClick={() => saveEdit(student.id)}
-                                  className="p-2 bg-green-900/20 text-green-400 hover:bg-green-900/40 rounded-xl transition-all"
-                                  title="Save Changes"
-                                >
-                                  <Save className="w-4 h-4" />
-                                </button>
-                                <button
-                                  onClick={() => setEditingId(null)}
-                                  className="p-2 bg-gray-700 text-gray-300 hover:bg-gray-600 rounded-xl transition-all"
-                                  title="Cancel"
-                                >
-                                  <X className="w-4 h-4" />
-                                </button>
-                              </>
-                            ) : (
-                              <>
-                                <button
-                                  onClick={() => startEditing(student)}
-                                  className="p-2 bg-indigo-900/20 text-indigo-400 hover:bg-indigo-900/40 rounded-xl transition-all"
-                                  title="Edit Student"
-                                >
-                                  <Edit className="w-4 h-4" />
-                                </button>
-                                <button
-                                  onClick={() => deleteStudent(student.id)}
-                                  className="p-2 bg-red-900/20 text-red-400 hover:bg-red-900/40 rounded-xl transition-all"
-                                  title="Delete Student"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </button>
-                              </>
                             )}
                           </div>
                         </td>

@@ -25,12 +25,14 @@ export function StudentManager({ students, teachers, onRefresh }: StudentManager
   const [studentLastName, setStudentLastName] = useState("");
   const [studentClassCode, setStudentClassCode] = useState("A1");
   const [studentTeacherId, setStudentTeacherId] = useState("");
+  const [studentPin, setStudentPin] = useState("");
 
   const [editingStudentId, setEditingStudentId] = useState<string | null>(null);
   const [editStudentFirstName, setEditStudentFirstName] = useState("");
   const [editStudentLastName, setEditStudentLastName] = useState("");
   const [editStudentClassCode, setEditStudentClassCode] = useState("");
   const [editStudentTeacherId, setEditStudentTeacherId] = useState("");
+  const [editStudentPin, setEditStudentPin] = useState("");
 
   const toggleVisibility = (id: string) => {
     setVisibleCodes(prev => {
@@ -58,6 +60,7 @@ export function StudentManager({ students, teachers, onRefresh }: StudentManager
         last_name: studentLastName.trim(),
         role: "student",
         student_code: studentCode,
+        student_pin: studentPin,
         avatar: "👦",
         class_code: studentClassCode.trim().toUpperCase(),
         teacher_id: studentTeacherId || null
@@ -70,6 +73,7 @@ export function StudentManager({ students, teachers, onRefresh }: StudentManager
       setStudentLastName("");
       setStudentClassCode("A1");
       setStudentTeacherId("");
+      setStudentPin("");
       onRefresh();
     } catch (err: any) {
       alert(`Failed to register student: ${err.message}`);
@@ -82,6 +86,7 @@ export function StudentManager({ students, teachers, onRefresh }: StudentManager
     setEditStudentLastName(student.last_name || "");
     setEditStudentClassCode(student.class_code || "A1");
     setEditStudentTeacherId(student.teacher_id || "");
+    setEditStudentPin(student.student_pin || "");
   };
 
   const saveStudentEdit = async (id: string) => {
@@ -93,6 +98,7 @@ export function StudentManager({ students, teachers, onRefresh }: StudentManager
         first_name: editStudentFirstName.trim(),
         last_name: editStudentLastName.trim(),
         class_code: editStudentClassCode.trim().toUpperCase(),
+        student_pin: editStudentPin.trim().toUpperCase(),
         teacher_id: editStudentTeacherId || null
       })
       .eq("id", id);
@@ -217,7 +223,12 @@ export function StudentManager({ students, teachers, onRefresh }: StudentManager
           </div>
 
           <Button
-            onClick={() => setIsCreatingStudent(true)}
+            onClick={() => {
+              const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+              const pin = Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
+              setStudentPin(pin);
+              setIsCreatingStudent(true);
+            }}
             className="bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl flex items-center gap-1.5 whitespace-nowrap"
           >
             <Plus className="w-4 h-4" /> Add Student
@@ -279,6 +290,28 @@ export function StudentManager({ students, teachers, onRefresh }: StudentManager
                 </select>
               </div>
             </div>
+            <div className="mb-6">
+              <label className="block text-xs text-gray-400 font-bold mb-1.5 flex items-center justify-between">
+                <span>Secret PIN <span className="text-gray-600">(6 characters)</span></span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+                    setStudentPin(Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join(""));
+                  }}
+                  className="text-[10px] text-blue-400 bg-blue-900/30 px-2 py-0.5 rounded-md hover:bg-blue-900/50 transition-colors"
+                >
+                  Regenerate
+                </button>
+              </label>
+              <input
+                type="text" required maxLength={6}
+                value={studentPin}
+                onChange={(e) => setStudentPin(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6))}
+                className="w-full px-4 py-3 bg-gray-950 border border-gray-800 rounded-xl text-green-400 outline-none font-mono tracking-widest text-center focus:border-blue-500 transition-colors"
+                placeholder="e.g. AB3X9P"
+              />
+            </div>
             <div className="flex gap-3">
               <Button type="button" variant="outline" onClick={() => setIsCreatingStudent(false)} className="border-gray-700 hover:bg-gray-800 text-gray-300 flex-1 py-3 transition-colors">Cancel</Button>
               <Button type="submit" className="bg-blue-600 hover:bg-blue-500 text-white flex-1 py-3">Register Student</Button>
@@ -295,6 +328,7 @@ export function StudentManager({ students, teachers, onRefresh }: StudentManager
                 <th className="py-4 px-6">Class</th>
                 <th className="py-4 px-6">Student Name</th>
                 <th className="py-4 px-6">Student Code</th>
+                <th className="py-4 px-6">Secret PIN</th>
                 <th className="py-4 px-6">Linked Teacher</th>
                 <th className="py-4 px-6">Binding</th>
                 <th className="py-4 px-6 text-right">Actions</th>
@@ -328,7 +362,7 @@ export function StudentManager({ students, teachers, onRefresh }: StudentManager
                 return (
                   <>
                     <tr className="bg-gray-850/50">
-                      <td colSpan={6} className="py-2 px-6 text-xs text-gray-400 text-center border-b border-gray-800">
+                      <td colSpan={7} className="py-2 px-6 text-xs text-gray-400 text-center border-b border-gray-800">
                         Showing {filteredStudents.length} {filteredStudents.length === 1 ? 'student' : 'students'}
                       </td>
                     </tr>
@@ -375,13 +409,31 @@ export function StudentManager({ students, teachers, onRefresh }: StudentManager
 
                       {/* Student Code */}
                       <td className="py-4 px-6">
+                        <span className="font-mono text-white font-bold tracking-wider">
+                          {student.student_code}
+                        </span>
+                      </td>
+
+                      {/* Secret PIN */}
+                      <td className="py-4 px-6">
                         <div className="flex items-center gap-2">
                           <span className="font-mono text-green-400 font-bold tracking-wider">
-                            {isCodeVisible ? student.student_code : "••••••"}
+                            {isEditing ? (
+                              <input
+                                type="text" maxLength={6} value={editStudentPin}
+                                onChange={(e) => setEditStudentPin(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6))}
+                                className="px-2 py-1 bg-gray-950 border border-gray-800 rounded text-white font-mono w-24 text-center tracking-widest"
+                                placeholder="6 chars"
+                              />
+                            ) : (
+                              isCodeVisible ? student.student_pin : "••••••"
+                            )}
                           </span>
-                          <button onClick={() => toggleVisibility(student.id)} className="text-gray-400 hover:text-white">
-                            {isCodeVisible ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                          </button>
+                          {!isEditing && (
+                            <button onClick={() => toggleVisibility(student.id)} className="text-gray-400 hover:text-white">
+                              {isCodeVisible ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                            </button>
+                          )}
                         </div>
                       </td>
 

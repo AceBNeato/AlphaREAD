@@ -29,17 +29,25 @@ export default function Activation() {
   const [isEmail, setIsEmail] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
 
-  // Teacher direct PIN login
-  const [teacherStep, setTeacherStep] = useState<"email" | "pin">("email");
-  const [teacherPin, setTeacherPin] = useState("");
+  // Step state
+  const [authStep, setAuthStep] = useState<"initial" | "teacher-otp" | "student-pin">("initial");
+  
+  // Teacher OTP
+  const [otpCode, setOtpCode] = useState("");
+  
+  // Student PIN
+  const [studentPin, setStudentPin] = useState("");
   const [showPin, setShowPin] = useState(false);
 
   // Detect email vs student code dynamically
   useEffect(() => {
-    setIsEmail(userInput.includes("@"));
-    setError("");
-  }, [userInput]);
+    if (authStep === "initial") {
+      setIsEmail(userInput.includes("@"));
+      setError("");
+    }
+  }, [userInput, authStep]);
 
   // Global key listener for Admin: Ctrl + Alt + A
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
@@ -78,90 +86,55 @@ export default function Activation() {
     };
   }, [navigate]);
 
-  // ── Unified Submit Handler ──
-  const handleSubmit = async (e: React.FormEvent) => {
+  // ── Unified Submit Handler (Step 1) ──
+  const handleInitialSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!userInput.trim()) return;
 
     setLoading(true);
     setError("");
+    setSuccessMsg("");
 
     if (isEmail) {
-      // ── Teacher Path: Check teacher exists, then go to PIN step ──
+      // ── Teacher Path: Check if teacher profile exists, then send OTP ──
       try {
         const emailClean = userInput.trim().toLowerCase();
-        const { data: teacher, error: dbError } = await supabase
-          .from("profiles")
-          .select("id")
-          .eq("email", emailClean)
-          .eq("role", "teacher")
-          .maybeSingle();
+        
+        // Use an RPC or check if we can query the profile.
+        // Wait, since we are not authenticated yet, we can't select from profiles if RLS blocks it.
+        // But we allowed select by email if auth.jwt()->>'email' = email... which doesn't help BEFORE login.
+        // Actually, Supabase signInWithOtp will just send an email. If the user doesn't exist in our profiles table,
+        // they will just sign in and have an empty dashboard. 
+        // Let's just send the OTP directly to reduce attack surface and prevent email enumeration.
+        
+        const { error: authError } = await supabase.auth.signInWithOtp({
+          email: emailClean,
+          options: {
+            shouldCreateUser: true, // Allow implicit sign up
+          }
+        });
 
-        if (dbError || !teacher) {
-          throw new Error("No teacher account found with that email. Ask your Administrator.");
-        }
+        if (authError) throw authError;
 
-        setTeacherStep("pin");
+        setAuthStep("teacher-otp");
+        setSuccessMsg("A secure 6-digit code has been sent to your email.");
       } catch (err: any) {
-        setError(err.message || "Teacher lookup failed.");
+        setError(err.message || "Failed to send verification code.");
       } finally {
         setLoading(false);
       }
     } else {
-      // ── Student Path ──
-      try {
-        const studentCodeClean = userInput.trim().toUpperCase();
-        const { data: student, error: dbError } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("student_code", studentCodeClean)
-          .eq("role", "student")
-          .maybeSingle();
-
-        if (dbError || !student) {
-          throw new Error("Invalid Student Access Code. Please ask your teacher.");
-        }
-
-        // Device Binding check
-        let localDeviceId = localStorage.getItem("activated_device_id");
-        if (!localDeviceId) {
-          localDeviceId = generateUUID();
-          localStorage.setItem("activated_device_id", localDeviceId);
-        }
-
-        if (student.activated_device_id && student.activated_device_id !== localDeviceId) {
-          throw new Error("This access code is locked to another active device.");
-        }
-
-        // Bind device if not yet bound
-        if (!student.activated_device_id) {
-          await supabase
-            .from("profiles")
-            .update({ activated_device_id: localDeviceId })
-            .eq("id", student.id);
-        }
-
-        localStorage.setItem("userProfile", JSON.stringify({
-          id: student.id,
-          name: student.first_name,
-          avatar: student.avatar || "👦",
-          role: "student",
-          createdAt: student.created_at
-        }));
-
-        navigate("/dashboard", { replace: true });
-      } catch (err: any) {
-        setError(err.message || "Student login failed.");
-      } finally {
-        setLoading(false);
-      }
+      // ── Student Path: Proceed to PIN entry ──
+      // We don't check the DB yet, we check it securely inside the RPC later.
+      setAuthStep("student-pin");
+      setLoading(false);
     }
   };
 
-  // ── Verification for Teacher PIN ──
-  const handleVerifyTeacherPin = async (e: React.FormEvent) => {
+  // ── Verification for Teacher OTP ──
+  const handleVerifyTeacherOtp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (teacherPin.length !== 7) return;
+    if (otpCode.length !== 6) return;
 
     setLoading(true);
     setError("");
@@ -169,54 +142,106 @@ export default function Activation() {
     try {
       const emailClean = userInput.trim().toLowerCase();
 
-      // Brute-force check
-      const attemptsKey = `lockout_${emailClean}`;
-      const lockoutData = JSON.parse(localStorage.getItem(attemptsKey) || '{"attempts": 0, "lockedUntil": null}');
+      const { data: authData, error: authError } = await supabase.auth.verifyOtp({
+        email: emailClean,
+        token: otpCode,
+        type: 'email'
+      });
 
-      if (lockoutData.lockedUntil && new Date(lockoutData.lockedUntil) > new Date()) {
-        throw new Error(`Account is locked. Try again after ${new Date(lockoutData.lockedUntil).toLocaleTimeString()}`);
+      if (authError || !authData.session) {
+        throw new Error(authError?.message || "Invalid or expired OTP code.");
       }
 
+      // Now authenticated, check if they have a profile created by admin
       const { data: teacher, error: dbError } = await supabase
         .from("profiles")
         .select("*")
         .eq("email", emailClean)
-        .eq("role", "teacher")
+        .in("role", ["teacher", "admin"])
         .maybeSingle();
 
       if (dbError || !teacher) {
-        throw new Error("Teacher record not found.");
+        // Sign out if no authorized profile exists
+        await supabase.auth.signOut();
+        throw new Error("You are not registered in the system. Contact the administrator.");
       }
 
-      if (teacher.pin_hash !== teacherPin) {
-        lockoutData.attempts += 1;
-        if (lockoutData.attempts >= 5) {
-          const lockedUntil = new Date(new Date().getTime() + 15 * 60000);
-          lockoutData.lockedUntil = lockedUntil.toISOString();
-          localStorage.setItem(attemptsKey, JSON.stringify(lockoutData));
-          throw new Error(`Too many failed attempts. Account locked until ${lockedUntil.toLocaleTimeString()}`);
-        } else {
-          localStorage.setItem(attemptsKey, JSON.stringify(lockoutData));
-          throw new Error(`Incorrect Security PIN. Attempts remaining: ${5 - lockoutData.attempts}`);
-        }
+      // If auth_id is not set, link it via RLS policy
+      if (!teacher.auth_id) {
+        await supabase
+          .from("profiles")
+          .update({ auth_id: authData.session.user.id })
+          .eq("id", teacher.id);
       }
 
-      // Reset attempts on success
-      localStorage.removeItem(attemptsKey);
-
-      // Log teacher in
+      // Log user in locally
       localStorage.setItem("userProfile", JSON.stringify({
         id: teacher.id,
         name: teacher.alias || teacher.first_name || "Teacher",
-        avatar: "👩‍🏫",
-        role: "teacher",
+        avatar: teacher.role === "admin" ? "🛡️" : "👩‍🏫",
+        role: teacher.role,
         createdAt: teacher.created_at
       }));
 
-      navigate("/teacher-dashboard", { replace: true });
+      if (teacher.role === "admin") {
+        navigate("/admin", { replace: true });
+      } else {
+        navigate("/teacher-dashboard", { replace: true });
+      }
     } catch (err: any) {
       setError(err.message || "Verification failed.");
-      setTeacherPin("");
+      setOtpCode("");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ── Verification for Student PIN ──
+  const handleVerifyStudentPin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (studentPin.length !== 6) return;
+
+    setLoading(true);
+    setError("");
+
+    try {
+      const studentCodeClean = userInput.trim().toUpperCase();
+      const studentPinClean = studentPin.trim().toUpperCase();
+
+      // Ensure device ID exists
+      let localDeviceId = localStorage.getItem("activated_device_id");
+      if (!localDeviceId) {
+        localDeviceId = generateUUID();
+        localStorage.setItem("activated_device_id", localDeviceId);
+      }
+
+      // Call secure RPC
+      const { data: student, error: rpcError } = await supabase.rpc('verify_student_login', {
+        p_code: studentCodeClean,
+        p_pin: studentPinClean,
+        p_device_id: localDeviceId
+      });
+
+      if (rpcError) {
+        throw new Error(rpcError.message || "Authentication failed.");
+      }
+
+      if (!student) {
+        throw new Error("Invalid Student Code or PIN.");
+      }
+
+      localStorage.setItem("userProfile", JSON.stringify({
+        id: student.id,
+        name: student.first_name,
+        avatar: student.avatar || "👦",
+        role: "student",
+        createdAt: student.created_at
+      }));
+
+      navigate("/dashboard", { replace: true });
+    } catch (err: any) {
+      setError(err.message || "Student login failed.");
+      setStudentPin("");
     } finally {
       setLoading(false);
     }
@@ -264,9 +289,9 @@ export default function Activation() {
 
           <div className="w-full bg-gray-900 border border-gray-800 rounded-3xl p-6 sm:p-8 shadow-2xl relative overflow-hidden">
 
-            {teacherStep === "email" ? (
+            {authStep === "initial" ? (
               /* Step 1: Input Code or Email */
-              <form onSubmit={handleSubmit} className="space-y-6">
+              <form onSubmit={handleInitialSubmit} className="space-y-6">
                 <div>
                   <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Access Portal</label>
                   <div className="relative">
@@ -299,24 +324,25 @@ export default function Activation() {
                     <Loader2 className="w-5 h-5 animate-spin" />
                   ) : isEmail ? (
                     <>
-                      <GraduationCap className="w-5 h-5" /> Continue
+                      <GraduationCap className="w-5 h-5" /> Continue with Email
                     </>
                   ) : (
                     <>
-                      <BookOpen className="w-5 h-5" /> Launch Student App
+                      <BookOpen className="w-5 h-5" /> Next Step
                     </>
                   )}
                 </Button>
               </form>
-            ) : (
-              /* Step 2: Teacher enters their admin-set PIN */
-              <form onSubmit={handleVerifyTeacherPin} className="space-y-6 animate-in slide-in-from-right duration-300">
+            ) : authStep === "teacher-otp" ? (
+              /* Step 2A: Teacher enters OTP sent to their email */
+              <form onSubmit={handleVerifyTeacherOtp} className="space-y-6 animate-in slide-in-from-right duration-300">
                 <button
                   type="button"
                   onClick={() => {
-                    setTeacherStep("email");
-                    setTeacherPin("");
+                    setAuthStep("initial");
+                    setOtpCode("");
                     setError("");
+                    setSuccessMsg("");
                   }}
                   className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-white mb-2 transition-colors"
                 >
@@ -324,48 +350,106 @@ export default function Activation() {
                 </button>
 
                 <div>
-                  <h3 className="text-lg font-bold text-white mb-1">Enter Your Security PIN</h3>
+                  <h3 className="text-lg font-bold text-white mb-1">Verify Your Email</h3>
                   <p className="text-xs text-gray-400 leading-relaxed mb-4">
-                    Enter the 7-character PIN set by your Administrator for{" "}
+                    Enter the 6-digit verification code sent to{" "}
                     <span className="text-indigo-400 font-semibold">{userInput}</span>.
                   </p>
                 </div>
 
                 <div className="relative">
-                  <KeyRound className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
                   <input
-                    type={showPin ? "text" : "password"}
-                    inputMode="text"
-                    maxLength={7}
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={6}
                     required
                     autoFocus
-                    value={teacherPin}
-                    onChange={(e) => setTeacherPin(e.target.value.slice(0, 7))}
-                    placeholder="Enter 7-character PIN"
-                    className="w-full pl-10 pr-10 py-3.5 rounded-2xl bg-gray-950 border border-gray-800 focus:border-indigo-500 text-white font-mono tracking-widest text-center text-xl outline-none"
+                    value={otpCode}
+                    onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                    placeholder="000000"
+                    className="w-full pl-12 pr-4 py-4 rounded-2xl bg-gray-950 border border-gray-800 focus:border-indigo-500 text-white font-mono tracking-[0.5em] text-center text-3xl outline-none"
                   />
-                  <button
-                    type="button"
-                    onClick={() => setShowPin(!showPin)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300"
-                  >
-                    {showPin ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
                 </div>
 
+                {successMsg && (
+                  <p className="text-green-400 text-sm text-center font-semibold bg-green-950/20 border border-green-900/30 py-2 rounded-xl">
+                    {successMsg}
+                  </p>
+                )}
+
                 {error && (
-                  <p className="text-red-400 text-sm text-center font-semibold bg-red-950/20 border border-red-900/30 py-2 rounded-xl">
+                  <p className="text-red-400 text-sm text-center font-semibold bg-red-950/20 border border-red-900/30 py-2 rounded-xl animate-shake">
                     {error}
                   </p>
                 )}
 
                 <Button
                   type="submit"
-                  disabled={loading || teacherPin.length !== 7}
+                  disabled={loading || otpCode.length !== 6}
                   className="w-full py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-indigo-950/30"
                 >
                   {loading && <Loader2 className="w-5 h-5 animate-spin" />}
                   <ShieldCheck className="w-5 h-5" /> Verify & Access
+                </Button>
+              </form>
+            ) : (
+              /* Step 2B: Student enters their 6-digit alphanumeric PIN */
+              <form onSubmit={handleVerifyStudentPin} className="space-y-6 animate-in slide-in-from-right duration-300">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAuthStep("initial");
+                    setStudentPin("");
+                    setError("");
+                  }}
+                  className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-white mb-2 transition-colors"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" /> Back
+                </button>
+
+                <div>
+                  <h3 className="text-lg font-bold text-white mb-1">Enter Your PIN</h3>
+                  <p className="text-xs text-gray-400 leading-relaxed mb-4">
+                    Welcome back! Enter your 6-character secret PIN.
+                  </p>
+                </div>
+
+                <div className="relative">
+                  <KeyRound className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+                  <input
+                    type={showPin ? "text" : "password"}
+                    inputMode="text"
+                    maxLength={6}
+                    required
+                    autoFocus
+                    value={studentPin}
+                    onChange={(e) => setStudentPin(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6))}
+                    placeholder="••••••"
+                    className="w-full pl-12 pr-12 py-4 rounded-2xl bg-gray-950 border border-gray-800 focus:border-[#58CC02] text-white font-mono tracking-[0.5em] text-center text-3xl outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPin(!showPin)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300"
+                  >
+                    {showPin ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
+                </div>
+
+                {error && (
+                  <p className="text-red-400 text-sm text-center font-semibold bg-red-950/20 border border-red-900/30 py-2 rounded-xl animate-shake">
+                    {error}
+                  </p>
+                )}
+
+                <Button
+                  type="submit"
+                  disabled={loading || studentPin.length !== 6}
+                  className="w-full py-4 bg-[#58CC02] hover:bg-[#49a802] text-white font-bold rounded-2xl flex items-center justify-center gap-2 shadow-lg"
+                >
+                  {loading && <Loader2 className="w-5 h-5 animate-spin" />}
+                  <BookOpen className="w-5 h-5" /> Launch App
                 </Button>
               </form>
             )}
