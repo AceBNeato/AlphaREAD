@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useNavigate } from "react-router";
-import { Home, Volume2, Mic, MicOff, CheckCircle2, XCircle, Sparkles, ArrowRight, ArrowLeft, AlertCircle, RotateCcw, SkipForward, FastForward, Shuffle } from "lucide-react";
+import {Home, Volume2, Mic, MicOff, CheckCircle2, XCircle, Sparkles, ArrowRight, ArrowLeft, AlertCircle, RotateCcw, SkipForward, FastForward, Shuffle, X} from "lucide-react";
+import { confirmAction } from "../utils/alerts";
 import { Button } from "./ui/button";
 import { motion, AnimatePresence } from "motion/react";
 import { supabase } from "../../lib/supabase";
@@ -382,8 +383,8 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
     }
   };
 
-  const handleGoBack = () => {
-    const confirmExit = window.confirm("Are you sure you want to leave? Your progress will not be saved.");
+  const handleGoBack = async () => {
+    const confirmExit = await confirmAction("Are you sure you want to leave?", "Your progress will not be saved.");
     if (!confirmExit) return;
     navigate("/levels", { replace: true });
   };
@@ -431,7 +432,7 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
       <div className="sticky top-0 z-10 bg-white/80 dark:bg-[#0d141c]/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 px-4 py-3">
         <div className="max-w-4xl mx-auto flex items-center justify-between gap-3 w-full">
           <Button variant="ghost" size="sm" onClick={handleGoBack} className="rounded-full">
-            <Home className="w-5 h-5" />
+            <X className="w-5 h-5" /> Exit
           </Button>
           <h2 className="text-lg font-bold tracking-tight text-center flex-1" style={{ color: accent.primary }}>
             {currentPhase === "review" && `Long Vowels Review`}

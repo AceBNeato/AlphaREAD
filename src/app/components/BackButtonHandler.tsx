@@ -1,13 +1,14 @@
 import { useEffect } from "react";
 import { useLocation, useNavigate } from "react-router";
 import { App as CapacitorApp } from "@capacitor/app";
+import { confirmAction } from "../utils/alerts";
 
 export function BackButtonHandler() {
   const location = useLocation();
   const navigate = useNavigate();
 
   useEffect(() => {
-    const listener = CapacitorApp.addListener("backButton", () => {
+    const listener = CapacitorApp.addListener("backButton", async () => {
       const path = location.pathname;
       
       // Top level pages should exit the app when back is pressed
@@ -30,7 +31,7 @@ export function BackButtonHandler() {
 
       // Inside a lesson goes back to levels list
       if (path.startsWith("/lesson/")) {
-        const confirmExit = window.confirm("Are you sure you want to leave? Your progress will not be saved.");
+        const confirmExit = await confirmAction("Are you sure you want to leave?", "Your progress will not be saved.");
         if (confirmExit) {
           navigate("/levels", { replace: true });
         }

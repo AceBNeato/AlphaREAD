@@ -1,9 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router";
-import {
-  Home, Volume2, ArrowRight, Shuffle, RotateCcw, SkipForward,
-  CheckCircle2, XCircle, Sparkles, ChevronRight, FastForward
-} from "lucide-react";
+import {Home, Volume2, ArrowRight, Shuffle, RotateCcw, SkipForward, CheckCircle2, XCircle, Sparkles, ChevronRight, FastForward, X} from "lucide-react";
+import { confirmAction } from "../utils/alerts";
 import { Button } from "./ui/button";
 import { motion, AnimatePresence } from "motion/react";
 import { shuffle, SyllableTarget } from "../data/levels";
@@ -115,9 +113,6 @@ function ReviewPhase({ items, pattern, accent, onNext }: { items: string[]; patt
                 <div className="flex items-baseline justify-center">
                   <span className="text-white text-4xl sm:text-5xl font-black drop-shadow-sm">{syl}</span>
                 </div>
-                <span className="text-white/90 text-[11px] sm:text-[13px] uppercase font-bold tracking-widest mt-2 bg-black/10 px-2 py-0.5 rounded-full">
-                  {pattern}
-                </span>
               </div>
             </motion.div>
           );
@@ -518,11 +513,12 @@ export function LevelSyllableQuiz({ pattern, levelId, accent, onComplete }: Leve
       <div className="sticky top-0 z-10 bg-white/80 dark:bg-[#0d141c]/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 px-4 py-3">
         <div className="max-w-4xl mx-auto flex items-center gap-3 w-full">
           <Button variant="ghost" size="sm"
-            onClick={() => {
-              if (window.confirm("Leave? Progress won't be saved.")) navigate("/levels");
+            onClick={async () => {
+              const confirmExit = await confirmAction("Leave?", "Progress won't be saved.");
+              if (confirmExit) navigate("/levels");
             }}
             className="rounded-full">
-            <Home className="w-5 h-5" />
+            <X className="w-5 h-5" /> Exit
           </Button>
           <div className="flex-1 text-center">
             <h2 className="text-lg font-bold tracking-tight" style={{ color: accent.primary }}>
@@ -535,7 +531,7 @@ export function LevelSyllableQuiz({ pattern, levelId, accent, onComplete }: Leve
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 py-8 flex-1 flex flex-col w-full">
+      <div className="max-w-4xl mx-auto px-4 flex-1 flex flex-col w-full">
         <AnimatePresence mode="wait">
           {showFinalConfetti ? (
             <motion.div

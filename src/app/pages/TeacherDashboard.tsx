@@ -16,6 +16,7 @@ import {
   Smartphone,
   Edit
 } from "lucide-react";
+import { confirmAction } from "../utils/alerts";
 import { Button } from "../components/ui/button";
 
 export default function TeacherDashboard() {
@@ -77,7 +78,8 @@ export default function TeacherDashboard() {
   };
 
   const unlockDevice = async (id: string) => {
-    if (!window.confirm("Unlock this student's device so they can sign in on a new device?")) return;
+    const confirm = await confirmAction("Unlock Device?", "Unlock this student's device so they can sign in on a new device?");
+    if (!confirm) return;
 
     const { error } = await supabase
       .from("profiles")

@@ -5,6 +5,7 @@ import {
   GraduationCap, Search, Filter, Plus, X, UserPlus, 
   Eye, EyeOff, Save, Edit, Trash2, Smartphone, RefreshCw, Copy, Check 
 } from "lucide-react";
+import { confirmAction } from "../../utils/alerts";
 import { Button } from "../ui/button";
 
 interface TeacherManagerProps {
@@ -92,7 +93,8 @@ export function TeacherManager({ teachers, onRefresh }: TeacherManagerProps) {
   };
 
   const regenerateCode = async (teacherId: string) => {
-    if (!window.confirm("Generate a new access code for this teacher? The old one will stop working.")) return;
+    const confirm = await confirmAction("Regenerate Code?", "Generate a new access code for this teacher? The old one will stop working.");
+    if (!confirm) return;
     const newCode = generateAccessCode();
     const { error } = await supabase.from("profiles").update({ pin_hash: newCode }).eq("id", teacherId);
     if (error) {
@@ -135,7 +137,8 @@ export function TeacherManager({ teachers, onRefresh }: TeacherManagerProps) {
   };
 
   const deleteTeacher = async (id: string) => {
-    if (!window.confirm("Permanently delete this teacher? All their student links will be reset!")) return;
+    const confirm = await confirmAction("Delete Teacher?", "Permanently delete this teacher? All their student links will be reset!");
+    if (!confirm) return;
     
     // Reset teacher_id for all their students
     await supabase.from("profiles").update({ teacher_id: null }).eq("teacher_id", id);

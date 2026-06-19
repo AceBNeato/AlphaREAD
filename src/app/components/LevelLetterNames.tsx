@@ -3,7 +3,8 @@ import { useNavigate } from "react-router";
 import { Button } from "./ui/button";
 import { allLetters as ALL_LETTERS, LETTER_NAMES, LETTER_TTS } from "../data/levels";
 import { motion, AnimatePresence } from "motion/react";
-import { ChevronRight, Home, ArrowRight, Shuffle, FastForward, Volume2, RotateCcw, Sparkles, Mic, MicOff, CheckCircle2, XCircle } from "lucide-react";
+import {ChevronRight, Home, ArrowRight, Shuffle, FastForward, Volume2, RotateCcw, Sparkles, Mic, MicOff, CheckCircle2, XCircle, X} from "lucide-react";
+import { confirmAction } from "../utils/alerts";
 import { playSound } from "../utils/soundEffects";
 import { MatchButton } from "./MatchButton";
 import { playTTS as playTTSUtil } from "../utils/tts";
@@ -289,8 +290,8 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
 
   const isTypePhaseComplete = typeOrder.length > 0 && typeOrder.every(l => typeStatus[l] === true);
 
-  const handleGoBack = () => {
-    const confirmExit = window.confirm("Are you sure you want to leave?");
+  const handleGoBack = async () => {
+    const confirmExit = await confirmAction("Are you sure you want to leave?", "Your progress will not be saved.");
     if (!confirmExit) return;
     navigate("/levels", { replace: true });
   };
@@ -382,7 +383,7 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
       {/* Header */}
       <div className="sticky top-0 z-10 bg-white/80 dark:bg-[#0d141c]/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 px-4 py-3">
         <div className="max-w-4xl mx-auto flex items-center gap-3 w-full">
-          <Button variant="ghost" size="sm" onClick={handleGoBack} className="rounded-full"><Home className="w-5 h-5" /></Button>
+          <Button variant="ghost" size="sm" onClick={handleGoBack} className="rounded-full"><X className="w-5 h-5" /> Exit</Button>
           <div className="flex-1 text-center">
             <h2 className="text-lg font-bold tracking-tight" style={{ color: accent.primary }}>
               {step.type === 'review' ? 'Letter Names - Review Phase' :
@@ -395,7 +396,7 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 py-8 flex-1 flex flex-col w-full">
+      <div className="max-w-4xl mx-auto px-4 flex-1 flex flex-col w-full">
         <AnimatePresence mode="wait">
           {!showConfetti && step.type === "review" && (
             <motion.div key={`review-${currentStep}`} initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -50 }} className="flex flex-col items-center">
@@ -439,9 +440,6 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
                           <span className="text-white text-5xl sm:text-6xl font-black drop-shadow-sm">{l}</span>
                           <span className="text-white/90 text-3xl sm:text-4xl font-bold drop-shadow-sm ml-1">{l.toLowerCase()}</span>
                         </div>
-                        <span className="text-white/90 text-[11px] sm:text-[13px] uppercase font-bold tracking-widest mt-2 bg-black/10 px-2 py-0.5 rounded-full">
-                          {isVowel ? "vowel" : "cons."}
-                        </span>
                       </div>
                     </motion.div>
                   );

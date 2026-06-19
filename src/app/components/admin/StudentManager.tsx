@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { supabase } from "../../../lib/supabase";
 import { Users, Search, Filter, Plus, X, UserPlus, Eye, EyeOff, Save, Edit, Trash2, Smartphone, Unlock } from "lucide-react";
+import { confirmAction } from "../../utils/alerts";
 import { Button } from "../ui/button";
 
 interface StudentManagerProps {
@@ -112,7 +113,8 @@ export function StudentManager({ students, teachers, onRefresh }: StudentManager
   };
 
   const deleteStudent = async (id: string) => {
-    if (!window.confirm("Permanently delete this student from the system?")) return;
+    const confirm = await confirmAction("Delete Student?", "Permanently delete this student from the system?");
+    if (!confirm) return;
 
     const { error } = await supabase.from("profiles").delete().eq("id", id);
     if (error) {
@@ -123,7 +125,8 @@ export function StudentManager({ students, teachers, onRefresh }: StudentManager
   };
 
   const unlockDevice = async (id: string) => {
-    if (!window.confirm("Unlock this student's device binding?")) return;
+    const confirm = await confirmAction("Unlock Device?", "Unlock this student's device binding?");
+    if (!confirm) return;
 
     const { error } = await supabase
       .from("profiles")

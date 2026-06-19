@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router";
 import { LevelSyllableQuiz } from "./LevelSyllableQuiz";
 import { supabase } from "../../lib/supabase";
-import { Home, CheckCircle2 } from "lucide-react";
+import {Home, CheckCircle2, X} from "lucide-react";
 import { Button } from "./ui/button";
 import { motion } from "motion/react";
 
@@ -90,7 +90,7 @@ export function LevelSyllablesMaster({ levelId, accent }: LevelSyllablesMasterPr
       <div className="sticky top-0 z-10 bg-white/80 dark:bg-[#0d141c]/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 px-4 py-3">
         <div className="max-w-md mx-auto flex items-center gap-3 w-full">
           <Button variant="ghost" size="sm" onClick={() => navigate("/levels")} className="rounded-full">
-            <Home className="w-5 h-5" />
+            <X className="w-5 h-5" /> Exit
           </Button>
           <div className="flex-1 text-center pr-8">
             <h2 className="text-lg font-bold tracking-tight" style={{ color: accent.primary }}>

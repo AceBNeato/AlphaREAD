@@ -1,22 +1,7 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router";
-import {
-  Mic,
-  Home,
-  ArrowRight,
-  ArrowLeft,
-  Sparkles,
-  CheckCircle2,
-  XCircle,
-  MicOff,
-  RotateCcw,
-  AlertCircle,
-  Volume2,
-  Shuffle,
-  Loader2,
-  SkipForward,
-  FastForward,
-} from "lucide-react";
+import {Mic, Home, ArrowRight, ArrowLeft, Sparkles, CheckCircle2, XCircle, MicOff, RotateCcw, AlertCircle, Volume2, Shuffle, Loader2, SkipForward, FastForward, X} from "lucide-react";
+import { confirmAction } from "../utils/alerts";
 import { Button } from "./ui/button";
 import { CVC_WORDS, shuffle, getPhoneticPronunciation } from "../data/levels";
 import { motion, AnimatePresence } from "motion/react";
@@ -214,9 +199,9 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
     setTranscripts(prev => ({ ...prev, [word]: "" }));
   };
 
-  const handleGoBack = () => {
+  const handleGoBack = async () => {
     if (!showCompletionScreen) {
-      const confirmExit = window.confirm("Are you sure you want to leave? Your progress will not be saved.");
+      const confirmExit = await confirmAction("Are you sure you want to leave?", "Your progress will not be saved.");
       if (!confirmExit) return;
     }
     navigate("/levels", { replace: true });
@@ -234,7 +219,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
             onClick={handleGoBack}
             className="rounded-full"
           >
-            <Home className="w-5 h-5" />
+            <X className="w-5 h-5" /> Exit
           </Button>
 
           <h2 className="text-lg font-bold tracking-tight text-center flex-1" style={{ color: accent.primary }}>

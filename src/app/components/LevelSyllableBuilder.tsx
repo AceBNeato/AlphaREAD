@@ -1,15 +1,7 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { useNavigate } from "react-router";
-import {
-  Home,
-  ArrowRight,
-  ArrowLeft,
-  RotateCcw,
-  Sparkles,
-  CheckCircle2,
-  Volume2,
-  FastForward
-} from "lucide-react";
+import {Home, ArrowRight, ArrowLeft, RotateCcw, Sparkles, CheckCircle2, Volume2, FastForward, X} from "lucide-react";
+import { confirmAction } from "../utils/alerts";
 import { Button } from "./ui/button";
 import {
   shuffle,
@@ -294,9 +286,9 @@ export function LevelSyllableBuilder({
     }
   };
 
-  const handleGoBack = () => {
+  const handleGoBack = async () => {
     if (!allDone) {
-      const confirmExit = window.confirm("Are you sure you want to leave? Your progress will not be saved.");
+      const confirmExit = await confirmAction("Are you sure you want to leave?", "Your progress will not be saved.");
       if (!confirmExit) return;
     }
     navigate("/levels", { replace: true });
@@ -530,8 +522,9 @@ export function LevelSyllableBuilder({
                               >
                                 {selectedLetters[slot] ? (
                                   <motion.div
-                                    initial={{ scale: 0, y: -10 }}
-                                    animate={{ scale: 1, y: 0 }}
+                                    initial={{ opacity: 0, y: 40 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ type: "spring", stiffness: 300, damping: 20 }}
                                     className={`w-full h-full rounded-2xl flex flex-col items-center justify-center border-b-[4px] select-none shadow-md ${feedback === "correct" ? "bg-green-100 border-green-400 text-green-700" :
                                       feedback === "wrong" ? "bg-red-50 border-red-400 text-red-600" : ""
                                       }`}
@@ -649,13 +642,14 @@ export function LevelSyllableBuilder({
             onClick={handleGoBack}
             className="rounded-full"
           >
-            <Home className="w-5 h-5" />
+            <X className="w-5 h-5" /> Exit
           </Button>
-          <div className="flex-1 text-center pr-8">
+          <div className="flex-1 text-center">
             <h2 className="text-lg font-bold tracking-tight" style={{ color: accent.primary }}>
               {levelId === 3 ? "CVC Word Builder" : "Syllable Builder"}
             </h2>
           </div>
+          {targets.length > 0 && <span className="text-sm font-bold" style={{ color: accent.primary }}>Step {currentIndex + 1}/{targets.length}</span>}
         </div>
       </div>
       {innerContent}

@@ -160,16 +160,15 @@ export default function AdminLogin() {
         ) : (
           <form onSubmit={handleVerifyOtp} className="flex flex-col gap-6 animate-in slide-in-from-right duration-300">
             <div className="relative">
-              <KeyRound className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
               <input
-                type="text"
+                type="password"
                 maxLength={8}
                 required
                 value={otpCode}
                 onChange={(e) => setOtpCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8))}
-                placeholder="ADMIN123"
+                placeholder="••••••••"
                 autoFocus
-                className={`w-full text-center text-4xl font-mono tracking-[0.25em] p-4 bg-gray-950 border-2 rounded-2xl outline-none transition-colors text-white ${error
+                className={`w-full text-center text-3xl font-mono tracking-[0.5em] p-4 bg-gray-950 border-2 rounded-2xl outline-none transition-colors text-white ${error
                     ? "border-red-500 text-red-500 focus:border-red-500"
                     : "border-gray-800 focus:border-blue-500"
                   }`}

@@ -1,9 +1,7 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { useNavigate } from "react-router";
-import {
-  Home, Mic, MicOff, CheckCircle2, XCircle, Sparkles, ArrowRight, ArrowLeft,
-  RotateCcw, SkipForward, FastForward, Volume2, Shuffle
-} from "lucide-react";
+import {Home, Mic, MicOff, CheckCircle2, XCircle, Sparkles, ArrowRight, ArrowLeft, RotateCcw, SkipForward, FastForward, Volume2, Shuffle, X} from "lucide-react";
+import { confirmAction } from "../utils/alerts";
 import { Button } from "./ui/button";
 import { motion, AnimatePresence } from "motion/react";
 import { supabase } from "../../lib/supabase";
@@ -145,8 +143,8 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete }: L
     handleNextQuiz();
   };
 
-  const handleGoBack = () => {
-    const confirmExit = window.confirm("Are you sure you want to leave? Your progress will not be saved.");
+  const handleGoBack = async () => {
+    const confirmExit = await confirmAction("Are you sure you want to leave?", "Your progress will not be saved.");
     if (!confirmExit) return;
     navigate("/levels", { replace: true });
   };
@@ -199,13 +197,13 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete }: L
       <div className="sticky top-0 z-10 bg-white/80 dark:bg-[#0d141c]/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 px-4 py-3">
         <div className="max-w-4xl mx-auto flex items-center justify-between gap-3 w-full">
           <Button variant="ghost" size="sm" onClick={handleGoBack} className="rounded-full flex-shrink-0">
-            <Home className="w-5 h-5" />
+            <X className="w-5 h-5" /> Exit
           </Button>
           <h2 className="text-lg font-bold tracking-tight text-center flex-1" style={{ color: accent.primary }}>
             Sentences Quiz (Set {currentSetIndex + 1}/{totalSets}) Read the Sentences
           </h2>
-          <span className="text-xs font-bold text-gray-500 bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full uppercase">
-            {completedSentences.size}/{activeSentences.length}
+          <span className="text-sm font-bold" style={{ color: accent.primary }}>
+            Step {completedSentences.size}/{activeSentences.length}
           </span>
         </div>
       </div>

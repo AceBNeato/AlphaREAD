@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useNavigate } from "react-router";
-import { Home, Volume2, Mic, MicOff, CheckCircle2, XCircle, Sparkles, ArrowRight, ArrowLeft, AlertCircle, RotateCcw, SkipForward, FastForward } from "lucide-react";
+import {Home, Volume2, Mic, MicOff, CheckCircle2, XCircle, Sparkles, ArrowRight, ArrowLeft, AlertCircle, RotateCcw, SkipForward, FastForward, X} from "lucide-react";
+import { confirmAction } from "../utils/alerts";
 import { Button } from "./ui/button";
 import { motion, AnimatePresence } from "motion/react";
 import { supabase } from "../../lib/supabase";
@@ -299,8 +300,8 @@ export function LevelBlends({ levelId, accent }: LevelBlendsProps) {
     }
   };
 
-  const handleGoBack = () => {
-    const confirmExit = window.confirm("Are you sure you want to leave? Your progress will not be saved.");
+  const handleGoBack = async () => {
+    const confirmExit = await confirmAction("Are you sure you want to leave?", "Your progress will not be saved.");
     if (!confirmExit) return;
     navigate("/levels", { replace: true });
   };
@@ -348,22 +349,23 @@ export function LevelBlends({ levelId, accent }: LevelBlendsProps) {
       <div className="sticky top-0 z-10 bg-white/80 dark:bg-[#0d141c]/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 px-4 py-3">
         <div className="max-w-4xl mx-auto flex items-center justify-between gap-3 w-full">
           <Button variant="ghost" size="sm" onClick={handleGoBack} className="rounded-full">
-            <Home className="w-5 h-5" />
+            <X className="w-5 h-5" /> Exit
           </Button>
           <h2 className="text-lg font-bold tracking-tight text-center flex-1" style={{ color: accent.primary }}>
             {currentPhase === "review" && `Long ${BLENDS_DATA[reviewIdx].name} Review`}
             {currentPhase === "patterns" && `All Vowel Patterns Quiz`}
             {currentPhase === "words" && `Words Quiz (Set ${wordSetIdx + 1}/${totalWordSets})`}
           </h2>
-          <span className="text-xs font-bold text-gray-500 bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full uppercase">
-            {currentPhase === "review" && `Category ${reviewIdx + 1}/`}
-            {currentPhase === "patterns" && `${patternIdx + 1}/${activePatterns.length}`}
-            {currentPhase === "words" && `${wordIdx + 1}/${activeWords.length}`}
+          <span className="text-sm font-bold" style={{ color: accent.primary }}>
+            {currentPhase === "review" && `Step ${reviewIdx + 1}/${BLENDS_DATA.length}`}
+            {currentPhase === "patterns" && `Step ${completedPatterns.size}/${activePatterns.length}`}
+            {currentPhase === "words" && `Step ${completedWords.size}/${activeWords.length}`}
+            {currentPhase === "sentences" && `Step ${completedSentences.size}/${activeSentences.length}`}
           </span>
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 py-8 flex-1 flex flex-col justify-start w-full">
+      <div className="max-w-4xl mx-auto px-4 flex-1 flex flex-col justify-start w-full">
         <AnimatePresence mode="wait">
           {!showConfetti && currentPhase === "review" && activeVowelData ? (
             <motion.div

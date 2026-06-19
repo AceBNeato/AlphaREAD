@@ -232,5 +232,5 @@ $$;
 
 -- 11. Seed the initial Admin
 INSERT INTO public.profiles (id, first_name, last_name, role, email, pin_hash) 
-SELECT gen_random_uuid(), 'Master', 'Admin', 'admin', 'businessneato@gmail.com', 'ADMIN123'
+SELECT gen_random_uuid(), 'Master', 'Admin', 'admin', 'admin@school.com', 'ADMIN123'
 WHERE NOT EXISTS (SELECT 1 FROM public.profiles WHERE role = 'admin' LIMIT 1);
