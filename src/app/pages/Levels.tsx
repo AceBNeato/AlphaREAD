@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router";
 import {
-  Home,
+  LayoutDashboard,
   Sparkles,
   Layers,
   Puzzle,
@@ -16,30 +16,35 @@ const levelColors = [
   {
     bg: "from-[#58CC02] to-[#46a302]",
     border: "border-[#58CC02]",
+    borderDark: "border-[#3c8c01]",
     light: "#e8f9d4",
     text: "#58CC02",
   },
   {
     bg: "from-[#1CB0F6] to-[#0a8ed4]",
     border: "border-[#1CB0F6]",
+    borderDark: "border-[#0979b5]",
     light: "#d4f1ff",
     text: "#1CB0F6",
   },
   {
     bg: "from-[#FF9600] to-[#e08000]",
     border: "border-[#FF9600]",
+    borderDark: "border-[#b86800]",
     light: "#fff2d4",
     text: "#FF9600",
   },
   {
     bg: "from-[#CE82FF] to-[#a855f7]",
     border: "border-[#CE82FF]",
+    borderDark: "border-[#883fba]",
     light: "#f3e8ff",
     text: "#a855f7",
   },
   {
     bg: "from-[#FF4B8A] to-[#e0336e]",
     border: "border-[#FF4B8A]",
+    borderDark: "border-[#b51e4f]",
     light: "#ffe4ef",
     text: "#e0336e",
   },
@@ -86,8 +91,8 @@ export default function Levels() {
             to="/dashboard"
             className="flex items-center gap-2 px-4 py-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full transition-colors"
           >
-            <Home className="w-5 h-5" />
-            <span className="text-gray-700 dark:text-gray-300">Home</span>
+            <LayoutDashboard className="w-5 h-5" />
+            <span className="text-gray-700 dark:text-gray-300">Dashboard</span>
           </Link>
           <ThemeToggle />
         </div>
@@ -161,7 +166,7 @@ export default function Levels() {
                   {/* Action Button */}
                   <Link to={`/lesson/${level.id}`}>
                     <Button
-                      className={`w-full py-6 text-lg rounded-2xl text-white shadow-md hover:shadow-lg transition-all bg-gradient-to-r ${colors.bg}`}
+                      className={`w-full py-6 text-lg rounded-2xl font-bold text-white shadow-md border-b-4 ${colors.borderDark} hover:brightness-110 hover:-translate-y-1 active:translate-y-0 active:scale-95 transition-all bg-gradient-to-r ${colors.bg}`}
                     >
                       Start Learning
                     </Button>

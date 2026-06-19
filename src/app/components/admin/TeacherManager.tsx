@@ -5,7 +5,7 @@ import {
   GraduationCap, Search, Filter, Plus, X, UserPlus, 
   Eye, EyeOff, Save, Edit, Trash2, Smartphone, RefreshCw, Copy, Check 
 } from "lucide-react";
-import { confirmAction } from "../../utils/alerts";
+import { confirmAction, showAlert } from "../../utils/alerts";
 import { Button } from "../ui/button";
 
 interface TeacherManagerProps {
@@ -71,13 +71,6 @@ export function TeacherManager({ teachers, onRefresh }: TeacherManagerProps) {
 
       if (error) throw error;
 
-      // Open the user's mail client with the access code
-      const subject = encodeURIComponent("Your AlphabetGO Teacher Access Code");
-      const body = encodeURIComponent(
-        `Hello ${teacherAlias.trim()},\n\nYou have been registered as a teacher on AlphabetGO.\n\nEmail: ${teacherEmail.trim().toLowerCase()}\nAccess Code: ${accessCode}\n\nUse these credentials to log in at the AlphabetGO portal.\n\nBest,\nAdmin`
-      );
-      window.open(`mailto:${teacherEmail.trim().toLowerCase()}?subject=${subject}&body=${body}`, "_blank");
-
       // Show the code to admin before closing
       setCreatedCode(accessCode);
       setTimeout(() => {
@@ -88,7 +81,7 @@ export function TeacherManager({ teachers, onRefresh }: TeacherManagerProps) {
         onRefresh();
       }, 8000);
     } catch (err: any) {
-      alert(`Failed to register teacher: ${err.message}`);
+      showAlert("Error", `Failed to register teacher: ${err.message}`);
     }
   };
 
@@ -98,9 +91,9 @@ export function TeacherManager({ teachers, onRefresh }: TeacherManagerProps) {
     const newCode = generateAccessCode();
     const { error } = await supabase.from("profiles").update({ pin_hash: newCode }).eq("id", teacherId);
     if (error) {
-      alert("Failed to regenerate code.");
+      showAlert("Error", "Failed to regenerate code.");
     } else {
-      alert(`New access code: ${newCode}\n\nPlease share this with the teacher.`);
+      showAlert("Success", `New access code: ${newCode}<br><br>Please share this with the teacher.`, "success");
       onRefresh();
     }
   };
@@ -129,7 +122,7 @@ export function TeacherManager({ teachers, onRefresh }: TeacherManagerProps) {
       .eq("id", id);
 
     if (error) {
-      alert("Failed to update teacher profile.");
+      showAlert("Error", "Failed to update teacher profile.");
     } else {
       setEditingTeacherId(null);
       onRefresh();
@@ -145,7 +138,7 @@ export function TeacherManager({ teachers, onRefresh }: TeacherManagerProps) {
     const { error } = await supabase.from("profiles").delete().eq("id", id);
     
     if (error) {
-      alert("Failed to delete teacher.");
+      showAlert("Error", "Failed to delete teacher.");
     } else {
       onRefresh();
     }

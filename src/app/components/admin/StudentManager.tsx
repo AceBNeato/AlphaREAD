@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { supabase } from "../../../lib/supabase";
 import { Users, Search, Filter, Plus, X, UserPlus, Eye, EyeOff, Save, Edit, Trash2, Smartphone, Unlock } from "lucide-react";
-import { confirmAction } from "../../utils/alerts";
+import { confirmAction, showAlert } from "../../utils/alerts";
 import { Button } from "../ui/button";
 
 interface StudentManagerProps {
@@ -77,7 +77,7 @@ export function StudentManager({ students, teachers, onRefresh }: StudentManager
       setStudentPin("");
       onRefresh();
     } catch (err: any) {
-      alert(`Failed to register student: ${err.message}`);
+      showAlert("Error", `Failed to register student: ${err.message}`);
     }
   };
 
@@ -105,7 +105,7 @@ export function StudentManager({ students, teachers, onRefresh }: StudentManager
       .eq("id", id);
 
     if (error) {
-      alert("Failed to update student profile.");
+      showAlert("Error", "Failed to update student profile.");
     } else {
       setEditingStudentId(null);
       onRefresh();
@@ -118,7 +118,7 @@ export function StudentManager({ students, teachers, onRefresh }: StudentManager
 
     const { error } = await supabase.from("profiles").delete().eq("id", id);
     if (error) {
-      alert("Failed to delete student.");
+      showAlert("Error", "Failed to delete student.");
     } else {
       onRefresh();
     }
@@ -134,9 +134,9 @@ export function StudentManager({ students, teachers, onRefresh }: StudentManager
       .eq("id", id);
 
     if (error) {
-      alert("Failed to unlock device.");
+      showAlert("Error", "Failed to unlock device.");
     } else {
-      alert("Device binding cleared successfully!");
+      showAlert("Success", "Device binding cleared successfully!", "success");
       onRefresh();
     }
   };

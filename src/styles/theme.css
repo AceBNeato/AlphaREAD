@@ -145,6 +145,10 @@
   * These are in @layer base, so Tailwind utility classes (like text-sm, text-lg) automatically override them.
   */
 
+  p {
+    font-family: 'Outfit', sans-serif;
+  }
+
   html {
     font-size: var(--font-size);
   }

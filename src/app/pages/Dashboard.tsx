@@ -37,7 +37,7 @@ export default function Dashboard() {
     setCompletedLevels(completed);
 
     // Validate device lock to prevent duplicate sessions
-    if (parsedProfile.id !== "teacher-preview") {
+    if (parsedProfile.id !== "teacher-preview" && parsedProfile.role !== "student") {
       const validateDevice = async () => {
         // If the device is completely offline, allow them to play the downloaded app
         if (!navigator.onLine) return;
