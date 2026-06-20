@@ -54,10 +54,22 @@ export default function AdminDashboard() {
 
   const fetchData = async (silent = false) => {
     if (!silent) setLoading(true);
-    // Fetch Admin profile
+    
+    // Get current profile id
+    const profileStr = localStorage.getItem("userProfile");
+    const profile = profileStr ? JSON.parse(profileStr) : null;
+    
+    if (!profile || !profile.id) {
+      localStorage.removeItem("userProfile");
+      navigate("/", { replace: true });
+      return;
+    }
+
+    // Securely verify this specific user is an admin
     const { data: admin, error: adminErr } = await supabase
       .from("profiles")
       .select("*")
+      .eq("id", profile.id)
       .eq("role", "admin")
       .maybeSingle();
       
@@ -65,9 +77,9 @@ export default function AdminDashboard() {
       console.error("Admin Fetch Error:", adminErr);
     }
       
-    if (!admin) {
+    if (!admin || admin.role !== "admin") {
       localStorage.removeItem("userProfile");
-      alert("Admin access has been revoked or deleted.");
+      alert("Admin access revoked, invalid, or deleted.");
       navigate("/", { replace: true });
       return;
     }

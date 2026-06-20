@@ -209,7 +209,7 @@ function MatchPhase({
       <Confetti active={showConfetti} />
 
       <div className="text-center mb-6">
-        <p className="text-gray-500 dark:text-gray-400 text-sm mt-2">
+        <p className="text-gray-500 mt-2">
           Tap a speaker, then tap the matching word!
         </p>
         
@@ -506,7 +506,7 @@ export function LevelSyllableQuiz({ pattern, levelId, accent, onComplete }: Leve
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-yellow-50 to-pink-50 dark:bg-none dark:bg-[#0d141c] flex flex-col overflow-x-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-pink-50 dark:bg-none dark:bg-[#0d141c] flex flex-col overflow-x-hidden">
       <Confetti active={showFinalConfetti} />
 
       {/* Header */}
@@ -531,7 +531,7 @@ export function LevelSyllableQuiz({ pattern, levelId, accent, onComplete }: Leve
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 flex-1 flex flex-col w-full">
+      <div className="max-w-4xl mx-auto px-4 py-6 flex-1 flex flex-col w-full">
         <AnimatePresence mode="wait">
           {showFinalConfetti ? (
             <motion.div
@@ -546,7 +546,7 @@ export function LevelSyllableQuiz({ pattern, levelId, accent, onComplete }: Leve
               <h3 className="text-3xl font-black mb-4" style={{ color: accent.primary }}>
                 {pattern} Complete! 🎉
               </h3>
-              <p className="text-gray-600 dark:text-gray-400">You've completed all phases and mastered all {allSyllables.length} {pattern} syllables!</p>
+              <p className="text-gray-500 mt-2">You've completed all phases and mastered all {allSyllables.length} {pattern} syllables!</p>
             </motion.div>
           ) : step?.type === "review" ? (
             <ReviewPhase

@@ -396,7 +396,7 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 flex-1 flex flex-col w-full">
+      <div className="max-w-4xl mx-auto px-4 py-6 flex-1 flex flex-col w-full">
         <AnimatePresence mode="wait">
           {!showConfetti && step.type === "review" && (
             <motion.div key={`review-${currentStep}`} initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -50 }} className="flex flex-col items-center">
@@ -556,7 +556,7 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
               className="w-full max-w-2xl mx-auto flex flex-col items-center"
             >
               <div className="text-center mb-6">
-                <p className="text-gray-500 dark:text-gray-400 text-sm">Tap the microphone and say the name of the letter loud and clear.</p>
+                <p className="text-gray-500 mt-2">Tap the microphone and say the name of the letter loud and clear.</p>
                 {/* Navigation Controls moved to top */}
                 <div className="flex justify-center items-center w-full gap-3 sm:gap-4 max-w-md mx-auto mt-6">
                   <Button 

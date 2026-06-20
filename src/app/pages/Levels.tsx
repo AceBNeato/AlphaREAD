@@ -48,24 +48,24 @@ const levelColors = [
     light: "#ffe4ef",
     text: "#e0336e",
   },
+  {
+    bg: "from-[#7C3AED] to-[#6d28d9]",
+    border: "border-[#7C3AED]",
+    borderDark: "border-[#5b21b6]",
+    light: "#f3e8ff",
+    text: "#7C3AED",
+  },
 ];
 
 const levelIcons = [Layers, Puzzle, Brain, Sparkles, BookOpen];
 
 const levelDescriptions = [
   "Learn all 26 letters in shuffled pairs. Review each letter's uppercase and lowercase form, then practice saying them!",
-  "Build syllables! 2.1 — VC (Vowel + Consonant) like AB, IM, OT. 2.2 — CV (Consonant + Vowel) like BA, MI, TO.",
+  "Build syllables! VC (Vowel + Consonant) like AB, IM, OT. CV (Consonant + Vowel) like BA, MI, TO.",
   "The ultimate challenge! Build CVC words (like BAT, SUN, DOG) and then use the AI to practice your pronunciation.",
   "Transition from letter sounds to letter names! Match the spoken name of a letter (like 'Ay', 'Bee', 'Cee') to its written form.",
   "Vowels say their names! Learn the key spelling patterns for long vowels: Magic E (a_e) and Vowel Teams (ai).",
-];
-
-const levelTags = [
-  ["Review", "Voice Eval", "26 Letters"],
-  ["VC Pattern", "CV Pattern", "Interactive"],
-  ["Build Words", "AI Recognition", "Challenge"],
-  ["Letter Names", "Listening Match", "Vowels"],
-  ["Long Vowels", "Spelling Patterns", "Voice Practice"],
+  "Master consonant combinations! Practice 2-Letter Blends, 3-Letter Blends, and Ending Blends to improve your reading fluency."
 ];
 
 export default function Levels() {
@@ -118,7 +118,6 @@ export default function Levels() {
           {userLevels.map((level, index) => {
             const colors = levelColors[index % levelColors.length];
             const Icon = levelIcons[index % levelIcons.length];
-            const tags = levelTags[index] || [];
 
             return (
               <div
@@ -146,22 +145,6 @@ export default function Levels() {
                   <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 leading-relaxed">
                     {levelDescriptions[index]}
                   </p>
-
-                  {/* Tags */}
-                  <div className="flex gap-2 mb-4 flex-wrap">
-                    {tags.map((tag) => (
-                      <span
-                        key={tag}
-                        className="text-xs px-3 py-1 rounded-full"
-                        style={{
-                          background: colors.light,
-                          color: colors.text,
-                        }}
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
 
                   {/* Action Button */}
                   <Link to={`/lesson/${level.id}`}>

@@ -200,7 +200,7 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete }: L
             <X className="w-5 h-5" /> Exit
           </Button>
           <h2 className="text-lg font-bold tracking-tight text-center flex-1" style={{ color: accent.primary }}>
-            Sentences Quiz (Set {currentSetIndex + 1}/{totalSets}) Read the Sentences
+            {levelId === 3 ? "CVC Master - Read the Sentences" : `Sentences Quiz (Set ${currentSetIndex + 1}/${totalSets}) Read the Sentences`}
           </h2>
           <span className="text-sm font-bold" style={{ color: accent.primary }}>
             Step {completedSentences.size}/{activeSentences.length}
@@ -220,7 +220,7 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete }: L
               className="w-full max-w-2xl mx-auto flex flex-col items-center"
             >
               <div className="text-center mb-8">
-                <p className="text-gray-500 dark:text-gray-400 text-sm">
+                <p className="text-gray-500 mt-2">
                   Say each sentence out loud into the microphone.
                 </p>
               </div>

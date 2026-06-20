@@ -307,9 +307,9 @@ export function LevelSyllableBuilder({
           className="text-center"
         >
           <h2 className="text-2xl mb-2" style={{ color: accent.primary }}>
-            {levelId === 3 ? "CVC Word Builder" : "Syllable Builder"}
+            {levelId === 3 ? "CVC Master - Word Builder" : "Syllable Builder"}
           </h2>
-          <p className="text-gray-500 dark:text-gray-400 text-sm mb-8">
+          <p className="text-gray-500 mt-2">
             Choose which pattern to practice!
           </p>
 
@@ -632,7 +632,7 @@ export function LevelSyllableBuilder({
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-yellow-50 to-pink-50 dark:bg-none dark:bg-[#0d141c] overflow-x-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-pink-50 dark:bg-none dark:bg-[#0d141c] overflow-x-hidden">
       {/* Header */}
       <div className="sticky top-0 z-10 bg-white/80 dark:bg-[#0d141c]/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 px-4 py-3">
         <div className="max-w-2xl mx-auto flex items-center gap-3 w-full">
@@ -645,8 +645,8 @@ export function LevelSyllableBuilder({
             <X className="w-5 h-5" /> Exit
           </Button>
           <div className="flex-1 text-center">
-            <h2 className="text-lg font-bold tracking-tight" style={{ color: accent.primary }}>
-              {levelId === 3 ? "CVC Word Builder" : "Syllable Builder"}
+            <h2 className="text-lg font-bold tracking-tight text-center flex-1" style={{ color: accent.primary }}>
+              {levelId === 3 ? "CVC Master - Word Builder" : "Syllable Builder"}
             </h2>
           </div>
           {targets.length > 0 && <span className="text-sm font-bold" style={{ color: accent.primary }}>Step {currentIndex + 1}/{targets.length}</span>}

@@ -223,7 +223,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
           </Button>
 
           <h2 className="text-lg font-bold tracking-tight text-center flex-1" style={{ color: accent.primary }}>
-            Voice Evaluation
+            {levelId === 3 ? "CVC Master - Voice Evaluation" : "Voice Evaluation"}
           </h2>
 
           <Button
@@ -258,6 +258,12 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
 
         {!showCompletionScreen ? (
           <>
+
+            <div className="text-center mb-8">
+              <p className="text-gray-500 mt-2">
+                Say each word out loud into the microphone.
+              </p>
+            </div>
 
             {/* Teacher Controls Row */}
             <div className="flex justify-center items-center w-full gap-2 sm:gap-3 max-w-lg mx-auto mb-6">
@@ -412,7 +418,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
             <h3 className="text-3xl mb-4" style={{ color: accent.primary }}>
               Excellent Work!
             </h3>
-            <p className="text-gray-500 dark:text-gray-400 mb-4">
+            <p className="text-gray-500 mt-2">
               You completed {words.length} out of {words.length} words correctly!
             </p>
             <div className="flex flex-wrap justify-center gap-3 mb-8">

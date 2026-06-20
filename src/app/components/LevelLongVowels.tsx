@@ -40,7 +40,15 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
     });
     return list;
   }, []);
-  const [activePatterns, setActivePatterns] = useState(() => shuffle([...allPatternsRaw]));
+  const [activePatterns, setActivePatterns] = useState(() => {
+    // Pick exactly 1 random pattern per vowel to keep the list at 5 items
+    const selected: { pattern: string; vowel: string; name: string }[] = [];
+    LONG_VOWELS_DATA.forEach((d) => {
+      const p = d.patterns[Math.floor(Math.random() * d.patterns.length)];
+      selected.push({ pattern: p.pattern, vowel: d.vowel, name: p.name });
+    });
+    return shuffle(selected);
+  });
   const [patternIdx, setPatternIdx] = useState(0);
 
   // Word Quiz State
@@ -134,7 +142,8 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
   const handleSpeakerMatchClick = (pattern: string) => {
     if (matchedPairs.has(pattern) || wrongMatchPair) return;
     playSound("click", 0.2);
-    playTTS(pattern);
+    const vowelToPlay = allPatternsRaw.find(p => p.pattern === pattern)?.vowel || pattern;
+    playTTS(vowelToPlay);
     if (selectedSpeakerMatch === pattern) {
       setSelectedSpeakerMatch(null);
     } else {
@@ -426,7 +435,7 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
 
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 dark:bg-none dark:bg-[#0d141c] flex flex-col overflow-x-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-50 dark:bg-none dark:bg-[#0d141c] flex flex-col overflow-x-hidden">
       <Confetti active={showConfetti} />
 
       <div className="sticky top-0 z-10 bg-white/80 dark:bg-[#0d141c]/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 px-4 py-3">
@@ -436,10 +445,10 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
           </Button>
           <h2 className="text-lg font-bold tracking-tight text-center flex-1" style={{ color: accent.primary }}>
             {currentPhase === "review" && `Long Vowels Review`}
-            {currentPhase === "match" && `Listen & Match`}
-            {currentPhase === "patterns" && `Say the Name`}
-            {currentPhase === "words" && `Read the Words`}
-            {currentPhase === "sentences" && `Read the Sentences`}
+            {currentPhase === "match" && `Long Vowels - Listen & Match`}
+            {currentPhase === "patterns" && `Long Vowels - Voice Evaluation`}
+            {currentPhase === "words" && `Long Vowels - Voice Evaluation`}
+            {currentPhase === "sentences" && `Long Vowels : Read the Sentences`}
           </h2>
           <span className="text-sm font-bold" style={{ color: accent.primary }}>
             {currentPhase === "review" && `Step 1/5`}
@@ -451,7 +460,7 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 py-4 flex-1 flex flex-col justify-start w-full">
+      <div className="max-w-4xl mx-auto px-4 py-6 flex-1 flex flex-col justify-start w-full">
         <AnimatePresence mode="wait">
           {!showConfetti && currentPhase === "review" && activeVowelData ? (
             <motion.div
@@ -463,7 +472,7 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
             >
 
               <div className="text-center mb-8">
-                <p className="text-gray-500 dark:text-gray-400 text-sm">
+                <p className="text-gray-500 mt-2">
                   Review the patterns. Tap any word or heading to hear it spoken!
                 </p>
                 <div className="flex justify-center items-center w-full gap-3 sm:gap-4 max-w-sm mx-auto mt-6">
@@ -494,7 +503,7 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
                     <Button
                       size="sm"
                       onClick={() => setCurrentPhase("match")}
-                      className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#3c8c01] hover:scale-105 active:scale-95 px-2 transition-all animate-pulse h-9 py-2"
+                      className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#3c8c01] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
                       style={{
                         background: "linear-gradient(135deg, rgb(88, 204, 2) 0%, rgb(70, 163, 2) 100%)",
                       }}
@@ -506,7 +515,7 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
               </div>
 
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch mb-8 flex-1">
+              <div className={`grid gap-6 items-stretch mb-8 flex-1 w-full mx-auto ${activeVowelData.patterns.length === 1 ? 'grid-cols-1 max-w-sm' : activeVowelData.patterns.length === 2 ? 'grid-cols-1 md:grid-cols-2 max-w-2xl' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'}`}>
                 {activeVowelData.patterns.map((pattern) => {
                   return (
                     <div
@@ -665,7 +674,7 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
               className="w-full max-w-2xl mx-auto flex flex-col items-center"
             >
               <div className="text-center mb-6">
-                <p className="text-gray-500 dark:text-gray-400 text-sm">
+                <p className="text-gray-500 mt-2">
                   Say the correct long vowel name 2 times out loud.
                 </p>
               </div>
@@ -809,7 +818,7 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
               className="w-full max-w-2xl mx-auto flex flex-col items-center"
             >
               <div className="text-center mb-6">
-                <p className="text-gray-500 dark:text-gray-400 text-sm">
+                <p className="text-gray-500 mt-2">
                   Say each long word out loud into the microphone.
                 </p>
               </div>
@@ -971,7 +980,7 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
               className="w-full max-w-2xl mx-auto flex flex-col items-center"
             >
               <div className="text-center mb-6">
-                <p className="text-gray-500 dark:text-gray-400 text-sm">
+                <p className="text-gray-500 mt-2">
                   Say each sentence out loud into the microphone.
                 </p>
               </div>

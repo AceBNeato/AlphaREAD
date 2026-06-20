@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useNavigate } from "react-router";
-import {Home, Volume2, Mic, MicOff, CheckCircle2, XCircle, Sparkles, ArrowRight, ArrowLeft, AlertCircle, RotateCcw, SkipForward, FastForward, X} from "lucide-react";
+import {Home, Volume2, Mic, MicOff, CheckCircle2, XCircle, Sparkles, ArrowRight, ArrowLeft, AlertCircle, RotateCcw, SkipForward, FastForward, X, Shuffle as ShuffleIcon} from "lucide-react";
 import { confirmAction } from "../utils/alerts";
 import { Button } from "./ui/button";
 import { motion, AnimatePresence } from "motion/react";
@@ -16,13 +16,15 @@ import { playTTS as playTTSUtil } from "../utils/tts";
 interface LevelBlendsProps {
   levelId: number;
   accent: { primary: string; dark: string; lightBg: string };
+  categoryFilter?: string;
+  onComplete?: () => void;
 }
 
 type Phase = "review" | "patterns" | "words" | "sentences";
 
 const VOWELS = ["A", "E", "I", "O", "U"];
 
-export function LevelBlends({ levelId, accent }: LevelBlendsProps) {
+export function LevelBlends({ levelId, accent, categoryFilter, onComplete }: LevelBlendsProps) {
   const navigate = useNavigate();
 
   const [currentPhase, setCurrentPhase] = useState<Phase>("review");
@@ -31,15 +33,24 @@ export function LevelBlends({ levelId, accent }: LevelBlendsProps) {
   const [reviewIdx, setReviewIdx] = useState(0);
 
   // Pattern Quiz State
+  const filteredData = useMemo(() => {
+    if (!categoryFilter) return BLENDS_DATA;
+    if (categoryFilter === "2-Letter Blends") {
+      return BLENDS_DATA.filter(d => d.name === "2-Letter Blends" || d.name === "Digraphs");
+    }
+    return BLENDS_DATA.filter(d => d.name === categoryFilter);
+  }, [categoryFilter]);
+
+  // Pattern Quiz State
   const allPatternsRaw = useMemo(() => {
     const list: { pattern: string; category: string; name: string }[] = [];
-    BLENDS_DATA.forEach((d) => {
+    filteredData.forEach((d) => {
       d.patterns.forEach((p) => {
         list.push({ pattern: p.pattern, category: d.name, name: p.name });
       });
     });
     return list;
-  }, []);
+  }, [filteredData]);
   const [activePatterns, setActivePatterns] = useState(() => shuffle([...allPatternsRaw]));
   const [patternIdx, setPatternIdx] = useState(0);
 
@@ -47,7 +58,7 @@ export function LevelBlends({ levelId, accent }: LevelBlendsProps) {
   const WORDS_PER_SET = 10;
   const allWordsRaw = useMemo(() => {
     const list: { word: string; category: string }[] = [];
-    BLENDS_DATA.forEach((d) => {
+    filteredData.forEach((d) => {
       d.patterns.forEach((p) => {
         p.words.forEach((w) => {
           list.push({ word: w.word, category: d.name });
@@ -55,7 +66,7 @@ export function LevelBlends({ levelId, accent }: LevelBlendsProps) {
       });
     });
     return shuffle(list);
-  }, []);
+  }, [filteredData]);
   const totalWordSets = Math.ceil(allWordsRaw.length / WORDS_PER_SET);
   const [wordSetIdx, setWordSetIdx] = useState(0);
   const [activeWords, setActiveWords] = useState<{ word: string; category: string }[]>([]);
@@ -131,8 +142,8 @@ export function LevelBlends({ levelId, accent }: LevelBlendsProps) {
   const isMobile = useMemo(() => /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent), []);
 
   const activeVowelData = useMemo(() => {
-    return BLENDS_DATA.find((d) => d.name === BLENDS_DATA[reviewIdx].name) || null;
-  }, [reviewIdx]);
+    return filteredData.find((d) => d.name === filteredData[reviewIdx]?.name) || null;
+  }, [reviewIdx, filteredData]);
 
   const playTTS = (text: string) => {
     const ttsText = text.length === 1 ? (LETTER_TTS[text] || text) : text.toLowerCase();
@@ -263,6 +274,22 @@ export function LevelBlends({ levelId, accent }: LevelBlendsProps) {
     else navigate(-1);
   };
 
+  const handleShuffle = () => {
+    playSound("click", 0.2);
+    clearEvalTimeout();
+    setEvaluatingPatternId(null);
+    setEvaluatingWordId(null);
+    setEvaluatingSentenceId(null);
+    if (currentPhase === "patterns") {
+      setActivePatterns(prev => shuffle([...prev]));
+    } else if (currentPhase === "words") {
+      setActiveWords(prev => shuffle([...prev]));
+    } else if (currentPhase === "sentences") {
+      setActiveSentences(prev => shuffle([...prev]));
+    }
+  };
+
+
   const handleReset = () => {
     clearEvalTimeout();
     setEvaluatingPatternId(null);
@@ -337,13 +364,22 @@ export function LevelBlends({ levelId, accent }: LevelBlendsProps) {
       localStorage.setItem("completedLevels", JSON.stringify(completedLevels));
     }
     setIsSaving(false);
-    navigate("/levels");
+    if (onComplete) {
+      onComplete();
+    } else {
+      navigate("/levels");
+    }
   };
 
 
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 dark:bg-none dark:bg-[#0d141c] pb-12 flex flex-col overflow-x-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-50 dark:bg-none dark:bg-[#0d141c] pb-12 flex flex-col overflow-x-hidden">
+      <style>{`
+        .py-4 {
+          padding-block: calc(0.20rem * 4);
+        }
+      `}</style>
       <Confetti active={showConfetti} />
 
       <div className="sticky top-0 z-10 bg-white/80 dark:bg-[#0d141c]/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 px-4 py-3">
@@ -352,12 +388,13 @@ export function LevelBlends({ levelId, accent }: LevelBlendsProps) {
             <X className="w-5 h-5" /> Exit
           </Button>
           <h2 className="text-lg font-bold tracking-tight text-center flex-1" style={{ color: accent.primary }}>
-            {currentPhase === "review" && `Long ${BLENDS_DATA[reviewIdx].name} Review`}
-            {currentPhase === "patterns" && `All Vowel Patterns Quiz`}
-            {currentPhase === "words" && `Words Quiz (Set ${wordSetIdx + 1}/${totalWordSets})`}
+            {currentPhase === "review" && `Long ${filteredData[reviewIdx]?.name} Review`}
+            {currentPhase === "patterns" && `${categoryFilter || "Blends"} - Voice Evaluation`}
+            {currentPhase === "words" && `${categoryFilter || "Blends"} - Voice Evaluation`}
+            {currentPhase === "sentences" && `Long ${categoryFilter || "Blends"} : Read the Sentences`}
           </h2>
           <span className="text-sm font-bold" style={{ color: accent.primary }}>
-            {currentPhase === "review" && `Step ${reviewIdx + 1}/${BLENDS_DATA.length}`}
+            {currentPhase === "review" && `Step ${reviewIdx + 1}/${filteredData.length}`}
             {currentPhase === "patterns" && `Step ${completedPatterns.size}/${activePatterns.length}`}
             {currentPhase === "words" && `Step ${completedWords.size}/${activeWords.length}`}
             {currentPhase === "sentences" && `Step ${completedSentences.size}/${activeSentences.length}`}
@@ -365,7 +402,7 @@ export function LevelBlends({ levelId, accent }: LevelBlendsProps) {
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 flex-1 flex flex-col justify-start w-full">
+      <div className="max-w-4xl mx-auto px-4 py-6 flex-1 flex flex-col justify-start w-full">
         <AnimatePresence mode="wait">
           {!showConfetti && currentPhase === "review" && activeVowelData ? (
             <motion.div
@@ -376,15 +413,50 @@ export function LevelBlends({ levelId, accent }: LevelBlendsProps) {
               className="w-full flex-1 flex flex-col"
             >
               <div className="text-center mb-8">
-                <h2 className="text-3xl font-black text-gray-800 dark:text-gray-100 mb-2">
-                  Long {BLENDS_DATA[reviewIdx].name} Combinations
-                </h2>
-                <p className="text-gray-500 dark:text-gray-400 text-sm">
+
+                <p className="text-gray-500 mt-2">
                   Review the patterns. Tap any word or heading to hear it spoken!
                 </p>
+                <div className="flex justify-center items-center w-full gap-3 sm:gap-4 max-w-sm mx-auto mt-6">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={reviewIdx === 0}
+                    onClick={() => setReviewIdx((prev) => Math.max(prev - 1, 0))}
+                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#086ca5] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2 disabled:opacity-50 disabled:grayscale disabled:pointer-events-none"
+                    style={{
+                      background: "linear-gradient(135deg, rgb(28, 176, 246) 0%, rgb(10, 142, 212) 100%)",
+                    }}
+                  >
+                    <ArrowLeft className="w-4 h-4 mr-1" /> Back
+                  </Button>
+                  {reviewIdx < filteredData.length - 1 ? (
+                    <Button
+                      size="sm"
+                      onClick={() => setReviewIdx((prev) => Math.min(prev + 1, filteredData.length - 1))}
+                      className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#3c8c01] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
+                      style={{
+                        background: "linear-gradient(135deg, rgb(88, 204, 2) 0%, rgb(70, 163, 2) 100%)",
+                      }}
+                    >
+                      Next <ArrowRight className="w-4 h-4 ml-1" />
+                    </Button>
+                  ) : (
+                    <Button
+                      size="sm"
+                      onClick={() => setCurrentPhase("patterns")}
+                      className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#3c8c01] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
+                      style={{
+                        background: "linear-gradient(135deg, rgb(88, 204, 2) 0%, rgb(70, 163, 2) 100%)",
+                      }}
+                    >
+                      Proceed <ArrowRight className="w-4 h-4 ml-1" />
+                    </Button>
+                  )}
+                </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch mb-8 flex-1">
+              <div className={`grid gap-6 items-stretch mb-8 flex-1 w-full mx-auto ${(filteredData[reviewIdx]?.patterns.length || 0) === 1 ? 'grid-cols-1 max-w-sm' : (filteredData[reviewIdx]?.patterns.length || 0) === 2 ? 'grid-cols-1 md:grid-cols-2 max-w-2xl' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'}`}>
                 {activeVowelData.patterns.map((pattern) => {
                   return (
                     <div
@@ -392,7 +464,7 @@ export function LevelBlends({ levelId, accent }: LevelBlendsProps) {
                       className="bg-white dark:bg-gray-800/80 rounded-3xl p-6 border-2 border-amber-200 dark:border-gray-700 shadow-lg flex flex-col justify-start"
                     >
                       <div
-                        onClick={() => playTTS(BLENDS_DATA[reviewIdx].name)}
+                        onClick={() => playTTS(filteredData[reviewIdx]?.name || "")}
                         className="text-center border-b-2 border-dashed border-amber-100 dark:border-gray-700 pb-4 mb-6 cursor-pointer hover:bg-amber-50 dark:hover:bg-gray-700 rounded-xl transition-colors active:scale-95"
                       >
                         <span className="text-xs uppercase font-bold tracking-wider text-amber-500 dark:text-amber-400 block mb-1">
@@ -431,37 +503,7 @@ export function LevelBlends({ levelId, accent }: LevelBlendsProps) {
                 })}
               </div>
 
-              <div className="flex justify-between items-center gap-4 mt-6">
-                <Button
-                  variant="outline"
-                  size="lg"
-                  disabled={reviewIdx === 0}
-                  onClick={() => setReviewIdx((prev) => Math.max(prev - 1, 0))}
-                  className="rounded-2xl flex-1 py-6 border-2 font-bold max-w-[200px]"
-                >
-                  <ArrowLeft className="w-5 h-5 mr-2" /> Back
-                </Button>
 
-                {reviewIdx < BLENDS_DATA.length - 1 ? (
-                  <Button
-                    size="lg"
-                    onClick={() => setReviewIdx((prev) => Math.min(prev + 1, BLENDS_DATA.length - 1))}
-                    className="rounded-2xl flex-1 py-6 font-bold text-white shadow-lg"
-                    style={{ background: `linear-gradient(135deg, ${accent.primary}, ${accent.dark})` }}
-                  >
-                    Next Vowel <ArrowRight className="w-5 h-5 ml-2" />
-                  </Button>
-                ) : (
-                  <Button
-                    size="lg"
-                    onClick={() => setCurrentPhase("patterns")}
-                    className="rounded-2xl flex-1 py-6 font-bold text-white shadow-lg animate-pulse"
-                    style={{ background: `linear-gradient(135deg, ${accent.primary}, ${accent.dark})` }}
-                  >
-                    Start Pattern Quiz! <ArrowRight className="w-5 h-5 ml-2" />
-                  </Button>
-                )}
-              </div>
             </motion.div>
           ) : !showConfetti && currentPhase === "patterns" ? (
             <motion.div
@@ -471,28 +513,21 @@ export function LevelBlends({ levelId, accent }: LevelBlendsProps) {
               exit={{ opacity: 0, scale: 1.05 }}
               className="w-full max-w-2xl mx-auto flex flex-col items-center"
             >
-              <div className="text-center mb-8">
-                <h2 className="text-3xl font-black text-gray-800 dark:text-gray-100 mb-2">
-                  What Sound is this? 🗣️
-                </h2>
-                <p className="text-gray-500 dark:text-gray-400 text-sm">
-                  Say the correct long vowel name 2 times out loud.
-                </p>
-              </div>
+
 
               {/* Controls */}
               <div className="flex justify-center items-center w-full gap-2 sm:gap-3 max-w-lg mx-auto mb-6">
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={handleBack}
+                  onClick={handleShuffle}
                   className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#086ca5] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
                   style={{
                     background: "linear-gradient(135deg, rgb(28, 176, 246) 0%, rgb(10, 142, 212) 100%)",
                   }}
                 >
-                  <ArrowLeft className="w-4 h-4 sm:mr-1" />
-                  <span className="hidden sm:inline">Back</span>
+                  <ShuffleIcon className="w-4 h-4 sm:mr-1" />
+                  <span className="hidden sm:inline">Shuffle</span>
                 </Button>
                 <Button
                   variant="outline"
@@ -557,9 +592,7 @@ export function LevelBlends({ levelId, accent }: LevelBlendsProps) {
                           <span className="text-3xl font-bold min-w-[60px] text-left tracking-widest uppercase flex items-center gap-1.5" style={{ color: isDone || vFeedback === "correct" ? '#58CC02' : accent.primary }}>
                             {p.pattern}
                           </span>
-                          <span className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1 sm:mt-0">
-                            {p.name}
-                          </span>
+
                         </div>
 
                         <div className="flex items-center gap-3">
@@ -620,12 +653,10 @@ export function LevelBlends({ levelId, accent }: LevelBlendsProps) {
               exit={{ opacity: 0, scale: 1.05 }}
               className="w-full max-w-2xl mx-auto flex flex-col items-center"
             >
+
               <div className="text-center mb-8">
-                <h2 className="text-3xl font-black text-gray-800 dark:text-gray-100 mb-2">
-                  Read the Words! 🗣️
-                </h2>
-                <p className="text-gray-500 dark:text-gray-400 text-sm">
-                  Say each long word out loud into the microphone.
+                <p className="text-gray-500 mt-2">
+                  Say each word out loud into the microphone.
                 </p>
               </div>
 
@@ -634,14 +665,14 @@ export function LevelBlends({ levelId, accent }: LevelBlendsProps) {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={handleBack}
+                  onClick={handleShuffle}
                   className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#086ca5] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
                   style={{
                     background: "linear-gradient(135deg, rgb(28, 176, 246) 0%, rgb(10, 142, 212) 100%)",
                   }}
                 >
-                  <ArrowLeft className="w-4 h-4 sm:mr-1" />
-                  <span className="hidden sm:inline">Back</span>
+                  <ShuffleIcon className="w-4 h-4 sm:mr-1" />
+                  <span className="hidden sm:inline">Shuffle</span>
                 </Button>
                 <Button
                   variant="outline"
@@ -706,9 +737,7 @@ export function LevelBlends({ levelId, accent }: LevelBlendsProps) {
                           <span className="text-3xl font-bold min-w-[60px] text-left tracking-widest uppercase flex items-center gap-1.5" style={{ color: isDone || vFeedback === "correct" ? '#58CC02' : accent.primary }}>
                             {w.word}
                           </span>
-                          <span className="text-[10px] font-bold text-gray-300 uppercase tracking-widest mt-1 sm:mt-0">
-                            Long {w.category}
-                          </span>
+
                         </div>
 
                         <div className="flex items-center gap-3">
@@ -788,10 +817,7 @@ export function LevelBlends({ levelId, accent }: LevelBlendsProps) {
               className="w-full max-w-2xl mx-auto flex flex-col items-center"
             >
               <div className="text-center mb-8">
-                <h2 className="text-3xl font-black text-gray-800 dark:text-gray-100 mb-2">
-                  Read the Sentences! 🗣️
-                </h2>
-                <p className="text-gray-500 dark:text-gray-400 text-sm">
+                <p className="text-gray-500 mt-2">
                   Say each sentence out loud into the microphone.
                 </p>
               </div>
@@ -801,14 +827,14 @@ export function LevelBlends({ levelId, accent }: LevelBlendsProps) {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={handleBack}
+                  onClick={handleShuffle}
                   className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#086ca5] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
                   style={{
                     background: "linear-gradient(135deg, rgb(28, 176, 246) 0%, rgb(10, 142, 212) 100%)",
                   }}
                 >
-                  <ArrowLeft className="w-4 h-4 sm:mr-1" />
-                  <span className="hidden sm:inline">Back</span>
+                  <ShuffleIcon className="w-4 h-4 sm:mr-1" />
+                  <span className="hidden sm:inline">Shuffle</span>
                 </Button>
                 <Button
                   variant="outline"

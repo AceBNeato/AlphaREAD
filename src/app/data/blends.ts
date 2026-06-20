@@ -11,13 +11,6 @@ export const BLENDS_DATA: BlendCategory[] = [
         "pattern": "bl",
         "words": [
           {
-            "word": "black",
-            "highlights": [
-              0,
-              1
-            ]
-          },
-          {
             "word": "blue",
             "highlights": [
               0,
@@ -25,7 +18,14 @@ export const BLENDS_DATA: BlendCategory[] = [
             ]
           },
           {
-            "word": "blink",
+            "word": "blade",
+            "highlights": [
+              0,
+              1
+            ]
+          },
+          {
+            "word": "blame",
             "highlights": [
               0,
               1
@@ -38,21 +38,21 @@ export const BLENDS_DATA: BlendCategory[] = [
         "pattern": "br",
         "words": [
           {
-            "word": "bread",
+            "word": "brave",
             "highlights": [
               0,
               1
             ]
           },
           {
-            "word": "brown",
+            "word": "broke",
             "highlights": [
               0,
               1
             ]
           },
           {
-            "word": "bring",
+            "word": "bride",
             "highlights": [
               0,
               1
@@ -65,21 +65,21 @@ export const BLENDS_DATA: BlendCategory[] = [
         "pattern": "cl",
         "words": [
           {
-            "word": "clap",
+            "word": "clean",
             "highlights": [
               0,
               1
             ]
           },
           {
-            "word": "clock",
+            "word": "close",
             "highlights": [
               0,
               1
             ]
           },
           {
-            "word": "class",
+            "word": "clay",
             "highlights": [
               0,
               1
@@ -92,7 +92,14 @@ export const BLENDS_DATA: BlendCategory[] = [
         "pattern": "cr",
         "words": [
           {
-            "word": "crab",
+            "word": "crane",
+            "highlights": [
+              0,
+              1
+            ]
+          },
+          {
+            "word": "crew",
             "highlights": [
               0,
               1
@@ -100,13 +107,6 @@ export const BLENDS_DATA: BlendCategory[] = [
           },
           {
             "word": "cry",
-            "highlights": [
-              0,
-              1
-            ]
-          },
-          {
-            "word": "crown",
             "highlights": [
               0,
               1
@@ -119,21 +119,21 @@ export const BLENDS_DATA: BlendCategory[] = [
         "pattern": "dr",
         "words": [
           {
-            "word": "drum",
-            "highlights": [
-              0,
-              1
-            ]
-          },
-          {
-            "word": "dress",
-            "highlights": [
-              0,
-              1
-            ]
-          },
-          {
             "word": "drive",
+            "highlights": [
+              0,
+              1
+            ]
+          },
+          {
+            "word": "dream",
+            "highlights": [
+              0,
+              1
+            ]
+          },
+          {
+            "word": "drone",
             "highlights": [
               0,
               1
@@ -146,14 +146,14 @@ export const BLENDS_DATA: BlendCategory[] = [
         "pattern": "fl",
         "words": [
           {
-            "word": "flag",
+            "word": "flame",
             "highlights": [
               0,
               1
             ]
           },
           {
-            "word": "flower",
+            "word": "flute",
             "highlights": [
               0,
               1
@@ -173,21 +173,21 @@ export const BLENDS_DATA: BlendCategory[] = [
         "pattern": "fr",
         "words": [
           {
-            "word": "frog",
+            "word": "frame",
             "highlights": [
               0,
               1
             ]
           },
           {
-            "word": "friend",
+            "word": "free",
             "highlights": [
               0,
               1
             ]
           },
           {
-            "word": "fruit",
+            "word": "freeze",
             "highlights": [
               0,
               1
@@ -200,21 +200,21 @@ export const BLENDS_DATA: BlendCategory[] = [
         "pattern": "gl",
         "words": [
           {
-            "word": "glass",
+            "word": "globe",
             "highlights": [
               0,
               1
             ]
           },
           {
-            "word": "glove",
+            "word": "glue",
             "highlights": [
               0,
               1
             ]
           },
           {
-            "word": "glow",
+            "word": "glide",
             "highlights": [
               0,
               1
@@ -227,14 +227,14 @@ export const BLENDS_DATA: BlendCategory[] = [
         "pattern": "gr",
         "words": [
           {
-            "word": "grass",
+            "word": "green",
             "highlights": [
               0,
               1
             ]
           },
           {
-            "word": "green",
+            "word": "grape",
             "highlights": [
               0,
               1
@@ -254,14 +254,14 @@ export const BLENDS_DATA: BlendCategory[] = [
         "pattern": "pl",
         "words": [
           {
-            "word": "plant",
+            "word": "play",
             "highlights": [
               0,
               1
             ]
           },
           {
-            "word": "play",
+            "word": "plane",
             "highlights": [
               0,
               1
@@ -281,7 +281,7 @@ export const BLENDS_DATA: BlendCategory[] = [
         "pattern": "pr",
         "words": [
           {
-            "word": "pray",
+            "word": "price",
             "highlights": [
               0,
               1
@@ -295,7 +295,7 @@ export const BLENDS_DATA: BlendCategory[] = [
             ]
           },
           {
-            "word": "print",
+            "word": "pride",
             "highlights": [
               0,
               1
@@ -308,14 +308,14 @@ export const BLENDS_DATA: BlendCategory[] = [
         "pattern": "sc",
         "words": [
           {
-            "word": "scare",
+            "word": "scale",
             "highlights": [
               0,
               1
             ]
           },
           {
-            "word": "school",
+            "word": "score",
             "highlights": [
               0,
               1
@@ -335,13 +335,6 @@ export const BLENDS_DATA: BlendCategory[] = [
         "pattern": "sk",
         "words": [
           {
-            "word": "skate",
-            "highlights": [
-              0,
-              1
-            ]
-          },
-          {
             "word": "sky",
             "highlights": [
               0,
@@ -349,7 +342,14 @@ export const BLENDS_DATA: BlendCategory[] = [
             ]
           },
           {
-            "word": "skip",
+            "word": "skate",
+            "highlights": [
+              0,
+              1
+            ]
+          },
+          {
+            "word": "ski",
             "highlights": [
               0,
               1
@@ -362,6 +362,13 @@ export const BLENDS_DATA: BlendCategory[] = [
         "pattern": "sl",
         "words": [
           {
+            "word": "sleep",
+            "highlights": [
+              0,
+              1
+            ]
+          },
+          {
             "word": "slide",
             "highlights": [
               0,
@@ -370,13 +377,6 @@ export const BLENDS_DATA: BlendCategory[] = [
           },
           {
             "word": "slow",
-            "highlights": [
-              0,
-              1
-            ]
-          },
-          {
-            "word": "sleep",
             "highlights": [
               0,
               1
@@ -396,14 +396,14 @@ export const BLENDS_DATA: BlendCategory[] = [
             ]
           },
           {
-            "word": "small",
+            "word": "smoke",
             "highlights": [
               0,
               1
             ]
           },
           {
-            "word": "smoke",
+            "word": "smear",
             "highlights": [
               0,
               1
@@ -423,14 +423,14 @@ export const BLENDS_DATA: BlendCategory[] = [
             ]
           },
           {
-            "word": "snow",
+            "word": "snail",
             "highlights": [
               0,
               1
             ]
           },
           {
-            "word": "snack",
+            "word": "snow",
             "highlights": [
               0,
               1
@@ -450,14 +450,14 @@ export const BLENDS_DATA: BlendCategory[] = [
             ]
           },
           {
-            "word": "spin",
+            "word": "space",
             "highlights": [
               0,
               1
             ]
           },
           {
-            "word": "spot",
+            "word": "spade",
             "highlights": [
               0,
               1
@@ -470,21 +470,21 @@ export const BLENDS_DATA: BlendCategory[] = [
         "pattern": "st",
         "words": [
           {
-            "word": "star",
-            "highlights": [
-              0,
-              1
-            ]
-          },
-          {
-            "word": "stop",
-            "highlights": [
-              0,
-              1
-            ]
-          },
-          {
             "word": "stone",
+            "highlights": [
+              0,
+              1
+            ]
+          },
+          {
+            "word": "state",
+            "highlights": [
+              0,
+              1
+            ]
+          },
+          {
+            "word": "steam",
             "highlights": [
               0,
               1
@@ -497,13 +497,6 @@ export const BLENDS_DATA: BlendCategory[] = [
         "pattern": "sw",
         "words": [
           {
-            "word": "swim",
-            "highlights": [
-              0,
-              1
-            ]
-          },
-          {
             "word": "sweet",
             "highlights": [
               0,
@@ -511,7 +504,14 @@ export const BLENDS_DATA: BlendCategory[] = [
             ]
           },
           {
-            "word": "swing",
+            "word": "sweep",
+            "highlights": [
+              0,
+              1
+            ]
+          },
+          {
+            "word": "sway",
             "highlights": [
               0,
               1
@@ -538,7 +538,7 @@ export const BLENDS_DATA: BlendCategory[] = [
             ]
           },
           {
-            "word": "truck",
+            "word": "trade",
             "highlights": [
               0,
               1
@@ -551,21 +551,21 @@ export const BLENDS_DATA: BlendCategory[] = [
         "pattern": "tw",
         "words": [
           {
-            "word": "twin",
+            "word": "twice",
             "highlights": [
               0,
               1
             ]
           },
           {
-            "word": "twelve",
+            "word": "tweet",
             "highlights": [
               0,
               1
             ]
           },
           {
-            "word": "twist",
+            "word": "twine",
             "highlights": [
               0,
               1
@@ -595,6 +595,13 @@ export const BLENDS_DATA: BlendCategory[] = [
               0,
               1
             ]
+          },
+          {
+            "word": "chase",
+            "highlights": [
+              0,
+              1
+            ]
           }
         ]
       },
@@ -603,14 +610,21 @@ export const BLENDS_DATA: BlendCategory[] = [
         "pattern": "sh",
         "words": [
           {
-            "word": "ship",
+            "word": "shoe",
             "highlights": [
               0,
               1
             ]
           },
           {
-            "word": "shoe",
+            "word": "sheep",
+            "highlights": [
+              0,
+              1
+            ]
+          },
+          {
+            "word": "shape",
             "highlights": [
               0,
               1
@@ -620,10 +634,10 @@ export const BLENDS_DATA: BlendCategory[] = [
       },
       {
         "name": "Digraph",
-        "pattern": "th",
+        "pattern": "th(d)",
         "words": [
           {
-            "word": "thumb",
+            "word": "these",
             "highlights": [
               0,
               1
@@ -631,6 +645,40 @@ export const BLENDS_DATA: BlendCategory[] = [
           },
           {
             "word": "this",
+            "highlights": [
+              0,
+              1
+            ]
+          },
+          {
+            "word": "those",
+            "highlights": [
+              0,
+              1
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Digraph",
+        "pattern": "th(t)",
+        "words": [
+          {
+            "word": "theme",
+            "highlights": [
+              0,
+              1
+            ]
+          },
+          {
+            "word": "thief",
+            "highlights": [
+              0,
+              1
+            ]
+          },
+          {
+            "word": "thigh",
             "highlights": [
               0,
               1
@@ -650,7 +698,14 @@ export const BLENDS_DATA: BlendCategory[] = [
             ]
           },
           {
-            "word": "what",
+            "word": "white",
+            "highlights": [
+              0,
+              1
+            ]
+          },
+          {
+            "word": "wheel",
             "highlights": [
               0,
               1
@@ -671,6 +726,13 @@ export const BLENDS_DATA: BlendCategory[] = [
           },
           {
             "word": "photo",
+            "highlights": [
+              0,
+              1
+            ]
+          },
+          {
+            "word": "phase",
             "highlights": [
               0,
               1
@@ -892,62 +954,6 @@ export const BLENDS_DATA: BlendCategory[] = [
               2,
               3
             ]
-          },
-          {
-            "word": "bend",
-            "highlights": [
-              2,
-              3
-            ]
-          },
-          {
-            "word": "send",
-            "highlights": [
-              2,
-              3
-            ]
-          },
-          {
-            "word": "blend",
-            "highlights": [
-              3,
-              4
-            ]
-          },
-          {
-            "word": "kind",
-            "highlights": [
-              2,
-              3
-            ]
-          },
-          {
-            "word": "wind",
-            "highlights": [
-              2,
-              3
-            ]
-          },
-          {
-            "word": "mind",
-            "highlights": [
-              2,
-              3
-            ]
-          },
-          {
-            "word": "pond",
-            "highlights": [
-              2,
-              3
-            ]
-          },
-          {
-            "word": "bond",
-            "highlights": [
-              2,
-              3
-            ]
           }
         ]
       },
@@ -971,34 +977,6 @@ export const BLENDS_DATA: BlendCategory[] = [
           },
           {
             "word": "paint",
-            "highlights": [
-              3,
-              4
-            ]
-          },
-          {
-            "word": "tent",
-            "highlights": [
-              2,
-              3
-            ]
-          },
-          {
-            "word": "sent",
-            "highlights": [
-              2,
-              3
-            ]
-          },
-          {
-            "word": "bent",
-            "highlights": [
-              2,
-              3
-            ]
-          },
-          {
-            "word": "front",
             "highlights": [
               3,
               4
@@ -1030,69 +1008,6 @@ export const BLENDS_DATA: BlendCategory[] = [
               2,
               3
             ]
-          },
-          {
-            "word": "best",
-            "highlights": [
-              2,
-              3
-            ]
-          },
-          {
-            "word": "nest",
-            "highlights": [
-              2,
-              3
-            ]
-          },
-          {
-            "word": "rest",
-            "highlights": [
-              2,
-              3
-            ]
-          },
-          {
-            "word": "mist",
-            "highlights": [
-              2,
-              3
-            ]
-          },
-          {
-            "word": "list",
-            "highlights": [
-              2,
-              3
-            ]
-          },
-          {
-            "word": "twist",
-            "highlights": [
-              3,
-              4
-            ]
-          },
-          {
-            "word": "lost",
-            "highlights": [
-              2,
-              3
-            ]
-          },
-          {
-            "word": "most",
-            "highlights": [
-              2,
-              3
-            ]
-          },
-          {
-            "word": "post",
-            "highlights": [
-              2,
-              3
-            ]
           }
         ]
       },
@@ -1116,48 +1031,6 @@ export const BLENDS_DATA: BlendCategory[] = [
           },
           {
             "word": "stamp",
-            "highlights": [
-              3,
-              4
-            ]
-          },
-          {
-            "word": "temp",
-            "highlights": [
-              2,
-              3
-            ]
-          },
-          {
-            "word": "jump",
-            "highlights": [
-              2,
-              3
-            ]
-          },
-          {
-            "word": "limp",
-            "highlights": [
-              2,
-              3
-            ]
-          },
-          {
-            "word": "shrimp",
-            "highlights": [
-              4,
-              5
-            ]
-          },
-          {
-            "word": "romp",
-            "highlights": [
-              2,
-              3
-            ]
-          },
-          {
-            "word": "stomp",
             "highlights": [
               3,
               4
@@ -1189,20 +1062,6 @@ export const BLENDS_DATA: BlendCategory[] = [
               2,
               3
             ]
-          },
-          {
-            "word": "disk",
-            "highlights": [
-              2,
-              3
-            ]
-          },
-          {
-            "word": "busk",
-            "highlights": [
-              2,
-              3
-            ]
           }
         ]
       },
@@ -1230,20 +1089,6 @@ export const BLENDS_DATA: BlendCategory[] = [
               2,
               3
             ]
-          },
-          {
-            "word": "tilt",
-            "highlights": [
-              2,
-              3
-            ]
-          },
-          {
-            "word": "quilt",
-            "highlights": [
-              3,
-              4
-            ]
           }
         ]
       },
@@ -1267,27 +1112,6 @@ export const BLENDS_DATA: BlendCategory[] = [
           },
           {
             "word": "wild",
-            "highlights": [
-              2,
-              3
-            ]
-          },
-          {
-            "word": "child",
-            "highlights": [
-              3,
-              4
-            ]
-          },
-          {
-            "word": "held",
-            "highlights": [
-              2,
-              3
-            ]
-          },
-          {
-            "word": "melt",
             "highlights": [
               2,
               3
@@ -1318,27 +1142,6 @@ export const BLENDS_DATA: BlendCategory[] = [
             "highlights": [
               2,
               3
-            ]
-          },
-          {
-            "word": "gift",
-            "highlights": [
-              2,
-              3
-            ]
-          },
-          {
-            "word": "lift",
-            "highlights": [
-              2,
-              3
-            ]
-          },
-          {
-            "word": "shift",
-            "highlights": [
-              3,
-              4
             ]
           }
         ]

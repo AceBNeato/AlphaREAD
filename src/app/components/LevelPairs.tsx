@@ -237,7 +237,7 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 flex-1 flex flex-col w-full">
+      <div className="max-w-4xl mx-auto px-4 py-6 flex-1 flex flex-col w-full">
         <AnimatePresence mode="wait">
           {step.type === "review" ? (
             <motion.div key={`review-${currentStep}`} initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -50 }} className="flex flex-col items-center">

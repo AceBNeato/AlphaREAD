@@ -510,11 +510,9 @@ export const LONG_VOWELS_DATA: LongVowelVowelData[] = [
         name: "Magic E",
         pattern: "a_e",
         words: [
-          { word: "care", highlights: [1, 3] },
           { word: "cake", highlights: [1, 3] },
           { word: "make", highlights: [1, 3] },
-          { word: "bake", highlights: [1, 3] },
-          { word: "lake", highlights: [1, 3] }
+          { word: "bake", highlights: [1, 3] }
         ]
       },
       {
@@ -523,20 +521,16 @@ export const LONG_VOWELS_DATA: LongVowelVowelData[] = [
         words: [
           { word: "mail", highlights: [1, 2] },
           { word: "tail", highlights: [1, 2] },
-          { word: "rain", highlights: [1, 2] },
-          { word: "wait", highlights: [1, 2] },
-          { word: "train", highlights: [2, 3] }
+          { word: "rain", highlights: [1, 2] }
         ]
       },
       {
         name: "Vowel Team",
         pattern: "ay",
         words: [
-          { word: "play", highlights: [2, 3] },
           { word: "day", highlights: [1, 2] },
           { word: "say", highlights: [1, 2] },
-          { word: "way", highlights: [1, 2] },
-          { word: "may", highlights: [1, 2] }
+          { word: "way", highlights: [1, 2] }
         ]
       }
     ]
@@ -548,11 +542,9 @@ export const LONG_VOWELS_DATA: LongVowelVowelData[] = [
         name: "Vowel Team",
         pattern: "ee",
         words: [
-          { word: "tree", highlights: [2, 3] },
           { word: "bee", highlights: [1, 2] },
           { word: "feet", highlights: [1, 2] },
-          { word: "seed", highlights: [1, 2] },
-          { word: "jeep", highlights: [1, 2] }
+          { word: "seed", highlights: [1, 2] }
         ]
       },
       {
@@ -561,16 +553,14 @@ export const LONG_VOWELS_DATA: LongVowelVowelData[] = [
         words: [
           { word: "leaf", highlights: [1, 2] },
           { word: "meat", highlights: [1, 2] },
-          { word: "seat", highlights: [1, 2] },
-          { word: "team", highlights: [1, 2] },
-          { word: "read", highlights: [1, 2] }
+          { word: "seat", highlights: [1, 2] }
         ]
       },
       {
         name: "Magic E",
         pattern: "e_e",
         words: [
-          { word: "pete", highlights: [1, 3] },
+          { word: "Pete", highlights: [1, 3] },
           { word: "here", highlights: [1, 3] },
           { word: "eve", highlights: [0, 2] }
         ]
@@ -586,9 +576,7 @@ export const LONG_VOWELS_DATA: LongVowelVowelData[] = [
         words: [
           { word: "kite", highlights: [1, 3] },
           { word: "bite", highlights: [1, 3] },
-          { word: "like", highlights: [1, 3] },
-          { word: "bike", highlights: [1, 3] },
-          { word: "time", highlights: [1, 3] }
+          { word: "like", highlights: [1, 3] }
         ]
       },
       {
@@ -597,9 +585,7 @@ export const LONG_VOWELS_DATA: LongVowelVowelData[] = [
         words: [
           { word: "pie", highlights: [1, 2] },
           { word: "tie", highlights: [1, 2] },
-          { word: "lie", highlights: [1, 2] },
-          { word: "die", highlights: [1, 2] },
-          { word: "cried", highlights: [2, 3] }
+          { word: "lie", highlights: [1, 2] }
         ]
       },
       {
@@ -607,9 +593,7 @@ export const LONG_VOWELS_DATA: LongVowelVowelData[] = [
         pattern: "igh",
         words: [
           { word: "night", highlights: [1, 2, 3] },
-          { word: "light", highlights: [1, 2, 3] },
           { word: "high", highlights: [1, 2, 3] },
-          { word: "right", highlights: [1, 2, 3] },
           { word: "sigh", highlights: [1, 2, 3] }
         ]
       }
@@ -624,9 +608,7 @@ export const LONG_VOWELS_DATA: LongVowelVowelData[] = [
         words: [
           { word: "bone", highlights: [1, 3] },
           { word: "cone", highlights: [1, 3] },
-          { word: "home", highlights: [1, 3] },
-          { word: "rope", highlights: [1, 3] },
-          { word: "note", highlights: [1, 3] }
+          { word: "home", highlights: [1, 3] }
         ]
       },
       {
@@ -635,9 +617,7 @@ export const LONG_VOWELS_DATA: LongVowelVowelData[] = [
         words: [
           { word: "boat", highlights: [1, 2] },
           { word: "goat", highlights: [1, 2] },
-          { word: "road", highlights: [1, 2] },
-          { word: "coat", highlights: [1, 2] },
-          { word: "soap", highlights: [1, 2] }
+          { word: "road", highlights: [1, 2] }
         ]
       }
     ]
@@ -651,9 +631,7 @@ export const LONG_VOWELS_DATA: LongVowelVowelData[] = [
         words: [
           { word: "cute", highlights: [1, 3] },
           { word: "mute", highlights: [1, 3] },
-          { word: "tube", highlights: [1, 3] },
-          { word: "flute", highlights: [2, 4] },
-          { word: "june", highlights: [1, 3] }
+          { word: "tube", highlights: [1, 3] }
         ]
       }
     ]

@@ -9,13 +9,13 @@ export function ThemeToggle() {
   return (
     <button
       onClick={toggleTheme}
-      className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors duration-300 focus:outline-none backdrop-blur-md shadow-sm border ${isDark ? "bg-gray-800/80 border-gray-700/50 hover:bg-gray-700/80" : "bg-white/80 border-gray-200/50 hover:bg-white"
+      className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors duration-300 focus:outline-none backdrop-blur-md shadow-inner border ${isDark ? "bg-gray-800/80 border-gray-700/50 hover:bg-gray-700/80" : "bg-gray-200 border-gray-300 hover:bg-gray-300"
         }`}
       aria-label="Toggle theme"
     >
       <span className="sr-only">Toggle theme</span>
       <motion.div
-        className={`flex h-6 w-6 items-center justify-center rounded-full shadow-md border ${isDark ? "bg-gray-900 border-gray-700" : "bg-white border-gray-100"
+        className={`flex h-6 w-6 items-center justify-center rounded-full shadow-md border ${isDark ? "bg-gray-900 border-gray-700" : "bg-white border-gray-200"
           }`}
         animate={{ x: isDark ? 20 : 4 }}
         transition={{ type: "spring", stiffness: 500, damping: 30 }}
