@@ -616,8 +616,9 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
                           >
                             <Volume2 className="w-4 h-4" />
                           </Button>
-                          <span className="text-3xl font-bold min-w-[60px] text-left tracking-widest uppercase flex items-center gap-1.5" style={{ color: isDone || vFeedback === "correct" ? '#58CC02' : accent.primary }}>
+                          <span className="text-3xl font-bold min-w-[60px] text-left tracking-widest flex items-baseline gap-1" style={{ color: isDone || vFeedback === "correct" ? '#58CC02' : accent.primary }}>
                             {l}
+                            <span className="text-[0.8em] opacity-85">{l.toLowerCase()}</span>
                           </span>
                         </div>
 

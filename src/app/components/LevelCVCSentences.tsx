@@ -18,7 +18,7 @@ interface LevelCVCSentencesProps {
   onComplete?: () => void;
 }
 
-const SENTENCES_PER_SET = 10;
+const SENTENCES_PER_SET = 6;
 const totalSets = Math.ceil(CVC_SENTENCES.length / SENTENCES_PER_SET);
 
 export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete }: LevelCVCSentencesProps) {
@@ -190,7 +190,7 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete }: L
   const isFinalSet = currentSetIndex === totalSets - 1;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 dark:bg-none dark:bg-[#0d141c] pb-12 flex flex-col overflow-x-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 dark:bg-none dark:bg-[#0d141c] flex flex-col overflow-x-hidden">
       <Confetti active={showConfetti} />
 
       {/* Header */}
@@ -411,8 +411,8 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete }: L
               </h3>
               <p className="text-gray-600 dark:text-gray-400 mb-8 leading-relaxed">
                 {isFinalSet
-                  ? "You successfully read all 30 sentences out loud! Awesome job!"
-                  : "You successfully read 10 sentences! Ready for the next set?"}
+                  ? `You successfully read all ${CVC_SENTENCES.length} sentences out loud! Awesome job!`
+                  : "You successfully read 6 sentences! Ready for the next set?"}
               </p>
 
               {isFinalSet ? (
@@ -435,7 +435,7 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete }: L
                   className="rounded-2xl px-10 py-6 text-lg text-white font-bold w-full shadow-xl animate-bounce"
                   style={{ background: `linear-gradient(135deg, ${accent.primary} 0%, ${accent.dark} 100%)` }}
                 >
-                  Start Next 10 <ArrowRight className="ml-2 w-5 h-5" />
+                  Start Next 6 <ArrowRight className="ml-2 w-5 h-5" />
                 </Button>
               )}
             </motion.div>

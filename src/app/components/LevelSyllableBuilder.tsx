@@ -391,6 +391,9 @@ export function LevelSyllableBuilder({
                   transition={{ duration: 0.25 }}
                   className="text-center mb-4"
                 >
+                  <p className="text-gray-500 mt-2 mb-6">
+                    Listen to the sound and tap the letters to build it.
+                  </p>
                   {/* Navigation Controls */}
                   <div className="flex justify-center items-center w-full gap-2 sm:gap-3 max-w-lg mx-auto mb-6">
                     <Button

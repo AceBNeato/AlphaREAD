@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useNavigate } from "react-router";
-import {Home, Volume2, Mic, MicOff, CheckCircle2, XCircle, Sparkles, ArrowRight, ArrowLeft, AlertCircle, RotateCcw, SkipForward, FastForward, Shuffle, X} from "lucide-react";
+import { Home, Volume2, Mic, MicOff, CheckCircle2, XCircle, Sparkles, ArrowRight, ArrowLeft, AlertCircle, RotateCcw, SkipForward, FastForward, Shuffle, X } from "lucide-react";
 import { confirmAction } from "../utils/alerts";
 import { Button } from "./ui/button";
 import { motion, AnimatePresence } from "motion/react";
@@ -32,27 +32,26 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
 
   // Pattern Quiz State
   const allPatternsRaw = useMemo(() => {
-    const list: { pattern: string; vowel: string; name: string }[] = [];
+    const list: { pattern: string; vowel: string; name: string; words: LongVowelWord[] }[] = [];
     LONG_VOWELS_DATA.forEach((d) => {
       d.patterns.forEach((p) => {
-        list.push({ pattern: p.pattern, vowel: d.vowel, name: p.name });
+        list.push({ pattern: p.pattern, vowel: d.vowel, name: p.name, words: p.words });
       });
     });
     return list;
   }, []);
-  const [activePatterns, setActivePatterns] = useState(() => {
-    // Pick exactly 1 random pattern per vowel to keep the list at 5 items
-    const selected: { pattern: string; vowel: string; name: string }[] = [];
-    LONG_VOWELS_DATA.forEach((d) => {
-      const p = d.patterns[Math.floor(Math.random() * d.patterns.length)];
-      selected.push({ pattern: p.pattern, vowel: d.vowel, name: p.name });
-    });
-    return shuffle(selected);
-  });
+
+  const [reviewBatch, setReviewBatch] = useState<{ pattern: string; vowel: string; name: string; words: LongVowelWord[] }[]>([]);
+
+  useEffect(() => {
+    if (currentPhase === "review" || currentPhase === "match" || currentPhase === "patterns") {
+      setReviewBatch(allPatternsRaw.slice(reviewIdx * 6, reviewIdx * 6 + 6));
+    }
+  }, [currentPhase, reviewIdx, allPatternsRaw]);
   const [patternIdx, setPatternIdx] = useState(0);
 
   // Word Quiz State
-  const WORDS_PER_SET = 10;
+  const WORDS_PER_SET = 6;
   const allWordsRaw = useMemo(() => {
     const list: { word: string; vowel: string }[] = [];
     LONG_VOWELS_DATA.forEach((d) => {
@@ -70,7 +69,7 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
   const [wordIdx, setWordIdx] = useState(0);
 
   // Sentence Quiz State
-  const SENTENCES_PER_SET = 10;
+  const SENTENCES_PER_SET = 6;
   const totalSentenceSets = Math.ceil(LONG_VOWELS_SENTENCES.length / SENTENCES_PER_SET);
   const [sentenceSetIdx, setSentenceSetIdx] = useState(0);
   const [activeSentences, setActiveSentences] = useState<string[]>([]);
@@ -89,7 +88,7 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
     setSentenceTranscriptsMap({});
   }, [sentenceSetIdx]);
 
-  
+
   // Match Phase State
   const [matchColumns, setMatchColumns] = useState<{ left: string[]; right: string[] }>({ left: [], right: [] });
   const [matchedPairs, setMatchedPairs] = useState<Set<string>>(new Set());
@@ -100,9 +99,9 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
   const setupMatchPhase = useCallback(() => {
     // Generate match pairs
     const pairs: string[] = [];
-    const shuffledPatterns = shuffle([...allPatternsRaw]).slice(0, 5);
-    shuffledPatterns.forEach(p => pairs.push(p.pattern));
-    
+    const currentBatch = allPatternsRaw.slice(reviewIdx * 6, reviewIdx * 6 + 6);
+    currentBatch.forEach(p => pairs.push(p.pattern));
+
     setMatchColumns({
       left: shuffle([...pairs]),
       right: shuffle([...pairs])
@@ -381,7 +380,7 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
       setMatchedPairs(new Set(matchColumns.left));
       handleNextQuiz();
     } else if (currentPhase === "patterns") {
-      setCompletedPatterns(new Set(activePatterns.map(p => p.pattern)));
+      setCompletedPatterns(new Set(reviewBatch.map(p => p.pattern)));
       handleNextQuiz();
     } else if (currentPhase === "words") {
       setCompletedWords(new Set(activeWords.map(w => w.word)));
@@ -462,7 +461,7 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
 
       <div className="max-w-4xl mx-auto px-4 py-6 flex-1 flex flex-col justify-start w-full">
         <AnimatePresence mode="wait">
-          {!showConfetti && currentPhase === "review" && activeVowelData ? (
+          {!showConfetti && currentPhase === "review" ? (
             <motion.div
               key={`phase-review-${reviewIdx}`}
               initial={{ opacity: 0, scale: 0.98 }}
@@ -479,51 +478,37 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
                   <Button
                     variant="outline"
                     size="sm"
-                    disabled={reviewIdx === 0}
-                    onClick={() => setReviewIdx((prev) => Math.max(prev - 1, 0))}
-                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#086ca5] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2 disabled:opacity-50 disabled:grayscale disabled:pointer-events-none"
+                    onClick={() => setReviewBatch(prev => shuffle([...prev]))}
+                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#8b40b8] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
                     style={{
-                      background: "linear-gradient(135deg, rgb(28, 176, 246) 0%, rgb(10, 142, 212) 100%)",
+                      background: "linear-gradient(135deg, #ce82ff 0%, #a559d6 100%)",
                     }}
                   >
-                    <ArrowLeft className="w-4 h-4 mr-1" /> Back
+                    <Shuffle className="w-4 h-4 mr-1" /> Shuffle
                   </Button>
-                  {reviewIdx < 4 ? (
-                    <Button
-                      size="sm"
-                      onClick={() => setReviewIdx((prev) => Math.min(prev + 1, 4))}
-                      className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#3c8c01] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
-                      style={{
-                        background: "linear-gradient(135deg, rgb(88, 204, 2) 0%, rgb(70, 163, 2) 100%)",
-                      }}
-                    >
-                      Next <ArrowRight className="w-4 h-4 ml-1" />
-                    </Button>
-                  ) : (
-                    <Button
-                      size="sm"
-                      onClick={() => setCurrentPhase("match")}
-                      className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#3c8c01] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
-                      style={{
-                        background: "linear-gradient(135deg, rgb(88, 204, 2) 0%, rgb(70, 163, 2) 100%)",
-                      }}
-                    >
-                      Proceed <ArrowRight className="w-4 h-4 ml-1" />
-                    </Button>
-                  )}
+                  <Button
+                    size="sm"
+                    onClick={() => setCurrentPhase("match")}
+                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#3c8c01] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
+                    style={{
+                      background: "linear-gradient(135deg, rgb(88, 204, 2) 0%, rgb(70, 163, 2) 100%)",
+                    }}
+                  >
+                    Next <ArrowRight className="w-4 h-4 ml-1" />
+                  </Button>
                 </div>
               </div>
 
 
-              <div className={`grid gap-6 items-stretch mb-8 flex-1 w-full mx-auto ${activeVowelData.patterns.length === 1 ? 'grid-cols-1 max-w-sm' : activeVowelData.patterns.length === 2 ? 'grid-cols-1 md:grid-cols-2 max-w-2xl' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'}`}>
-                {activeVowelData.patterns.map((pattern) => {
+              <div className={`grid gap-6 items-stretch mb-8 flex-1 w-full mx-auto ${reviewBatch.length === 1 ? 'grid-cols-1 max-w-sm' : reviewBatch.length === 2 ? 'grid-cols-1 md:grid-cols-2 max-w-2xl' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'}`}>
+                {reviewBatch.map((pattern) => {
                   return (
                     <div
                       key={pattern.pattern}
                       className="bg-white dark:bg-gray-800/80 rounded-3xl p-6 border-2 border-amber-200 dark:border-gray-700 shadow-lg flex flex-col justify-start"
                     >
                       <div
-                        onClick={() => playTTS(VOWELS[reviewIdx])}
+                        onClick={() => playTTS(pattern.vowel)}
                         className="text-center border-b-2 border-dashed border-amber-100 dark:border-gray-700 pb-4 mb-6 cursor-pointer hover:bg-amber-50 dark:hover:bg-gray-700 rounded-xl transition-colors active:scale-95"
                       >
                         <span className="text-xs uppercase font-bold tracking-wider text-amber-500 dark:text-amber-400 block mb-1">
@@ -564,7 +549,7 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
 
 
             </motion.div>
-                    ) : !showConfetti && currentPhase === "match" ? (
+          ) : !showConfetti && currentPhase === "match" ? (
             <motion.div key={`phase-match`} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="flex flex-col items-center w-full">
               <div className="text-center mb-6">
                 <p className="text-gray-500 mt-2">Tap a speaker, then tap the matching pattern!</p>
@@ -684,7 +669,7 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setActivePatterns(prev => shuffle([...prev]))}
+                  onClick={() => setReviewBatch(prev => shuffle([...prev]))}
                   className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#8b40b8] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
                   style={{
                     background: "linear-gradient(135deg, rgb(206, 130, 255) 0%, rgb(165, 89, 214) 100%)",
@@ -720,7 +705,7 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
                 <Button
                   size="sm"
                   onClick={handleNextQuiz}
-                  disabled={completedPatterns.size < activePatterns.length}
+                  disabled={completedPatterns.size < reviewBatch.length}
                   className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#3c8c01] hover:scale-105 active:scale-95 px-2 transition-all disabled:opacity-50 disabled:grayscale disabled:pointer-events-none h-9 py-2"
                   style={{
                     background: "linear-gradient(135deg, rgb(88, 204, 2) 0%, rgb(70, 163, 2) 100%)",
@@ -733,7 +718,7 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
 
               <div className="w-full text-center mb-8">
                 <div className="space-y-3 bg-white/50 dark:bg-gray-800/50 p-4 rounded-3xl backdrop-blur-sm border-2 border-dashed border-gray-200 dark:border-gray-700">
-                  {activePatterns.map((p, idx) => {
+                  {reviewBatch.map((p, idx) => {
                     const isDone = completedPatterns.has(p.pattern);
                     const isEval = evaluatingPatternId === p.pattern;
                     const vFeedback = patternFeedbackMap[p.pattern];
@@ -1155,14 +1140,16 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
                 {currentPhase === "match"
                   ? "You matched all the patterns! Ready to say them out loud?"
                   : currentPhase === "patterns"
-                  ? "You correctly identified all the long vowel patterns! Ready to read some words?"
-                  : currentPhase === "words"
-                    ? (wordSetIdx === totalWordSets - 1
-                      ? "You successfully read all the long vowel words out loud! Ready for sentences?"
-                      : "You successfully read 10 long vowel words! Ready for the next set?")
-                    : (sentenceSetIdx === totalSentenceSets - 1
-                      ? "You successfully read all the sentences! Awesome job!"
-                      : "You successfully read 10 sentences! Ready for the next set?")}
+                    ? (reviewIdx < Math.ceil(allPatternsRaw.length / 6) - 1
+                      ? "You correctly identified all the long vowel patterns in this batch! Ready for the next batch?"
+                      : "You correctly identified all the long vowel patterns! Ready to read some words?")
+                    : currentPhase === "words"
+                      ? (wordSetIdx === totalWordSets - 1
+                        ? "You successfully read all the long vowel words out loud! Ready for sentences?"
+                        : "You successfully read 6 long vowel words! Ready for the next set?")
+                      : (sentenceSetIdx === totalSentenceSets - 1
+                        ? "You successfully read all the sentences! Awesome job!"
+                        : "You successfully read 6 sentences! Ready for the next set?")}
               </p>
 
               {currentPhase === "match" ? (
@@ -1178,17 +1165,35 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
                   Start Say the Name <ArrowRight className="ml-2 w-5 h-5" />
                 </Button>
               ) : currentPhase === "patterns" ? (
-                <Button
-                  onClick={() => {
-                    setCurrentPhase("words");
-                    setShowConfetti(false);
-                  }}
-                  size="lg"
-                  className="rounded-2xl px-10 py-6 text-lg text-white font-bold w-full shadow-xl animate-bounce"
-                  style={{ background: `linear-gradient(135deg, ${accent.primary} 0%, ${accent.dark} 100%)` }}
-                >
-                  Start Reading Words <ArrowRight className="ml-2 w-5 h-5" />
-                </Button>
+                reviewIdx < Math.ceil(allPatternsRaw.length / 6) - 1 ? (
+                  <Button
+                    onClick={() => {
+                      setReviewIdx(r => r + 1);
+                      setCurrentPhase("review");
+                      setShowConfetti(false);
+                      setCompletedPatterns(new Set());
+                      setPatternFeedbackMap({});
+                      setPatternTranscriptsMap({});
+                    }}
+                    size="lg"
+                    className="rounded-2xl px-10 py-6 text-lg text-white font-bold w-full shadow-xl animate-bounce"
+                    style={{ background: `linear-gradient(135deg, ${accent.primary} 0%, ${accent.dark} 100%)` }}
+                  >
+                    Next Batch <ArrowRight className="ml-2 w-5 h-5" />
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={() => {
+                      setCurrentPhase("words");
+                      setShowConfetti(false);
+                    }}
+                    size="lg"
+                    className="rounded-2xl px-10 py-6 text-lg text-white font-bold w-full shadow-xl animate-bounce"
+                    style={{ background: `linear-gradient(135deg, ${accent.primary} 0%, ${accent.dark} 100%)` }}
+                  >
+                    Start Reading Words <ArrowRight className="ml-2 w-5 h-5" />
+                  </Button>
+                )
               ) : currentPhase === "words" ? (
                 wordSetIdx === totalWordSets - 1 ? (
                   <Button
@@ -1212,7 +1217,7 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
                     className="rounded-2xl px-10 py-6 text-lg text-white font-bold w-full shadow-xl animate-bounce"
                     style={{ background: `linear-gradient(135deg, ${accent.primary} 0%, ${accent.dark} 100%)` }}
                   >
-                    Start Next 10 Words <ArrowRight className="ml-2 w-5 h-5" />
+                    Start Next 6 Words <ArrowRight className="ml-2 w-5 h-5" />
                   </Button>
                 )
               ) : sentenceSetIdx === totalSentenceSets - 1 ? (
@@ -1226,17 +1231,17 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
                   {isSaving ? "Saving..." : "Back to Levels"}
                 </Button>
               ) : (
-                <Button
-                  onClick={() => {
-                    setSentenceSetIdx(prev => Math.min(prev + 1, totalSentenceSets - 1));
-                    setShowConfetti(false);
-                  }}
-                  size="lg"
-                  className="rounded-2xl px-10 py-6 text-lg text-white font-bold w-full shadow-xl animate-bounce"
-                  style={{ background: `linear-gradient(135deg, ${accent.primary} 0%, ${accent.dark} 100%)` }}
-                >
-                  Start Next 10 Sentences <ArrowRight className="ml-2 w-5 h-5" />
-                </Button>
+                  <Button
+                    onClick={() => {
+                      setSentenceSetIdx(prev => Math.min(prev + 1, totalSentenceSets - 1));
+                      setShowConfetti(false);
+                    }}
+                    size="lg"
+                    className="rounded-2xl px-10 py-6 text-lg text-white font-bold w-full shadow-xl animate-bounce"
+                    style={{ background: `linear-gradient(135deg, ${accent.primary} 0%, ${accent.dark} 100%)` }}
+                  >
+                    Start Next 6 Sentences <ArrowRight className="ml-2 w-5 h-5" />
+                  </Button>
               )}
             </motion.div>
           ) : null}

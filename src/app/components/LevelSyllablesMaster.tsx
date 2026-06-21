@@ -121,11 +121,7 @@ export function LevelSyllablesMaster({ levelId, accent }: LevelSyllablesMasterPr
                 <button
                   key={cat.id}
                   onClick={() => handleSelect(cat.id as "VC" | "CV")}
-                  className={`w-full relative overflow-hidden group rounded-3xl p-6 text-left transition-all ${
-                    isDone 
-                      ? "bg-white dark:bg-gray-800 border-4 border-green-400 dark:border-green-500 shadow-sm opacity-80" 
-                      : "bg-white dark:bg-gray-800 border-4 border-[color:var(--border-color)] hover:border-[color:var(--hover-color)] shadow-md hover:shadow-xl hover:-translate-y-1"
-                  }`}
+                  className="w-full relative overflow-hidden group rounded-3xl p-6 text-left transition-all bg-white dark:bg-gray-800 border-4 border-[color:var(--border-color)] hover:border-[color:var(--hover-color)] shadow-md hover:shadow-xl hover:-translate-y-1"
                   style={{ 
                     "--border-color": `${cat.color}40`,
                     "--hover-color": cat.color 
@@ -133,25 +129,18 @@ export function LevelSyllablesMaster({ levelId, accent }: LevelSyllablesMasterPr
                 >
                   <div className="flex justify-between items-center relative z-10">
                     <div>
-                      <h3 className={`text-xl font-black mb-1 ${isDone ? "text-gray-800 dark:text-gray-200" : ""}`} style={{ color: !isDone ? cat.color : undefined }}>
+                      <h3 className="text-xl font-black mb-1" style={{ color: cat.color }}>
                         {cat.label}
                       </h3>
                       <p className="text-gray-500 mt-2">
                         {cat.desc}
                       </p>
                     </div>
-                    {isDone && (
-                      <div className="bg-green-100 dark:bg-green-900/50 p-2 rounded-full">
-                        <CheckCircle2 className="w-6 h-6 text-green-500" />
-                      </div>
-                    )}
                   </div>
-                  {!isDone && (
-                    <div 
-                      className="absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity"
-                      style={{ background: `linear-gradient(135deg, ${cat.color}, ${cat.darkColor})` }}
-                    />
-                  )}
+                  <div 
+                    className="absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity"
+                    style={{ background: `linear-gradient(135deg, ${cat.color}, ${cat.darkColor})` }}
+                  />
                 </button>
               );
             })}

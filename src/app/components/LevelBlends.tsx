@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useNavigate } from "react-router";
-import {Home, Volume2, Mic, MicOff, CheckCircle2, XCircle, Sparkles, ArrowRight, ArrowLeft, AlertCircle, RotateCcw, SkipForward, FastForward, X, Shuffle as ShuffleIcon} from "lucide-react";
+import { Home, Volume2, Mic, MicOff, CheckCircle2, XCircle, Sparkles, ArrowRight, ArrowLeft, AlertCircle, RotateCcw, SkipForward, FastForward, X, Shuffle as ShuffleIcon } from "lucide-react";
 import { confirmAction } from "../utils/alerts";
 import { Button } from "./ui/button";
 import { motion, AnimatePresence } from "motion/react";
@@ -10,6 +10,7 @@ import { LETTER_NAMES, LETTER_TTS, shuffle } from "../data/levels";
 import { BLENDS_DATA, BLENDS_SENTENCES, BlendWord } from "../data/blends";
 import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
 import { AudioVisualizer } from "./AudioVisualizer";
+import { MatchButton } from "./MatchButton";
 import { playSound } from "../utils/soundEffects";
 import { playTTS as playTTSUtil } from "../utils/tts";
 
@@ -20,7 +21,7 @@ interface LevelBlendsProps {
   onComplete?: () => void;
 }
 
-type Phase = "review" | "patterns" | "words" | "sentences";
+type Phase = "review" | "match" | "words" | "sentences";
 
 const VOWELS = ["A", "E", "I", "O", "U"];
 
@@ -43,19 +44,119 @@ export function LevelBlends({ levelId, accent, categoryFilter, onComplete }: Lev
 
   // Pattern Quiz State
   const allPatternsRaw = useMemo(() => {
-    const list: { pattern: string; category: string; name: string }[] = [];
+    const list: { pattern: string; category: string; name: string; words: BlendWord[] }[] = [];
     filteredData.forEach((d) => {
       d.patterns.forEach((p) => {
-        list.push({ pattern: p.pattern, category: d.name, name: p.name });
+        list.push({ pattern: p.pattern, category: d.name, name: p.name, words: p.words });
       });
     });
     return list;
   }, [filteredData]);
-  const [activePatterns, setActivePatterns] = useState(() => shuffle([...allPatternsRaw]));
+
+  const [reviewBatch, setReviewBatch] = useState<{ pattern: string; category: string; name: string; words: BlendWord[] }[]>([]);
+
+  useEffect(() => {
+    if (currentPhase === "review") {
+      setReviewBatch(allPatternsRaw.slice(reviewIdx * 6, reviewIdx * 6 + 6));
+    }
+  }, [currentPhase, reviewIdx, allPatternsRaw]);
   const [patternIdx, setPatternIdx] = useState(0);
 
+  // Match Phase State
+  const [matchColumns, setMatchColumns] = useState<{ left: string[]; right: string[] }>({ left: [], right: [] });
+  const [matchedPairs, setMatchedPairs] = useState<Set<string>>(new Set());
+  const [selectedSpeakerMatch, setSelectedSpeakerMatch] = useState<string | null>(null);
+  const [selectedLetterMatch, setSelectedLetterMatch] = useState<string | null>(null);
+  const [wrongMatchPair, setWrongMatchPair] = useState<[string, string] | null>(null);
+
+  const setupMatchPhase = useCallback(() => {
+    const currentBatch = allPatternsRaw.slice(reviewIdx * 6, reviewIdx * 6 + 6);
+    const targets = currentBatch.map(p => p.pattern);
+    setMatchColumns({
+      left: shuffle([...targets]),
+      right: shuffle([...targets])
+    });
+    setMatchedPairs(new Set());
+    setSelectedSpeakerMatch(null);
+    setSelectedLetterMatch(null);
+    setWrongMatchPair(null);
+  }, [allPatternsRaw, reviewIdx]);
+
+  useEffect(() => {
+    if (currentPhase === "match") {
+      setupMatchPhase();
+    }
+  }, [currentPhase, setupMatchPhase]);
+
+  const checkMatch = useCallback((speaker: string, letter: string) => {
+    if (speaker === letter) {
+      playSound("correct", 0.4);
+      setMatchedPairs(prev => {
+        const next = new Set(prev).add(speaker);
+        if (next.size === matchColumns.left.length && matchColumns.left.length > 0) {
+          setShowConfetti(true);
+          playSound("complete");
+        }
+        return next;
+      });
+      setSelectedSpeakerMatch(null);
+      setSelectedLetterMatch(null);
+    } else {
+      playSound("wrong", 0.35);
+      setWrongMatchPair([speaker, letter]);
+      setTimeout(() => {
+        setWrongMatchPair(null);
+        setSelectedSpeakerMatch(null);
+        setSelectedLetterMatch(null);
+      }, 1000);
+    }
+  }, [matchColumns.left.length]);
+
+  const handleSpeakerMatchClick = (pattern: string) => {
+    if (matchedPairs.has(pattern) || wrongMatchPair) return;
+    playSound("click", 0.2);
+    const cat = allPatternsRaw.find(p => p.pattern === pattern)?.category || "";
+    playPatternAudio(pattern, cat);
+    if (selectedSpeakerMatch === pattern) {
+      setSelectedSpeakerMatch(null);
+    } else {
+      setSelectedSpeakerMatch(pattern);
+      if (selectedLetterMatch) {
+        checkMatch(pattern, selectedLetterMatch);
+      }
+    }
+  };
+
+  const handleLetterMatchClick = (pattern: string) => {
+    if (matchedPairs.has(pattern) || wrongMatchPair) return;
+    playSound("click", 0.2);
+    const cat = allPatternsRaw.find(p => p.pattern === pattern)?.category || "";
+    playPatternAudio(pattern, cat);
+    if (selectedLetterMatch === pattern) {
+      setSelectedLetterMatch(null);
+    } else {
+      setSelectedLetterMatch(pattern);
+      if (selectedSpeakerMatch) {
+        checkMatch(selectedSpeakerMatch, pattern);
+      }
+    }
+  };
+
+  const playPatternAudio = useCallback((pattern: string, category: string) => {
+    let folder = "";
+    if (category === "3-Letter Blends" || category === "Three-Letter Blends") {
+      folder = "3letterblend";
+    } else {
+      folder = "2letterblend";
+    }
+    const audio = new Audio(`${(import.meta as any).env.BASE_URL}audio/${folder}/${folder}-${pattern}.mp3`);
+    audio.play().catch(e => console.error(e));
+  }, []);
+
+
+
   // Word Quiz State
-  const WORDS_PER_SET = 10;
+  const WORDS_PER_SET = 6;
   const allWordsRaw = useMemo(() => {
     const list: { word: string; category: string }[] = [];
     filteredData.forEach((d) => {
@@ -73,7 +174,7 @@ export function LevelBlends({ levelId, accent, categoryFilter, onComplete }: Lev
   const [wordIdx, setWordIdx] = useState(0);
 
   // Sentence Quiz State
-  const SENTENCES_PER_SET = 10;
+  const SENTENCES_PER_SET = 6;
   const totalSentenceSets = Math.ceil(BLENDS_SENTENCES.length / SENTENCES_PER_SET);
   const [sentenceSetIdx, setSentenceSetIdx] = useState(0);
   const [activeSentences, setActiveSentences] = useState<string[]>([]);
@@ -127,7 +228,7 @@ export function LevelBlends({ levelId, accent, categoryFilter, onComplete }: Lev
   }, [clearEvalTimeout]);
 
   const evaluatingTargetForMic = useMemo(() => {
-    if (currentPhase === "patterns" && evaluatingPatternId) {
+    if (currentPhase === "match" && evaluatingPatternId) {
       return allPatternsRaw.find(p => p.pattern === evaluatingPatternId)?.category || null;
     }
     if (currentPhase === "words" && evaluatingWordId) {
@@ -151,7 +252,7 @@ export function LevelBlends({ levelId, accent, categoryFilter, onComplete }: Lev
   };
 
   const handleNextQuiz = useCallback(() => {
-    if (currentPhase === "patterns" || currentPhase === "words" || currentPhase === "sentences") {
+    if (currentPhase === "match" || currentPhase === "words" || currentPhase === "sentences") {
       setShowConfetti(true);
     }
   }, [currentPhase]);
@@ -163,7 +264,7 @@ export function LevelBlends({ levelId, accent, categoryFilter, onComplete }: Lev
 
       clearEvalTimeout();
 
-      if (currentPhase === "patterns" && evaluatingPatternId) {
+      if (currentPhase === "match" && evaluatingPatternId) {
         setPatternTranscriptsMap(prev => ({ ...prev, [evaluatingPatternId]: transcript }));
         const vName = LETTER_NAMES[target]?.toLowerCase() || "";
         const vTTS = LETTER_TTS[target]?.toLowerCase() || "";
@@ -240,7 +341,7 @@ export function LevelBlends({ levelId, accent, categoryFilter, onComplete }: Lev
     },
     onSilenceTimeout: () => {
       clearEvalTimeout();
-      if (currentPhase === "patterns" && evaluatingPatternId) {
+      if (currentPhase === "match" && evaluatingPatternId) {
         setPatternFeedbackMap(prev => ({ ...prev, [evaluatingPatternId]: "wrong" }));
         evaluationTimeoutRef.current = setTimeout(() => {
           setPatternFeedbackMap(prev => ({ ...prev, [evaluatingPatternId]: null }));
@@ -269,8 +370,8 @@ export function LevelBlends({ levelId, accent, categoryFilter, onComplete }: Lev
     setEvaluatingWordId(null);
     setEvaluatingSentenceId(null);
     if (currentPhase === "sentences") setCurrentPhase("words");
-    else if (currentPhase === "words") setCurrentPhase("patterns");
-    else if (currentPhase === "patterns") setCurrentPhase("review");
+    else if (currentPhase === "words") setCurrentPhase("match");
+    else if (currentPhase === "match") setCurrentPhase("review");
     else navigate(-1);
   };
 
@@ -280,8 +381,11 @@ export function LevelBlends({ levelId, accent, categoryFilter, onComplete }: Lev
     setEvaluatingPatternId(null);
     setEvaluatingWordId(null);
     setEvaluatingSentenceId(null);
-    if (currentPhase === "patterns") {
-      setActivePatterns(prev => shuffle([...prev]));
+    if (currentPhase === "match") {
+      setMatchColumns(prev => ({
+        left: shuffle([...prev.left]),
+        right: shuffle([...prev.right])
+      }));
     } else if (currentPhase === "words") {
       setActiveWords(prev => shuffle([...prev]));
     } else if (currentPhase === "sentences") {
@@ -295,7 +399,7 @@ export function LevelBlends({ levelId, accent, categoryFilter, onComplete }: Lev
     setEvaluatingPatternId(null);
     setEvaluatingWordId(null);
     setEvaluatingSentenceId(null);
-    if (currentPhase === "patterns") {
+    if (currentPhase === "match") {
       setCompletedPatterns(new Set());
       setPatternFeedbackMap({});
       setPatternTranscriptsMap({});
@@ -315,9 +419,10 @@ export function LevelBlends({ levelId, accent, categoryFilter, onComplete }: Lev
     setEvaluatingPatternId(null);
     setEvaluatingWordId(null);
     setEvaluatingSentenceId(null);
-    if (currentPhase === "patterns") {
-      setCompletedPatterns(new Set(activePatterns.map(p => p.pattern)));
-      handleNextQuiz();
+    if (currentPhase === "match") {
+      setMatchedPairs(new Set(matchColumns.left));
+      setShowConfetti(true);
+      playSound("complete");
     } else if (currentPhase === "words") {
       setCompletedWords(new Set(activeWords.map(w => w.word)));
       handleNextQuiz();
@@ -374,7 +479,7 @@ export function LevelBlends({ levelId, accent, categoryFilter, onComplete }: Lev
 
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-50 dark:bg-none dark:bg-[#0d141c] pb-12 flex flex-col overflow-x-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-50 dark:bg-none dark:bg-[#0d141c] flex flex-col overflow-x-hidden">
       <style>{`
         .py-4 {
           padding-block: calc(0.20rem * 4);
@@ -388,14 +493,14 @@ export function LevelBlends({ levelId, accent, categoryFilter, onComplete }: Lev
             <X className="w-5 h-5" /> Exit
           </Button>
           <h2 className="text-lg font-bold tracking-tight text-center flex-1" style={{ color: accent.primary }}>
-            {currentPhase === "review" && `Long ${filteredData[reviewIdx]?.name} Review`}
-            {currentPhase === "patterns" && `${categoryFilter || "Blends"} - Voice Evaluation`}
+            {currentPhase === "review" && `${categoryFilter || "Blends"} Review`}
+            {currentPhase === "match" && `${categoryFilter || "Blends"} - Listen & Match`}
             {currentPhase === "words" && `${categoryFilter || "Blends"} - Voice Evaluation`}
             {currentPhase === "sentences" && `Long ${categoryFilter || "Blends"} : Read the Sentences`}
           </h2>
           <span className="text-sm font-bold" style={{ color: accent.primary }}>
-            {currentPhase === "review" && `Step ${reviewIdx + 1}/${filteredData.length}`}
-            {currentPhase === "patterns" && `Step ${completedPatterns.size}/${activePatterns.length}`}
+            {currentPhase === "review" && `Step ${reviewIdx + 1}/${Math.ceil(allPatternsRaw.length / 6)}`}
+            {currentPhase === "match" && `Step ${matchedPairs.size}/${matchColumns.left.length}`}
             {currentPhase === "words" && `Step ${completedWords.size}/${activeWords.length}`}
             {currentPhase === "sentences" && `Step ${completedSentences.size}/${activeSentences.length}`}
           </span>
@@ -404,7 +509,7 @@ export function LevelBlends({ levelId, accent, categoryFilter, onComplete }: Lev
 
       <div className="max-w-4xl mx-auto px-4 py-6 flex-1 flex flex-col justify-start w-full">
         <AnimatePresence mode="wait">
-          {!showConfetti && currentPhase === "review" && activeVowelData ? (
+          {!showConfetti && currentPhase === "review" ? (
             <motion.div
               key={`phase-review-${reviewIdx}`}
               initial={{ opacity: 0, scale: 0.98 }}
@@ -421,55 +526,42 @@ export function LevelBlends({ levelId, accent, categoryFilter, onComplete }: Lev
                   <Button
                     variant="outline"
                     size="sm"
-                    disabled={reviewIdx === 0}
-                    onClick={() => setReviewIdx((prev) => Math.max(prev - 1, 0))}
-                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#086ca5] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2 disabled:opacity-50 disabled:grayscale disabled:pointer-events-none"
+                    onClick={() => setReviewBatch(prev => shuffle([...prev]))}
+                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#8b40b8] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
                     style={{
-                      background: "linear-gradient(135deg, rgb(28, 176, 246) 0%, rgb(10, 142, 212) 100%)",
+                      background: "linear-gradient(135deg, #ce82ff 0%, #a559d6 100%)",
                     }}
                   >
-                    <ArrowLeft className="w-4 h-4 mr-1" /> Back
+                    <ShuffleIcon className="w-4 h-4 mr-1" /> Shuffle
                   </Button>
-                  {reviewIdx < filteredData.length - 1 ? (
-                    <Button
-                      size="sm"
-                      onClick={() => setReviewIdx((prev) => Math.min(prev + 1, filteredData.length - 1))}
-                      className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#3c8c01] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
-                      style={{
-                        background: "linear-gradient(135deg, rgb(88, 204, 2) 0%, rgb(70, 163, 2) 100%)",
-                      }}
-                    >
-                      Next <ArrowRight className="w-4 h-4 ml-1" />
-                    </Button>
-                  ) : (
-                    <Button
-                      size="sm"
-                      onClick={() => setCurrentPhase("patterns")}
-                      className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#3c8c01] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
-                      style={{
-                        background: "linear-gradient(135deg, rgb(88, 204, 2) 0%, rgb(70, 163, 2) 100%)",
-                      }}
-                    >
-                      Proceed <ArrowRight className="w-4 h-4 ml-1" />
-                    </Button>
-                  )}
+                  <Button
+                    size="sm"
+                    onClick={() => setCurrentPhase("match")}
+                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#3c8c01] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
+                    style={{
+                      background: "linear-gradient(135deg, rgb(88, 204, 2) 0%, rgb(70, 163, 2) 100%)",
+                    }}
+                  >
+                    Next <ArrowRight className="w-4 h-4 ml-1" />
+                  </Button>
                 </div>
               </div>
 
-              <div className={`grid gap-6 items-stretch mb-8 flex-1 w-full mx-auto ${(filteredData[reviewIdx]?.patterns.length || 0) === 1 ? 'grid-cols-1 max-w-sm' : (filteredData[reviewIdx]?.patterns.length || 0) === 2 ? 'grid-cols-1 md:grid-cols-2 max-w-2xl' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'}`}>
-                {activeVowelData.patterns.map((pattern) => {
+              <div className={`grid gap-6 items-stretch mb-8 flex-1 w-full mx-auto ${reviewBatch.length === 1 ? 'grid-cols-1 max-w-sm' : reviewBatch.length === 2 ? 'grid-cols-1 md:grid-cols-2 max-w-2xl' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'}`}>
+                {reviewBatch.map((pattern) => {
                   return (
                     <div
                       key={pattern.pattern}
                       className="bg-white dark:bg-gray-800/80 rounded-3xl p-6 border-2 border-amber-200 dark:border-gray-700 shadow-lg flex flex-col justify-start"
                     >
                       <div
-                        onClick={() => playTTS(filteredData[reviewIdx]?.name || "")}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          playPatternAudio(pattern.pattern, pattern.category);
+                        }}
                         className="text-center border-b-2 border-dashed border-amber-100 dark:border-gray-700 pb-4 mb-6 cursor-pointer hover:bg-amber-50 dark:hover:bg-gray-700 rounded-xl transition-colors active:scale-95"
                       >
-                        <span className="text-xs uppercase font-bold tracking-wider text-amber-500 dark:text-amber-400 block mb-1">
-                          {pattern.name}
-                        </span>
+
                         <span className="text-2xl font-black text-gray-700 dark:text-gray-200 flex items-center justify-center gap-2">
                           {pattern.pattern} <Volume2 className="w-5 h-5 text-amber-400" />
                         </span>
@@ -505,145 +597,100 @@ export function LevelBlends({ levelId, accent, categoryFilter, onComplete }: Lev
 
 
             </motion.div>
-          ) : !showConfetti && currentPhase === "patterns" ? (
+          ) : !showConfetti && currentPhase === "match" && matchColumns.left.length > 0 ? (
             <motion.div
-              key={`phase-patterns`}
-              initial={{ opacity: 0, scale: 0.95 }}
+              key={`phase-match-${reviewIdx}`}
+              initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 1.05 }}
-              className="w-full max-w-2xl mx-auto flex flex-col items-center"
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="flex flex-col items-center w-full"
             >
+              <div className="text-center mb-6">
+                <p className="text-gray-500 mt-2">Tap a speaker, then tap the matching blend!</p>
 
-
-              {/* Controls */}
-              <div className="flex justify-center items-center w-full gap-2 sm:gap-3 max-w-lg mx-auto mb-6">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleShuffle}
-                  className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#086ca5] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
-                  style={{
-                    background: "linear-gradient(135deg, rgb(28, 176, 246) 0%, rgb(10, 142, 212) 100%)",
-                  }}
-                >
-                  <ShuffleIcon className="w-4 h-4 sm:mr-1" />
-                  <span className="hidden sm:inline">Shuffle</span>
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleReset}
-                  className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#b81d1d] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
-                  style={{
-                    background: "linear-gradient(135deg, rgb(255, 75, 75) 0%, rgb(216, 42, 42) 100%)",
-                  }}
-                >
-                  <RotateCcw className="w-4 h-4 sm:mr-1" />
-                  <span className="hidden sm:inline">Reset</span>
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleSkip}
-                  className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#c99c00] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
-                  style={{
-                    background: "linear-gradient(135deg, rgb(255, 200, 0) 0%, rgb(255, 150, 0) 100%)",
-                  }}
-                >
-                  <FastForward className="w-4 h-4 sm:mr-1" />
-                  <span className="hidden sm:inline">Skip</span>
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={handleNextQuiz}
-                  disabled={completedPatterns.size < activePatterns.length}
-                  className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#3c8c01] hover:scale-105 active:scale-95 px-2 transition-all disabled:opacity-50 disabled:grayscale disabled:pointer-events-none h-9 py-2"
-                  style={{
-                    background: "linear-gradient(135deg, rgb(88, 204, 2) 0%, rgb(70, 163, 2) 100%)",
-                  }}
-                >
-                  <span className="hidden sm:inline">Next</span>
-                  <ArrowRight className="w-4 h-4 sm:ml-1" />
-                </Button>
+                {/* Navigation Controls */}
+                <div className="flex justify-center items-center w-full gap-3 sm:gap-4 max-w-md mx-auto mt-6">
+                  <Button
+                    onClick={() => {
+                      setMatchColumns(prev => ({
+                        left: [...prev.left].sort(() => Math.random() - 0.5),
+                        right: [...prev.right].sort(() => Math.random() - 0.5)
+                      }));
+                    }}
+                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#8b40b8] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
+                    style={{ background: 'linear-gradient(135deg, #ce82ff 0%, #a559d6 100%)' }}
+                  >
+                    <ShuffleIcon className="w-4 h-4 mr-1" /> Shuffle
+                  </Button>
+                  <Button
+                    onClick={setupMatchPhase}
+                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#e11d48] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
+                    style={{ background: 'linear-gradient(135deg, #fb7185 0%, #e11d48 100%)' }}
+                  >
+                    <RotateCcw className="w-4 h-4 mr-1" /> Reset
+                  </Button>
+                  <Button
+                    onClick={handleSkip}
+                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#c99c00] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
+                    style={{ background: 'linear-gradient(135deg, #ffc800 0%, #ff9600 100%)' }}
+                  >
+                    <FastForward className="w-4 h-4 mr-1" /> Skip
+                  </Button>
+                </div>
               </div>
 
-              <div className="w-full text-center mb-8">
-                <div className="space-y-3 bg-white/50 dark:bg-gray-800/50 p-4 rounded-3xl backdrop-blur-sm border-2 border-dashed border-gray-200 dark:border-gray-700">
-                  {activePatterns.map((p, idx) => {
-                    const isDone = completedPatterns.has(p.pattern);
-                    const isEval = evaluatingPatternId === p.pattern;
-                    const vFeedback = patternFeedbackMap[p.pattern];
-                    const vTranscript = patternTranscriptsMap[p.pattern];
+              <div className="flex justify-center gap-4 sm:gap-8 w-full max-w-2xl mx-auto mb-10 px-2 sm:px-4">
+                {/* Left Column: Speakers */}
+                <div className="flex flex-col gap-3 sm:gap-4 flex-1 min-w-0">
+                  {matchColumns.left.map((pattern) => {
+                    const isMatched = matchedPairs.has(pattern);
+                    const isSelected = selectedSpeakerMatch === pattern;
+                    const isWrong = !!(wrongMatchPair && wrongMatchPair[0] === pattern);
 
                     return (
-                      <div
-                        key={p.pattern}
-                        className={`flex items-center justify-between p-4 rounded-2xl transition-all ${isDone || vFeedback === "correct" ? 'bg-green-50 dark:bg-green-900/20' : vFeedback === "wrong" ? 'bg-red-50 dark:bg-red-900/10' : 'bg-white dark:bg-gray-800'} shadow-sm border-2 ${isEval ? 'border-pink-400 shadow-md' : isDone || vFeedback === "correct" ? 'border-green-200' : vFeedback === "wrong" ? 'border-red-200' : 'border-transparent hover:border-gray-300 dark:hover:border-gray-600'}`}
+                      <MatchButton
+                        key={`speaker-${pattern}`}
+                        gradientStart={accent.primary}
+                        gradientEnd={accent.dark}
+                        isMatched={isMatched}
+                        isSelected={isSelected}
+                        isWrong={isWrong}
+                        onClick={() => handleSpeakerMatchClick(pattern)}
+                        disabled={!!wrongMatchPair}
                       >
-                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => playTTS(p.category)}
-                            className="rounded-full w-10 h-10 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 flex-shrink-0"
-                          >
-                            <Volume2 className="w-4 h-4" />
-                          </Button>
-                          <span className="text-3xl font-bold min-w-[60px] text-left tracking-widest uppercase flex items-center gap-1.5" style={{ color: isDone || vFeedback === "correct" ? '#58CC02' : accent.primary }}>
-                            {p.pattern}
-                          </span>
+                        <Volume2 className={`w-8 h-8 ${isMatched ? "opacity-50" : ""}`} />
+                      </MatchButton>
+                    );
+                  })}
+                </div>
 
-                        </div>
+                {/* Right Column: Blends */}
+                <div className="flex flex-col gap-3 sm:gap-4 flex-1 min-w-0">
+                  {matchColumns.right.map((pattern) => {
+                    const isMatched = matchedPairs.has(pattern);
+                    const isSelected = selectedLetterMatch === pattern;
+                    const isWrong = !!(wrongMatchPair && wrongMatchPair[1] === pattern);
 
-                        <div className="flex items-center gap-3">
-                          {isEval && (
-                            <div className="flex items-center gap-2 mt-1 sm:mt-0 flex-wrap">
-                              <span className="text-pink-500 text-sm font-bold animate-pulse">Listening...</span>
-                              <AudioVisualizer isListening={!!evaluatingTargetForMic} isMobile={isMobile} />
-                              {vTranscript && (
-                                <span className="p-1 bg-gray-200 rounded text-[10px] font-mono text-gray-700 ml-1 truncate max-w-[120px]">
-                                  [Heard: {vTranscript}]
-                                </span>
-                              )}
-                            </div>
-                          )}
-
-                          <button
-                            onClick={() => {
-                              if (isEval) {
-                                setEvaluatingPatternId(null);
-                              } else if (!isDone) {
-                                setEvaluatingPatternId(p.pattern);
-                                setPatternFeedbackMap(prev => ({ ...prev, [p.pattern]: null }));
-                                setPatternTranscriptsMap(prev => ({ ...prev, [p.pattern]: "" }));
-                              }
-                            }}
-                            disabled={(evaluatingPatternId !== null && !isEval) || isDone}
-                            className={`relative w-12 h-12 rounded-xl flex items-center justify-center transition-all flex-shrink-0 ${isDone || vFeedback === "correct"
-                              ? 'bg-green-500 text-white shadow-none opacity-50 cursor-default'
-                              : isEval
-                                ? 'bg-red-500 text-white shadow-lg'
-                                : vFeedback === "wrong"
-                                  ? 'bg-red-400 text-white'
-                                  : 'bg-gradient-to-br from-pink-500 to-rose-500 text-white shadow-md hover:scale-105 active:scale-95'
-                              }`}
-                          >
-                            {isEval && (
-                              <>
-                                <span className="absolute inset-0 rounded-xl bg-red-500/40 animate-ping" />
-                                <span className="absolute -inset-1 rounded-xl bg-red-500/20 animate-pulse" />
-                              </>
-                            )}
-                            <span className="relative z-10">
-                              {isDone || vFeedback === "correct" ? <CheckCircle2 className="w-6 h-6" /> : vFeedback === "wrong" ? <XCircle className="w-6 h-6" /> : isEval ? <MicOff className="w-5 h-5 animate-bounce" /> : <Mic className="w-5 h-5" />}
-                            </span>
-                          </button>
-                        </div>
-                      </div>
+                    return (
+                      <MatchButton
+                        key={`letter-${pattern}`}
+                        isMatched={isMatched}
+                        isSelected={isSelected}
+                        isWrong={isWrong}
+                        onClick={() => handleLetterMatchClick(pattern)}
+                        disabled={!!wrongMatchPair}
+                        className="font-black text-2xl sm:text-3xl"
+                      >
+                        {pattern}
+                      </MatchButton>
                     );
                   })}
                 </div>
               </div>
+
+              {wrongMatchPair && (
+                <motion.p initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="text-red-500 font-bold text-lg mb-4 text-center">Not quite, try again!</motion.p>
+              )}
             </motion.div>
           ) : !showConfetti && currentPhase === "words" ? (
             <motion.div
@@ -985,11 +1032,11 @@ export function LevelBlends({ levelId, accent, categoryFilter, onComplete }: Lev
               </motion.div>
 
               <h3 className="text-3xl font-black mb-4" style={{ color: accent.primary }}>
-                {currentPhase === "patterns" ? "Patterns Mastered!" : currentPhase === "words" ? (wordSetIdx === totalWordSets - 1 ? "Words Mastered!" : "Set Complete!") : sentenceSetIdx === totalSentenceSets - 1 ? "Lesson Mastered!" : "Set Complete!"}
+                {currentPhase === "match" ? "Patterns Mastered!" : currentPhase === "words" ? (wordSetIdx === totalWordSets - 1 ? "Words Mastered!" : "Set Complete!") : sentenceSetIdx === totalSentenceSets - 1 ? "Lesson Mastered!" : "Set Complete!"}
               </h3>
 
               <p className="text-gray-600 dark:text-gray-400 mb-8 leading-relaxed">
-                {currentPhase === "patterns"
+                {currentPhase === "match"
                   ? "You correctly identified all the long vowel patterns! Ready to read some words?"
                   : currentPhase === "words"
                     ? (wordSetIdx === totalWordSets - 1
@@ -1000,17 +1047,23 @@ export function LevelBlends({ levelId, accent, categoryFilter, onComplete }: Lev
                       : "You successfully read 10 sentences! Ready for the next set?")}
               </p>
 
-              {currentPhase === "patterns" ? (
+              {currentPhase === "match" ? (
                 <Button
                   onClick={() => {
-                    setCurrentPhase("words");
                     setShowConfetti(false);
+                    if (reviewIdx < Math.ceil(allPatternsRaw.length / 6) - 1) {
+                      setReviewIdx(r => r + 1);
+
+                      setCurrentPhase("review");
+                    } else {
+                      setCurrentPhase("words");
+                    }
                   }}
                   size="lg"
                   className="rounded-2xl px-10 py-6 text-lg text-white font-bold w-full shadow-xl animate-bounce"
                   style={{ background: `linear-gradient(135deg, ${accent.primary} 0%, ${accent.dark} 100%)` }}
                 >
-                  Start Reading Words <ArrowRight className="ml-2 w-5 h-5" />
+                  {reviewIdx < Math.ceil(allPatternsRaw.length / 6) - 1 ? "Next Batch" : "Start Reading Words"} <ArrowRight className="ml-2 w-5 h-5" />
                 </Button>
               ) : currentPhase === "words" ? (
                 wordSetIdx === totalWordSets - 1 ? (
