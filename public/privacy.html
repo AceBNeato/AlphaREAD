@@ -4,78 +4,139 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Privacy Policy - Alphabet GO</title>
-    <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 40px 20px;
-            background-color: #fcfcfc;
+    <!-- Google Fonts: Nunito -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'media', // Automatically uses system dark mode
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Nunito', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            purple: '#8b40b8',
+                            lightPurple: '#ce82ff',
+                            green: '#3c8c01',
+                            lightGreen: '#58CC02'
+                        }
+                    }
+                }
+            }
         }
-        h1 {
-            color: #8b40b8; /* Alphabet GO Purple */
-            border-bottom: 2px solid #ce82ff;
-            padding-bottom: 10px;
-        }
-        h2 {
-            color: #3c8c01; /* Alphabet GO Green */
-            margin-top: 30px;
-        }
-        p, li {
-            font-size: 16px;
-        }
-        .container {
-            background: white;
-            padding: 40px;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-        }
-        .date {
-            font-style: italic;
-            color: #666;
-            margin-bottom: 30px;
-        }
-    </style>
+    </script>
 </head>
-<body>
-    <div class="container">
-        <h1>Privacy Policy for Alphabet GO</h1>
-        <p class="date">Effective Date: June 22, 2026</p>
+<body class="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-[#0d141c] dark:to-[#111827] min-h-screen font-sans text-gray-700 dark:text-gray-300 antialiased selection:bg-brand-lightPurple selection:text-white pb-12 transition-colors duration-300">
+    
+    <div class="max-w-4xl mx-auto px-4 pt-12">
+        <!-- Logo Header -->
+        <div class="flex justify-center items-center gap-3 mb-8">
+            <div class="w-16 h-16 bg-white dark:bg-gray-800 rounded-2xl flex items-center justify-center shadow-lg border-2 border-amber-200 dark:border-gray-700 rotate-3 transition-transform hover:rotate-6">
+                <span class="text-4xl font-black text-brand-purple dark:text-brand-lightPurple">A</span>
+            </div>
+            <h1 class="text-3xl font-black text-brand-purple dark:text-brand-lightPurple tracking-tight">Alphabet GO</h1>
+        </div>
 
-        <p><strong>Alphabet GO</strong> ("we," "our," or "us") is committed to protecting the privacy of our users, especially children. This Privacy Policy explains how we handle information in our mobile application.</p>
+        <!-- Main Card -->
+        <div class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-md rounded-3xl p-8 sm:p-10 shadow-xl border-2 border-amber-200 dark:border-gray-700 transition-colors duration-300">
+            <h2 class="text-3xl sm:text-4xl font-black text-brand-purple dark:text-brand-lightPurple mb-2 border-b-4 border-brand-lightPurple pb-4 inline-block">Privacy Policy</h2>
+            <p class="text-amber-600 dark:text-amber-400 font-bold mb-8 italic">Effective Date: June 22, 2026</p>
 
-        <h2>1. Information Collection and Use</h2>
+            <div class="space-y-8 text-lg font-medium leading-relaxed">
+                <p>
+                    <strong class="text-brand-purple dark:text-brand-lightPurple font-black">Alphabet GO</strong> ("we," "our," or "us") is committed to protecting the privacy of our users, especially children. This Privacy Policy explains how we handle information in our mobile application.
+                </p>
+
+                <div class="bg-amber-50/50 dark:bg-gray-900/50 p-6 rounded-2xl border-2 border-amber-100 dark:border-gray-700 transition-colors duration-300">
+                    <h3 class="text-2xl font-black text-brand-green dark:text-brand-lightGreen mb-4 flex items-center gap-2">
+                        <span class="bg-brand-lightGreen text-white w-8 h-8 rounded-full flex items-center justify-center text-xl">1</span> 
+                        Information Collection and Use
+                    </h3>
+                    
+                    <h4 class="font-bold text-gray-900 dark:text-white text-xl mt-4 mb-2">Microphone Access and Voice Data</h4>
+                    <p class="mb-3 text-gray-600 dark:text-gray-400">Alphabet GO includes a "Voice Evaluation" feature designed to help users practice their pronunciation.</p>
+                    <ul class="space-y-3 mb-6">
+                        <li class="flex items-start gap-3">
+                            <span class="text-brand-lightPurple mt-1">✦</span>
+                            <span><strong class="text-gray-800 dark:text-gray-200">Microphone Access:</strong> To use this feature, the app requests permission to access your device's microphone.</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <span class="text-brand-lightPurple mt-1">✦</span>
+                            <span><strong class="text-gray-800 dark:text-gray-200">No Recording or Storage:</strong> We use the device's built-in Speech Recognition API and local processing engines to process voice input in real-time. <strong class="text-rose-500 dark:text-rose-400">We do not record, store, or transmit any audio data to our servers.</strong> The audio is processed entirely locally on your device to determine if the spoken word matches the lesson material. Once the evaluation is complete, the audio data is immediately discarded.</span>
+                        </li>
+                    </ul>
+
+                    <h4 class="font-bold text-gray-900 dark:text-white text-xl mt-6 mb-2">Other Information</h4>
+                    <ul class="space-y-3">
+                        <li class="flex items-start gap-3">
+                            <span class="text-brand-lightPurple mt-1">✦</span>
+                            <span><strong class="text-gray-800 dark:text-gray-200">Progress Tracking:</strong> We store local progress (such as completed levels and scores) on your device. For logged-in users, we sync this progress to our secure database to track your learning journey across devices.</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <span class="text-brand-lightPurple mt-1">✦</span>
+                            <span><strong class="text-gray-800 dark:text-gray-200">Personal Information:</strong> We do not collect personally identifiable information (PII) from children. For teachers and administrators, we collect basic account information (such as email addresses) required to provide dashboard access and manage student progress.</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h3 class="text-2xl font-black text-brand-green dark:text-brand-lightGreen mb-4 flex items-center gap-2">
+                        <span class="bg-brand-lightGreen text-white w-8 h-8 rounded-full flex items-center justify-center text-xl">2</span> 
+                        Third-Party Services
+                    </h3>
+                    <p class="mb-3">Our app uses the following third-party services to function:</p>
+                    <ul class="space-y-3 bg-gray-50 dark:bg-gray-900 p-6 rounded-2xl border-2 border-gray-100 dark:border-gray-800 transition-colors duration-300">
+                        <li class="flex items-start gap-3">
+                            <span class="text-brand-green dark:text-brand-lightGreen mt-1">✓</span>
+                            <span><strong class="text-gray-800 dark:text-gray-200">Google Play Services:</strong> For Android app distribution and updates.</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <span class="text-brand-green dark:text-brand-lightGreen mt-1">✓</span>
+                            <span><strong class="text-gray-800 dark:text-gray-200">Supabase:</strong> Used for secure backend data management, teacher/admin authentication, and backing up student progress. Supabase is GDPR and SOC2 compliant.</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h3 class="text-2xl font-black text-brand-green dark:text-brand-lightGreen mb-4 flex items-center gap-2">
+                        <span class="bg-brand-lightGreen text-white w-8 h-8 rounded-full flex items-center justify-center text-xl">3</span> 
+                        Children's Privacy
+                    </h3>
+                    <p class="bg-blue-50 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 p-6 rounded-2xl border-2 border-blue-100 dark:border-blue-800/50 transition-colors duration-300">
+                        Alphabet GO is designed for educational use by children. We strictly comply with the Children's Online Privacy Protection Act (COPPA). We do not collect any personal contact information from children. Our microphone usage is strictly for real-time educational feedback and does not involve audio recording or transmission.
+                    </p>
+                </div>
+
+                <div>
+                    <h3 class="text-2xl font-black text-brand-green dark:text-brand-lightGreen mb-4 flex items-center gap-2">
+                        <span class="bg-brand-lightGreen text-white w-8 h-8 rounded-full flex items-center justify-center text-xl">4</span> 
+                        Security
+                    </h3>
+                    <p>
+                        We value your trust in providing us with access to your device's microphone for educational purposes. We use commercially acceptable means of protecting it, and as stated, no voice data ever leaves your device.
+                    </p>
+                </div>
+
+                <div class="bg-brand-purple dark:bg-[#6c2e92] text-white p-8 rounded-2xl shadow-inner mt-10 text-center transition-colors duration-300">
+                    <h3 class="text-2xl font-black mb-4">5. Contact Us</h3>
+                    <p class="mb-4 text-purple-100">
+                        If you have any questions or suggestions about our Privacy Policy, do not hesitate to contact us.
+                    </p>
+                    <a href="mailto:[INSERT_YOUR_EMAIL_HERE@example.com]" class="inline-block bg-white dark:bg-gray-100 text-brand-purple dark:text-[#6c2e92] font-black py-3 px-6 rounded-xl hover:scale-105 transition-transform active:scale-95 shadow-md">
+                        Email Support
+                    </a>
+                </div>
+            </div>
+        </div>
         
-        <h3>Microphone Access and Voice Data</h3>
-        <p>Alphabet GO includes a "Voice Evaluation" feature designed to help users practice their pronunciation.</p>
-        <ul>
-            <li><strong>Microphone Access:</strong> To use this feature, the app requests permission to access your device's microphone.</li>
-            <li><strong>No Recording or Storage:</strong> We use the device's built-in Speech Recognition API and local processing engines to process voice input in real-time. <strong>We do not record, store, or transmit any audio data to our servers.</strong> The audio is processed entirely locally on your device to determine if the spoken word matches the lesson material. Once the evaluation is complete, the audio data is immediately discarded.</li>
-        </ul>
-
-        <h3>Other Information</h3>
-        <ul>
-            <li><strong>Progress Tracking:</strong> We store local progress (such as completed levels and scores) on your device. For logged-in users, we sync this progress to our secure database to track your learning journey across devices.</li>
-            <li><strong>Personal Information:</strong> We do not collect personally identifiable information (PII) from children. For teachers and administrators, we collect basic account information (such as email addresses) required to provide dashboard access and manage student progress.</li>
-        </ul>
-
-        <h2>2. Third-Party Services</h2>
-        <p>Our app uses the following third-party services to function:</p>
-        <ul>
-            <li><strong>Google Play Services:</strong> For Android app distribution and updates.</li>
-            <li><strong>Supabase:</strong> Used for secure backend data management, teacher/admin authentication, and backing up student progress. Supabase is GDPR and SOC2 compliant.</li>
-        </ul>
-
-        <h2>3. Children's Privacy</h2>
-        <p>Alphabet GO is designed for educational use by children. We strictly comply with the Children's Online Privacy Protection Act (COPPA). We do not collect any personal contact information from children. Our microphone usage is strictly for real-time educational feedback and does not involve audio recording or transmission.</p>
-
-        <h2>4. Security</h2>
-        <p>We value your trust in providing us with access to your device's microphone for educational purposes. We use commercially acceptable means of protecting it, and as stated, no voice data ever leaves your device.</p>
-
-        <h2>5. Contact Us</h2>
-        <p>If you have any questions or suggestions about our Privacy Policy, do not hesitate to contact us at <strong>[INSERT_YOUR_EMAIL_HERE@example.com]</strong>.</p>
+        <div class="text-center mt-8 text-amber-600/60 dark:text-gray-500 font-bold text-sm">
+            &copy; 2026 Alphabet GO. All rights reserved.
+        </div>
     </div>
 </body>
 </html>
