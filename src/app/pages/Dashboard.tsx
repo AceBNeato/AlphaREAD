@@ -4,6 +4,7 @@ import { Button } from "../components/ui/button";
 import { Sparkles, Trophy, Power } from "lucide-react";
 import { ThemeToggle } from "../components/ThemeToggle";
 import { levels } from "../data/levels";
+import { PrivacyPolicyModal } from "../components/PrivacyPolicyModal";
 import { App } from '@capacitor/app';
 import { supabase } from "../../lib/supabase";
 
@@ -209,6 +210,9 @@ export default function Dashboard() {
             </div>
           </button>
 
+          <div className="text-center mt-6">
+            <PrivacyPolicyModal />
+          </div>
         </div>
       </div>
     </div>

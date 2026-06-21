@@ -151,27 +151,7 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete }: L
 
   const handleFinish = async () => {
     setIsSaving(true);
-    try {
-      const profileStr = localStorage.getItem("userProfile");
-      if (profileStr) {
-        const profile = JSON.parse(profileStr);
-        if (profile.id) {
-          const deviceId = localStorage.getItem("activated_device_id");
-          if (profile.role === "student" && deviceId) {
-            await supabase.rpc("record_student_progress", {
-              p_student_id: profile.id,
-              p_device_id: deviceId,
-              p_level_id: levelId,
-              p_score: CVC_SENTENCES.length,
-            });
-          } else if (profile.role !== "student") {
-            console.log("Preview mode: progress not recorded.");
-          }
-        }
-      }
-    } catch (err) {
-      console.error("Error saving progress:", err);
-    }
+
 
     const completedLevels = JSON.parse(localStorage.getItem("completedLevels") || "[]");
     if (!completedLevels.includes(levelId)) {

@@ -172,7 +172,7 @@ export function LevelSyllableBuilder({
     if (feedback || allDone || completedTargets.has(currentTarget.syllable)) return;
 
     // Play audio for the letter
-    const audio = new Audio(`${(import.meta as any).env.BASE_URL}audio/alphasounds-${letter.toLowerCase()}.mp3`);
+    const audio = new Audio(`${(import.meta as any).env.BASE_URL}audio/alphabet/alphasounds-${letter.toLowerCase()}.mp3`);
     audio.play().catch(() => {
       // Ignore autoplay errors
     });

@@ -3,7 +3,7 @@ import { useNavigate } from "react-router";
 import { Button } from "./ui/button";
 import { allLetters as ALL_LETTERS, LETTER_NAMES, LETTER_TTS } from "../data/levels";
 import { motion, AnimatePresence } from "motion/react";
-import {ChevronRight, Home, ArrowRight, Shuffle, FastForward, Volume2, RotateCcw, Sparkles, Mic, MicOff, CheckCircle2, XCircle, X} from "lucide-react";
+import { ChevronRight, Home, ArrowRight, Shuffle, FastForward, Volume2, RotateCcw, Sparkles, Mic, MicOff, CheckCircle2, XCircle, X } from "lucide-react";
 import { confirmAction } from "../utils/alerts";
 import { playSound } from "../utils/soundEffects";
 import { MatchButton } from "./MatchButton";
@@ -27,7 +27,7 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
   // ALPHABET strictly ordered A-Z
   const ALPHABET = useMemo(() =>
     [...ALL_LETTERS].sort((a, b) => a.letter.localeCompare(b.letter)).map(l => l.letter)
-  , []);
+    , []);
 
   // Randomized alphabet for the final set
   const [finalAlphabet] = useState(() => [...ALPHABET].sort(() => Math.random() - 0.5));
@@ -268,9 +268,9 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
 
   const handleTypeChange = (letter: string, val: string) => {
     if (val.length > 1) return;
-    
+
     setTypeInputs(prev => ({ ...prev, [letter]: val }));
-    
+
     if (val.length === 1) {
       if (val.toLowerCase() === letter.toLowerCase()) {
         playSound("correct", 0.4);
@@ -307,29 +307,7 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
 
   const handleFinish = async () => {
     setIsSaving(true);
-    try {
-      const profileStr = localStorage.getItem("userProfile");
-      if (profileStr) {
-        const profile = JSON.parse(profileStr);
-        if (profile.id) {
-          const deviceId = localStorage.getItem("activated_device_id");
-          const totalQuestions = STEPS.length * 6; // Approx
-          if (profile.role === "student" && deviceId) {
-            await supabase.rpc("record_student_progress", {
-              p_student_id: profile.id,
-              p_device_id: deviceId,
-              p_level_id: levelId,
-              p_score: totalQuestions,
-            });
-          } else if (profile.role !== "student") {
-            // Do not record progress for teachers/admins previewing
-            console.log("Preview mode: progress not recorded.");
-          }
-        }
-      }
-    } catch (err) {
-      console.error("Error saving progress:", err);
-    }
+
 
     const completedLevels = JSON.parse(
       localStorage.getItem("completedLevels") || "[]"
@@ -368,7 +346,7 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
 
   const handleLetterMatchClick = (letter: string) => {
     if (matchedPairs.has(letter) || wrongMatchPair) return;
-    
+
     // User requested letter buttons to also have audio
     playNameTTS(letter);
 
@@ -379,7 +357,7 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-purple-50 dark:bg-none dark:bg-[#0d141c] overflow-x-hidden flex flex-col">
       <Confetti active={showConfetti} />
-      
+
       {/* Header */}
       <div className="sticky top-0 z-10 bg-white/80 dark:bg-[#0d141c]/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 px-4 py-3">
         <div className="max-w-4xl mx-auto flex items-center gap-3 w-full">
@@ -387,9 +365,9 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
           <div className="flex-1 text-center">
             <h2 className="text-lg font-bold tracking-tight" style={{ color: accent.primary }}>
               {step.type === 'review' ? 'Letter Names - Review Phase' :
-               step.type === 'match' ? 'Letter Names - Listen & Match' :
-               step.type === 'voice' ? 'Letter Names - Say the Name!' :
-               'Letter Names - Listen & Type'}
+                step.type === 'match' ? 'Letter Names - Listen & Match' :
+                  step.type === 'voice' ? 'Letter Names - Say the Name!' :
+                    'Letter Names - Listen & Type'}
             </h2>
           </div>
           <span className="text-sm font-bold" style={{ color: accent.primary }}>Step {currentStep + 1}/{STEPS.length}</span>
@@ -404,8 +382,8 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
                 <p className="text-gray-500 mt-2">Tap the letters to hear their sounds</p>
                 {/* Navigation Controls moved to top */}
                 <div className="flex justify-center items-center w-full gap-3 sm:gap-4 max-w-sm mx-auto mt-6">
-                  <Button 
-                    onClick={handleShuffleReview} 
+                  <Button
+                    onClick={handleShuffleReview}
                     className="flex-1 rounded-xl font-bold text-white shadow-md border-b-4 border-[#8b40b8] hover:scale-105 active:scale-95 px-2"
                     style={{ background: 'linear-gradient(135deg, #ce82ff 0%, #a559d6 100%)' }}
                   >
@@ -454,33 +432,33 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
                 <p className="text-gray-500 mt-2">Tap a speaker, then tap the matching letter!</p>
                 {/* Navigation Controls moved to top */}
                 <div className="flex justify-center items-center w-full gap-3 sm:gap-4 max-w-md mx-auto mt-6">
-                  <Button 
+                  <Button
                     onClick={() => {
                       setMatchColumns(prev => ({
                         left: [...prev.left].sort(() => Math.random() - 0.5),
                         right: [...prev.right].sort(() => Math.random() - 0.5)
                       }));
-                    }} 
+                    }}
                     className="flex-1 rounded-xl font-bold text-white shadow-md border-b-4 border-[#8b40b8] hover:scale-105 active:scale-95 px-2"
                     style={{ background: 'linear-gradient(135deg, #ce82ff 0%, #a559d6 100%)' }}
                   >
                     <Shuffle className="w-4 h-4 mr-1" /> Shuffle
                   </Button>
-                  <Button 
-                    onClick={setupMatchPhase} 
+                  <Button
+                    onClick={setupMatchPhase}
                     className="flex-1 rounded-xl font-bold text-white shadow-md border-b-4 border-[#e11d48] hover:scale-105 active:scale-95 px-2"
                     style={{ background: 'linear-gradient(135deg, #fb7185 0%, #e11d48 100%)' }}
                   >
                     <RotateCcw className="w-4 h-4 mr-1" /> Reset
                   </Button>
-                  <Button 
-                    onClick={handleStepNext} 
+                  <Button
+                    onClick={handleStepNext}
                     className="flex-1 rounded-xl font-bold text-white shadow-md border-b-4 border-[#c99c00] hover:scale-105 active:scale-95 px-2"
                     style={{ background: 'linear-gradient(135deg, #ffc800 0%, #ff9600 100%)' }}
                   >
                     <FastForward className="w-4 h-4 mr-1" /> Skip
                   </Button>
-                  
+
                   <Button
                     onClick={handleStepNext}
                     disabled={matchedPairs.size !== matchColumns.left.length || matchColumns.left.length === 0}
@@ -559,30 +537,30 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
                 <p className="text-gray-500 mt-2">Tap the microphone and say the name of the letter loud and clear.</p>
                 {/* Navigation Controls moved to top */}
                 <div className="flex justify-center items-center w-full gap-3 sm:gap-4 max-w-md mx-auto mt-6">
-                  <Button 
+                  <Button
                     onClick={() => {
-                        setShuffledVoiceLetters(prev => [...prev].sort(() => Math.random() - 0.5));
-                    }} 
+                      setShuffledVoiceLetters(prev => [...prev].sort(() => Math.random() - 0.5));
+                    }}
                     className="flex-1 rounded-xl font-bold text-white shadow-md border-b-4 border-[#8b40b8] hover:scale-105 active:scale-95 px-2"
                     style={{ background: 'linear-gradient(135deg, #ce82ff 0%, #a559d6 100%)' }}
                   >
                     <Shuffle className="w-4 h-4 mr-1" /> Shuffle
                   </Button>
-                  <Button 
-                    onClick={setupVoicePhase} 
+                  <Button
+                    onClick={setupVoicePhase}
                     className="flex-1 rounded-xl font-bold text-white shadow-md border-b-4 border-[#e11d48] hover:scale-105 active:scale-95 px-2"
                     style={{ background: 'linear-gradient(135deg, #fb7185 0%, #e11d48 100%)' }}
                   >
                     <RotateCcw className="w-4 h-4 mr-1" /> Reset
                   </Button>
-                  <Button 
-                    onClick={handleStepNext} 
+                  <Button
+                    onClick={handleStepNext}
                     className="flex-1 rounded-xl font-bold text-white shadow-md border-b-4 border-[#c99c00] hover:scale-105 active:scale-95 px-2"
                     style={{ background: 'linear-gradient(135deg, #ffc800 0%, #ff9600 100%)' }}
                   >
                     <FastForward className="w-4 h-4 mr-1" /> Skip
                   </Button>
-                  
+
                   <Button
                     onClick={handleStepNext}
                     disabled={completedVoiceLetters.size < shuffledVoiceLetters.length}
@@ -623,21 +601,21 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
                         </div>
 
                         <div className="flex items-center gap-3">
-                              {isEval && (
-                                <div className="flex items-center gap-2 mt-1 sm:mt-0 flex-wrap">
-                                  {micReady ? (
-                                    <span className="text-pink-500 text-sm font-bold animate-pulse">Listening...</span>
-                                  ) : (
-                                    <span className="text-amber-500 text-sm font-bold animate-pulse">Get ready...</span>
-                                  )}
-                                  {micReady && <AudioVisualizer isListening={!!evaluatingLetter} isMobile={isMobile} />}
-                                  {vTranscript && (
-                                    <span className="p-1 bg-gray-200 rounded text-[10px] font-mono text-gray-700 ml-1 truncate max-w-[120px]">
-                                      [Heard: {vTranscript}]
-                                    </span>
-                                  )}
-                                </div>
+                          {isEval && (
+                            <div className="flex items-center gap-2 mt-1 sm:mt-0 flex-wrap">
+                              {micReady ? (
+                                <span className="text-pink-500 text-sm font-bold animate-pulse">Listening...</span>
+                              ) : (
+                                <span className="text-amber-500 text-sm font-bold animate-pulse">Get ready...</span>
                               )}
+                              {micReady && <AudioVisualizer isListening={!!evaluatingLetter} isMobile={isMobile} />}
+                              {vTranscript && (
+                                <span className="p-1 bg-gray-200 rounded text-[10px] font-mono text-gray-700 ml-1 truncate max-w-[120px]">
+                                  [Heard: {vTranscript}]
+                                </span>
+                              )}
+                            </div>
+                          )}
 
                           <button
                             onClick={() => {
@@ -645,7 +623,7 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
                                 setEvaluatingLetter(null);
                               } else if (!isDone) {
                                 setEvaluatingLetter(l);
-                              setVoiceFeedbackMap(prev => ({ ...prev, [l]: null }));
+                                setVoiceFeedbackMap(prev => ({ ...prev, [l]: null }));
                                 setVoiceTranscriptsMap(prev => ({ ...prev, [l]: "" }));
                                 setMicReady(false);
                                 if (micReadyTimerRef.current) clearTimeout(micReadyTimerRef.current);
@@ -687,28 +665,28 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
                 <p className="text-gray-500 mt-2">Tap the speaker, then type the letter!</p>
                 {/* Navigation Controls moved to top */}
                 <div className="flex justify-center items-center w-full gap-3 sm:gap-4 max-w-md mx-auto mt-6">
-                  <Button 
-                    onClick={handleShuffleType} 
+                  <Button
+                    onClick={handleShuffleType}
                     className="flex-1 rounded-xl font-bold text-white shadow-md border-b-4 border-[#8b40b8] hover:scale-105 active:scale-95 px-2"
                     style={{ background: 'linear-gradient(135deg, #ce82ff 0%, #a559d6 100%)' }}
                   >
                     <Shuffle className="w-4 h-4 mr-1" /> Shuffle
                   </Button>
-                  <Button 
-                    onClick={setupTypePhase} 
+                  <Button
+                    onClick={setupTypePhase}
                     className="flex-1 rounded-xl font-bold text-white shadow-md border-b-4 border-[#e11d48] hover:scale-105 active:scale-95 px-2"
                     style={{ background: 'linear-gradient(135deg, #fb7185 0%, #e11d48 100%)' }}
                   >
                     <RotateCcw className="w-4 h-4 mr-1" /> Reset
                   </Button>
-                  <Button 
-                    onClick={handleStepNext} 
+                  <Button
+                    onClick={handleStepNext}
                     className="flex-1 rounded-xl font-bold text-white shadow-md border-b-4 border-[#c99c00] hover:scale-105 active:scale-95 px-2"
                     style={{ background: 'linear-gradient(135deg, #ffc800 0%, #ff9600 100%)' }}
                   >
                     <FastForward className="w-4 h-4 mr-1" /> Skip
                   </Button>
-                  
+
                   <Button
                     onClick={handleStepNext}
                     disabled={!isTypePhaseComplete}
@@ -746,7 +724,7 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
                   {typeOrder.map((letter) => {
                     const status = typeStatus[letter];
                     const val = typeInputs[letter] || "";
-                    
+
                     return (
                       <motion.div
                         key={`input-${letter}`}
@@ -759,9 +737,9 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
                           onChange={(e) => handleTypeChange(letter, e.target.value)}
                           disabled={status === true}
                           className={`w-full h-full text-center text-2xl sm:text-3xl font-black rounded-lg sm:rounded-2xl border-2 sm:border-b-[4px] outline-none transition-all shadow-sm
-                            ${status === true ? 'bg-gray-100 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700/50 text-green-600 dark:text-green-500 opacity-50 grayscale' : 
-                              status === false ? 'bg-red-50 border-red-400 text-red-600' : 
-                              'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-200 focus:border-blue-400'}
+                            ${status === true ? 'bg-gray-100 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700/50 text-green-600 dark:text-green-500 opacity-50 grayscale' :
+                              status === false ? 'bg-red-50 border-red-400 text-red-600' :
+                                'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-200 focus:border-blue-400'}
                           `}
                         />
                       </motion.div>

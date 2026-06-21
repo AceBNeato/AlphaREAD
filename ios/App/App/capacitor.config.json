@@ -2,5 +2,8 @@
 	"appId": "com.commsforedu.alphabetgo",
 	"appName": "Alphabet GO",
 	"webDir": "dist",
-	"packageClassList": []
+	"packageClassList": [
+		"TextToSpeechPlugin",
+		"AppPlugin"
+	]
 }
