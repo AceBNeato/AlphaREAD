@@ -231,6 +231,43 @@ export default function Activation() {
       <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-[#58CC02]/5 rounded-full blur-[140px] pointer-events-none" />
       <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-[#1CB0F6]/5 rounded-full blur-[140px] pointer-events-none" />
 
+      {/* Floating Letters Background */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-20 select-none z-0">
+        <style>{`
+          @keyframes drift {
+            0%   { transform: translate(0px, 0px) rotate(var(--rot)) scale(1); }
+            20%  { transform: translate(var(--tx1), var(--ty1)) rotate(calc(var(--rot) + 35deg)) scale(1.15); }
+            40%  { transform: translate(var(--tx2), var(--ty2)) rotate(calc(var(--rot) - 15deg)) scale(0.9); }
+            60%  { transform: translate(var(--tx3), var(--ty3)) rotate(calc(var(--rot) + 25deg)) scale(1.1); }
+            80%  { transform: translate(var(--tx4), var(--ty4)) rotate(calc(var(--rot) - 30deg)) scale(0.95); }
+            100% { transform: translate(0px, 0px) rotate(var(--rot)) scale(1); }
+          }
+          .floating-letter {
+            position: absolute;
+            font-weight: 900;
+            animation: drift var(--dur) linear infinite;
+            animation-delay: var(--del);
+            transform: rotate(var(--rot));
+          }
+        `}</style>
+        <span className="floating-letter text-7xl text-white top-[15%] left-[10%]" style={{ '--rot': '15deg', '--dur': '18s', '--del': '0s', '--tx1': '100px', '--ty1': '-80px', '--tx2': '-60px', '--ty2': '120px', '--tx3': '80px', '--ty3': '40px', '--tx4': '-50px', '--ty4': '-90px' } as React.CSSProperties}>A</span>
+        <span className="floating-letter text-8xl text-[#58CC02] top-[20%] right-[15%]" style={{ '--rot': '-20deg', '--dur': '22s', '--del': '-5s', '--tx1': '-140px', '--ty1': '90px', '--tx2': '80px', '--ty2': '-110px', '--tx3': '-100px', '--ty3': '-40px', '--tx4': '120px', '--ty4': '60px' } as React.CSSProperties}>B</span>
+        <span className="floating-letter text-9xl text-[#1CB0F6] bottom-[20%] left-[15%]" style={{ '--rot': '25deg', '--dur': '20s', '--del': '-2s', '--tx1': '120px', '--ty1': '-130px', '--tx2': '-90px', '--ty2': '-50px', '--tx3': '110px', '--ty3': '80px', '--tx4': '-60px', '--ty4': '140px' } as React.CSSProperties}>C</span>
+        <span className="floating-letter text-6xl text-[#ce82ff] top-[55%] right-[8%]" style={{ '--rot': '-10deg', '--dur': '17s', '--del': '-7s', '--tx1': '-80px', '--ty1': '-100px', '--tx2': '120px', '--ty2': '60px', '--tx3': '-90px', '--ty3': '110px', '--tx4': '70px', '--ty4': '-80px' } as React.CSSProperties}>D</span>
+        <span className="floating-letter text-7xl text-white bottom-[10%] right-[30%]" style={{ '--rot': '18deg', '--dur': '24s', '--del': '-1s', '--tx1': '150px', '--ty1': '80px', '--tx2': '-120px', '--ty2': '-90px', '--tx3': '140px', '--ty3': '-60px', '--tx4': '-80px', '--ty4': '110px' } as React.CSSProperties}>E</span>
+        <span className="floating-letter text-6xl text-[#FF9600] top-[40%] left-[5%]" style={{ '--rot': '-25deg', '--dur': '26s', '--del': '-4s', '--tx1': '-110px', '--ty1': '-120px', '--tx2': '100px', '--ty2': '90px', '--tx3': '50px', '--ty3': '-140px', '--tx4': '-130px', '--ty4': '50px' } as React.CSSProperties}>F</span>
+        <span className="floating-letter text-5xl text-[#FF4B4B] bottom-[40%] right-[25%]" style={{ '--rot': '10deg', '--dur': '16s', '--del': '-3s', '--tx1': '90px', '--ty1': '140px', '--tx2': '-100px', '--ty2': '-80px', '--tx3': '-40px', '--ty3': '120px', '--tx4': '110px', '--ty4': '-60px' } as React.CSSProperties}>G</span>
+        
+        {/* Simple Words & CV/VC Blocks */}
+        <span className="floating-letter text-4xl text-[#58CC02] top-[5%] right-[40%]" style={{ '--rot': '-15deg', '--dur': '21s', '--del': '-8s', '--tx1': '-100px', '--ty1': '60px', '--tx2': '120px', '--ty2': '150px', '--tx3': '40px', '--ty3': '-110px', '--tx4': '-130px', '--ty4': '-40px' } as React.CSSProperties}>CAT</span>
+        <span className="floating-letter text-5xl text-[#1CB0F6] bottom-[15%] left-[30%]" style={{ '--rot': '12deg', '--dur': '28s', '--del': '-12s', '--tx1': '150px', '--ty1': '-100px', '--tx2': '-80px', '--ty2': '-130px', '--tx3': '-120px', '--ty3': '90px', '--tx4': '140px', '--ty4': '60px' } as React.CSSProperties}>SUN</span>
+        <span className="floating-letter text-3xl text-white top-[30%] left-[40%]" style={{ '--rot': '8deg', '--dur': '19s', '--del': '-6s', '--tx1': '80px', '--ty1': '130px', '--tx2': '-110px', '--ty2': '60px', '--tx3': '90px', '--ty3': '-100px', '--tx4': '-60px', '--ty4': '-140px' } as React.CSSProperties}>DOG</span>
+        <span className="floating-letter text-4xl text-[#ce82ff] bottom-[35%] right-[15%]" style={{ '--rot': '-20deg', '--dur': '18s', '--del': '-4s', '--tx1': '-130px', '--ty1': '-80px', '--tx2': '90px', '--ty2': '-100px', '--tx3': '120px', '--ty3': '120px', '--tx4': '-70px', '--ty4': '90px' } as React.CSSProperties}>BA</span>
+        <span className="floating-letter text-5xl text-[#FF9600] top-[70%] left-[8%]" style={{ '--rot': '25deg', '--dur': '23s', '--del': '-9s', '--tx1': '100px', '--ty1': '-140px', '--tx2': '-150px', '--ty2': '80px', '--tx3': '60px', '--ty3': '130px', '--tx4': '-110px', '--ty4': '-70px' } as React.CSSProperties}>IN</span>
+        <span className="floating-letter text-4xl text-[#FF4B4B] top-[10%] right-[5%]" style={{ '--rot': '-5deg', '--dur': '15s', '--del': '-11s', '--tx1': '-80px', '--ty1': '110px', '--tx2': '130px', '--ty2': '-60px', '--tx3': '-120px', '--ty3': '-100px', '--tx4': '90px', '--ty4': '140px' } as React.CSSProperties}>UP</span>
+        <span className="floating-letter text-3xl text-white bottom-[5%] left-[5%]" style={{ '--rot': '30deg', '--dur': '27s', '--del': '-14s', '--tx1': '160px', '--ty1': '-60px', '--tx2': '-60px', '--ty2': '-150px', '--tx3': '130px', '--ty3': '90px', '--tx4': '-140px', '--ty4': '110px' } as React.CSSProperties}>AT</span>
+      </div>
+
       {/* ── SPLASH SCREEN ── */}
       {showSplash ? (
         <div className="flex flex-col items-center justify-center gap-6 animate-in fade-in zoom-in duration-700 w-full max-w-sm px-6">
