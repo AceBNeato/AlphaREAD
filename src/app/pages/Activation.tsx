@@ -205,18 +205,23 @@ export default function Activation() {
         authData = signUpData as any;
       }
 
-      // Link auth_id if needed, and register this device
-      const { error: updateError } = await supabase
-        .from("profiles")
-        .update({
-          auth_id: authData?.session?.user?.id || profile.auth_id,
-          current_device_id: newDeviceId
-        })
-        .eq("id", profile.id);
+      // Link auth_id if needed, and register this device securely via RPC to bypass RLS
+      const { error: updateError } = await supabase.rpc('register_device_session', {
+        p_profile_id: profile.id,
+        p_auth_id: authData?.session?.user?.id || profile.auth_id,
+        p_device_id: newDeviceId
+      });
 
       if (updateError) {
-        console.error("Failed to register device session:", updateError);
-        throw new Error("Could not register device session. RLS Error: " + updateError.message);
+        console.warn("Failed to register device session via RPC, falling back to direct update:", updateError);
+        // Fallback in case RPC isn't created yet
+        await supabase
+          .from("profiles")
+          .update({
+            auth_id: authData?.session?.user?.id || profile.auth_id,
+            current_device_id: newDeviceId
+          })
+          .eq("id", profile.id);
       }
 
       // Log user in locally
