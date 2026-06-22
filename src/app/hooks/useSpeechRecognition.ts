@@ -205,8 +205,8 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, singleSho
           const letterUpper = trimmedWord.charAt(0).toUpperCase();
           let matched = false;
 
-          for (let i = 0; i < results.length; i++) {
-            const normalized = normalizeTranscript(results[i].transcript);
+          for (let i = 0; i < allTranscripts.length; i++) {
+            const normalized = normalizeTranscript(allTranscripts[i]);
 
             // Look up the homophones for the base letter (e.g., "A")
             const allowedWords = [
@@ -262,7 +262,7 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, singleSho
 
             if (isPerfectMatch) {
               matched = true;
-              matchStr = results[i].transcript.trim();
+              matchStr = allTranscripts[i].trim();
               break;
             }
           }

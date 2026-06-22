@@ -67,6 +67,11 @@ export default function TeacherDashboard() {
       }
     };
     verifyAccount();
+
+    // HTMX-style live polling: Continuously check if the admin forcefully logged them out
+    const intervalId = setInterval(verifyAccount, 5000);
+
+    return () => clearInterval(intervalId);
   }, [navigate]);
 
   const fetchStudents = async (teacherId: string) => {
