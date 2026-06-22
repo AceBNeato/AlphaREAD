@@ -81,10 +81,10 @@ export default function Activation() {
 
   // Step state
   const [authStep, setAuthStep] = useState<"initial" | "teacher-code" | "student-pin">("initial");
-  
+
   // Teacher Access Code
   const [accessCode, setAccessCode] = useState("");
-  
+
   // Student PIN
   const [studentPin, setStudentPin] = useState("");
   const [showPin, setShowPin] = useState(false);
@@ -112,7 +112,7 @@ export default function Activation() {
   // Splash screen transition
   useEffect(() => {
     let isMounted = true;
-    
+
     setTimeout(() => {
       if (!isMounted) return;
       setShowSplash(false);
@@ -176,6 +176,19 @@ export default function Activation() {
         throw new Error("Invalid email or access code. Contact your administrator.");
       }
 
+      if (profile.role === "admin") {
+        throw new Error("Access Denied: Administrators must use the dedicated Admin Portal.");
+      }
+
+      // -- Single Device Policy for Teachers --
+      // If the teacher is already logged in elsewhere, block them
+      if (profile.current_device_id) {
+        throw new Error("Device Limit Reached: You are already logged in on another device. Please sign out from that device first, or ask an Admin to unlock your account.");
+      }
+
+      // Generate a unique device session ID for this login
+      const newDeviceId = crypto.randomUUID();
+
       // ── Establish Real Supabase Session for RLS ──
       let { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email: emailClean,
@@ -192,28 +205,26 @@ export default function Activation() {
         authData = signUpData as any;
       }
 
-      // Link auth_id if needed
-      if (!profile.auth_id && authData?.session?.user?.id) {
-        await supabase
-          .from("profiles")
-          .update({ auth_id: authData.session.user.id })
-          .eq("id", profile.id);
-      }
+      // Link auth_id if needed, and register this device
+      await supabase
+        .from("profiles")
+        .update({
+          auth_id: authData?.session?.user?.id || profile.auth_id,
+          current_device_id: newDeviceId
+        })
+        .eq("id", profile.id);
 
       // Log user in locally
       localStorage.setItem("userProfile", JSON.stringify({
         id: profile.id,
         name: profile.first_name || "Teacher",
-        avatar: profile.role === "admin" ? "🛡️" : "👩‍🏫",
+        avatar: "👩‍🏫",
         role: profile.role,
+        deviceId: newDeviceId, // Store the device session locally
         createdAt: profile.created_at
       }));
 
-      if (profile.role === "admin") {
-        navigate("/admin", { replace: true });
-      } else {
-        navigate("/teacher-dashboard", { replace: true });
-      }
+      navigate("/teacher-dashboard", { replace: true });
     } catch (err: any) {
       setError(err.message || "Verification failed.");
       setAccessCode("");
@@ -274,7 +285,7 @@ export default function Activation() {
   };
 
   return (
-    <div 
+    <div
       className="min-h-screen bg-gray-950 flex flex-col items-center justify-center p-4 sm:p-6 relative overflow-hidden text-gray-100"
       onClick={handleBgClick}
     >
@@ -308,7 +319,7 @@ export default function Activation() {
         <span className="floating-letter text-7xl text-white bottom-[10%] right-[30%]" style={{ '--rot': '18deg', '--dur': '24s', '--del': '-1s', '--tx1': '150px', '--ty1': '80px', '--tx2': '-120px', '--ty2': '-90px', '--tx3': '140px', '--ty3': '-60px', '--tx4': '-80px', '--ty4': '110px' } as React.CSSProperties}>E</span>
         <span className="floating-letter text-6xl text-[#FF9600] top-[40%] left-[5%]" style={{ '--rot': '-25deg', '--dur': '26s', '--del': '-4s', '--tx1': '-110px', '--ty1': '-120px', '--tx2': '100px', '--ty2': '90px', '--tx3': '50px', '--ty3': '-140px', '--tx4': '-130px', '--ty4': '50px' } as React.CSSProperties}>F</span>
         <span className="floating-letter text-5xl text-[#FF4B4B] bottom-[40%] right-[25%]" style={{ '--rot': '10deg', '--dur': '16s', '--del': '-3s', '--tx1': '90px', '--ty1': '140px', '--tx2': '-100px', '--ty2': '-80px', '--tx3': '-40px', '--ty3': '120px', '--tx4': '110px', '--ty4': '-60px' } as React.CSSProperties}>G</span>
-        
+
         {/* Simple Words & CV/VC Blocks */}
         <span className="floating-letter text-4xl text-[#58CC02] top-[5%] right-[40%]" style={{ '--rot': '-15deg', '--dur': '21s', '--del': '-8s', '--tx1': '-100px', '--ty1': '60px', '--tx2': '120px', '--ty2': '150px', '--tx3': '40px', '--ty3': '-110px', '--tx4': '-130px', '--ty4': '-40px' } as React.CSSProperties}>CAT</span>
         <span className="floating-letter text-5xl text-[#1CB0F6] bottom-[15%] left-[30%]" style={{ '--rot': '12deg', '--dur': '28s', '--del': '-12s', '--tx1': '150px', '--ty1': '-100px', '--tx2': '-80px', '--ty2': '-130px', '--tx3': '-120px', '--ty3': '90px', '--tx4': '140px', '--ty4': '60px' } as React.CSSProperties}>SUN</span>

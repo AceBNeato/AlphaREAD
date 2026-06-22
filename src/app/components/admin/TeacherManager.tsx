@@ -2,7 +2,7 @@ import { useState } from "react";
 import { supabase } from "../../../lib/supabase";
 import { useNavigate } from "react-router";
 import { 
-  GraduationCap, Search, Filter, Plus, X, UserPlus, 
+  GraduationCap, Search, Filter, Plus, X, UserPlus, Unlock,
   Eye, EyeOff, Save, Edit, Trash2, Smartphone, RefreshCw, Copy, Check 
 } from "lucide-react";
 import { confirmAction, showAlert } from "../../utils/alerts";
@@ -329,21 +329,17 @@ export function TeacherManager({ teachers, onRefresh }: TeacherManagerProps) {
                               <button onClick={() => startEditingTeacher(teacher)} className="p-1.5 bg-blue-900/20 text-blue-400 rounded-lg"><Edit className="w-4 h-4" /></button>
                               <button onClick={() => deleteTeacher(teacher.id)} className="p-1.5 bg-red-900/20 text-red-400 rounded-lg"><Trash2 className="w-4 h-4" /></button>
                               <button
-                                onClick={() => {
-                                  localStorage.setItem("userProfile", JSON.stringify({
-                                    id: "teacher-preview",
-                                    name: teacher.first_name || "Teacher",
-                                    avatar: "👨‍🏫",
-                                    role: "teacher-preview",
-                                    returnTo: "/admin",
-                                    createdAt: new Date().toISOString()
-                                  }));
-                                  navigate("/dashboard");
+                                onClick={async () => {
+                                  const confirm = await confirmAction("Force Logout?", "This will kick the teacher out of their current device and allow them to log in on a new one.");
+                                  if (!confirm) return;
+                                  await supabase.from("profiles").update({ current_device_id: null }).eq("id", teacher.id);
+                                  showAlert("Unlocked", "Teacher can now log in on a new device.", "success");
+                                  onRefresh();
                                 }}
-                                className="p-1.5 bg-indigo-900/20 text-indigo-400 rounded-lg hover:bg-indigo-900/40"
-                                title="Open App Preview"
+                                className="p-1.5 bg-yellow-900/20 text-yellow-400 rounded-lg hover:bg-yellow-900/40"
+                                title="Force Logout / Unlock Device"
                               >
-                                <Smartphone className="w-4 h-4" />
+                                <Unlock className="w-4 h-4" />
                               </button>
                             </>
                           )}

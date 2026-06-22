@@ -108,7 +108,11 @@ export default function TeacherDashboard() {
     });
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    if (teacherProfile?.id) {
+      // Clear the current_device_id in the database to unlock the account for other devices
+      await supabase.from("profiles").update({ current_device_id: null }).eq("id", teacherProfile.id);
+    }
     localStorage.removeItem("userProfile");
     navigate("/", { replace: true });
   };

@@ -95,14 +95,6 @@ const HOMOPHONES: Record<string, string[]> = {
   "Y": ["y", "why", "wye", "wi"],
   "Z": ["z", "zee", "zed", "ze"],
 
-  // Common CV/VC homophones
-  "PI": ["pie", "pee", "p"],
-  "ME": ["me", "mee", "m"],
-  "BE": ["be", "bee", "b"],
-  "TO": ["to", "too", "two", "t"],
-  "DO": ["do", "doo", "d"],
-  "WE": ["we", "wee", "w"],
-  "HE": ["he", "hee", "h"],
 
   // CVC homophones
   "BAT": ["bad", "that", "but"],
@@ -113,6 +105,9 @@ const HOMOPHONES: Record<string, string[]> = {
   "RUN": ["one", "won", "ran"],
   "HOP": ["hope", "hot", "pop"],
   "BUG": ["bag", "pug", "bud"],
+
+  // Digraphs & Blends
+  "THIGH": ["thie", "tie", "thy", "they"],
 };
 
 export function useSpeechRecognition({ evaluatingWord, enabled = true, singleShot = false, onResult, onSilenceTimeout, onError }: UseSpeechRecognitionProps) {

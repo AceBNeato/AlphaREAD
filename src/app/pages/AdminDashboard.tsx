@@ -124,6 +124,12 @@ export default function AdminDashboard() {
           </div>
           <div className="flex gap-2">
             <Button
+              onClick={() => navigate("/dashboard")}
+              className="bg-green-600 hover:bg-green-500 text-white font-bold px-4 py-2 rounded-xl flex items-center gap-2"
+            >
+              <Smartphone className="w-4 h-4" /> Open App
+            </Button>
+            <Button
               onClick={() => fetchData()}
               variant="outline"
               className="bg-transparent border-gray-800 hover:bg-gray-850 text-gray-300 font-bold px-3 py-2 rounded-xl flex items-center gap-2"
