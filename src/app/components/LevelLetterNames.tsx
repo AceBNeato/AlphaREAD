@@ -217,7 +217,6 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
   useSpeechRecognition({
     evaluatingWord: evaluatingLetter,
     enabled: !!evaluatingLetter,
-    singleShot: true,
     onResult: handleVoiceResult,
     onError: () => setEvaluatingLetter(null),
     onSilenceTimeout: () => {

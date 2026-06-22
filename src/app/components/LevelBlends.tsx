@@ -333,7 +333,7 @@ export function LevelBlends({ levelId, accent, categoryFilter, onComplete }: Lev
   useSpeechRecognition({
     evaluatingWord: evaluatingTargetForMic,
     enabled: !!evaluatingTargetForMic,
-    singleShot: true,
+    singleShot: currentPhase === "sentences",
     onResult: handleResult,
     onError: () => {
       setEvaluatingPatternId(null);

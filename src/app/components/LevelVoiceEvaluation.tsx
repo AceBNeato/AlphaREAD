@@ -183,7 +183,6 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
   useSpeechRecognition({
     evaluatingWord,
     enabled: !!evaluatingWord,
-    singleShot: true,
     onResult: handleResult,
     onError: handleError,
     onSilenceTimeout: handleSilence
