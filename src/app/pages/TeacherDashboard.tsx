@@ -46,7 +46,7 @@ export default function TeacherDashboard() {
     const verifyAccount = async () => {
       const { data, error } = await supabase
         .from("profiles")
-        .select("id, role")
+        .select("id, role, current_device_id")
         .eq("id", profile.id)
         .eq("role", "teacher")
         .single();
@@ -54,6 +54,14 @@ export default function TeacherDashboard() {
       if (error || !data || data.role !== "teacher") {
         localStorage.removeItem("userProfile");
         alert("Teacher access revoked, invalid, or deleted.");
+        navigate("/", { replace: true });
+        return;
+      }
+
+      // Check if an Admin forced a logout (unlocked the account) or another device took over
+      if (profile.deviceId && data.current_device_id !== profile.deviceId) {
+        localStorage.removeItem("userProfile");
+        alert("Session Expired: An admin unlocked your account or you logged in elsewhere.");
         navigate("/", { replace: true });
       }
     };

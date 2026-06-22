@@ -255,6 +255,7 @@ export function TeacherManager({ teachers, onRefresh }: TeacherManagerProps) {
               <tr className="bg-gray-800/60 border-b border-gray-800 text-xs font-bold text-gray-300 uppercase tracking-wider">
                 <th className="py-4 px-6">Alias / Name</th>
                 <th className="py-4 px-6">Email</th>
+                <th className="py-4 px-6">Status</th>
                 <th className="py-4 px-6">Access Code</th>
                 <th className="py-4 px-6 text-right">Actions</th>
               </tr>
@@ -262,7 +263,7 @@ export function TeacherManager({ teachers, onRefresh }: TeacherManagerProps) {
             <tbody className="divide-y divide-gray-800 text-sm">
               {teachers.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="py-8 px-6 text-center text-gray-500">No teachers registered yet.</td>
+                  <td colSpan={6} className="py-8 px-6 text-center text-gray-500">No teachers registered yet.</td>
                 </tr>
               ) : (
                 teachers
@@ -299,6 +300,19 @@ export function TeacherManager({ teachers, onRefresh }: TeacherManagerProps) {
                         )}
                       </td>
                       <td className="py-4 px-6">
+                        {teacher.current_device_id ? (
+                          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-green-900/20 text-green-400 text-xs font-bold border border-green-900/30">
+                            <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
+                            Online
+                          </div>
+                        ) : (
+                          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gray-800 text-gray-400 text-xs font-bold border border-gray-700">
+                            <span className="w-1.5 h-1.5 rounded-full bg-gray-500"></span>
+                            Offline
+                          </div>
+                        )}
+                      </td>
+                      <td className="py-4 px-6">
                         <div className="flex items-center gap-1.5">
                           <span className="font-mono text-green-400 font-bold tracking-wider">
                             {isCodeVisible ? (teacher.pin_hash || "—") : "••••••••"}
@@ -332,9 +346,13 @@ export function TeacherManager({ teachers, onRefresh }: TeacherManagerProps) {
                                 onClick={async () => {
                                   const confirm = await confirmAction("Force Logout?", "This will kick the teacher out of their current device and allow them to log in on a new one.");
                                   if (!confirm) return;
-                                  await supabase.from("profiles").update({ current_device_id: null }).eq("id", teacher.id);
-                                  showAlert("Unlocked", "Teacher can now log in on a new device.", "success");
-                                  onRefresh();
+                                  const { error } = await supabase.from("profiles").update({ current_device_id: null }).eq("id", teacher.id);
+                                  if (error) {
+                                    showAlert("Error", "Failed to unlock: " + error.message);
+                                  } else {
+                                    showAlert("Unlocked", "Teacher can now log in on a new device.", "success");
+                                    onRefresh();
+                                  }
                                 }}
                                 className="p-1.5 bg-yellow-900/20 text-yellow-400 rounded-lg hover:bg-yellow-900/40"
                                 title="Force Logout / Unlock Device"
