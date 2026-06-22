@@ -232,8 +232,9 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
 
   const handleResult = useCallback(
     (target: string, status: "correct" | "close" | "wrong" | null, transcript: string) => {
-      const tLower = transcript.toLowerCase();
-      let isCorrect = status === "correct" || status === "close" || tLower.includes(target.toLowerCase());
+      const tClean = transcript.toLowerCase().replace(/[.,!?'"-]/g, "").trim();
+      const targetClean = target.toLowerCase().replace(/[.,!?'"-]/g, "").trim();
+      let isCorrect = status === "correct" || status === "close" || tClean.includes(targetClean);
 
       clearEvalTimeout();
 
@@ -241,7 +242,7 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
         setPatternTranscriptsMap(prev => ({ ...prev, [evaluatingPatternId]: transcript }));
         const vName = LETTER_NAMES[target]?.toLowerCase() || "";
         const vTTS = LETTER_TTS[target]?.toLowerCase() || "";
-        isCorrect = isCorrect || tLower.includes(vName) || tLower.includes(vTTS) || tLower.includes(target.toLowerCase());
+        isCorrect = isCorrect || (vName && tClean.includes(vName)) || (vTTS && tClean.includes(vTTS)) || tClean.includes(targetClean);
 
         if (status === null && !isCorrect) return;
 
@@ -451,7 +452,7 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
             >
 
               <div className="text-center mb-8">
-                <p className="text-gray-500 mt-2">
+                <p className="text-white text-base sm:text-lg font-bold mt-2 block">
                   Review the patterns. Tap any word or heading to hear it spoken!
                 </p>
                 <div className="flex justify-center items-center w-full gap-3 sm:gap-4 max-w-sm mx-auto mt-6">
@@ -532,7 +533,7 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
           ) : !showConfetti && currentPhase === "match" ? (
             <motion.div key={`phase-match`} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="flex flex-col items-center w-full">
               <div className="text-center mb-6">
-                <p className="text-gray-500 mt-2">Tap a speaker, then tap the matching pattern!</p>
+                <p className="text-white text-base sm:text-lg font-bold mt-2 block">Tap a speaker, then tap the matching pattern!</p>
                 {/* Controls */}
                 <div className="flex justify-center items-center w-full gap-2 sm:gap-3 max-w-lg mx-auto mb-6 mt-6">
                   <Button
@@ -639,7 +640,7 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
               className="w-full max-w-2xl mx-auto flex flex-col items-center"
             >
               <div className="text-center mb-6">
-                <p className="text-gray-500 mt-2">
+                <p className="text-white text-base sm:text-lg font-bold mt-2 block">
                   Say the correct long vowel name 2 times out loud.
                 </p>
               </div>
@@ -783,7 +784,7 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
               className="w-full max-w-2xl mx-auto flex flex-col items-center"
             >
               <div className="text-center mb-6">
-                <p className="text-gray-500 mt-2">
+                <p className="text-white text-base sm:text-lg font-bold mt-2 block">
                   Say each long word out loud into the microphone.
                 </p>
               </div>
@@ -945,7 +946,7 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
               className="w-full max-w-2xl mx-auto flex flex-col items-center"
             >
               <div className="text-center mb-6">
-                <p className="text-gray-500 mt-2">
+                <p className="text-white text-base sm:text-lg font-bold mt-2 block">
                   Say each sentence out loud into the microphone.
                 </p>
               </div>

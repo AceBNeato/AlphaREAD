@@ -260,7 +260,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
           <>
 
             <div className="text-center mb-8">
-              <p className="text-gray-500 mt-2">
+              <p className="text-white text-base sm:text-lg font-bold mt-2 block">
                 Say each word out loud into the microphone.
               </p>
             </div>
@@ -418,7 +418,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
             <h3 className="text-3xl mb-4" style={{ color: accent.primary }}>
               Excellent Work!
             </h3>
-            <p className="text-gray-500 mt-2">
+            <p className="text-white text-base sm:text-lg font-bold mt-2 block">
               You completed {words.length} out of {words.length} words correctly!
             </p>
             <div className="flex flex-wrap justify-center gap-3 mb-8">

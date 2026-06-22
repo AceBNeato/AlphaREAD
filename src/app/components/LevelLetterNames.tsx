@@ -379,7 +379,7 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
           {!showConfetti && step.type === "review" && (
             <motion.div key={`review-${currentStep}`} initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -50 }} className="flex flex-col items-center">
               <div className="text-center mb-8">
-                <p className="text-gray-500 mt-2">Tap the letters to hear their sounds</p>
+                <p className="text-white text-base sm:text-lg font-bold mt-2 block">Tap the letters to hear their sounds</p>
                 {/* Navigation Controls moved to top */}
                 <div className="flex justify-center items-center w-full gap-3 sm:gap-4 max-w-sm mx-auto mt-6">
                   <Button
@@ -429,7 +429,7 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
           {!showConfetti && step.type === "match" && (
             <motion.div key={`match-${currentStep}`} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="flex flex-col items-center w-full">
               <div className="text-center mb-6">
-                <p className="text-gray-500 mt-2">Tap a speaker, then tap the matching letter!</p>
+                <p className="text-white text-base sm:text-lg font-bold mt-2 block">Tap a speaker, then tap the matching letter!</p>
                 {/* Navigation Controls moved to top */}
                 <div className="flex justify-center items-center w-full gap-3 sm:gap-4 max-w-md mx-auto mt-6">
                   <Button
@@ -534,7 +534,7 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
               className="w-full max-w-2xl mx-auto flex flex-col items-center"
             >
               <div className="text-center mb-6">
-                <p className="text-gray-500 mt-2">Tap the microphone and say the name of the letter loud and clear.</p>
+                <p className="text-white text-base sm:text-lg font-bold mt-2 block">Tap the microphone and say the name of the letter loud and clear.</p>
                 {/* Navigation Controls moved to top */}
                 <div className="flex justify-center items-center w-full gap-3 sm:gap-4 max-w-md mx-auto mt-6">
                   <Button
@@ -662,7 +662,7 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
           {!showConfetti && step.type === "type" && (
             <motion.div key={`type-${currentStep}`} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="flex flex-col items-center w-full">
               <div className="text-center mb-8">
-                <p className="text-gray-500 mt-2">Tap the speaker, then type the letter!</p>
+                <p className="text-white text-base sm:text-lg font-bold mt-2 block">Tap the speaker, then type the letter!</p>
                 {/* Navigation Controls moved to top */}
                 <div className="flex justify-center items-center w-full gap-3 sm:gap-4 max-w-md mx-auto mt-6">
                   <Button

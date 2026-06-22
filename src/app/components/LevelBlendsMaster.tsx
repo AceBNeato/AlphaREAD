@@ -87,7 +87,7 @@ export function LevelBlendsMaster({ levelId, accent }: LevelBlendsMasterProps) {
             <h1 className="text-3xl font-black mb-2 text-gray-800 dark:text-gray-100">
               Choose a Group
             </h1>
-            <p className="text-gray-500 mt-2">
+            <p className="text-white text-base sm:text-lg font-bold mt-2 block">
               Which blends would you like to practice?
             </p>
           </div>
@@ -109,7 +109,7 @@ export function LevelBlendsMaster({ levelId, accent }: LevelBlendsMasterProps) {
                       <h3 className="text-xl font-black mb-1" style={{ color: cat.color }}>
                         {cat.label}
                       </h3>
-                      <p className="text-gray-500 mt-2">
+                      <p className="text-white text-base sm:text-lg font-bold mt-2 block">
                         {cat.desc}
                       </p>
                     </div>

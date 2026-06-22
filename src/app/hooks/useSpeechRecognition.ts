@@ -50,6 +50,26 @@ export function matchConsonants(word1: string, word2: string): boolean {
   return getConsonants(word1) === getConsonants(word2);
 }
 
+export function getLCS(targetWords: string[], spokenWords: string[], homophones: Record<string, string[]>): number {
+  const m = targetWords.length;
+  const n = spokenWords.length;
+  const dp = Array(m + 1).fill(null).map(() => Array(n + 1).fill(0));
+
+  for (let i = 1; i <= m; i++) {
+    const expected = targetWords[i - 1];
+    const allowed = [expected, ...(homophones[expected] || []).map(w => w.toUpperCase())];
+    for (let j = 1; j <= n; j++) {
+      const spoken = spokenWords[j - 1];
+      if (allowed.includes(spoken)) {
+        dp[i][j] = dp[i - 1][j - 1] + 1;
+      } else {
+        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+      }
+    }
+  }
+  return dp[m][n];
+}
+
 export type EvaluationFeedback = "correct" | "close" | "wrong" | null;
 
 interface UseSpeechRecognitionProps {
@@ -95,7 +115,6 @@ const HOMOPHONES: Record<string, string[]> = {
   "Y": ["y", "why", "wye", "wi"],
   "Z": ["z", "zee", "zed", "ze"],
 
-
   // CVC homophones
   "BAT": ["bad", "that", "but"],
   "CAT": ["cut", "cap", "can"],
@@ -108,6 +127,96 @@ const HOMOPHONES: Record<string, string[]> = {
 
   // Digraphs & Blends
   "THIGH": ["thie", "tie", "thy", "they"],
+
+  // Sentence / common word homophones
+  "THE": ["dee", "d", "a", "der", "duh"],
+  "TO": ["too", "two", "2", "thru"],
+  "IN": ["inn", "an", "and", "n"],
+  "ON": ["own", "an", "un"],
+  "FOR": ["four", "fore", "4"],
+  "ME": ["mi", "my", "may"],
+  "MY": ["mi", "mai", "me"],
+  "HE": ["hee", "him"],
+  "SHE": ["see", "sea", "shie"],
+  "WE": ["wee", "with"],
+  "LIKE": ["lake", "lick"],
+  "AND": ["an", "end", "in"],
+  "IS": ["iz", "his", "es", "as"],
+  "IT": ["eat", "its", "at", "id"],
+  "ITS": ["it's", "it", "eat"],
+  "HAS": ["as", "had", "is"],
+  "HAVE": ["has", "of"],
+  "WITH": ["we", "width"],
+  "AT": ["it", "ad", "add"],
+  "BE": ["bee", "b"],
+  "BED": ["bad", "bet", "red"],
+  "RED": ["read", "led", "head", "bed"],
+  "BLUE": ["blew", "blow"],
+  "GREEN": ["grin", "greene"],
+  "BIG": ["pig", "beg", "bag"],
+  "SMALL": ["some", "smell"],
+  "FROG": ["fog", "frock"],
+  "DRESS": ["press", "tress"],
+  "PLAY": ["day", "clay"],
+  "SWIM": ["some", "swam"],
+  "CRAB": ["cab", "crap"],
+  "SAND": ["send", "sound"],
+  "SCRUB": ["shrub", "scrubbed"],
+  "FLOOR": ["flower", "flour"],
+  "SHRIMP": ["shrank", "shrimp"],
+  "PLANTED": ["planted", "plant"],
+  "TREE": ["three", "free", "try"],
+  "GRASS": ["glass", "class"],
+  "TRAIN": ["rain", "crane"],
+  "TRACK": ["trap", "truck"],
+  "STARS": ["star", "start"],
+  "SKY": ["guy", "skye"],
+  "CLOWN": ["crown", "cloud"],
+  "SMILE": ["small", "mile"],
+  "SHELL": ["shall", "sell"],
+  "CHEESE": ["cheeks", "keys"],
+  "CHAIR": ["share", "care"],
+  "THUMB": ["some", "come"],
+  "WHALE": ["well", "while"],
+  "SEA": ["see", "she"],
+  "PHOTO": ["pot", "four to"],
+  "PHONE": ["bone", "fun"],
+  "STREET": ["straight", "treat"],
+  "STRONG": ["stone", "song"],
+  "SPLASH": ["flash", "clash"],
+  "WATER": ["what", "waiter"],
+  "SPRING": ["ring", "sprung"],
+  "FUN": ["run", "sun"],
+  "SEASON": ["sees", "reason"],
+  "SCRATCH": ["catch", "stretch"],
+  "SCREEN": ["scream", "green"],
+  "SQUIRREL": ["square", "squirrels"],
+  "EATS": ["eat", "its"],
+  "NUTS": ["not", "nut"],
+  "SHRINK": ["drink", "shrank"],
+  "SHIRT": ["short", "shirt"],
+  "BEND": ["band", "bed"],
+  "HAND": ["head", "and"],
+  "SEND": ["sand", "end"],
+  "TENT": ["ten", "send"],
+  "CAMP": ["cap", "lamp"],
+  "WIND": ["win", "went"],
+  "BLOW": ["below", "blue"],
+  "FAST": ["first", "past"],
+  "PAST": ["fast", "passed"],
+  "JUMP": ["up", "jumped"],
+  "STUMP": ["stop", "stamp"],
+  "LAMP": ["camp", "ramp"],
+  "DESK": ["disc", "dust"],
+  "ASK": ["as", "ask"],
+  "TASK": ["ask", "tax"],
+  "ICE": ["eyes", "i"],
+  "MELT": ["met", "belt"],
+  "GOLD": ["cold", "old"],
+  "COLD": ["gold", "code"],
+  "LIFT": ["left", "live"],
+  "HEAVY": ["have", "heaven"],
+  "BOX": ["fox", "rocks"]
 };
 
 export function useSpeechRecognition({ evaluatingWord, enabled = true, singleShot = false, onResult, onSilenceTimeout, onError }: UseSpeechRecognitionProps) {
@@ -179,7 +288,7 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, singleSho
         fullTranscript += event.results[r][0].transcript.trim() + " ";
       }
       fullTranscript = fullTranscript.trim();
-      
+
       latestTranscript = fullTranscript; // Update fallback transcript
 
       if (DEBUG) console.log(`[AlphabetGO Debug] Full Stitched Transcript: "${fullTranscript}"`);
@@ -232,42 +341,42 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, singleSho
         }
         // PATH B: Phrase / Sentence
         else if (evaluatingWord.toUpperCase().replace(/[.,!?]/g, "").trim().includes(" ")) {
-          const targetUpper = evaluatingWord.toUpperCase().replace(/[.,!?]/g, "").trim();
-          const targetWords = targetUpper.split(/\s+/);
+          const targetClean = evaluatingWord.toUpperCase().replace(/[.,!?'"-]/g, "").trim();
+          const targetWords = targetClean.split(/\s+/).map(w => DIGIT_MAP[w] || w);
 
-          let matched = false;
+          let bestStatus: "correct" | "close" | "wrong" = "wrong";
+          let matchedTranscript = "";
 
           for (let i = 0; i < allTranscripts.length; i++) {
-            const raw = allTranscripts[i].toUpperCase().replace(/[.,!?]/g, "");
-            const rawWords = raw.split(/\s+/);
+            const rawClean = allTranscripts[i].toUpperCase().replace(/[.,!?'"-]/g, "").trim();
+            const rawWords = rawClean.split(/\s+/).map(w => DIGIT_MAP[w] || w);
 
-            // 1. Strict Length Check: Must say exactly the right number of words. Zero extra, zero missing.
-            if (rawWords.length !== targetWords.length) {
-              continue;
+            // Compute LCS of targetWords and rawWords
+            const lcs = getLCS(targetWords, rawWords, HOMOPHONES);
+
+            let currentStatus: "correct" | "close" | "wrong" = "wrong";
+
+            // Allow up to 3 extra words for correct, or up to 50% of the sentence length, whichever is larger
+            const allowedExtra = Math.max(3, Math.floor(targetWords.length * 0.5));
+
+            if (lcs === targetWords.length && rawWords.length <= targetWords.length + allowedExtra) {
+              currentStatus = "correct";
+            } else if (lcs >= Math.max(2, targetWords.length - 1)) {
+              currentStatus = "close";
             }
 
-            // 2. Strict Position Check + Homophone Support
-            let isPerfectMatch = true;
-            for (let j = 0; j < targetWords.length; j++) {
-              const expectedWord = targetWords[j];
-              const spokenWord = rawWords[j];
-              
-              const allowedVariations = [expectedWord, ...(HOMOPHONES[expectedWord] || [])];
-              
-              if (!allowedVariations.includes(spokenWord)) {
-                isPerfectMatch = false;
-                break;
-              }
-            }
-
-            if (isPerfectMatch) {
-              matched = true;
-              matchStr = allTranscripts[i].trim();
+            if (currentStatus === "correct") {
+              bestStatus = "correct";
+              matchedTranscript = allTranscripts[i].trim();
               break;
+            } else if (currentStatus === "close") {
+              bestStatus = "close";
+              matchedTranscript = allTranscripts[i].trim();
             }
           }
-          
-          status = matched ? "correct" : "wrong";
+
+          status = bestStatus;
+          matchStr = matchedTranscript || allTranscripts[0].trim();
         }
         // PATH C: Single Word
         else {

@@ -258,8 +258,9 @@ export function LevelBlends({ levelId, accent, categoryFilter, onComplete }: Lev
 
   const handleResult = useCallback(
     (target: string, status: "correct" | "close" | "wrong" | null, transcript: string) => {
-      const tLower = transcript.toLowerCase();
-      let isCorrect = status === "correct" || status === "close" || tLower.includes(target.toLowerCase());
+      const tClean = transcript.toLowerCase().replace(/[.,!?'"-]/g, "").trim();
+      const targetClean = target.toLowerCase().replace(/[.,!?'"-]/g, "").trim();
+      let isCorrect = status === "correct" || status === "close" || tClean.includes(targetClean);
 
       clearEvalTimeout();
 
@@ -267,7 +268,7 @@ export function LevelBlends({ levelId, accent, categoryFilter, onComplete }: Lev
         setPatternTranscriptsMap(prev => ({ ...prev, [evaluatingPatternId]: transcript }));
         const vName = LETTER_NAMES[target]?.toLowerCase() || "";
         const vTTS = LETTER_TTS[target]?.toLowerCase() || "";
-        isCorrect = isCorrect || tLower.includes(vName) || tLower.includes(vTTS) || tLower.includes(target.toLowerCase());
+        isCorrect = isCorrect || (vName && tClean.includes(vName)) || (vTTS && tClean.includes(vTTS)) || tClean.includes(targetClean);
 
         if (status === null && !isCorrect) return;
 
@@ -498,7 +499,7 @@ export function LevelBlends({ levelId, accent, categoryFilter, onComplete }: Lev
             >
               <div className="text-center mb-8">
 
-                <p className="text-gray-500 mt-2">
+                <p className="text-white text-base sm:text-lg font-bold mt-2 block">
                   Review the patterns. Tap any word or heading to hear it spoken!
                 </p>
                 <div className="flex justify-center items-center w-full gap-3 sm:gap-4 max-w-sm mx-auto mt-6">
@@ -585,7 +586,7 @@ export function LevelBlends({ levelId, accent, categoryFilter, onComplete }: Lev
               className="flex flex-col items-center w-full"
             >
               <div className="text-center mb-6">
-                <p className="text-gray-500 mt-2">Tap a speaker, then tap the matching blend!</p>
+                <p className="text-white text-base sm:text-lg font-bold mt-2 block">Tap a speaker, then tap the matching blend!</p>
 
                 {/* Navigation Controls */}
                 <div className="flex justify-center items-center w-full gap-3 sm:gap-4 max-w-md mx-auto mt-6">
@@ -681,7 +682,7 @@ export function LevelBlends({ levelId, accent, categoryFilter, onComplete }: Lev
             >
 
               <div className="text-center mb-8">
-                <p className="text-gray-500 mt-2">
+                <p className="text-white text-base sm:text-lg font-bold mt-2 block">
                   Say each word out loud into the microphone.
                 </p>
               </div>
@@ -843,7 +844,7 @@ export function LevelBlends({ levelId, accent, categoryFilter, onComplete }: Lev
               className="w-full max-w-2xl mx-auto flex flex-col items-center"
             >
               <div className="text-center mb-8">
-                <p className="text-gray-500 mt-2">
+                <p className="text-white text-base sm:text-lg font-bold mt-2 block">
                   Say each sentence out loud into the microphone.
                 </p>
               </div>

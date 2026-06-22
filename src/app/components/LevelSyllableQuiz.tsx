@@ -73,7 +73,7 @@ function ReviewPhase({ items, pattern, accent, onNext }: { items: string[]; patt
   return (
     <motion.div initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -50 }} className="flex flex-col items-center w-full h-full">
       <div className="text-center mb-8">
-        <p className="text-gray-500 mt-2">Tap the syllables to hear their sounds</p>
+        <p className="text-white text-base sm:text-lg font-bold mt-2 block">Tap the syllables to hear their sounds</p>
 
         {/* Navigation Controls moved to top */}
         <div className="flex justify-center items-center w-full gap-3 sm:gap-4 max-w-sm mx-auto mt-6">
@@ -208,7 +208,7 @@ function MatchPhase({
       <Confetti active={showConfetti} />
 
       <div className="text-center mb-6">
-        <p className="text-gray-500 mt-2">
+        <p className="text-white text-base sm:text-lg font-bold mt-2 block">
           Tap a speaker, then tap the matching word!
         </p>
         
@@ -347,7 +347,7 @@ function TypePhase({ items, pattern, accent, onNext }: { items: string[]; patter
   return (
     <motion.div initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -50 }} className="flex flex-col items-center w-full">
       <div className="text-center mb-8">
-        <p className="text-gray-500 mt-2">Tap the speaker, then type the syllable!</p>
+        <p className="text-white text-base sm:text-lg font-bold mt-2 block">Tap the speaker, then type the syllable!</p>
         
         <div className="flex justify-center items-center w-full gap-3 sm:gap-4 max-w-md mx-auto mt-6">
           <Button 
@@ -545,7 +545,7 @@ export function LevelSyllableQuiz({ pattern, levelId, accent, onComplete }: Leve
               <h3 className="text-3xl font-black mb-4" style={{ color: accent.primary }}>
                 {pattern} Complete! 🎉
               </h3>
-              <p className="text-gray-500 mt-2">You've completed all phases and mastered all {allSyllables.length} {pattern} syllables!</p>
+              <p className="text-white text-base sm:text-lg font-bold mt-2 block">You've completed all phases and mastered all {allSyllables.length} {pattern} syllables!</p>
             </motion.div>
           ) : step?.type === "review" ? (
             <ReviewPhase

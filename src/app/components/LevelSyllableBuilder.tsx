@@ -302,7 +302,7 @@ export function LevelSyllableBuilder({
           <h2 className="text-2xl mb-2" style={{ color: accent.primary }}>
             {levelId === 3 ? "CVC Master - Word Builder" : "Syllable Builder"}
           </h2>
-          <p className="text-gray-500 mt-2">
+          <p className="text-white text-base sm:text-lg font-bold mt-2 block">
             Choose which pattern to practice!
           </p>
 
@@ -384,7 +384,7 @@ export function LevelSyllableBuilder({
                   transition={{ duration: 0.25 }}
                   className="text-center mb-4"
                 >
-                  <p className="text-gray-500 mt-2 mb-6">
+                  <p className="text-white text-base sm:text-lg font-bold mt-2 mb-6 block">
                     Listen to the sound and tap the letters to build it.
                   </p>
                   {/* Navigation Controls */}

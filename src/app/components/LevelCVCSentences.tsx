@@ -67,7 +67,11 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete }: L
     (target: string, status: "correct" | "close" | "wrong" | null, transcript: string) => {
       setSentenceTranscriptsMap(prev => ({ ...prev, [target]: transcript }));
 
-      const isCorrect = status === "correct";
+      const tClean = transcript.toLowerCase().replace(/[.,!?'"-]/g, "").trim();
+      const targetClean = target.toLowerCase().replace(/[.,!?'"-]/g, "").trim();
+      const isCorrect = status === "correct" || status === "close" || tClean.includes(targetClean);
+
+      if (status === null && !isCorrect) return;
 
       clearEvalTimeout();
 
@@ -200,7 +204,7 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete }: L
               className="w-full max-w-2xl mx-auto flex flex-col items-center"
             >
               <div className="text-center mb-8">
-                <p className="text-gray-500 mt-2">
+                <p className="text-white text-base sm:text-lg font-bold mt-2 block">
                   Say each sentence out loud into the microphone.
                 </p>
               </div>
