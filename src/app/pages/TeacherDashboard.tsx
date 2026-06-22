@@ -59,9 +59,11 @@ export default function TeacherDashboard() {
       }
 
       // Check if an Admin forced a logout (unlocked the account) or another device took over
-      if (profile.deviceId && data.current_device_id !== profile.deviceId) {
+      // If data.current_device_id is null, it means the admin unlocked them, so we let them stay logged in 
+      // but their next login on another device will succeed. If it's a DIFFERENT device ID, kick them.
+      if (profile.deviceId && data.current_device_id && data.current_device_id !== profile.deviceId) {
         localStorage.removeItem("userProfile");
-        alert("Session Expired: An admin unlocked your account or you logged in elsewhere.");
+        alert("Session Expired: You logged in on another device.");
         navigate("/", { replace: true });
       }
     };

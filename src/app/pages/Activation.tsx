@@ -206,13 +206,18 @@ export default function Activation() {
       }
 
       // Link auth_id if needed, and register this device
-      await supabase
+      const { error: updateError } = await supabase
         .from("profiles")
         .update({
           auth_id: authData?.session?.user?.id || profile.auth_id,
           current_device_id: newDeviceId
         })
         .eq("id", profile.id);
+
+      if (updateError) {
+        console.error("Failed to register device session:", updateError);
+        throw new Error("Could not register device session. RLS Error: " + updateError.message);
+      }
 
       // Log user in locally
       localStorage.setItem("userProfile", JSON.stringify({
