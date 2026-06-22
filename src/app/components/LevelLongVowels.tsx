@@ -307,6 +307,7 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
   useSpeechRecognition({
     evaluatingWord: evaluatingTargetForMic,
     enabled: !!evaluatingTargetForMic,
+    singleShot: true,
     onResult: handleResult,
     onError: () => {
       setEvaluatingPatternId(null);

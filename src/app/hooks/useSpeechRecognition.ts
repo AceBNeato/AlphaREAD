@@ -38,7 +38,7 @@ export function calculateSimilarity(str1: string, str2: string): number {
 export function normalizeTranscript(text: string): string {
   return text
     .toUpperCase()
-    .replace(/[.,!?]/g, "")
+    .replace(/[.,!?'"-]/g, "")
     .trim()
     .split(/\s+/)
     .map(w => DIGIT_MAP[w] || w)
@@ -46,7 +46,7 @@ export function normalizeTranscript(text: string): string {
 }
 
 export function matchConsonants(word1: string, word2: string): boolean {
-  const getConsonants = (w: string) => w.replace(/[AEIOU]/g, "");
+  const getConsonants = (w: string) => w.replace(/[AEIOUY]/g, "");
   return getConsonants(word1) === getConsonants(word2);
 }
 
@@ -70,7 +70,138 @@ export function getLCS(targetWords: string[], spokenWords: string[], homophones:
   return dp[m][n];
 }
 
+export function mergeTranscripts(a: string, b: string): string {
+  const aLower = a.toLowerCase().trim();
+  const bLower = b.toLowerCase().trim();
+  if (!aLower) return b.trim();
+  if (!bLower) return a.trim();
+  
+  if (bLower.startsWith(aLower)) return b.trim();
+  
+  const aWords = a.trim().split(/\s+/);
+  const bWords = b.trim().split(/\s+/);
+  
+  let overlapCount = 0;
+  const maxOverlap = Math.min(aWords.length, bWords.length);
+  for (let i = 1; i <= maxOverlap; i++) {
+    const aEnd = aWords.slice(-i).join(" ").toLowerCase();
+    const bStart = bWords.slice(0, i).join(" ").toLowerCase();
+    if (aEnd === bStart) {
+      overlapCount = i;
+    }
+  }
+  
+  if (overlapCount > 0) {
+    return [...aWords, ...bWords.slice(overlapCount)].join(" ");
+  }
+  return a.trim() + " " + b.trim();
+}
+
 export type EvaluationFeedback = "correct" | "close" | "wrong" | null;
+
+export function evaluateTranscript(evaluatingWord: string, allTranscripts: string[]): { status: EvaluationFeedback, matchStr: string } {
+  let status: EvaluationFeedback = "wrong";
+  let matchStr = allTranscripts[0];
+
+  const trimmedWord = evaluatingWord.trim().toLowerCase();
+  const isSingleLetter = trimmedWord.length === 1 && /[a-z]/.test(trimmedWord);
+  const isMagicE = trimmedWord.length === 3 && /^[aeiou]_e$/.test(trimmedWord);
+
+  if (isSingleLetter || isMagicE) {
+    const letterUpper = trimmedWord.charAt(0).toUpperCase();
+    let matched = false;
+
+    for (let i = 0; i < allTranscripts.length; i++) {
+      const normalized = normalizeTranscript(allTranscripts[i]);
+      const allowedWords = [
+        letterUpper,
+        `LETTER ${letterUpper}`,
+        ...(HOMOPHONES[letterUpper] || [])
+      ].map(w => w.toUpperCase());
+      const phraseWords = normalized.split(" ");
+
+      if (allowedWords.some(t => normalized === t || phraseWords.includes(t))) {
+        matched = true;
+        matchStr = letterUpper.toLowerCase();
+        break;
+      }
+    }
+    status = matched ? "correct" : "wrong";
+  } else if (isSyllableTarget(evaluatingWord)) {
+    const phonemeResult = evaluateSyllable(evaluatingWord, allTranscripts);
+    status = phonemeResult;
+    matchStr = (status === "correct" || status === "close") ? evaluatingWord.toLowerCase() : allTranscripts[0];
+  } else if (evaluatingWord.toUpperCase().replace(/[.,!?]/g, "").trim().includes(" ")) {
+    const targetClean = evaluatingWord.toUpperCase().replace(/[.,!?'"-]/g, "").trim();
+    const targetWords = targetClean.split(/\s+/).map(w => DIGIT_MAP[w] || w);
+
+    let bestStatus: EvaluationFeedback = "wrong";
+    let matchedTranscript = "";
+
+    for (let i = 0; i < allTranscripts.length; i++) {
+      const rawClean = allTranscripts[i].toUpperCase().replace(/[.,!?'"-]/g, "").trim();
+      const rawWords = rawClean.split(/\s+/).map(w => DIGIT_MAP[w] || w);
+      const lcs = getLCS(targetWords, rawWords, HOMOPHONES);
+
+      let currentStatus: EvaluationFeedback = "wrong";
+      const allowedExtra = Math.max(3, Math.floor(targetWords.length * 0.5));
+
+      if (lcs === targetWords.length && rawWords.length <= targetWords.length + allowedExtra) {
+        currentStatus = "correct";
+      } else if (lcs >= Math.max(2, targetWords.length - 1)) {
+        currentStatus = "close";
+      }
+
+      if (currentStatus === "correct") {
+        bestStatus = "correct";
+        matchedTranscript = allTranscripts[i].trim();
+        break;
+      } else if (currentStatus === "close" && bestStatus !== "correct") {
+        bestStatus = "close";
+        matchedTranscript = allTranscripts[i].trim();
+      }
+    }
+    status = bestStatus;
+    matchStr = matchedTranscript || allTranscripts[0].trim();
+  } else {
+    let wordMatch = "";
+    let bestSimilarity = 0;
+    let isPerfectMatch = false;
+    const wordUpper = evaluatingWord.toUpperCase();
+
+    for (let i = 0; i < allTranscripts.length; i++) {
+      const normalized = normalizeTranscript(allTranscripts[i]);
+      const allowedWords = [wordUpper, ...(HOMOPHONES[wordUpper] || [])].map(w => w.toUpperCase());
+      const phraseWords = normalized.split(" ");
+
+      if (allowedWords.some(t => normalized === t || phraseWords.includes(t))) {
+        wordMatch = evaluatingWord;
+        bestSimilarity = 1;
+        isPerfectMatch = true;
+        break;
+      }
+
+      for (const w of phraseWords) {
+        const similarity = calculateSimilarity(w, wordUpper);
+        if (similarity > bestSimilarity) {
+          bestSimilarity = similarity;
+          wordMatch = w;
+        }
+      }
+    }
+    if (!wordMatch) wordMatch = normalizeTranscript(allTranscripts[0]);
+
+    if (isPerfectMatch || bestSimilarity === 1) {
+      status = "correct"; matchStr = wordMatch.toLowerCase();
+    } else if (bestSimilarity >= 0.5 || matchConsonants(wordMatch, wordUpper)) {
+      status = "close"; matchStr = wordMatch.toLowerCase();
+    } else {
+      status = "wrong"; matchStr = wordMatch.toLowerCase();
+    }
+  }
+
+  return { status, matchStr };
+}
 
 interface UseSpeechRecognitionProps {
   evaluatingWord: string | null;
@@ -95,14 +226,14 @@ const HOMOPHONES: Record<string, string[]> = {
   // Consonants
   "B": ["b", "bee", "be", "bi"],
   "C": ["c", "see", "sea", "si"],
-  "D": ["d", "dee", "the", "di"],
+  "D": ["d", "dee", "di"],
   "F": ["f", "eff", "if", "half", "ef"],
   "G": ["g", "gee", "jee", "ji"],
   "H": ["h", "aitch", "age", "each", "haitch"],
   "J": ["j", "jay", "jai"],
   "K": ["k", "kay", "okay", "kei"],
   "L": ["l", "ell", "el"],
-  "M": ["m", "em", "am", "him"],
+  "M": ["m", "em"],
   "N": ["n", "en", "an", "and", "in"],
   "P": ["p", "pee", "pea", "pi"],
   "Q": ["q", "cue", "queue", "kyu"],
@@ -121,7 +252,7 @@ const HOMOPHONES: Record<string, string[]> = {
   "DOG": ["dig", "doc", "dot"],
   "PIG": ["big", "pick", "peg"],
   "SUN": ["son", "some"],
-  "RUN": ["one", "won", "ran"],
+  "RUN": ["ran"],
   "HOP": ["hope", "hot", "pop"],
   "BUG": ["bag", "pug", "bud"],
 
@@ -129,7 +260,7 @@ const HOMOPHONES: Record<string, string[]> = {
   "THIGH": ["thie", "tie", "thy", "they"],
 
   // Sentence / common word homophones
-  "THE": ["dee", "d", "a", "der", "duh"],
+  "THE": ["dee", "der", "duh", "da"],
   "TO": ["too", "two", "2", "thru"],
   "IN": ["inn", "an", "and", "n"],
   "ON": ["own", "an", "un"],
@@ -186,7 +317,7 @@ const HOMOPHONES: Record<string, string[]> = {
   "SPLASH": ["flash", "clash"],
   "WATER": ["what", "waiter"],
   "SPRING": ["ring", "sprung"],
-  "FUN": ["run", "sun"],
+  "FUN": ["fon"],
   "SEASON": ["sees", "reason"],
   "SCRATCH": ["catch", "stretch"],
   "SCREEN": ["scream", "green"],
@@ -282,145 +413,31 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, singleSho
 
       if (DEBUG) console.log(`[AlphabetGO Debug] 🗣️ Result Event Received. Evaluating against: "${evaluatingWord}"`);
 
-      // Stitch together all chunks of the sentence in case the browser split it due to pauses
-      let fullTranscript = "";
-      for (let r = 0; r < event.results.length; r++) {
-        fullTranscript += event.results[r][0].transcript.trim() + " ";
+      // Gather all alternatives up to maxAlternatives
+      const allTranscripts: string[] = [];
+      const numAlternatives = event.results[event.results.length - 1] ? event.results[event.results.length - 1].length : 1;
+      
+      for (let a = 0; a < numAlternatives; a++) {
+        let altTranscript = "";
+        for (let r = 0; r < event.results.length; r++) {
+          const chunk = event.results[r][a] ? event.results[r][a].transcript : event.results[r][0].transcript;
+          altTranscript = mergeTranscripts(altTranscript, chunk);
+        }
+        allTranscripts.push(altTranscript.trim());
       }
-      fullTranscript = fullTranscript.trim();
+      
+      const primaryTranscript = allTranscripts[0];
+      latestTranscript = primaryTranscript;
 
-      latestTranscript = fullTranscript; // Update fallback transcript
+      if (DEBUG) console.log(`[AlphabetGO Debug] Transcripts Evaluated:`, allTranscripts);
 
-      if (DEBUG) console.log(`[AlphabetGO Debug] Full Stitched Transcript: "${fullTranscript}"`);
+      const { status, matchStr } = evaluateTranscript(evaluatingWord, allTranscripts);
 
-      // We no longer loop through chunks, we evaluate the full stitched transcript once!
-      // (We package it inside an array to match the existing logic structure)
-      const allTranscripts = [fullTranscript];
-      const primaryTranscript = fullTranscript;
+      if (DEBUG) console.log(`[AlphabetGO Debug] Evaluated primary "${primaryTranscript}" -> Status: ${status}, matchStr: "${matchStr}"`);
 
-      // Start evaluation block
-      {
-        let status: "correct" | "close" | "wrong" = "wrong";
-        let matchStr = primaryTranscript;
-
-        const trimmedWord = evaluatingWord.trim().toLowerCase();
-
-        // NEW: Check if it's a single letter OR a magic E pattern (e.g., "a_e", "i_e")
-        const isSingleLetter = trimmedWord.length === 1 && /[a-z]/.test(trimmedWord);
-        const isMagicE = trimmedWord.length === 3 && /^[aeiou]_e$/.test(trimmedWord);
-
-        if (isSingleLetter || isMagicE) {
-          // If it's "a_e", grab just the "A". If it's a single letter, grab it.
-          const letterUpper = trimmedWord.charAt(0).toUpperCase();
-          let matched = false;
-
-          for (let i = 0; i < allTranscripts.length; i++) {
-            const normalized = normalizeTranscript(allTranscripts[i]);
-
-            // Look up the homophones for the base letter (e.g., "A")
-            const allowedWords = [
-              letterUpper,
-              `LETTER ${letterUpper}`,
-              ...(HOMOPHONES[letterUpper] || [])
-            ].map(w => w.toUpperCase());
-            const phraseWords = normalized.split(" ");
-
-            if (allowedWords.some(t => normalized === t || phraseWords.includes(t))) {
-              matched = true;
-              matchStr = letterUpper.toLowerCase();
-              break;
-            }
-          }
-          status = matched ? "correct" : "wrong";
-        }
-        // PATH A: CV / VC Syllable
-        else if (isSyllableTarget(evaluatingWord)) {
-          const phonemeResult = evaluateSyllable(evaluatingWord, allTranscripts);
-          status = phonemeResult;
-          matchStr = (status === "correct" || status === "close") ? evaluatingWord.toLowerCase() : primaryTranscript;
-        }
-        // PATH B: Phrase / Sentence
-        else if (evaluatingWord.toUpperCase().replace(/[.,!?]/g, "").trim().includes(" ")) {
-          const targetClean = evaluatingWord.toUpperCase().replace(/[.,!?'"-]/g, "").trim();
-          const targetWords = targetClean.split(/\s+/).map(w => DIGIT_MAP[w] || w);
-
-          let bestStatus: "correct" | "close" | "wrong" = "wrong";
-          let matchedTranscript = "";
-
-          for (let i = 0; i < allTranscripts.length; i++) {
-            const rawClean = allTranscripts[i].toUpperCase().replace(/[.,!?'"-]/g, "").trim();
-            const rawWords = rawClean.split(/\s+/).map(w => DIGIT_MAP[w] || w);
-
-            // Compute LCS of targetWords and rawWords
-            const lcs = getLCS(targetWords, rawWords, HOMOPHONES);
-
-            let currentStatus: "correct" | "close" | "wrong" = "wrong";
-
-            // Allow up to 3 extra words for correct, or up to 50% of the sentence length, whichever is larger
-            const allowedExtra = Math.max(3, Math.floor(targetWords.length * 0.5));
-
-            if (lcs === targetWords.length && rawWords.length <= targetWords.length + allowedExtra) {
-              currentStatus = "correct";
-            } else if (lcs >= Math.max(2, targetWords.length - 1)) {
-              currentStatus = "close";
-            }
-
-            if (currentStatus === "correct") {
-              bestStatus = "correct";
-              matchedTranscript = allTranscripts[i].trim();
-              break;
-            } else if (currentStatus === "close") {
-              bestStatus = "close";
-              matchedTranscript = allTranscripts[i].trim();
-            }
-          }
-
-          status = bestStatus;
-          matchStr = matchedTranscript || allTranscripts[0].trim();
-        }
-        // PATH C: Single Word
-        else {
-          let wordMatch = "";
-          let bestSimilarity = 0;
-          let isPerfectMatch = false;
-          const wordUpper = evaluatingWord.toUpperCase();
-
-          for (let i = 0; i < allTranscripts.length; i++) {
-            const normalized = normalizeTranscript(allTranscripts[i]);
-            const allowedWords = [wordUpper, ...(HOMOPHONES[wordUpper] || [])].map(w => w.toUpperCase());
-            const phraseWords = normalized.split(" ");
-
-            if (allowedWords.some(t => normalized === t || phraseWords.includes(t))) {
-              wordMatch = evaluatingWord;
-              bestSimilarity = 1;
-              isPerfectMatch = true;
-              break;
-            }
-
-            for (const w of phraseWords) {
-              const similarity = calculateSimilarity(w, wordUpper);
-              if (similarity > bestSimilarity) {
-                bestSimilarity = similarity;
-                wordMatch = w;
-              }
-            }
-          }
-          if (!wordMatch) wordMatch = normalizeTranscript(allTranscripts[0]);
-
-          if (isPerfectMatch || bestSimilarity === 1) {
-            status = "correct"; matchStr = wordMatch.toLowerCase();
-          } else if (bestSimilarity >= 0.5 || matchConsonants(wordMatch, wordUpper)) {
-            status = "close"; matchStr = wordMatch.toLowerCase();
-          } else {
-            status = "wrong"; matchStr = wordMatch.toLowerCase();
-          }
-        }
-
-        if (DEBUG) console.log(`[AlphabetGO Debug] Evaluated primary "${primaryTranscript}" -> Status: ${status}, matchStr: "${matchStr}"`);
-
-        if (status === "correct") {
-          foundCorrect = true;
-          bestStatus = "correct";
+      if (status === "correct") {
+        foundCorrect = true;
+        bestStatus = "correct";
           bestTranscript = matchStr;
           // Since we stitched everything together, if it's correct, we're done!
         } else if (status === "close") {
@@ -454,23 +471,24 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, singleSho
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
       if (event.error === "aborted") {
         if (DEBUG) console.log(`[AlphabetGO Debug] ⚠️ Recognition aborted for "${evaluatingWord}".`);
+        hasMatched = true;
         onErrorRef.current();
         return;
       }
       if (DEBUG) console.error("[AlphabetGO Debug] ❌ Speech recognition error:", event.error);
       hasMatched = true;
+      try { recognition.stop(); } catch (e) { }
       onResultRef.current(evaluatingWord, "wrong", latestTranscript);
     };
 
     recognition.onend = () => {
-      // In singleShot mode the browser fires onend after the phrase ends.
-      // If we haven't matched yet and the timeout hasn't fired, treat it as silence.
       if (singleShot && isActive && !hasMatched) {
         if (timeoutRef.current) clearTimeout(timeoutRef.current);
         hasMatched = true;
         if (resultReceivedRef.current && latestTranscript) {
-          if (DEBUG) console.log(`[AlphabetGO Debug] 🏁 singleShot onend — forcing "wrong" with: "${latestTranscript}"`);
-          onResultRef.current(evaluatingWord, "wrong", latestTranscript);
+          const { status, matchStr } = evaluateTranscript(evaluatingWord, [latestTranscript]);
+          if (DEBUG) console.log(`[AlphabetGO Debug] 🏁 singleShot onend — final evaluation: ${status} with "${matchStr}"`);
+          onResultRef.current(evaluatingWord, status, matchStr);
         } else {
           if (DEBUG) console.log(`[AlphabetGO Debug] 🤫 singleShot onend — no speech, silence timeout.`);
           onSilenceTimeoutRef.current();
@@ -500,8 +518,9 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, singleSho
           }
           hasMatched = true;
           if (resultReceivedRef.current && latestTranscript) {
-            if (DEBUG) console.log(`[AlphabetGO Debug] 👎 Forcing "wrong" feedback with transcript: "${latestTranscript}"`);
-            onResultRef.current(evaluatingWord, "wrong", latestTranscript);
+            const { status, matchStr } = evaluateTranscript(evaluatingWord, [latestTranscript]);
+            if (DEBUG) console.log(`[AlphabetGO Debug] 🏁 timeout — final evaluation: ${status} with "${matchStr}"`);
+            onResultRef.current(evaluatingWord, status, matchStr);
           } else {
             if (DEBUG) console.log(`[AlphabetGO Debug] 🤫 No speech detected (silence timeout).`);
             onSilenceTimeoutRef.current();
@@ -525,5 +544,5 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, singleSho
       if (startupTimerId) clearTimeout(startupTimerId);
       cleanup();
     };
-  }, [evaluatingWord, enabled, cleanup]);
+  }, [evaluatingWord, enabled, singleShot, cleanup]);
 }

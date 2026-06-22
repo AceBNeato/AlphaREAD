@@ -97,6 +97,7 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete }: L
   useSpeechRecognition({
     evaluatingWord: evaluatingSentenceId,
     enabled: !!evaluatingSentenceId,
+    singleShot: true,
     onResult: handleResult,
     onError: () => setEvaluatingSentenceId(null),
     onSilenceTimeout: () => {
