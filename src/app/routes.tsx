@@ -95,6 +95,6 @@ const routes = [
   }
 ];
 
-export const router = Capacitor.isNativePlatform() 
-  ? createHashRouter(routes) 
+export const router = Capacitor.isNativePlatform()
+  ? createHashRouter(routes)
   : createBrowserRouter(routes);
