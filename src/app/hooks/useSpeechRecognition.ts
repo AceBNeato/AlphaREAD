@@ -156,7 +156,7 @@ export function evaluateTranscript(evaluatingWord: string, allTranscripts: strin
         bestStatus = "correct";
         matchedTranscript = allTranscripts[i].trim();
         break;
-      } else if (currentStatus === "close" && bestStatus !== "correct") {
+      } else if (currentStatus === "close") {
         bestStatus = "close";
         matchedTranscript = allTranscripts[i].trim();
       }
@@ -438,14 +438,12 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, singleSho
       if (status === "correct") {
         foundCorrect = true;
         bestStatus = "correct";
-          bestTranscript = matchStr;
-          // Since we stitched everything together, if it's correct, we're done!
-        } else if (status === "close") {
-          foundClose = true;
-          bestStatus = "close";
-          bestTranscript = matchStr;
-        }
-      } // End evaluation block
+        bestTranscript = matchStr;
+      } else if (status === "close") {
+        foundClose = true;
+        bestStatus = "close";
+        bestTranscript = matchStr;
+      }
 
       // If we found a success, trigger immediately and stop the mic!
       if (foundCorrect || (foundClose && event.results[event.results.length - 1].isFinal)) {
