@@ -1,4 +1,5 @@
-import { createHashRouter, Navigate, Outlet, useRouteError } from "react-router";
+import { createHashRouter, createBrowserRouter, Navigate, Outlet, useRouteError } from "react-router";
+import { Capacitor } from "@capacitor/core";
 import Activation from "./pages/Activation";
 import ProfileSetup from "./pages/ProfileSetup";
 import Dashboard from "./pages/Dashboard";
@@ -45,7 +46,7 @@ function RootLayout() {
   );
 }
 
-export const router = createHashRouter([
+const routes = [
   {
     element: <RootLayout />,
     errorElement: <GlobalErrorBoundary />,
@@ -92,4 +93,8 @@ export const router = createHashRouter([
       },
     ]
   }
-]);
+];
+
+export const router = Capacitor.isNativePlatform() 
+  ? createHashRouter(routes) 
+  : createBrowserRouter(routes);

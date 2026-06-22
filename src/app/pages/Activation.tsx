@@ -20,9 +20,57 @@ import {
 import { Button } from "../components/ui/button";
 import { generateUUID } from "../utils/uuid";
 
+const POPUP_ITEMS = ["A", "B", "C", "D", "E", "F", "CAT", "DOG", "SUN", "AT", "IN", "UP", "BA", "MA", "DA", "BE"];
+const POPUP_COLORS = ["text-white", "text-[#58CC02]", "text-[#1CB0F6]", "text-[#ce82ff]", "text-[#FF9600]", "text-[#FF4B4B]"];
+
+interface ClickItem {
+  id: number;
+  text: string;
+  x: number;
+  y: number;
+  color: string;
+  rot: number;
+  dur: string;
+  tx1: string; ty1: string;
+  tx2: string; ty2: string;
+  tx3: string; ty3: string;
+  tx4: string; ty4: string;
+}
+
 export default function Activation() {
   const navigate = useNavigate();
   const [showSplash, setShowSplash] = useState(true);
+
+  // Interactive background state
+  const [clickItems, setClickItems] = useState<ClickItem[]>([]);
+  const [clickIdCounter, setClickIdCounter] = useState(0);
+
+  const handleBgClick = (e: React.MouseEvent) => {
+    // Only spawn if they click the background, not the login box
+    if ((e.target as HTMLElement).closest('.z-10')) return;
+
+    const randomTx = () => `${Math.floor(Math.random() * 200) - 100}px`;
+    const newItem: ClickItem = {
+      id: clickIdCounter,
+      text: POPUP_ITEMS[Math.floor(Math.random() * POPUP_ITEMS.length)],
+      x: e.clientX,
+      y: e.clientY,
+      color: POPUP_COLORS[Math.floor(Math.random() * POPUP_COLORS.length)],
+      rot: Math.floor(Math.random() * 60) - 30, // -30 to 30
+      dur: `${Math.floor(Math.random() * 15) + 10}s`,
+      tx1: randomTx(), ty1: randomTx(),
+      tx2: randomTx(), ty2: randomTx(),
+      tx3: randomTx(), ty3: randomTx(),
+      tx4: randomTx(), ty4: randomTx(),
+    };
+
+    setClickItems(prev => {
+      const newItems = [...prev, newItem];
+      if (newItems.length > 15) return newItems.slice(newItems.length - 15);
+      return newItems;
+    });
+    setClickIdCounter(c => c + 1);
+  };
 
   // Unified input state
   const [userInput, setUserInput] = useState("");
@@ -226,7 +274,10 @@ export default function Activation() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-950 flex flex-col items-center justify-center p-4 sm:p-6 relative overflow-hidden text-gray-100">
+    <div 
+      className="min-h-screen bg-gray-950 flex flex-col items-center justify-center p-4 sm:p-6 relative overflow-hidden text-gray-100"
+      onClick={handleBgClick}
+    >
       {/* Dynamic Background glow blobs */}
       <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-[#58CC02]/5 rounded-full blur-[140px] pointer-events-none" />
       <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-[#1CB0F6]/5 rounded-full blur-[140px] pointer-events-none" />
@@ -267,6 +318,36 @@ export default function Activation() {
         <span className="floating-letter text-4xl text-[#FF4B4B] top-[10%] right-[5%]" style={{ '--rot': '-5deg', '--dur': '15s', '--del': '-11s', '--tx1': '-80px', '--ty1': '110px', '--tx2': '130px', '--ty2': '-60px', '--tx3': '-120px', '--ty3': '-100px', '--tx4': '90px', '--ty4': '140px' } as React.CSSProperties}>UP</span>
         <span className="floating-letter text-3xl text-white bottom-[5%] left-[5%]" style={{ '--rot': '30deg', '--dur': '27s', '--del': '-14s', '--tx1': '160px', '--ty1': '-60px', '--tx2': '-60px', '--ty2': '-150px', '--tx3': '130px', '--ty3': '90px', '--tx4': '-140px', '--ty4': '110px' } as React.CSSProperties}>AT</span>
       </div>
+
+      {/* Click-spawned items */}
+      {clickItems.map(item => (
+        <div
+          key={item.id}
+          className="absolute pointer-events-none select-none z-0 opacity-40 animate-in fade-in zoom-in duration-300"
+          style={{
+            left: item.x,
+            top: item.y,
+            transform: 'translate(-50%, -50%)',
+          }}
+        >
+          <span
+            className={`block floating-letter font-black text-5xl sm:text-7xl ${item.color}`}
+            style={{
+              '--rot': `${item.rot}deg`,
+              '--dur': item.dur,
+              '--del': '0s',
+              '--tx1': item.tx1, '--ty1': item.ty1,
+              '--tx2': item.tx2, '--ty2': item.ty2,
+              '--tx3': item.tx3, '--ty3': item.ty3,
+              '--tx4': item.tx4, '--ty4': item.ty4,
+              textShadow: '0 4px 12px rgba(0,0,0,0.5)',
+              position: 'relative'
+            } as React.CSSProperties}
+          >
+            {item.text}
+          </span>
+        </div>
+      ))}
 
       {/* ── SPLASH SCREEN ── */}
       {showSplash ? (

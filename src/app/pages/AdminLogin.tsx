@@ -108,9 +108,9 @@ export default function AdminLogin() {
       <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-[120px] pointer-events-none" />
       <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-[120px] pointer-events-none" />
 
-      <div className="absolute top-6 left-6 z-10">
-        <Button variant="ghost" onClick={() => navigate("/")} className="rounded-full p-2 text-gray-400 hover:text-white hover:bg-gray-800">
-          <ArrowLeft className="w-6 h-6" />
+      <div className="absolute top-6 left-6 sm:top-8 sm:left-8 z-10">
+        <Button onClick={() => navigate("/")} className="rounded-2xl px-5 py-6 bg-gray-900 border border-gray-800 text-gray-300 hover:text-white hover:bg-gray-800 hover:border-gray-700 flex items-center gap-2 font-bold text-base transition-all shadow-lg">
+          <ArrowLeft className="w-5 h-5" /> Back to Portal
         </Button>
       </div>
 
