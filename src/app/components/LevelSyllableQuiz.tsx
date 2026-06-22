@@ -6,7 +6,7 @@ import { Button } from "./ui/button";
 import { motion, AnimatePresence } from "motion/react";
 import { shuffle, SyllableTarget } from "../data/levels";
 import { Confetti } from "./ui/Confetti";
-import { playSound } from "../utils/soundEffects";
+import { playSound, playExclusiveAudio } from "../utils/soundEffects";
 import { playTTS } from "../utils/tts";
 
 import { LevelSyllableBuilder } from "./LevelSyllableBuilder";
@@ -38,8 +38,7 @@ function getAudioPath(syllable: string, pattern: Pattern): string {
 }
 
 function playAudio(syllable: string, pattern: Pattern) {
-  const audio = new Audio(getAudioPath(syllable, pattern));
-  audio.play().catch(() => {
+  playExclusiveAudio(getAudioPath(syllable, pattern)).catch(() => {
     // Fallback to browser TTS
     playTTS(syllable.toLowerCase());
   });

@@ -18,6 +18,29 @@ function getAudioContext() {
 
 export type SoundType = "click" | "correct" | "wrong" | "complete";
 
+let currentAudio: HTMLAudioElement | null = null;
+
+export function playExclusiveAudio(path: string) {
+  return new Promise<void>((resolve, reject) => {
+    try {
+      if (currentAudio) {
+        currentAudio.pause();
+        currentAudio.currentTime = 0;
+      }
+      currentAudio = new Audio(path);
+      currentAudio.play()
+        .then(() => resolve())
+        .catch((err) => {
+          console.error("Audio playback failed:", err);
+          reject(err);
+        });
+    } catch (err) {
+      console.error("Audio instantiation failed:", err);
+      reject(err);
+    }
+  });
+}
+
 export function playSound(type: SoundType, volume = 0.4) {
   try {
     const ctx = getAudioContext();

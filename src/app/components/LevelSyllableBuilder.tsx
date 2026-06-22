@@ -15,7 +15,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { supabase } from "../../lib/supabase";
 import { Confetti } from "./ui/Confetti";
 import { getPhoneticPronunciation } from "../data/levels";
-import { playSound } from "../utils/soundEffects";
+import { playSound, playExclusiveAudio } from "../utils/soundEffects";
 import { playTTS as playTTSUtil } from "../utils/tts";
 
 interface LevelSyllableBuilderProps {
@@ -143,9 +143,7 @@ export function LevelSyllableBuilder({
     // Use local audio files for CV and VC patterns
     if (pattern === "CV") {
       const audioPath = `${(import.meta as any).env.BASE_URL}audio/cv-audio/cv-${syllableLower}.MP3`;
-      const audio = new Audio(audioPath);
-      audio.play().catch(() => {
-        // Fallback to Google TTS if file missing
+      playExclusiveAudio(audioPath).catch(() => {
         const phoneticText = getPhoneticText(text, pattern);
         playTTSUtil(phoneticText);
       });
@@ -154,9 +152,7 @@ export function LevelSyllableBuilder({
 
     if (pattern === "VC") {
       const audioPath = `${(import.meta as any).env.BASE_URL}audio/vc-audio/vc-${syllableLower}.MP3`;
-      const audio = new Audio(audioPath);
-      audio.play().catch(() => {
-        // Fallback to Google TTS if file missing
+      playExclusiveAudio(audioPath).catch(() => {
         const phoneticText = getPhoneticText(text, pattern);
         playTTSUtil(phoneticText);
       });
@@ -172,10 +168,7 @@ export function LevelSyllableBuilder({
     if (feedback || allDone || completedTargets.has(currentTarget.syllable)) return;
 
     // Play audio for the letter
-    const audio = new Audio(`${(import.meta as any).env.BASE_URL}audio/alphabet/alphasounds-${letter.toLowerCase()}.mp3`);
-    audio.play().catch(() => {
-      // Ignore autoplay errors
-    });
+    playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/alphabet/alphasounds-${letter.toLowerCase()}.mp3`);
 
     setSelectedLetters((prev) => {
       const newSelected = [...prev, letter];

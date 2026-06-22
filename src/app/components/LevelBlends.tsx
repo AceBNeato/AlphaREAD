@@ -11,7 +11,7 @@ import { BLENDS_DATA, BLENDS_SENTENCES, BlendWord } from "../data/blends";
 import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
 import { AudioVisualizer } from "./AudioVisualizer";
 import { MatchButton } from "./MatchButton";
-import { playSound } from "../utils/soundEffects";
+import { playSound, playExclusiveAudio } from "../utils/soundEffects";
 import { playTTS as playTTSUtil } from "../utils/tts";
 
 interface LevelBlendsProps {
@@ -149,8 +149,7 @@ export function LevelBlends({ levelId, accent, categoryFilter, onComplete }: Lev
     } else {
       folder = "2letterblend";
     }
-    const audio = new Audio(`${(import.meta as any).env.BASE_URL}audio/${folder}/${folder}-${pattern}.mp3`);
-    audio.play().catch(e => console.error(e));
+    playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/${folder}/${folder}-${pattern}.mp3`);
   }, []);
 
 

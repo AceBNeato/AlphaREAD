@@ -5,7 +5,7 @@ import { allLetters as ALL_LETTERS } from "../data/levels";
 import { motion, AnimatePresence } from "motion/react";
 import {ChevronRight, Home, ArrowRight, Shuffle, FastForward, Volume2, RotateCcw, X} from "lucide-react";
 import { confirmAction } from "../utils/alerts";
-import { playSound } from "../utils/soundEffects";
+import { playSound, playExclusiveAudio } from "../utils/soundEffects";
 import { MatchButton } from "./MatchButton";
 
 interface LevelPairsProps {
@@ -84,8 +84,7 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
 
   const handleLetterClick = (letter: string) => {
     if (!letter) return;
-    const audio = new Audio(`${(import.meta as any).env.BASE_URL}audio/alphabet/alphasounds-${letter.toLowerCase()}.mp3`);
-    audio.play().catch(() => { });
+    playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/alphabet/alphasounds-${letter.toLowerCase()}.mp3`);
   };
 
   // Match Phase States
@@ -138,8 +137,7 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
 
   const playTypeSound = (letter: string) => {
     if (!letter) return;
-    const audio = new Audio(`${(import.meta as any).env.BASE_URL}audio/alphabet/alphasounds-${letter.toLowerCase()}.mp3`);
-    audio.play().catch(() => {});
+    playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/alphabet/alphasounds-${letter.toLowerCase()}.mp3`);
   };
 
   const handleTypeChange = (letter: string, val: string) => {
@@ -205,8 +203,7 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
 
   const handleSpeakerMatchClick = (letter: string) => {
     if (matchedPairs.has(letter) || wrongMatchPair) return;
-    const audio = new Audio(`${(import.meta as any).env.BASE_URL}audio/alphabet/alphasounds-${letter.toLowerCase()}.mp3`);
-    audio.play().catch(() => {});
+    playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/alphabet/alphasounds-${letter.toLowerCase()}.mp3`);
     setSelectedSpeakerMatch(letter);
     if (selectedLetterMatch) checkMatch(letter, selectedLetterMatch);
   };
@@ -215,8 +212,7 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
     if (matchedPairs.has(letter) || wrongMatchPair) return;
     
     // User requested letter buttons to also have audio
-    const audio = new Audio(`${(import.meta as any).env.BASE_URL}audio/alphabet/alphasounds-${letter.toLowerCase()}.mp3`);
-    audio.play().catch(() => {});
+    playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/alphabet/alphasounds-${letter.toLowerCase()}.mp3`);
 
     setSelectedLetterMatch(letter);
     if (selectedSpeakerMatch) checkMatch(selectedSpeakerMatch, letter);
