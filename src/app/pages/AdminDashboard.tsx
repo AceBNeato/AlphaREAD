@@ -49,7 +49,15 @@ export default function AdminDashboard() {
       navigate("/", { replace: true });
       return;
     }
+    // Initial fetch
     fetchData();
+
+    // HTMX-style Auto-Refresh every 3 seconds
+    const intervalId = setInterval(() => {
+      fetchData(true);
+    }, 3000);
+
+    return () => clearInterval(intervalId);
   }, [navigate]);
 
   const fetchData = async (silent = false) => {

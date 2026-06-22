@@ -173,17 +173,24 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, singleSho
 
       if (DEBUG) console.log(`[AlphabetGO Debug] 🗣️ Result Event Received. Evaluating against: "${evaluatingWord}"`);
 
+      // Stitch together all chunks of the sentence in case the browser split it due to pauses
+      let fullTranscript = "";
       for (let r = 0; r < event.results.length; r++) {
-        const results = event.results[r];
-        const allTranscripts: string[] = [];
-        for (let i = 0; i < results.length; i++) {
-          allTranscripts.push(results[i].transcript.trim());
-        }
-        const primaryTranscript = allTranscripts[0] || "";
-        latestTranscript = primaryTranscript; // Update fallback transcript
+        fullTranscript += event.results[r][0].transcript.trim() + " ";
+      }
+      fullTranscript = fullTranscript.trim();
+      
+      latestTranscript = fullTranscript; // Update fallback transcript
 
-        if (DEBUG) console.log(`[AlphabetGO Debug] Alternatives [Index ${r}]:`, allTranscripts);
+      if (DEBUG) console.log(`[AlphabetGO Debug] Full Stitched Transcript: "${fullTranscript}"`);
 
+      // We no longer loop through chunks, we evaluate the full stitched transcript once!
+      // (We package it inside an array to match the existing logic structure)
+      const allTranscripts = [fullTranscript];
+      const primaryTranscript = fullTranscript;
+
+      // Start evaluation block
+      {
         let status: "correct" | "close" | "wrong" = "wrong";
         let matchStr = primaryTranscript;
 
@@ -229,45 +236,38 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, singleSho
           const targetWords = targetUpper.split(/\s+/);
 
           let matched = false;
-          let closeMatched = false;
 
-          for (let i = 0; i < results.length; i++) {
-            const raw = results[i].transcript.trim().toUpperCase().replace(/[.,!?]/g, "");
+          for (let i = 0; i < allTranscripts.length; i++) {
+            const raw = allTranscripts[i].toUpperCase().replace(/[.,!?]/g, "");
             const rawWords = raw.split(/\s+/);
 
-            // Strict subsequence match: all words in correct order
-            let targetIdx = 0;
-            for (let j = 0; j < rawWords.length; j++) {
-              if (rawWords[j] === targetWords[targetIdx]) {
-                targetIdx++;
-                if (targetIdx === targetWords.length) break;
+            // 1. Strict Length Check: Must say exactly the right number of words. Zero extra, zero missing.
+            if (rawWords.length !== targetWords.length) {
+              continue;
+            }
+
+            // 2. Strict Position Check + Homophone Support
+            let isPerfectMatch = true;
+            for (let j = 0; j < targetWords.length; j++) {
+              const expectedWord = targetWords[j];
+              const spokenWord = rawWords[j];
+              
+              const allowedVariations = [expectedWord, ...(HOMOPHONES[expectedWord] || [])];
+              
+              if (!allowedVariations.includes(spokenWord)) {
+                isPerfectMatch = false;
+                break;
               }
             }
 
-            if (targetIdx === targetWords.length || raw.includes(targetUpper)) {
+            if (isPerfectMatch) {
               matched = true;
               matchStr = results[i].transcript.trim();
               break;
             }
-
-            // Close match check (for feedback purposes)
-            let matchCount = 0;
-            const availableRawWords = [...rawWords];
-            targetWords.forEach(tw => {
-              const idx = availableRawWords.indexOf(tw);
-              if (idx !== -1) {
-                matchCount++;
-                availableRawWords.splice(idx, 1);
-              }
-            });
-
-            const matchRatio = matchCount / targetWords.length;
-            if (matchRatio >= 0.5) {
-              closeMatched = true;
-              matchStr = results[i].transcript.trim();
-            }
           }
-          status = matched ? "correct" : closeMatched ? "close" : "wrong";
+          
+          status = matched ? "correct" : "wrong";
         }
         // PATH C: Single Word
         else {
@@ -276,8 +276,8 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, singleSho
           let isPerfectMatch = false;
           const wordUpper = evaluatingWord.toUpperCase();
 
-          for (let i = 0; i < results.length; i++) {
-            const normalized = normalizeTranscript(results[i].transcript.trim());
+          for (let i = 0; i < allTranscripts.length; i++) {
+            const normalized = normalizeTranscript(allTranscripts[i]);
             const allowedWords = [wordUpper, ...(HOMOPHONES[wordUpper] || [])].map(w => w.toUpperCase());
             const phraseWords = normalized.split(" ");
 
@@ -296,7 +296,7 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, singleSho
               }
             }
           }
-          if (!wordMatch) wordMatch = normalizeTranscript(results[0].transcript.trim());
+          if (!wordMatch) wordMatch = normalizeTranscript(allTranscripts[0]);
 
           if (isPerfectMatch || bestSimilarity === 1) {
             status = "correct"; matchStr = wordMatch.toLowerCase();
@@ -313,13 +313,13 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, singleSho
           foundCorrect = true;
           bestStatus = "correct";
           bestTranscript = matchStr;
-          break; // Stop evaluating, we found a perfect match!
+          // Since we stitched everything together, if it's correct, we're done!
         } else if (status === "close") {
           foundClose = true;
           bestStatus = "close";
           bestTranscript = matchStr;
         }
-      }
+      } // End evaluation block
 
       // If we found a success, trigger immediately and stop the mic!
       if (foundCorrect || (foundClose && event.results[event.results.length - 1].isFinal)) {
