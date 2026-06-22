@@ -234,3 +234,20 @@ $$;
 INSERT INTO public.profiles (id, first_name, last_name, role, email, pin_hash) 
 SELECT gen_random_uuid(), 'Master', 'Admin', 'admin', 'admin@school.com', 'ADMIN123'
 WHERE NOT EXISTS (SELECT 1 FROM public.profiles WHERE role = 'admin' LIMIT 1);
+
+-- 12. Add single-device login support column
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS current_device_id TEXT;
+
+-- 13. Secure RPC for Device Registration
+-- Bypasses RLS so teachers can register their device ID during login
+CREATE OR REPLACE FUNCTION register_device_session(p_profile_id UUID, p_auth_id UUID, p_device_id TEXT)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  UPDATE public.profiles 
+  SET auth_id = p_auth_id, current_device_id = p_device_id 
+  WHERE id = p_profile_id;
+END;
+$$;
