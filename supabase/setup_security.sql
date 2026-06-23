@@ -120,6 +120,11 @@ CREATE POLICY "Auth link profile read" ON public.profiles
   FOR SELECT
   USING (auth.jwt() ->> 'email' = email);
 
+CREATE POLICY "Users update own profile" ON public.profiles
+  FOR UPDATE
+  USING (auth.uid() = auth_id)
+  WITH CHECK (auth.uid() = auth_id);
+
 CREATE POLICY "Auth link profile update" ON public.profiles
   FOR UPDATE
   USING (auth.jwt() ->> 'email' = email AND auth_id IS NULL)

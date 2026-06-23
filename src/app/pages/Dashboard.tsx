@@ -181,10 +181,21 @@ export default function Dashboard() {
                 if (returnTo === "/admin") {
                   localStorage.setItem("userProfile", JSON.stringify({ role: "admin", name: "Admin" }));
                 } else if (returnTo === "/teacher-dashboard") {
-                  localStorage.setItem("userProfile", JSON.stringify({ id: (profile as any).teacherId || "teacher", role: "teacher", name: profile.name }));
+                  const original = localStorage.getItem("originalTeacherProfile");
+                  if (original) {
+                    localStorage.setItem("userProfile", original);
+                    localStorage.removeItem("originalTeacherProfile");
+                  } else {
+                    localStorage.setItem("userProfile", JSON.stringify({ id: (profile as any).teacherId || "teacher", role: "teacher", name: profile.name }));
+                  }
                 }
                 navigate(returnTo);
               } else if (profile.id === "teacher-preview" || (profile as any).role === "teacher-preview") {
+                const original = localStorage.getItem("originalTeacherProfile");
+                if (original) {
+                  localStorage.setItem("userProfile", original);
+                  localStorage.removeItem("originalTeacherProfile");
+                }
                 navigate("/teacher-dashboard");
               } else {
                 handleExitApp();

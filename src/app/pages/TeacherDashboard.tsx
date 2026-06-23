@@ -134,10 +134,13 @@ export default function TeacherDashboard() {
   };
 
   const handleOpenApp = () => {
+    // Save the real teacher profile so we can restore it when they come back
+    localStorage.setItem("originalTeacherProfile", JSON.stringify(teacherProfile));
+
     // Inject a preview profile for the teacher to view lessons
     localStorage.setItem("userProfile", JSON.stringify({
       id: "teacher-preview",
-      name: teacherProfile?.name || "Teacher",
+      name: teacherProfile?.first_name || "Teacher",
       avatar: "👨‍🏫",
       role: "teacher-preview",
       returnTo: "/teacher-dashboard"
