@@ -36,6 +36,7 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete }: L
 
   const [showConfetti, setShowConfetti] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [hasClickedTTS, setHasClickedTTS] = useState(false);
 
   const evaluationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -60,6 +61,7 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete }: L
   }, [currentSetIndex]);
 
   const playTTS = (text: string) => {
+    setHasClickedTTS(true);
     playTTSUtil(text);
   };
 
@@ -144,7 +146,6 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete }: L
   };
 
   const handleSkip = () => {
-    playSound("click", 0.2);
     clearEvalTimeout();
     setEvaluatingSentenceId(null);
     setCompletedSentences(new Set(activeSentences));
@@ -208,12 +209,12 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete }: L
               
               <div className="bg-gray-50 dark:bg-gray-900 rounded-2xl p-5 min-h-[100px] flex flex-col items-center justify-center border border-gray-100 dark:border-gray-800 shadow-inner">
                 <span className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Target</span>
-                <span className="text-xl font-extrabold mb-4 tracking-wider leading-snug" style={{ color: accent.primary }}>{evaluatingSentenceId}</span>
+                <span className="text-3xl font-extrabold mb-4 tracking-wider leading-snug" style={{ color: accent.primary }}>{evaluatingSentenceId}</span>
                 
                 <div className="w-full h-px bg-gray-200 dark:bg-gray-700 my-2" />
                 
                 <span className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1 mt-2">Heard</span>
-                <span className="text-lg font-medium text-gray-700 dark:text-gray-300 min-h-[30px] flex items-center justify-center w-full break-words">
+                <span className="text-3xl font-extrabold tracking-wider leading-snug text-gray-700 dark:text-gray-300 min-h-[30px] flex items-center justify-center w-full break-words">
                   {sentenceTranscriptsMap[evaluatingSentenceId] ? `"${sentenceTranscriptsMap[evaluatingSentenceId]}"` : <Loader2 className="w-5 h-5 text-gray-400 animate-spin" />}
                 </span>
               </div>
@@ -321,8 +322,8 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete }: L
 
               {/* Sentence List — identical layout to Lesson 5 */}
               <div className="w-full text-center mb-8">
-                <div className="space-y-3 bg-white/50 dark:bg-gray-800/50 p-4 rounded-3xl backdrop-blur-sm border-2 border-dashed border-gray-200 dark:border-gray-700">
-                  {activeSentences.map((s) => {
+                <div className="w-full bg-white/50 dark:bg-gray-800/50 p-4 rounded-3xl backdrop-blur-sm border-2 border-dashed border-gray-200 dark:border-gray-700 space-y-3">
+                  {activeSentences.map((s, idx) => {
                     const isDone = completedSentences.has(s);
                     const isEval = evaluatingSentenceId === s;
                     const vFeedback = sentenceFeedbackMap[s];
@@ -338,14 +339,35 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete }: L
                       >
                         {/* Left: TTS + Sentence text */}
                         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 flex-1 min-w-0 mr-3">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => playTTS(s)}
-                            className="rounded-full w-10 h-10 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 flex-shrink-0"
-                          >
-                            <Volume2 className="w-4 h-4" />
-                          </Button>
+                          <div className="relative">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => playTTS(s)}
+                              className={`rounded-full w-10 h-10 flex-shrink-0 transition-all ${
+                                idx === 0 && !hasClickedTTS
+                                  ? "bg-indigo-100 hover:bg-indigo-200 text-indigo-600 dark:bg-indigo-900/50 dark:hover:bg-indigo-800 dark:text-indigo-300 ring-2 ring-indigo-400 ring-offset-2 animate-pulse"
+                                  : "bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300"
+                              }`}
+                            >
+                              <Volume2 className="w-4 h-4" />
+                            </Button>
+                            {idx === 0 && !hasClickedTTS && (
+                              <motion.div
+                                initial={{ opacity: 0, y: 10, scale: 0.8 }}
+                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                transition={{
+                                  repeat: Infinity,
+                                  repeatType: "reverse",
+                                  duration: 1.5,
+                                }}
+                                className="absolute -top-12 left-1/2 -translate-x-1/2 bg-indigo-500 text-white text-[10px] font-bold py-1 px-3 rounded-full shadow-lg whitespace-nowrap pointer-events-none"
+                              >
+                                Click to listen!
+                                <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-indigo-500 rotate-45" />
+                              </motion.div>
+                            )}
+                          </div>
                           <span
                             className="text-xl font-bold text-left leading-snug"
                             style={{ color: isDone || vFeedback === "correct" ? "#58CC02" : accent.primary }}
@@ -356,36 +378,7 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete }: L
 
                         {/* Right: feedback + mic */}
                         <div className="flex items-center gap-3 flex-shrink-0">
-                          {/* Listening feedback */}
-                          {isEval && vTranscript && (
-                            <div className="p-1 bg-gray-200 rounded text-[10px] font-mono text-gray-700 max-w-[150px] truncate">
-                              Heard: {vTranscript}
-                            </div>
-                          )}
-                          {isEval && !vTranscript && (
-                            <div className="flex items-center gap-2">
-                              <span className="text-pink-500 text-sm font-bold animate-pulse">Listening...</span>
-                              <div className="flex gap-1 items-center h-8 justify-center min-w-[50px]">
-                                {isMobile ? (
-                                  <>
-                                    <div className="w-1.5 bg-pink-500 rounded-full" style={{ height: "20px", animation: "wave 0.8s ease-in-out infinite 0ms" }} />
-                                    <div className="w-1.5 bg-pink-400 rounded-full" style={{ height: "28px", animation: "wave 0.8s ease-in-out infinite 0.1s" }} />
-                                    <div className="w-1.5 bg-pink-500 rounded-full" style={{ height: "36px", animation: "wave 0.8s ease-in-out infinite 0.2s" }} />
-                                    <div className="w-1.5 bg-pink-400 rounded-full" style={{ height: "28px", animation: "wave 0.8s ease-in-out infinite 0.3s" }} />
-                                    <div className="w-1.5 bg-pink-500 rounded-full" style={{ height: "20px", animation: "wave 0.8s ease-in-out infinite 0.4s" }} />
-                                  </>
-                                ) : (
-                                  <>
-                                    <div className="w-1.5 bg-pink-500 rounded-full transition-all duration-75" style={{ height: "6px" }} />
-                                    <div className="w-1.5 bg-pink-400 rounded-full transition-all duration-75" style={{ height: "6px" }} />
-                                    <div className="w-1.5 bg-pink-500 rounded-full transition-all duration-75" style={{ height: "6px" }} />
-                                    <div className="w-1.5 bg-pink-400 rounded-full transition-all duration-75" style={{ height: "6px" }} />
-                                    <div className="w-1.5 bg-pink-500 rounded-full transition-all duration-75" style={{ height: "6px" }} />
-                                  </>
-                                )}
-                              </div>
-                            </div>
-                          )}
+
 
                           {/* Mic button — identical to Lesson 5 */}
                           <button
@@ -477,7 +470,7 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete }: L
                   className="rounded-2xl px-10 py-6 text-lg text-white font-bold w-full shadow-xl animate-bounce"
                   style={{ background: `linear-gradient(135deg, ${accent.primary} 0%, ${accent.dark} 100%)` }}
                 >
-                  Start Next 6 <ArrowRight className="ml-2 w-5 h-5" />
+                  Start Next 6 Sentences <ArrowRight className="ml-2 w-5 h-5" />
                 </Button>
               )}
             </motion.div>

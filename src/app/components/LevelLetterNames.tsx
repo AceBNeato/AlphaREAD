@@ -84,6 +84,7 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
   }, [ALPHABET, finalAlphabet, step]);
 
   const playNameTTS = (letter: string) => {
+    setHasClickedTTS(true);
     const name = LETTER_TTS[letter] || letter;
     playTTSUtil(name);
   };
@@ -115,6 +116,7 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
   const [selectedSpeakerMatch, setSelectedSpeakerMatch] = useState<string | null>(null);
   const [selectedLetterMatch, setSelectedLetterMatch] = useState<string | null>(null);
   const [wrongMatchPair, setWrongMatchPair] = useState<[string, string] | null>(null);
+  const [hasClickedTTS, setHasClickedTTS] = useState(false);
 
   useEffect(() => {
     if (step.type === "match") {
@@ -140,6 +142,7 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
   const [voiceFeedbackMap, setVoiceFeedbackMap] = useState<Record<string, "correct" | "wrong" | "close" | null>>({});
   const [voiceTranscriptsMap, setVoiceTranscriptsMap] = useState<Record<string, string>>({});
   const [shuffledVoiceLetters, setShuffledVoiceLetters] = useState<string[]>([]);
+  const [hasClickedMic, setHasClickedMic] = useState(false);
 
   const evaluationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [micReady, setMicReady] = useState(false);
@@ -262,6 +265,7 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
   };
 
   const playTypeSound = (letter: string) => {
+    setHasClickedTTS(true);
     if (!letter) return;
     playNameTTS(letter);
   };
@@ -298,6 +302,11 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
 
   const handleStepNext = () => {
     if (currentStep < STEPS.length - 1) {
+      if (STEPS[currentStep].type !== "review") {
+        playSound("complete", 0.5);
+      } else {
+        playSound("click", 0.2);
+      }
       setCurrentStep(prev => prev + 1);
     } else {
       playSound("complete", 0.5);
@@ -338,6 +347,7 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
   };
 
   const handleSpeakerMatchClick = (letter: string) => {
+    setHasClickedTTS(true);
     if (matchedPairs.has(letter) || wrongMatchPair) return;
     playNameTTS(letter);
     setSelectedSpeakerMatch(letter);
@@ -359,27 +369,45 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
       <Confetti active={showConfetti} />
 
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-white/80 dark:bg-[#0d141c]/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 px-4 py-3">
-        <div className="max-w-4xl mx-auto flex items-center gap-3 w-full">
-          <Button variant="ghost" size="sm" onClick={handleGoBack} className="rounded-full"><X className="w-5 h-5" /> Exit</Button>
-          <div className="flex-1 text-center">
-            <h2 className="text-lg font-bold tracking-tight" style={{ color: accent.primary }}>
+      <div className="sticky top-0 z-50 bg-white/80 dark:bg-[#0d141c]/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 px-4 py-3 shadow-sm">
+        <div className="max-w-2xl mx-auto flex items-center gap-3 sm:gap-5 w-full">
+          <Button variant="ghost" size="sm" onClick={handleGoBack} className="rounded-full p-2 h-auto text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+            <X className="w-6 h-6 sm:w-7 sm:h-7" />
+          </Button>
+          
+          <div className="flex-1 flex flex-col gap-1.5 mt-1">
+            <div className="flex justify-between items-center px-1">
+              <h2 className="text-sm sm:text-base font-bold tracking-tight" style={{ color: accent.primary }}>
               {step.type === 'review' ? 'Letter Names - Review Phase' :
                 step.type === 'match' ? 'Letter Names - Listen & Match' :
                   step.type === 'voice' ? 'Letter Names - Say the Name!' :
                     'Letter Names - Listen & Type'}
-            </h2>
+              </h2>
+            </div>
+            
+            {/* Duolingo-style Progress Bar */}
+            <div className="w-full bg-gray-200 dark:bg-gray-800 rounded-full h-4 sm:h-5 overflow-hidden relative shadow-inner">
+              <div 
+                className="absolute top-0 left-0 h-full rounded-full transition-all duration-700 ease-out flex flex-col justify-start"
+                style={{ 
+                  width: `${Math.max(5, (currentStep / STEPS.length) * 100)}%`, 
+                  backgroundColor: accent.primary 
+                }}
+              >
+                {/* Glossy reflection highlight */}
+                <div className="w-[calc(100%-12px)] h-[30%] bg-white/30 rounded-full mx-1.5 mt-1"></div>
+              </div>
+            </div>
           </div>
-          <span className="text-sm font-bold" style={{ color: accent.primary }}>Step {currentStep + 1}/{STEPS.length}</span>
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 py-6 flex-1 flex flex-col w-full">
+      <div className="max-w-2xl mx-auto px-4 py-2 flex-1 flex flex-col justify-start">
         <AnimatePresence mode="wait">
           {!showConfetti && step.type === "review" && (
             <motion.div key={`review-${currentStep}`} initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -50 }} className="flex flex-col items-center">
               <div className="text-center mb-8">
-                <p className="text-white text-base sm:text-lg font-bold mt-2 block">Tap the letters to hear their sounds</p>
+                <p className="text-gray-600 dark:text-gray-300 text-base sm:text-lg font-bold mt-2 block">Tap the letters to hear their sounds</p>
                 {/* Navigation Controls moved to top */}
                 <div className="flex justify-center items-center w-full gap-3 sm:gap-4 max-w-sm mx-auto mt-6">
                   <Button
@@ -429,7 +457,7 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
           {!showConfetti && step.type === "match" && (
             <motion.div key={`match-${currentStep}`} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="flex flex-col items-center w-full">
               <div className="text-center mb-6">
-                <p className="text-white text-base sm:text-lg font-bold mt-2 block">Tap a speaker, then tap the matching letter!</p>
+                <p className="text-gray-600 dark:text-gray-300 text-base sm:text-lg font-bold mt-2 block">Tap a speaker, then tap the matching letter!</p>
                 {/* Navigation Controls moved to top */}
                 <div className="flex justify-center items-center w-full gap-3 sm:gap-4 max-w-md mx-auto mt-6">
                   <Button
@@ -473,24 +501,37 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
               <div className="flex justify-center gap-4 sm:gap-8 w-full max-w-2xl mx-auto mb-10 px-2 sm:px-4">
                 {/* Left Column: TTS Speakers */}
                 <div className="flex flex-col gap-3 sm:gap-4 flex-1 min-w-0">
-                  {matchColumns.left.map((letter) => {
+                  {matchColumns.left.map((letter, idx) => {
                     const isMatched = matchedPairs.has(letter);
                     const isSelected = selectedSpeakerMatch === letter;
                     const isWrong = !!(wrongMatchPair && wrongMatchPair[0] === letter);
 
                     return (
-                      <MatchButton
-                        key={`speaker-${letter}`}
-                        gradientStart={accent.primary}
-                        gradientEnd={accent.dark}
-                        isMatched={isMatched}
-                        isSelected={isSelected}
-                        isWrong={isWrong}
-                        onClick={() => handleSpeakerMatchClick(letter)}
-                        disabled={!!wrongMatchPair}
-                      >
-                        <Volume2 className={`w-8 h-8 ${isMatched ? "opacity-50" : ""}`} />
-                      </MatchButton>
+                      <div key={`speaker-${letter}`} className="relative w-full">
+                        <MatchButton
+                          gradientStart={accent.primary}
+                          gradientEnd={accent.dark}
+                          isMatched={isMatched}
+                          isSelected={isSelected}
+                          isWrong={isWrong}
+                          onClick={() => handleSpeakerMatchClick(letter)}
+                          disabled={!!wrongMatchPair}
+                          className={`w-full ${idx === 0 && !hasClickedTTS ? 'ring-2 ring-indigo-400 ring-offset-2 animate-pulse' : ''}`}
+                        >
+                          <Volume2 className={`w-8 h-8 ${isMatched ? "opacity-50" : ""}`} />
+                        </MatchButton>
+                        {idx === 0 && !hasClickedTTS && (
+                          <motion.div
+                            initial={{ opacity: 0, y: 10, scale: 0.8 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            transition={{ repeat: Infinity, repeatType: "reverse", duration: 1.5 }}
+                            className="absolute -top-10 left-1/2 -translate-x-1/2 bg-indigo-500 text-white text-[10px] font-bold py-1 px-3 rounded-full shadow-lg whitespace-nowrap pointer-events-none z-10"
+                          >
+                            Click to listen!
+                            <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-indigo-500 rotate-45" />
+                          </motion.div>
+                        )}
+                      </div>
                     );
                   })}
                 </div>
@@ -531,10 +572,10 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 1.05 }}
-              className="w-full max-w-2xl mx-auto flex flex-col items-center"
+              className="flex flex-col items-center w-full"
             >
               <div className="text-center mb-6">
-                <p className="text-white text-base sm:text-lg font-bold mt-2 block">Tap the microphone and say the name of the letter loud and clear.</p>
+                <p className="text-gray-600 dark:text-gray-300 text-base sm:text-lg font-bold mt-2 block">Tap the microphone and say the name of the letter loud and clear.</p>
                 {/* Navigation Controls moved to top */}
                 <div className="flex justify-center items-center w-full gap-3 sm:gap-4 max-w-md mx-auto mt-6">
                   <Button
@@ -573,7 +614,7 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
               </div>
 
               <div className="w-full text-center mb-8">
-                <div className="space-y-3 bg-white/50 dark:bg-gray-800/50 p-4 rounded-3xl backdrop-blur-sm border-2 border-dashed border-gray-200 dark:border-gray-700">
+                <div className={`w-full bg-white/50 dark:bg-gray-800/50 p-4 rounded-3xl backdrop-blur-sm border-2 border-dashed border-gray-200 dark:border-gray-700 ${shuffledVoiceLetters.length > 5 ? 'grid grid-cols-1 sm:grid-cols-2 gap-3' : 'space-y-3'}`}>
                   {shuffledVoiceLetters.map((l, idx) => {
                     const isDone = completedVoiceLetters.has(l);
                     const isEval = evaluatingLetter === l;
@@ -586,14 +627,27 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
                         className={`flex items-center justify-between p-4 rounded-2xl transition-all ${isDone || vFeedback === "correct" ? 'bg-green-50 dark:bg-green-900/20' : vFeedback === "wrong" ? 'bg-red-50 dark:bg-red-900/10' : 'bg-white dark:bg-gray-800'} shadow-sm border-2 ${isEval ? 'border-pink-400 shadow-md' : isDone || vFeedback === "correct" ? 'border-green-200' : vFeedback === "wrong" ? 'border-red-200' : 'border-transparent hover:border-gray-300 dark:hover:border-gray-600'}`}
                       >
                         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => playNameTTS(l)}
-                            className="rounded-full w-10 h-10 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 flex-shrink-0"
-                          >
-                            <Volume2 className="w-4 h-4" />
-                          </Button>
+                          <div className="relative">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => playNameTTS(l)}
+                              className={`rounded-full w-10 h-10 flex-shrink-0 ${idx === 0 && !hasClickedTTS ? 'ring-2 ring-indigo-400 ring-offset-2 animate-pulse bg-indigo-50 dark:bg-indigo-900/20 text-indigo-500' : 'bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300'}`}
+                            >
+                              <Volume2 className="w-4 h-4" />
+                            </Button>
+                            {idx === 0 && !hasClickedTTS && (
+                              <motion.div
+                                initial={{ opacity: 0, y: 10, scale: 0.8 }}
+                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                transition={{ repeat: Infinity, repeatType: "reverse", duration: 1.5 }}
+                                className="absolute -top-10 left-1/2 -translate-x-1/2 bg-indigo-500 text-white text-[10px] font-bold py-1 px-3 rounded-full shadow-lg whitespace-nowrap pointer-events-none z-10"
+                              >
+                                Tap to listen!
+                                <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-indigo-500 rotate-45" />
+                              </motion.div>
+                            )}
+                          </div>
                           <span className="text-3xl font-bold min-w-[60px] text-left tracking-widest flex items-baseline gap-1" style={{ color: isDone || vFeedback === "correct" ? '#58CC02' : accent.primary }}>
                             {l}
                             <span className="text-[0.8em] opacity-85">{l.toLowerCase()}</span>
@@ -601,68 +655,126 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
                         </div>
 
                         <div className="flex items-center gap-3">
-                          {isEval && (
-                            <div className="flex items-center gap-2 mt-1 sm:mt-0 flex-wrap">
-                              {micReady ? (
-                                <span className="text-pink-500 text-sm font-bold animate-pulse">Listening...</span>
-                              ) : (
-                                <span className="text-amber-500 text-sm font-bold animate-pulse">Get ready...</span>
-                              )}
-                              {micReady && <AudioVisualizer isListening={!!evaluatingLetter} isMobile={isMobile} />}
-                              {vTranscript && (
-                                <span className="p-1 bg-gray-200 rounded text-[10px] font-mono text-gray-700 ml-1 truncate max-w-[120px]">
-                                  [Heard: {vTranscript}]
-                                </span>
-                              )}
-                            </div>
-                          )}
+                          {/* Removed inline audio visualizer, handled by Modal below */}
 
-                          <button
-                            onClick={() => {
-                              if (isEval) {
-                                setEvaluatingLetter(null);
-                              } else if (!isDone) {
-                                setEvaluatingLetter(l);
-                                setVoiceFeedbackMap(prev => ({ ...prev, [l]: null }));
-                                setVoiceTranscriptsMap(prev => ({ ...prev, [l]: "" }));
-                                setMicReady(false);
-                                if (micReadyTimerRef.current) clearTimeout(micReadyTimerRef.current);
-                                micReadyTimerRef.current = setTimeout(() => setMicReady(true), 220);
-                              }
-                            }}
-                            disabled={(evaluatingLetter !== null && !isEval) || isDone}
-                            className={`relative w-12 h-12 rounded-xl flex items-center justify-center transition-all flex-shrink-0 ${isDone || vFeedback === "correct"
-                              ? 'bg-green-500 text-white shadow-none opacity-50 cursor-default'
-                              : isEval
-                                ? 'bg-red-500 text-white shadow-lg'
-                                : vFeedback === "wrong"
-                                  ? 'bg-red-400 text-white'
-                                  : 'bg-gradient-to-br from-pink-500 to-rose-500 text-white shadow-md hover:scale-105 active:scale-95'
-                              }`}
-                          >
-                            {isEval && (
-                              <>
-                                <span className="absolute inset-0 rounded-xl bg-red-500/40 animate-ping" />
-                                <span className="absolute -inset-1 rounded-xl bg-red-500/20 animate-pulse" />
-                              </>
+                          <div className="relative">
+                            <button
+                              onClick={() => {
+                                setHasClickedMic(true);
+                                if (isEval) {
+                                  setEvaluatingLetter(null);
+                                } else if (!isDone) {
+                                  setEvaluatingLetter(l);
+                                  setVoiceFeedbackMap(prev => ({ ...prev, [l]: null }));
+                                  setVoiceTranscriptsMap(prev => ({ ...prev, [l]: "" }));
+                                  setMicReady(false);
+                                  if (micReadyTimerRef.current) clearTimeout(micReadyTimerRef.current);
+                                  micReadyTimerRef.current = setTimeout(() => setMicReady(true), 220);
+                                }
+                              }}
+                              disabled={(evaluatingLetter !== null && !isEval) || isDone}
+                              className={`relative w-12 h-12 rounded-xl flex items-center justify-center transition-all flex-shrink-0 ${isDone || vFeedback === "correct"
+                                ? 'bg-green-500 text-white shadow-none opacity-50 cursor-default'
+                                : isEval
+                                  ? 'bg-red-500 text-white shadow-lg'
+                                  : vFeedback === "wrong"
+                                    ? 'bg-red-400 text-white'
+                                    : 'bg-gradient-to-br from-pink-500 to-rose-500 text-white shadow-md hover:scale-105 active:scale-95'
+                                } ${idx === 0 && !hasClickedMic ? 'ring-2 ring-pink-400 ring-offset-2 animate-pulse' : ''}`}
+                            >
+                              {isEval && (
+                                <>
+                                  <span className="absolute inset-0 rounded-xl bg-red-500/40 animate-ping" />
+                                  <span className="absolute -inset-1 rounded-xl bg-red-500/20 animate-pulse" />
+                                </>
+                              )}
+                              <span className="relative z-10">
+                                {isDone || vFeedback === "correct" ? <CheckCircle2 className="w-6 h-6" /> : vFeedback === "wrong" ? <XCircle className="w-6 h-6" /> : isEval ? <MicOff className="w-5 h-5 animate-bounce" /> : <Mic className="w-5 h-5" />}
+                              </span>
+                            </button>
+                            {idx === 0 && !hasClickedMic && (
+                              <motion.div
+                                initial={{ opacity: 0, y: 10, scale: 0.8 }}
+                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                transition={{ repeat: Infinity, repeatType: "reverse", duration: 1.5 }}
+                                className="absolute -top-10 left-1/2 -translate-x-1/2 bg-pink-500 text-white text-[10px] font-bold py-1 px-3 rounded-full shadow-lg whitespace-nowrap pointer-events-none z-10"
+                              >
+                                Tap to speak!
+                                <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-pink-500 rotate-45" />
+                              </motion.div>
                             )}
-                            <span className="relative z-10">
-                              {isDone || vFeedback === "correct" ? <CheckCircle2 className="w-6 h-6" /> : vFeedback === "wrong" ? <XCircle className="w-6 h-6" /> : isEval ? <MicOff className="w-5 h-5 animate-bounce" /> : <Mic className="w-5 h-5" />}
-                            </span>
-                          </button>
+                          </div>
                         </div>
                       </div>
                     );
                   })}
                 </div>
               </div>
+              
+              {/* Listening Modal */}
+              <AnimatePresence>
+                {evaluatingLetter && !showConfetti && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4"
+                  >
+                    <motion.div
+                      initial={{ scale: 0.9, y: 20 }}
+                      animate={{ scale: 1, y: 0 }}
+                      exit={{ scale: 0.9, y: 20 }}
+                      className="bg-white dark:bg-gray-800 rounded-3xl p-6 sm:p-8 max-w-sm w-full text-center shadow-2xl border-4"
+                      style={{ borderColor: accent.primary }}
+                    >
+                      <div className="flex flex-col items-center justify-center gap-2 mb-6">
+                        <div className="flex items-center justify-center gap-2">
+                          <Mic className="w-6 h-6 text-pink-500 animate-pulse" />
+                          <h3 className="text-2xl font-bold tracking-tight text-pink-500 animate-pulse">
+                            {micReady ? "Listening..." : "Get ready..."}
+                          </h3>
+                        </div>
+                        {micReady && <AudioVisualizer isListening={!!evaluatingLetter} isMobile={isMobile} />}
+                      </div>
+                      <p className="text-gray-500 dark:text-gray-400 mb-6 font-medium">Please say the letter name clearly.</p>
+                      
+                      <div className="bg-gray-50 dark:bg-gray-900 rounded-2xl p-5 min-h-[100px] flex flex-col items-center justify-center border border-gray-100 dark:border-gray-800 shadow-inner">
+                        <span className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Target</span>
+                        <span className="text-6xl font-extrabold mb-4 tracking-wider flex items-baseline justify-center" style={{ color: accent.primary }}>
+                          {evaluatingLetter}
+                          <span className="text-[0.6em] opacity-85 ml-1">{evaluatingLetter.toLowerCase()}</span>
+                        </span>
+                        
+                        <div className="w-full h-px bg-gray-200 dark:bg-gray-700 my-2" />
+                        
+                        <span className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1 mt-2">Heard</span>
+                        <span className="text-5xl font-extrabold tracking-wider text-gray-700 dark:text-gray-300 min-h-[50px] flex items-center justify-center w-full break-words">
+                          {voiceTranscriptsMap[evaluatingLetter] ? `"${voiceTranscriptsMap[evaluatingLetter]}"` : <span className="w-5 h-5 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin"></span>}
+                        </span>
+                      </div>
+                      
+                      <Button 
+                        onClick={() => {
+                          setEvaluatingLetter(null);
+                          setVoiceFeedbackMap(prev => ({ ...prev, [evaluatingLetter]: null }));
+                          clearEvalTimeout();
+                        }}
+                        variant="ghost" 
+                        className="mt-6 text-gray-500 hover:text-red-500"
+                      >
+                        Cancel
+                      </Button>
+                    </motion.div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </motion.div>
           )}
 
           {!showConfetti && step.type === "type" && (
             <motion.div key={`type-${currentStep}`} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="flex flex-col items-center w-full">
               <div className="text-center mb-8">
-                <p className="text-white text-base sm:text-lg font-bold mt-2 block">Tap the speaker, then type the letter!</p>
+                <p className="text-gray-600 dark:text-gray-300 text-base sm:text-lg font-bold mt-2 block">Tap the speaker, then type the letter!</p>
                 {/* Navigation Controls moved to top */}
                 <div className="flex justify-center items-center w-full gap-3 sm:gap-4 max-w-md mx-auto mt-6">
                   <Button
@@ -701,20 +813,33 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
               <div className="flex justify-center gap-4 sm:gap-8 w-full max-w-2xl mx-auto mb-10 px-2 sm:px-4">
                 {/* Left Column: TTS Speakers */}
                 <div className="flex flex-col gap-3 sm:gap-4 flex-1 min-w-0">
-                  {typeOrder.map((letter) => {
+                  {typeOrder.map((letter, idx) => {
                     const isCorrect = typeStatus[letter] === true;
                     return (
-                      <MatchButton
-                        key={`speaker-${letter}`}
-                        gradientStart={accent.primary}
-                        gradientEnd={accent.dark}
-                        isMatched={isCorrect} // grays it out if correct
-                        isSelected={false}
-                        isWrong={false}
-                        onClick={() => playTypeSound(letter)}
-                      >
-                        <Volume2 className={`w-8 h-8 ${isCorrect ? "opacity-50" : ""}`} />
-                      </MatchButton>
+                      <div key={`speaker-${letter}`} className="relative w-full">
+                        <MatchButton
+                          gradientStart={accent.primary}
+                          gradientEnd={accent.dark}
+                          isMatched={isCorrect} // grays it out if correct
+                          isSelected={false}
+                          isWrong={false}
+                          onClick={() => playTypeSound(letter)}
+                          className={`w-full ${idx === 0 && !hasClickedTTS ? 'ring-2 ring-indigo-400 ring-offset-2 animate-pulse' : ''}`}
+                        >
+                          <Volume2 className={`w-8 h-8 ${isCorrect ? "opacity-50" : ""}`} />
+                        </MatchButton>
+                        {idx === 0 && !hasClickedTTS && (
+                          <motion.div
+                            initial={{ opacity: 0, y: 10, scale: 0.8 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            transition={{ repeat: Infinity, repeatType: "reverse", duration: 1.5 }}
+                            className="absolute -top-10 left-1/2 -translate-x-1/2 bg-indigo-500 text-white text-[10px] font-bold py-1 px-3 rounded-full shadow-lg whitespace-nowrap pointer-events-none z-10"
+                          >
+                            Click to listen!
+                            <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-indigo-500 rotate-45" />
+                          </motion.div>
+                        )}
+                      </div>
                     );
                   })}
                 </div>

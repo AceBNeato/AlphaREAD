@@ -60,26 +60,33 @@ export function LevelSyllableBuilder({
     customTargets ? customTargets : patterns.length === 1 ? generateSyllableTargets(patterns, 10) : []
   );
 
-  // Build the letter pool from all targets
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const currentTarget = targets[currentIndex];
+
+  // Build the letter pool for the CURRENT target to ensure exactly 12 buttons
   const letterPool = useMemo(() => {
+    if (!currentTarget) return [];
+    
     const letters: { id: string; letter: string; isVowel: boolean }[] = [];
     const added = new Set<string>();
-    targets.forEach((t) => {
-      t.letters.forEach((l) => {
-        if (!added.has(l)) {
-          added.add(l);
-          letters.push({
-            id: `l-${l}`,
-            letter: l,
-            isVowel: VOWELS.includes(l),
-          });
-        }
-      });
+    
+    // Add letters for the current target
+    currentTarget.letters.forEach((l) => {
+      if (!added.has(l)) {
+        added.add(l);
+        letters.push({
+          id: `l-${l}`,
+          letter: l,
+          isVowel: VOWELS.includes(l),
+        });
+      }
     });
-    // Add a few extra distractors up to 12 total
+
+    // Add random distractors up to exactly 12 total buttons
     const allPool = [...CONSONANTS, ...VOWELS].filter((l) => !added.has(l));
     const distractorsNeeded = Math.max(0, 12 - letters.length);
     const extras = shuffle(allPool).slice(0, distractorsNeeded);
+    
     extras.forEach((l) => {
       letters.push({
         id: `x-${l}`,
@@ -87,10 +94,10 @@ export function LevelSyllableBuilder({
         isVowel: VOWELS.includes(l),
       });
     });
+    
     return shuffle(letters);
-  }, [targets]);
+  }, [currentTarget]);
 
-  const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedLetters, setSelectedLetters] = useState<string[]>([]);
   const [completedTargets, setCompletedTargets] = useState<Set<string>>(new Set());
   const [feedback, setFeedback] = useState<"correct" | "wrong" | null>(null);
@@ -110,7 +117,6 @@ export function LevelSyllableBuilder({
     };
   }, []);
 
-  const currentTarget = targets[currentIndex];
   const allDone = completedTargets.size >= targets.length;
   const progress = (completedTargets.size / targets.length) * 100;
   const slotCount = currentTarget ? currentTarget.letters.length : 2;
@@ -137,7 +143,10 @@ export function LevelSyllableBuilder({
     return phonetic !== upper ? phonetic : text.toLowerCase();
   };
 
+  const [hasClickedTTS, setHasClickedTTS] = useState(false);
+
   const playTTS = async (text: string, pattern: SyllablePattern) => {
+    setHasClickedTTS(true);
     const syllableLower = text.toLowerCase();
 
     // Use local audio files for CV and VC patterns
@@ -188,6 +197,9 @@ export function LevelSyllableBuilder({
             setCompletedTargets((prevSet) => {
               const newCompleted = new Set(prevSet);
               newCompleted.add(currentTarget.syllable);
+              if (newCompleted.size >= targets.length) {
+                playSound("complete", 0.5);
+              }
               return newCompleted;
             });
             setFeedback(null);
@@ -218,6 +230,9 @@ export function LevelSyllableBuilder({
       setCompletedTargets((prevSet) => {
         const newCompleted = new Set(prevSet);
         newCompleted.add(currentTarget.syllable);
+        if (newCompleted.size >= targets.length) {
+          playSound("complete", 0.5);
+        }
         return newCompleted;
       });
       setFeedback(null);
@@ -435,10 +450,10 @@ export function LevelSyllableBuilder({
 
                     {/* Show the actual target syllable only when not completed */}
                     {!completedTargets.has(currentTarget.syllable) && (
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 relative">
                         <button
                           onClick={() => playTTS(currentTarget.syllable, currentTarget.pattern)}
-                          className="flex items-center gap-2 px-4 py-2 bg-white rounded-2xl shadow-md border-b-[4px] hover:scale-105 active:scale-95 transition-all"
+                          className={`flex items-center gap-2 px-4 py-2 bg-white rounded-2xl shadow-md border-b-[4px] hover:scale-105 active:scale-95 transition-all ${!hasClickedTTS && currentIndex === 0 ? 'ring-2 ring-indigo-400 ring-offset-2 animate-pulse' : ''}`}
                           style={{ borderColor: patternColors[currentTarget.pattern] }}
                           title="Click to hear again"
                         >
@@ -458,6 +473,17 @@ export function LevelSyllableBuilder({
                           </div>
                           <Volume2 className="w-6 h-6 opacity-50" style={{ color: patternColors[currentTarget.pattern] }} />
                         </button>
+                        {!hasClickedTTS && currentIndex === 0 && (
+                          <motion.div
+                            initial={{ opacity: 0, y: 10, scale: 0.8 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            transition={{ repeat: Infinity, repeatType: "reverse", duration: 1.5 }}
+                            className="absolute -top-10 left-1/2 -translate-x-1/2 bg-indigo-500 text-white text-[10px] font-bold py-1 px-3 rounded-full shadow-lg whitespace-nowrap pointer-events-none z-10"
+                          >
+                            Tap to listen!
+                            <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-indigo-500 rotate-45" />
+                          </motion.div>
+                        )}
                       </div>
                     )}
 

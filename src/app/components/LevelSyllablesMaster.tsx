@@ -82,11 +82,11 @@ export function LevelSyllablesMaster({ levelId, accent }: LevelSyllablesMasterPr
 
       <div className="flex-1 flex flex-col items-center justify-center p-4">
         <div className="w-full max-w-md space-y-6">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-black mb-2 text-gray-800 dark:text-gray-100">
+          <div className="text-center mb-12 sm:mb-16">
+            <h1 className="text-3xl font-black mb-2" style={{ color: accent.primary }}>
               Choose a Group
             </h1>
-            <p className="text-white text-base sm:text-lg font-bold mt-2 block">
+            <p className="text-gray-600 dark:text-gray-300 text-base sm:text-lg font-bold mt-2 block">
               Build syllables, then listen and match by sound. Complete both to finish Lesson 2!
             </p>
           </div>
@@ -109,10 +109,10 @@ export function LevelSyllablesMaster({ levelId, accent }: LevelSyllablesMasterPr
                 >
                   <div className="flex justify-between items-center relative z-10">
                     <div>
-                      <h3 className="text-xl font-black mb-1" style={{ color: cat.color }}>
+                      <h3 className="text-2xl sm:text-3xl font-black mb-2" style={{ color: cat.color }}>
                         {cat.label}
                       </h3>
-                      <p className="text-white text-base sm:text-lg font-bold mt-2 block">
+                      <p className="text-gray-600 dark:text-gray-300 text-base sm:text-lg font-bold mt-2 block">
                         {cat.desc}
                       </p>
                     </div>

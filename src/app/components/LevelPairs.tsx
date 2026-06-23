@@ -145,7 +145,10 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
     setTypeOrder(prev => [...prev].sort(() => Math.random() - 0.5));
   };
 
+  const [hasClickedTTS, setHasClickedTTS] = useState(false);
+
   const playTypeSound = (letter: string) => {
+    setHasClickedTTS(true);
     if (!letter) return;
     playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/alphabet/alphasounds-${letter.toLowerCase()}.mp3`);
   };
@@ -187,10 +190,11 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
   };
 
   const handleStepNext = () => {
+    if (step.type !== 'review') playSound("complete", 0.5); else playSound("click", 0.3);
+    
     if (currentStep < STEPS.length - 1) {
       setCurrentStep(prev => prev + 1);
     } else {
-      playSound("complete", 0.5);
       const completedLevels = JSON.parse(localStorage.getItem("completedLevels") || "[]");
       if (!completedLevels.includes(levelId)) {
         completedLevels.push(levelId);
@@ -224,6 +228,7 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
   };
 
   const handleSpeakerMatchClick = (letter: string) => {
+    setHasClickedTTS(true);
     if (matchedPairs.has(letter) || wrongMatchPair) return;
     playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/alphabet/alphasounds-${letter.toLowerCase()}.mp3`);
     setSelectedSpeakerMatch(letter);
@@ -377,24 +382,37 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
               <div className="flex justify-center gap-4 sm:gap-8 w-full max-w-2xl mx-auto mb-10 px-2 sm:px-4">
                 {/* Left Column: TTS Speakers */}
                 <div className="flex flex-col gap-3 sm:gap-4 flex-1 min-w-0">
-                  {matchColumns.left.map((letter) => {
+                  {matchColumns.left.map((letter, idx) => {
                     const isMatched = matchedPairs.has(letter);
                     const isSelected = selectedSpeakerMatch === letter;
                     const isWrong = !!(wrongMatchPair && wrongMatchPair[0] === letter);
 
                     return (
-                      <MatchButton
-                        key={`speaker-${letter}`}
-                        gradientStart={accent.primary}
-                        gradientEnd={accent.dark}
-                        isMatched={isMatched}
-                        isSelected={isSelected}
-                        isWrong={isWrong}
-                        onClick={() => handleSpeakerMatchClick(letter)}
-                        disabled={!!wrongMatchPair}
-                      >
-                        <Volume2 className={`w-8 h-8 ${isMatched ? "opacity-50" : ""}`} />
-                      </MatchButton>
+                      <div key={`speaker-${letter}`} className="relative w-full">
+                        <MatchButton
+                          gradientStart={accent.primary}
+                          gradientEnd={accent.dark}
+                          isMatched={isMatched}
+                          isSelected={isSelected}
+                          isWrong={isWrong}
+                          onClick={() => handleSpeakerMatchClick(letter)}
+                          disabled={!!wrongMatchPair}
+                          className={`w-full ${idx === 0 && !hasClickedTTS ? 'ring-2 ring-indigo-400 ring-offset-2 animate-pulse' : ''}`}
+                        >
+                          <Volume2 className={`w-8 h-8 ${isMatched ? "opacity-50" : ""}`} />
+                        </MatchButton>
+                        {idx === 0 && !hasClickedTTS && (
+                          <motion.div
+                            initial={{ opacity: 0, y: 10, scale: 0.8 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            transition={{ repeat: Infinity, repeatType: "reverse", duration: 1.5 }}
+                            className="absolute -top-10 left-1/2 -translate-x-1/2 bg-indigo-500 text-white text-[10px] font-bold py-1 px-3 rounded-full shadow-lg whitespace-nowrap pointer-events-none z-10"
+                          >
+                            Tap to listen!
+                            <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-indigo-500 rotate-45" />
+                          </motion.div>
+                        )}
+                      </div>
                     );
                   })}
                 </div>
@@ -471,20 +489,33 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
               <div className="flex justify-center gap-4 sm:gap-8 w-full max-w-2xl mx-auto mb-10 px-2 sm:px-4">
                 {/* Left Column: TTS Speakers */}
                 <div className="flex flex-col gap-3 sm:gap-4 flex-1 min-w-0">
-                  {typeOrder.map((letter) => {
+                  {typeOrder.map((letter, idx) => {
                     const isCorrect = typeStatus[letter] === true;
                     return (
-                      <MatchButton
-                        key={`speaker-${letter}`}
-                        gradientStart={accent.primary}
-                        gradientEnd={accent.dark}
-                        isMatched={isCorrect} // grays it out if correct
-                        isSelected={false}
-                        isWrong={false}
-                        onClick={() => playTypeSound(letter)}
-                      >
-                        <Volume2 className={`w-8 h-8 ${isCorrect ? "opacity-50" : ""}`} />
-                      </MatchButton>
+                      <div key={`speaker-${letter}`} className="relative w-full">
+                        <MatchButton
+                          gradientStart={accent.primary}
+                          gradientEnd={accent.dark}
+                          isMatched={isCorrect}
+                          isSelected={false}
+                          isWrong={false}
+                          onClick={() => playTypeSound(letter)}
+                          className={`w-full ${idx === 0 && !hasClickedTTS ? 'ring-2 ring-indigo-400 ring-offset-2 animate-pulse' : ''}`}
+                        >
+                          <Volume2 className={`w-8 h-8 ${isCorrect ? "opacity-50" : ""}`} />
+                        </MatchButton>
+                        {idx === 0 && !hasClickedTTS && (
+                          <motion.div
+                            initial={{ opacity: 0, y: 10, scale: 0.8 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            transition={{ repeat: Infinity, repeatType: "reverse", duration: 1.5 }}
+                            className="absolute -top-10 left-1/2 -translate-x-1/2 bg-indigo-500 text-white text-[10px] font-bold py-1 px-3 rounded-full shadow-lg whitespace-nowrap pointer-events-none z-10"
+                          >
+                            Tap to listen!
+                            <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-indigo-500 rotate-45" />
+                          </motion.div>
+                        )}
+                      </div>
                     );
                   })}
                 </div>

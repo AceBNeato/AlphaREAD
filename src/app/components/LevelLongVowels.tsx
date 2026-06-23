@@ -185,9 +185,9 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
   const [showConfetti, setShowConfetti] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-
-
-  const evaluationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  // Tutorial State
+  const [hasClickedTTS, setHasClickedTTS] = useState(false);
+  const [hasClickedMic, setHasClickedMic] = useState(false);  const evaluationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const clearEvalTimeout = useCallback(() => {
     if (evaluationTimeoutRef.current) {
@@ -220,12 +220,14 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
   }, [reviewIdx]);
 
   const playTTS = (text: string) => {
+    setHasClickedTTS(true);
     const ttsText = text.length === 1 ? (LETTER_TTS[text] || text) : text.toLowerCase();
     playTTSUtil(ttsText);
   };
 
   const handleNextQuiz = useCallback(() => {
     if (currentPhase === "match" || currentPhase === "patterns" || currentPhase === "words" || currentPhase === "sentences") {
+      playSound("complete", 0.5);
       setShowConfetti(true);
     }
   }, [currentPhase]);
@@ -422,28 +424,39 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
       <Confetti active={showConfetti} />
 
       <div className="sticky top-0 z-10 bg-white/80 dark:bg-[#0d141c]/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 px-4 py-3">
-        <div className="max-w-4xl mx-auto flex items-center justify-between gap-3 w-full">
+        <div className="max-w-2xl mx-auto flex items-center justify-between gap-3 w-full">
           <Button variant="ghost" size="sm" onClick={handleGoBack} className="rounded-full">
             <X className="w-5 h-5" /> Exit
           </Button>
-          <h2 className="text-lg font-bold tracking-tight text-center flex-1" style={{ color: accent.primary }}>
-            {currentPhase === "review" && `Long Vowels Review`}
-            {currentPhase === "match" && `Long Vowels - Listen & Match`}
-            {currentPhase === "patterns" && `Long Vowels - Voice Evaluation`}
-            {currentPhase === "words" && `Long Vowels - Voice Evaluation`}
-            {currentPhase === "sentences" && `Long Vowels : Read the Sentences`}
-          </h2>
-          <span className="text-sm font-bold" style={{ color: accent.primary }}>
-            {currentPhase === "review" && `Step 1/5`}
-            {currentPhase === "match" && `Step 2/5`}
-            {currentPhase === "patterns" && `Step 3/5`}
-            {currentPhase === "words" && `Step 4/5`}
-            {currentPhase === "sentences" && `Step 5/5`}
-          </span>
+          <div className="flex-1 flex flex-col gap-1.5 mt-1">
+            <div className="flex justify-between items-center px-1">
+              <h2 className="text-sm sm:text-base font-bold tracking-tight" style={{ color: accent.primary }}>
+                {currentPhase === "review" && `Long Vowels Review`}
+                {currentPhase === "match" && `Long Vowels - Listen & Match`}
+                {currentPhase === "patterns" && `Long Vowels - Voice Evaluation`}
+                {currentPhase === "words" && `Long Vowels - Voice Evaluation`}
+                {currentPhase === "sentences" && `Long Vowels - Read the Sentences`}
+              </h2>
+            </div>
+            
+            {/* Duolingo-style Progress Bar */}
+            <div className="w-full bg-gray-200 dark:bg-gray-800 rounded-full h-4 sm:h-5 overflow-hidden relative shadow-inner">
+              <div 
+                className="absolute top-0 left-0 h-full rounded-full transition-all duration-700 ease-out flex flex-col justify-start"
+                style={{ 
+                  width: `${Math.max(5, (({review:0, match:1, patterns:2, words:3, sentences:4}[currentPhase] || 0) / 4) * 100)}%`, 
+                  backgroundColor: accent.primary 
+                }}
+              >
+                {/* Glossy reflection highlight */}
+                <div className="w-[calc(100%-12px)] h-[30%] bg-white/30 rounded-full mx-1.5 mt-1"></div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 py-6 flex-1 flex flex-col justify-start w-full">
+      <div className="w-full max-w-2xl mx-auto px-4 py-2 flex-1 flex flex-col justify-start">
         <AnimatePresence mode="wait">
           {!showConfetti && currentPhase === "review" ? (
             <motion.div
@@ -472,7 +485,10 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
                   </Button>
                   <Button
                     size="sm"
-                    onClick={() => setCurrentPhase("match")}
+                    onClick={() => {
+                      playSound("click", 0.3);
+                      setCurrentPhase("match");
+                    }}
                     className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#3c8c01] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
                     style={{
                       background: "linear-gradient(135deg, rgb(88, 204, 2) 0%, rgb(70, 163, 2) 100%)",
@@ -503,7 +519,7 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
                         </span>
                       </div>
 
-                      <div className="space-y-4 flex-1">
+                      <div className={`gap-4 flex-1 ${pattern.words.length > 5 ? 'grid grid-cols-1 sm:grid-cols-2' : 'flex flex-col'}`}>
                         {pattern.words.map((w: LongVowelWord) => {
                           return (
                             <div
@@ -589,23 +605,36 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
 
               <div className="flex justify-center gap-4 sm:gap-8 w-full max-w-2xl mx-auto mb-10 px-2 sm:px-4">
                 <div className="flex flex-col gap-3 sm:gap-4 flex-1 min-w-0">
-                  {matchColumns.left.map((pattern) => {
+                  {matchColumns.left.map((pattern, idx) => {
                     const isMatched = matchedPairs.has(pattern);
                     const isSelected = selectedSpeakerMatch === pattern;
                     const isWrong = !!(wrongMatchPair && wrongMatchPair[0] === pattern);
                     return (
-                      <MatchButton
-                        key={`speaker-${pattern}`}
-                        gradientStart={accent.primary}
-                        gradientEnd={accent.dark}
-                        isMatched={isMatched}
-                        isSelected={isSelected}
-                        isWrong={isWrong}
-                        onClick={() => handleSpeakerMatchClick(pattern)}
-                        disabled={!!wrongMatchPair}
-                      >
-                        <Volume2 className={`w-8 h-8 ${isMatched ? "opacity-50" : ""}`} />
-                      </MatchButton>
+                      <div key={`speaker-${pattern}`} className="relative w-full">
+                        <MatchButton
+                          gradientStart={accent.primary}
+                          gradientEnd={accent.dark}
+                          isMatched={isMatched}
+                          isSelected={isSelected}
+                          isWrong={isWrong}
+                          onClick={() => handleSpeakerMatchClick(pattern)}
+                          disabled={!!wrongMatchPair}
+                          className={`w-full ${idx === 0 && !hasClickedTTS ? 'ring-2 ring-indigo-400 ring-offset-2 animate-pulse' : ''}`}
+                        >
+                          <Volume2 className={`w-8 h-8 ${isMatched ? "opacity-50" : ""}`} />
+                        </MatchButton>
+                        {idx === 0 && !hasClickedTTS && (
+                          <motion.div
+                            initial={{ opacity: 0, y: 10, scale: 0.8 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            transition={{ repeat: Infinity, repeatType: "reverse", duration: 1.5 }}
+                            className="absolute -top-10 left-1/2 -translate-x-1/2 bg-indigo-500 text-white text-[10px] font-bold py-1 px-3 rounded-full shadow-lg whitespace-nowrap pointer-events-none z-10"
+                          >
+                            Tap to listen!
+                            <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-indigo-500 rotate-45" />
+                          </motion.div>
+                        )}
+                      </div>
                     );
                   })}
                 </div>
@@ -701,7 +730,7 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
               </div>
 
               <div className="w-full text-center mb-8">
-                <div className="space-y-3 bg-white/50 dark:bg-gray-800/50 p-4 rounded-3xl backdrop-blur-sm border-2 border-dashed border-gray-200 dark:border-gray-700">
+                <div className={`gap-3 bg-white/50 dark:bg-gray-800/50 p-4 rounded-3xl backdrop-blur-sm border-2 border-dashed border-gray-200 dark:border-gray-700 ${reviewBatch.length > 5 ? 'grid grid-cols-1 sm:grid-cols-2' : 'flex flex-col'}`}>
                   {reviewBatch.map((p, idx) => {
                     const isDone = completedPatterns.has(p.pattern);
                     const isEval = evaluatingPatternId === p.pattern;
@@ -714,14 +743,27 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
                         className={`flex items-center justify-between p-4 rounded-2xl transition-all ${isDone || vFeedback === "correct" ? 'bg-green-50 dark:bg-green-900/20' : vFeedback === "wrong" ? 'bg-red-50 dark:bg-red-900/10' : 'bg-white dark:bg-gray-800'} shadow-sm border-2 ${isEval ? 'border-pink-400 shadow-md' : isDone || vFeedback === "correct" ? 'border-green-200' : vFeedback === "wrong" ? 'border-red-200' : 'border-transparent hover:border-gray-300 dark:hover:border-gray-600'}`}
                       >
                         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => playTTS(p.vowel)}
-                            className="rounded-full w-10 h-10 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 flex-shrink-0"
-                          >
-                            <Volume2 className="w-4 h-4" />
-                          </Button>
+                          <div className="relative">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => playTTS(p.vowel)}
+                              className={`rounded-full w-10 h-10 flex-shrink-0 ${idx === 0 && !hasClickedTTS ? 'ring-2 ring-indigo-400 ring-offset-2 animate-pulse bg-indigo-50 dark:bg-indigo-900/20 text-indigo-500' : 'bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300'}`}
+                            >
+                              <Volume2 className="w-4 h-4" />
+                            </Button>
+                            {idx === 0 && !hasClickedTTS && (
+                              <motion.div
+                                initial={{ opacity: 0, y: 10, scale: 0.8 }}
+                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                transition={{ repeat: Infinity, repeatType: "reverse", duration: 1.5 }}
+                                className="absolute -top-10 left-1/2 -translate-x-1/2 bg-indigo-500 text-white text-[10px] font-bold py-1 px-3 rounded-full shadow-lg whitespace-nowrap pointer-events-none z-10"
+                              >
+                                Tap to listen!
+                                <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-indigo-500 rotate-45" />
+                              </motion.div>
+                            )}
+                          </div>
                           <span className="text-3xl font-bold min-w-[60px] text-left tracking-widest uppercase flex items-center gap-1.5" style={{ color: isDone || vFeedback === "correct" ? '#58CC02' : accent.primary }}>
                             {p.pattern}
                           </span>
@@ -729,48 +771,52 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
                         </div>
 
                         <div className="flex items-center gap-3">
-                          {isEval && (
-                            <div className="flex items-center gap-2 mt-1 sm:mt-0 flex-wrap">
-                              <span className="text-pink-500 text-sm font-bold animate-pulse">Listening...</span>
-                              <AudioVisualizer isListening={!!evaluatingTargetForMic} isMobile={isMobile} />
-                              {vTranscript && (
-                                <span className="p-1 bg-gray-200 rounded text-[10px] font-mono text-gray-700 ml-1 truncate max-w-[120px]">
-                                  [Heard: {vTranscript}]
-                                </span>
-                              )}
-                            </div>
-                          )}
+                          {/* Removed inline audio visualizer, handled by Modal below */}
 
-                          <button
-                            onClick={() => {
-                              if (isEval) {
-                                setEvaluatingPatternId(null);
-                              } else if (!isDone) {
-                                setEvaluatingPatternId(p.pattern);
-                                setPatternFeedbackMap(prev => ({ ...prev, [p.pattern]: null }));
-                                setPatternTranscriptsMap(prev => ({ ...prev, [p.pattern]: "" }));
-                              }
-                            }}
-                            disabled={(evaluatingPatternId !== null && !isEval) || isDone}
-                            className={`relative w-12 h-12 rounded-xl flex items-center justify-center transition-all flex-shrink-0 ${isDone || vFeedback === "correct"
-                              ? 'bg-green-500 text-white shadow-none opacity-50 cursor-default'
-                              : isEval
-                                ? 'bg-red-500 text-white shadow-lg'
-                                : vFeedback === "wrong"
-                                  ? 'bg-red-400 text-white'
-                                  : 'bg-gradient-to-br from-pink-500 to-rose-500 text-white shadow-md hover:scale-105 active:scale-95'
-                              }`}
-                          >
-                            {isEval && (
-                              <>
-                                <span className="absolute inset-0 rounded-xl bg-red-500/40 animate-ping" />
-                                <span className="absolute -inset-1 rounded-xl bg-red-500/20 animate-pulse" />
-                              </>
+                          <div className="relative">
+                            <button
+                              onClick={() => {
+                                setHasClickedMic(true);
+                                if (isEval) {
+                                  setEvaluatingPatternId(null);
+                                } else if (!isDone) {
+                                  setEvaluatingPatternId(p.pattern);
+                                  setPatternFeedbackMap(prev => ({ ...prev, [p.pattern]: null }));
+                                  setPatternTranscriptsMap(prev => ({ ...prev, [p.pattern]: "" }));
+                                }
+                              }}
+                              disabled={(evaluatingPatternId !== null && !isEval) || isDone}
+                              className={`relative w-12 h-12 rounded-xl flex items-center justify-center transition-all flex-shrink-0 ${isDone || vFeedback === "correct"
+                                ? 'bg-green-500 text-white shadow-none opacity-50 cursor-default'
+                                : isEval
+                                  ? 'bg-red-500 text-white shadow-lg'
+                                  : vFeedback === "wrong"
+                                    ? 'bg-red-400 text-white'
+                                    : 'bg-gradient-to-br from-pink-500 to-rose-500 text-white shadow-md hover:scale-105 active:scale-95'
+                                } ${idx === 0 && !hasClickedMic ? 'ring-2 ring-pink-400 ring-offset-2 animate-pulse' : ''}`}
+                            >
+                              {isEval && (
+                                <>
+                                  <span className="absolute inset-0 rounded-xl bg-red-500/40 animate-ping" />
+                                  <span className="absolute -inset-1 rounded-xl bg-red-500/20 animate-pulse" />
+                                </>
+                              )}
+                              <span className="relative z-10">
+                                {isDone || vFeedback === "correct" ? <CheckCircle2 className="w-6 h-6" /> : vFeedback === "wrong" ? <XCircle className="w-6 h-6" /> : isEval ? <MicOff className="w-5 h-5 animate-bounce" /> : <Mic className="w-5 h-5" />}
+                              </span>
+                            </button>
+                            {idx === 0 && !hasClickedMic && (
+                              <motion.div
+                                initial={{ opacity: 0, y: 10, scale: 0.8 }}
+                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                transition={{ repeat: Infinity, repeatType: "reverse", duration: 1.5 }}
+                                className="absolute -top-10 left-1/2 -translate-x-1/2 bg-pink-500 text-white text-[10px] font-bold py-1 px-3 rounded-full shadow-lg whitespace-nowrap pointer-events-none z-10"
+                              >
+                                Tap to speak!
+                                <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-pink-500 rotate-45" />
+                              </motion.div>
                             )}
-                            <span className="relative z-10">
-                              {isDone || vFeedback === "correct" ? <CheckCircle2 className="w-6 h-6" /> : vFeedback === "wrong" ? <XCircle className="w-6 h-6" /> : isEval ? <MicOff className="w-5 h-5 animate-bounce" /> : <Mic className="w-5 h-5" />}
-                            </span>
-                          </button>
+                          </div>
                         </div>
                       </div>
                     );
@@ -845,7 +891,7 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
               </div>
 
               <div className="w-full text-center mb-8">
-                <div className="space-y-3 bg-white/50 dark:bg-gray-800/50 p-4 rounded-3xl backdrop-blur-sm border-2 border-dashed border-gray-200 dark:border-gray-700">
+                <div className={`w-full gap-3 bg-white/50 dark:bg-gray-800/50 p-4 rounded-3xl backdrop-blur-sm border-2 border-dashed border-gray-200 dark:border-gray-700 ${activeWords.length > 5 ? 'grid grid-cols-1 sm:grid-cols-2' : 'flex flex-col'}`}>
                   {activeWords.map((w, idx) => {
                     const isDone = completedWords.has(w.word);
                     const isEval = evaluatingWordId === w.word;
@@ -858,14 +904,27 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
                         className={`flex items-center justify-between p-4 rounded-2xl transition-all ${isDone || vFeedback === "correct" ? 'bg-green-50 dark:bg-green-900/20' : vFeedback === "wrong" ? 'bg-red-50 dark:bg-red-900/10' : 'bg-white dark:bg-gray-800'} shadow-sm border-2 ${isEval ? 'border-pink-400 shadow-md' : isDone || vFeedback === "correct" ? 'border-green-200' : vFeedback === "wrong" ? 'border-red-200' : 'border-transparent hover:border-gray-300 dark:hover:border-gray-600'}`}
                       >
                         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => playTTS(w.word)}
-                            className="rounded-full w-10 h-10 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 flex-shrink-0"
-                          >
-                            <Volume2 className="w-4 h-4" />
-                          </Button>
+                          <div className="relative">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => playTTS(w.word)}
+                              className={`rounded-full w-10 h-10 flex-shrink-0 ${idx === 0 && !hasClickedTTS ? 'ring-2 ring-indigo-400 ring-offset-2 animate-pulse bg-indigo-50 dark:bg-indigo-900/20 text-indigo-500' : 'bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300'}`}
+                            >
+                              <Volume2 className="w-4 h-4" />
+                            </Button>
+                            {idx === 0 && !hasClickedTTS && (
+                              <motion.div
+                                initial={{ opacity: 0, y: 10, scale: 0.8 }}
+                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                transition={{ repeat: Infinity, repeatType: "reverse", duration: 1.5 }}
+                                className="absolute -top-10 left-1/2 -translate-x-1/2 bg-indigo-500 text-white text-[10px] font-bold py-1 px-3 rounded-full shadow-lg whitespace-nowrap pointer-events-none z-10"
+                              >
+                                Tap to listen!
+                                <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-indigo-500 rotate-45" />
+                              </motion.div>
+                            )}
+                          </div>
                           <span className="text-3xl font-bold min-w-[60px] text-left tracking-widest uppercase flex items-center gap-1.5" style={{ color: isDone || vFeedback === "correct" ? '#58CC02' : accent.primary }}>
                             {w.word}
                           </span>
@@ -873,66 +932,51 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
                         </div>
 
                         <div className="flex items-center gap-3">
-                          {isEval && vTranscript && (
-                            <div className="p-1 bg-gray-200 rounded text-[10px] font-mono text-gray-700 mt-1 sm:mt-0 max-w-[150px] truncate">
-                              Heard: {vTranscript}
-                            </div>
-                          )}
-                          {isEval && !vTranscript && (
-                            <div className="flex items-center gap-2 mt-1 sm:mt-0">
-                              <span className="text-pink-500 text-sm font-bold animate-pulse">Listening...</span>
-                              <div className="flex gap-1 items-center h-8 justify-center min-w-[50px]">
-                                {isMobile ? (
-                                  <>
-                                    <div className="w-1.5 bg-pink-500 rounded-full animate-[wave_0.8s_ease-in-out_infinite_0ms]" style={{ height: '20px', animationName: 'wave', animationDuration: '0.8s', animationIterationCount: 'infinite', animationDelay: '0ms' }} />
-                                    <div className="w-1.5 bg-pink-400 rounded-full" style={{ height: '28px', animation: 'wave 0.8s ease-in-out infinite 0.1s' }} />
-                                    <div className="w-1.5 bg-pink-500 rounded-full" style={{ height: '36px', animation: 'wave 0.8s ease-in-out infinite 0.2s' }} />
-                                    <div className="w-1.5 bg-pink-400 rounded-full" style={{ height: '28px', animation: 'wave 0.8s ease-in-out infinite 0.3s' }} />
-                                    <div className="w-1.5 bg-pink-500 rounded-full" style={{ height: '20px', animation: 'wave 0.8s ease-in-out infinite 0.4s' }} />
-                                  </>
-                                ) : (
-                                  <>
-                                    <div id="wave-bar-1" className="w-1.5 bg-pink-500 rounded-full transition-all duration-75" style={{ height: '6px' }} />
-                                    <div id="wave-bar-2" className="w-1.5 bg-pink-400 rounded-full transition-all duration-75" style={{ height: '6px' }} />
-                                    <div id="wave-bar-3" className="w-1.5 bg-pink-500 rounded-full transition-all duration-75" style={{ height: '6px' }} />
-                                    <div id="wave-bar-4" className="w-1.5 bg-pink-400 rounded-full transition-all duration-75" style={{ height: '6px' }} />
-                                    <div id="wave-bar-5" className="w-1.5 bg-pink-500 rounded-full transition-all duration-75" style={{ height: '6px' }} />
-                                  </>
-                                )}
-                              </div>
-                            </div>
-                          )}
-
-                          <button
-                            onClick={() => {
-                              if (isEval) {
-                                setEvaluatingWordId(null);
-                              } else if (!isDone) {
-                                setEvaluatingWordId(w.word);
-                                setWordFeedbackMap(prev => ({ ...prev, [w.word]: null }));
-                                setWordTranscriptsMap(prev => ({ ...prev, [w.word]: "" }));
-                              }
-                            }}
-                            disabled={(evaluatingWordId !== null && !isEval) || isDone}
-                            className={`relative w-12 h-12 rounded-xl flex items-center justify-center transition-all flex-shrink-0 ${isDone || vFeedback === "correct"
-                              ? 'bg-green-500 text-white shadow-none opacity-50 cursor-default'
-                              : isEval
-                                ? 'bg-red-500 text-white shadow-lg'
-                                : vFeedback === "wrong"
-                                  ? 'bg-red-400 text-white'
-                                  : 'bg-gradient-to-br from-pink-500 to-rose-500 text-white shadow-md hover:scale-105 active:scale-95'
-                              }`}
-                          >
-                            {isEval && (
-                              <>
-                                <span className="absolute inset-0 rounded-xl bg-red-500/40 animate-ping" />
-                                <span className="absolute -inset-1 rounded-xl bg-red-500/20 animate-pulse" />
-                              </>
+                          {/* Removed inline audio visualizer, handled by Modal below */}
+                          <div className="relative">
+                            <button
+                              onClick={() => {
+                                setHasClickedMic(true);
+                                if (isEval) {
+                                  setEvaluatingWordId(null);
+                                } else if (!isDone) {
+                                  setEvaluatingWordId(w.word);
+                                  setWordFeedbackMap(prev => ({ ...prev, [w.word]: null }));
+                                  setWordTranscriptsMap(prev => ({ ...prev, [w.word]: "" }));
+                                }
+                              }}
+                              disabled={(evaluatingWordId !== null && !isEval) || isDone}
+                              className={`relative w-12 h-12 rounded-xl flex items-center justify-center transition-all flex-shrink-0 ${isDone || vFeedback === "correct"
+                                ? 'bg-green-500 text-white shadow-none opacity-50 cursor-default'
+                                : isEval
+                                  ? 'bg-red-500 text-white shadow-lg'
+                                  : vFeedback === "wrong"
+                                    ? 'bg-red-400 text-white'
+                                    : 'bg-gradient-to-br from-pink-500 to-rose-500 text-white shadow-md hover:scale-105 active:scale-95'
+                                } ${idx === 0 && !hasClickedMic ? 'ring-2 ring-pink-400 ring-offset-2 animate-pulse' : ''}`}
+                            >
+                              {isEval && (
+                                <>
+                                  <span className="absolute inset-0 rounded-xl bg-red-500/40 animate-ping" />
+                                  <span className="absolute -inset-1 rounded-xl bg-red-500/20 animate-pulse" />
+                                </>
+                              )}
+                              <span className="relative z-10">
+                                {isDone || vFeedback === "correct" ? <CheckCircle2 className="w-6 h-6" /> : vFeedback === "wrong" ? <XCircle className="w-6 h-6" /> : isEval ? <MicOff className="w-5 h-5 animate-bounce" /> : <Mic className="w-5 h-5" />}
+                              </span>
+                            </button>
+                            {idx === 0 && !hasClickedMic && (
+                              <motion.div
+                                initial={{ opacity: 0, y: 10, scale: 0.8 }}
+                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                transition={{ repeat: Infinity, repeatType: "reverse", duration: 1.5 }}
+                                className="absolute -top-10 left-1/2 -translate-x-1/2 bg-pink-500 text-white text-[10px] font-bold py-1 px-3 rounded-full shadow-lg whitespace-nowrap pointer-events-none z-10"
+                              >
+                                Tap to speak!
+                                <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-pink-500 rotate-45" />
+                              </motion.div>
                             )}
-                            <span className="relative z-10">
-                              {isDone || vFeedback === "correct" ? <CheckCircle2 className="w-6 h-6" /> : vFeedback === "wrong" ? <XCircle className="w-6 h-6" /> : isEval ? <MicOff className="w-5 h-5 animate-bounce" /> : <Mic className="w-5 h-5" />}
-                            </span>
-                          </button>
+                          </div>
                         </div>
                       </div>
                     );
@@ -1007,7 +1051,7 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
               </div>
 
               <div className="w-full text-center mb-8">
-                <div className="space-y-3 bg-white/50 dark:bg-gray-800/50 p-4 rounded-3xl backdrop-blur-sm border-2 border-dashed border-gray-200 dark:border-gray-700">
+                <div className="w-full gap-3 bg-white/50 dark:bg-gray-800/50 p-4 rounded-3xl backdrop-blur-sm border-2 border-dashed border-gray-200 dark:border-gray-700 flex flex-col">
                   {activeSentences.map((s, idx) => {
                     const isDone = completedSentences.has(s);
                     const isEval = evaluatingSentenceId === s;
@@ -1020,80 +1064,78 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
                         className={`flex items-center justify-between p-4 rounded-2xl transition-all ${isDone || vFeedback === "correct" ? 'bg-green-50 dark:bg-green-900/20' : vFeedback === "wrong" ? 'bg-red-50 dark:bg-red-900/10' : 'bg-white dark:bg-gray-800'} shadow-sm border-2 ${isEval ? 'border-pink-400 shadow-md' : isDone || vFeedback === "correct" ? 'border-green-200' : vFeedback === "wrong" ? 'border-red-200' : 'border-transparent hover:border-gray-300 dark:hover:border-gray-600'}`}
                       >
                         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => playTTS(s)}
-                            className="rounded-full w-10 h-10 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 flex-shrink-0"
-                          >
-                            <Volume2 className="w-4 h-4" />
-                          </Button>
+                          <div className="relative">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => playTTS(s)}
+                              className={`rounded-full w-10 h-10 flex-shrink-0 ${idx === 0 && !hasClickedTTS ? 'ring-2 ring-indigo-400 ring-offset-2 animate-pulse bg-indigo-50 dark:bg-indigo-900/20 text-indigo-500' : 'bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300'}`}
+                            >
+                              <Volume2 className="w-4 h-4" />
+                            </Button>
+                            {idx === 0 && !hasClickedTTS && (
+                              <motion.div
+                                initial={{ opacity: 0, y: 10, scale: 0.8 }}
+                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                transition={{ repeat: Infinity, repeatType: "reverse", duration: 1.5 }}
+                                className="absolute -top-10 left-1/2 -translate-x-1/2 bg-indigo-500 text-white text-[10px] font-bold py-1 px-3 rounded-full shadow-lg whitespace-nowrap pointer-events-none z-10"
+                              >
+                                Tap to listen!
+                                <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-indigo-500 rotate-45" />
+                              </motion.div>
+                            )}
+                          </div>
                           <span className="text-xl font-bold text-left leading-snug flex items-center gap-1.5" style={{ color: isDone || vFeedback === "correct" ? '#58CC02' : accent.primary }}>
                             {s}
                           </span>
                         </div>
 
                         <div className="flex items-center gap-3">
-                          {isEval && vTranscript && (
-                            <div className="p-1 bg-gray-200 rounded text-[10px] font-mono text-gray-700 mt-1 sm:mt-0 max-w-[150px] truncate">
-                              Heard: {vTranscript}
-                            </div>
-                          )}
-                          {isEval && !vTranscript && (
-                            <div className="flex items-center gap-2 mt-1 sm:mt-0">
-                              <span className="text-pink-500 text-sm font-bold animate-pulse">Listening...</span>
-                              <div className="flex gap-1 items-center h-8 justify-center min-w-[50px]">
-                                {isMobile ? (
-                                  <>
-                                    <div className="w-1.5 bg-pink-500 rounded-full animate-[wave_0.8s_ease-in-out_infinite_0ms]" style={{ height: '20px', animationName: 'wave', animationDuration: '0.8s', animationIterationCount: 'infinite', animationDelay: '0ms' }} />
-                                    <div className="w-1.5 bg-pink-400 rounded-full" style={{ height: '28px', animation: 'wave 0.8s ease-in-out infinite 0.1s' }} />
-                                    <div className="w-1.5 bg-pink-500 rounded-full" style={{ height: '36px', animation: 'wave 0.8s ease-in-out infinite 0.2s' }} />
-                                    <div className="w-1.5 bg-pink-400 rounded-full" style={{ height: '28px', animation: 'wave 0.8s ease-in-out infinite 0.3s' }} />
-                                    <div className="w-1.5 bg-pink-500 rounded-full" style={{ height: '20px', animation: 'wave 0.8s ease-in-out infinite 0.4s' }} />
-                                  </>
-                                ) : (
-                                  <>
-                                    <div id="wave-bar-1" className="w-1.5 bg-pink-500 rounded-full transition-all duration-75" style={{ height: '6px' }} />
-                                    <div id="wave-bar-2" className="w-1.5 bg-pink-400 rounded-full transition-all duration-75" style={{ height: '6px' }} />
-                                    <div id="wave-bar-3" className="w-1.5 bg-pink-500 rounded-full transition-all duration-75" style={{ height: '6px' }} />
-                                    <div id="wave-bar-4" className="w-1.5 bg-pink-400 rounded-full transition-all duration-75" style={{ height: '6px' }} />
-                                    <div id="wave-bar-5" className="w-1.5 bg-pink-500 rounded-full transition-all duration-75" style={{ height: '6px' }} />
-                                  </>
-                                )}
-                              </div>
-                            </div>
-                          )}
-
-                          <button
-                            onClick={() => {
-                              if (isEval) {
-                                setEvaluatingSentenceId(null);
-                              } else if (!isDone) {
-                                setEvaluatingSentenceId(s);
-                                setSentenceFeedbackMap(prev => ({ ...prev, [s]: null }));
-                                setSentenceTranscriptsMap(prev => ({ ...prev, [s]: "" }));
-                              }
-                            }}
-                            disabled={(evaluatingSentenceId !== null && !isEval) || isDone}
-                            className={`relative w-12 h-12 rounded-xl flex items-center justify-center transition-all flex-shrink-0 ${isDone || vFeedback === "correct"
-                              ? 'bg-green-500 text-white shadow-none opacity-50 cursor-default'
-                              : isEval
-                                ? 'bg-red-500 text-white shadow-lg'
-                                : vFeedback === "wrong"
-                                  ? 'bg-red-400 text-white'
-                                  : 'bg-gradient-to-br from-pink-500 to-rose-500 text-white shadow-md hover:scale-105 active:scale-95'
-                              }`}
-                          >
-                            {isEval && (
-                              <>
-                                <span className="absolute inset-0 rounded-xl bg-red-500/40 animate-ping" />
-                                <span className="absolute -inset-1 rounded-xl bg-red-500/20 animate-pulse" />
-                              </>
+                          {/* Removed inline audio visualizer, handled by Modal below */}
+                          <div className="relative">
+                            <button
+                              onClick={() => {
+                                setHasClickedMic(true);
+                                if (isEval) {
+                                  setEvaluatingSentenceId(null);
+                                } else if (!isDone) {
+                                  setEvaluatingSentenceId(s);
+                                  setSentenceFeedbackMap(prev => ({ ...prev, [s]: null }));
+                                  setSentenceTranscriptsMap(prev => ({ ...prev, [s]: "" }));
+                                }
+                              }}
+                              disabled={(evaluatingSentenceId !== null && !isEval) || isDone}
+                              className={`relative w-12 h-12 rounded-xl flex items-center justify-center transition-all flex-shrink-0 ${isDone || vFeedback === "correct"
+                                ? 'bg-green-500 text-white shadow-none opacity-50 cursor-default'
+                                : isEval
+                                  ? 'bg-red-500 text-white shadow-lg'
+                                  : vFeedback === "wrong"
+                                    ? 'bg-red-400 text-white'
+                                    : 'bg-gradient-to-br from-pink-500 to-rose-500 text-white shadow-md hover:scale-105 active:scale-95'
+                                } ${idx === 0 && !hasClickedMic ? 'ring-2 ring-pink-400 ring-offset-2 animate-pulse' : ''}`}
+                            >
+                              {isEval && (
+                                <>
+                                  <span className="absolute inset-0 rounded-xl bg-red-500/40 animate-ping" />
+                                  <span className="absolute -inset-1 rounded-xl bg-red-500/20 animate-pulse" />
+                                </>
+                              )}
+                              <span className="relative z-10">
+                                {isDone || vFeedback === "correct" ? <CheckCircle2 className="w-6 h-6" /> : vFeedback === "wrong" ? <XCircle className="w-6 h-6" /> : isEval ? <MicOff className="w-5 h-5 animate-bounce" /> : <Mic className="w-5 h-5" />}
+                              </span>
+                            </button>
+                            {idx === 0 && !hasClickedMic && (
+                              <motion.div
+                                initial={{ opacity: 0, y: 10, scale: 0.8 }}
+                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                transition={{ repeat: Infinity, repeatType: "reverse", duration: 1.5 }}
+                                className="absolute -top-10 left-1/2 -translate-x-1/2 bg-pink-500 text-white text-[10px] font-bold py-1 px-3 rounded-full shadow-lg whitespace-nowrap pointer-events-none z-10"
+                              >
+                                Tap to speak!
+                                <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-pink-500 rotate-45" />
+                              </motion.div>
                             )}
-                            <span className="relative z-10">
-                              {isDone || vFeedback === "correct" ? <CheckCircle2 className="w-6 h-6" /> : vFeedback === "wrong" ? <XCircle className="w-6 h-6" /> : isEval ? <MicOff className="w-5 h-5 animate-bounce" /> : <Mic className="w-5 h-5" />}
-                            </span>
-                          </button>
+                          </div>
                         </div>
                       </div>
                     );
@@ -1229,6 +1271,65 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
               )}
             </motion.div>
           ) : null}
+        </AnimatePresence>
+
+        {/* Listening Modal */}
+        <AnimatePresence>
+          {evaluatingTargetForMic && !showConfetti && (currentPhase === "patterns" || currentPhase === "words" || currentPhase === "sentences") && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4"
+            >
+              <motion.div
+                initial={{ scale: 0.9, y: 20 }}
+                animate={{ scale: 1, y: 0 }}
+                exit={{ scale: 0.9, y: 20 }}
+                className="bg-white dark:bg-gray-800 rounded-3xl p-6 sm:p-8 max-w-sm w-full text-center shadow-2xl border-4"
+                style={{ borderColor: accent.primary }}
+              >
+                <div className="flex flex-col items-center justify-center gap-2 mb-6">
+                  <div className="flex items-center justify-center gap-2">
+                    <Mic className="w-6 h-6 text-pink-500 animate-pulse" />
+                    <h3 className="text-2xl font-bold tracking-tight text-pink-500 animate-pulse">
+                      Listening...
+                    </h3>
+                  </div>
+                  <AudioVisualizer isListening={!!evaluatingTargetForMic} isMobile={isMobile} />
+                </div>
+                <p className="text-gray-500 dark:text-gray-400 mb-6 font-medium">Please say the {currentPhase === "patterns" ? "pattern" : currentPhase === "words" ? "word" : "sentence"} clearly.</p>
+
+                <div className="bg-gray-50 dark:bg-gray-900 rounded-2xl p-5 min-h-[100px] flex flex-col items-center justify-center border border-gray-100 dark:border-gray-800 shadow-inner">
+                  <span className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Target</span>
+                  <span className="text-4xl font-extrabold mb-4 tracking-wider flex items-baseline justify-center uppercase" style={{ color: accent.primary }}>
+                    {evaluatingTargetForMic}
+                  </span>
+
+                  <div className="w-full h-px bg-gray-200 dark:bg-gray-700 my-2" />
+
+                  <span className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1 mt-2">Heard</span>
+                  <span className="text-lg font-bold text-gray-700 dark:text-gray-200 min-h-[28px]">
+                    {(currentPhase === "patterns" ? patternTranscriptsMap[evaluatingTargetForMic] : currentPhase === "words" ? wordTranscriptsMap[evaluatingTargetForMic] : sentenceTranscriptsMap[evaluatingTargetForMic]) || "..."}
+                  </span>
+                </div>
+
+                <div className="mt-6 flex gap-3">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      if (currentPhase === "patterns") setEvaluatingPatternId(null);
+                      if (currentPhase === "words") setEvaluatingWordId(null);
+                      if (currentPhase === "sentences") setEvaluatingSentenceId(null);
+                    }}
+                    className="flex-1 rounded-xl font-bold text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 border-2"
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
         </AnimatePresence>
       </div>
     </div>

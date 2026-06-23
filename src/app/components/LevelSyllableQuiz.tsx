@@ -73,7 +73,7 @@ function ReviewPhase({ items, pattern, accent, onNext }: { items: string[]; patt
   return (
     <motion.div initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -50 }} className="flex flex-col items-center w-full h-full">
       <div className="text-center mb-8">
-        <p className="text-white text-base sm:text-lg font-bold mt-2 block">Tap the syllables to hear their sounds</p>
+        <p className="text-gray-600 dark:text-gray-300 text-base sm:text-lg font-bold mt-2 block">Tap the syllables to hear their sounds</p>
 
         {/* Navigation Controls moved to top */}
         <div className="flex justify-center items-center w-full gap-3 sm:gap-4 max-w-sm mx-auto mt-6">
@@ -140,6 +140,7 @@ function MatchPhase({
   const [matchedPairs, setMatchedPairs] = useState<Set<string>>(new Set());
   const [wrongPair, setWrongPair] = useState<[string, string] | null>(null);
   const [showConfetti, setShowConfetti] = useState(false);
+  const [hasClickedTTS, setHasClickedTTS] = useState(false);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const reset = useCallback((newItems?: string[]) => {
@@ -182,6 +183,7 @@ function MatchPhase({
   }, [matchedPairs, leftCol.length]);
 
   const handleLeftClick = (syl: string) => {
+    setHasClickedTTS(true);
     if (matchedPairs.has(syl) || wrongPair) return;
     playAudio(syl, pattern);
     setSelectedLeft(syl);
@@ -208,7 +210,7 @@ function MatchPhase({
       <Confetti active={showConfetti} />
 
       <div className="text-center mb-6">
-        <p className="text-white text-base sm:text-lg font-bold mt-2 block">
+        <p className="text-gray-600 dark:text-gray-300 text-base sm:text-lg font-bold mt-2 block">
           Tap a speaker, then tap the matching word!
         </p>
         
@@ -254,22 +256,35 @@ function MatchPhase({
       <div className="w-full grid grid-cols-2 gap-3 mb-6 max-w-full">
         {/* Left: speaker buttons */}
         <div className="flex flex-col gap-3 min-w-0">
-          {leftCol.map((syl) => {
+          {leftCol.map((syl, idx) => {
             const isDone = matchedPairs.has(syl);
             const isSelected = selectedLeft === syl;
             const isWrong = isWrongLeft(syl);
             return (
-              <MatchButton
-                key={`left-${syl}`}
-                gradientStart={accent.primary}
-                gradientEnd={accent.dark}
-                isMatched={isDone}
-                isSelected={isSelected}
-                isWrong={isWrong}
-                onClick={() => handleLeftClick(syl)}
-              >
-                <Volume2 className={`w-8 h-8 ${isDone ? "opacity-50" : ""}`} />
-              </MatchButton>
+              <div key={`left-${syl}`} className="relative w-full">
+                <MatchButton
+                  gradientStart={accent.primary}
+                  gradientEnd={accent.dark}
+                  isMatched={isDone}
+                  isSelected={isSelected}
+                  isWrong={isWrong}
+                  onClick={() => handleLeftClick(syl)}
+                  className={`w-full ${idx === 0 && !hasClickedTTS ? 'ring-2 ring-indigo-400 ring-offset-2 animate-pulse' : ''}`}
+                >
+                  <Volume2 className={`w-8 h-8 ${isDone ? "opacity-50" : ""}`} />
+                </MatchButton>
+                {idx === 0 && !hasClickedTTS && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10, scale: 0.8 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    transition={{ repeat: Infinity, repeatType: "reverse", duration: 1.5 }}
+                    className="absolute -top-10 left-1/2 -translate-x-1/2 bg-indigo-500 text-white text-[10px] font-bold py-1 px-3 rounded-full shadow-lg whitespace-nowrap pointer-events-none z-10"
+                  >
+                    Tap to listen!
+                    <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-indigo-500 rotate-45" />
+                  </motion.div>
+                )}
+              </div>
             );
           })}
         </div>
@@ -304,6 +319,7 @@ function TypePhase({ items, pattern, accent, onNext }: { items: string[]; patter
   const [typeOrder, setTypeOrder] = useState<string[]>([]);
   const [typeInputs, setTypeInputs] = useState<Record<string, string>>({});
   const [typeStatus, setTypeStatus] = useState<Record<string, boolean | null>>({});
+  const [hasClickedTTS, setHasClickedTTS] = useState(false);
 
   useEffect(() => {
     setTypeOrder([...items].sort(() => Math.random() - 0.5));
@@ -316,6 +332,7 @@ function TypePhase({ items, pattern, accent, onNext }: { items: string[]; patter
   };
 
   const playTypeSound = (syllable: string) => {
+    setHasClickedTTS(true);
     if (!syllable) return;
     playAudio(syllable, pattern);
   };
@@ -347,7 +364,7 @@ function TypePhase({ items, pattern, accent, onNext }: { items: string[]; patter
   return (
     <motion.div initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -50 }} className="flex flex-col items-center w-full">
       <div className="text-center mb-8">
-        <p className="text-white text-base sm:text-lg font-bold mt-2 block">Tap the speaker, then type the syllable!</p>
+        <p className="text-gray-600 dark:text-gray-300 text-base sm:text-lg font-bold mt-2 block">Tap the speaker, then type the syllable!</p>
         
         <div className="flex justify-center items-center w-full gap-3 sm:gap-4 max-w-md mx-auto mt-6">
           <Button 
@@ -390,20 +407,33 @@ function TypePhase({ items, pattern, accent, onNext }: { items: string[]; patter
       <div className="flex justify-center gap-4 sm:gap-8 w-full max-w-2xl mx-auto mb-10 px-2 sm:px-4">
         {/* Left Column: TTS Speakers */}
         <div className="flex flex-col gap-3 sm:gap-4 flex-1 min-w-0">
-          {typeOrder.map((syllable) => {
+          {typeOrder.map((syllable, idx) => {
             const isCorrect = typeStatus[syllable] === true;
             return (
-              <MatchButton
-                key={`speaker-${syllable}`}
-                gradientStart={accent.primary}
-                gradientEnd={accent.dark}
-                isMatched={isCorrect}
-                isSelected={false}
-                isWrong={false}
-                onClick={() => playTypeSound(syllable)}
-              >
-                <Volume2 className={`w-8 h-8 ${isCorrect ? "opacity-50" : ""}`} />
-              </MatchButton>
+              <div key={`speaker-${syllable}`} className="relative w-full">
+                <MatchButton
+                  gradientStart={accent.primary}
+                  gradientEnd={accent.dark}
+                  isMatched={isCorrect}
+                  isSelected={false}
+                  isWrong={false}
+                  onClick={() => playTypeSound(syllable)}
+                  className={`w-full ${idx === 0 && !hasClickedTTS ? 'ring-2 ring-indigo-400 ring-offset-2 animate-pulse' : ''}`}
+                >
+                  <Volume2 className={`w-8 h-8 ${isCorrect ? "opacity-50" : ""}`} />
+                </MatchButton>
+                {idx === 0 && !hasClickedTTS && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10, scale: 0.8 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    transition={{ repeat: Infinity, repeatType: "reverse", duration: 1.5 }}
+                    className="absolute -top-10 left-1/2 -translate-x-1/2 bg-indigo-500 text-white text-[10px] font-bold py-1 px-3 rounded-full shadow-lg whitespace-nowrap pointer-events-none z-10"
+                  >
+                    Tap to listen!
+                    <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-indigo-500 rotate-45" />
+                  </motion.div>
+                )}
+              </div>
             );
           })}
         </div>
@@ -486,6 +516,11 @@ export function LevelSyllableQuiz({ pattern, levelId, accent, onComplete }: Leve
 
   const handleNext = () => {
     if (currentStep < steps.length - 1) {
+      if (steps[currentStep].type !== "review") {
+        playSound("complete", 0.5);
+      } else {
+        playSound("click", 0.2);
+      }
       setCurrentStep(prev => prev + 1);
     } else {
       playSound("complete", 0.5);
@@ -509,28 +544,40 @@ export function LevelSyllableQuiz({ pattern, levelId, accent, onComplete }: Leve
       <Confetti active={showFinalConfetti} />
 
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-white/80 dark:bg-[#0d141c]/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 px-4 py-3">
-        <div className="max-w-4xl mx-auto flex items-center gap-3 w-full">
-          <Button variant="ghost" size="sm"
-            onClick={async () => {
-              const confirmExit = await confirmAction("Leave?", "Progress won't be saved.");
-              if (confirmExit) navigate("/levels");
-            }}
-            className="rounded-full">
-            <X className="w-5 h-5" /> Exit
+      <div className="sticky top-0 z-50 bg-white/80 dark:bg-[#0d141c]/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 px-4 py-3 shadow-sm">
+        <div className="max-w-4xl mx-auto flex items-center gap-3 sm:gap-5 w-full">
+          <Button variant="ghost" size="sm" onClick={async () => {
+            const confirmExit = await confirmAction("Leave?", "Progress won't be saved.");
+            if (confirmExit) navigate("/levels");
+          }} className="rounded-full p-2 h-auto text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+            <X className="w-6 h-6 sm:w-7 sm:h-7" />
           </Button>
-          <div className="flex-1 text-center">
-            <h2 className="text-lg font-bold tracking-tight" style={{ color: accent.primary }}>
-              Syllable Master - {getPhaseTitle(step?.type)}
-            </h2>
+          
+          <div className="flex-1 flex flex-col gap-1.5 mt-1">
+            <div className="flex justify-between items-center px-1">
+              <h2 className="text-sm sm:text-base font-bold tracking-tight" style={{ color: accent.primary }}>
+                Syllable Master - {getPhaseTitle(step?.type)}
+              </h2>
+            </div>
+            
+            {/* Duolingo-style Progress Bar */}
+            <div className="w-full bg-gray-200 dark:bg-gray-800 rounded-full h-4 sm:h-5 overflow-hidden relative shadow-inner">
+              <div 
+                className="absolute top-0 left-0 h-full rounded-full transition-all duration-700 ease-out flex flex-col justify-start"
+                style={{ 
+                  width: `${Math.max(5, (currentStep / steps.length) * 100)}%`, 
+                  backgroundColor: accent.primary 
+                }}
+              >
+                {/* Glossy reflection highlight */}
+                <div className="w-[calc(100%-12px)] h-[30%] bg-white/30 rounded-full mx-1.5 mt-1"></div>
+              </div>
+            </div>
           </div>
-          <span className="text-sm font-bold" style={{ color: accent.primary }}>
-            Step {currentStep + 1}/{steps.length}
-          </span>
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 py-6 flex-1 flex flex-col w-full">
+      <div className="max-w-4xl mx-auto px-4 py-2 flex-1 flex flex-col w-full">
         <AnimatePresence mode="wait">
           {showFinalConfetti ? (
             <motion.div

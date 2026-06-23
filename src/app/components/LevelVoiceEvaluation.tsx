@@ -33,6 +33,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
   const [wordsIndex, setWordsIndex] = useState(0);
   const [isMicResetting, setIsMicResetting] = useState(false);
   const [processingWord, setProcessingWord] = useState<string | null>(null);
+  const [hasClickedMic, setHasClickedMic] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
   const [showCompletionScreen, setShowCompletionScreen] = useState(false);
@@ -76,14 +77,14 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
   };
 
   const handleNext = () => {
-    playSound("click", 0.2);
+    playSound("complete", 0.5);
     clearEvalTimeout();
     safeSetEvaluatingWordNull();
     setShowCompletionScreen(true);
   };
 
   const handleSkip = () => {
-    playSound("click", 0.2);
+    playSound("complete", 0.5);
     clearEvalTimeout();
     safeSetEvaluatingWordNull();
     setCompletedWords(new Set(words));
@@ -138,6 +139,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
         safeSetEvaluatingWordNull();
         setShowConfetti(false);
         if (newCompleted.size >= words.length) {
+          playSound("complete", 0.5);
           setShowCompletionScreen(true);
         } else {
           setWordsIndex(prev => {
@@ -238,12 +240,12 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
               
               <div className="bg-gray-50 dark:bg-gray-900 rounded-2xl p-5 min-h-[100px] flex flex-col items-center justify-center border border-gray-100 dark:border-gray-800 shadow-inner">
                 <span className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Target</span>
-                <span className="text-4xl font-extrabold mb-4 tracking-wider" style={{ color: accent.primary }}>{evaluatingWord}</span>
+                <span className="text-6xl font-extrabold mb-4 tracking-wider" style={{ color: accent.primary }}>{evaluatingWord}</span>
                 
                 <div className="w-full h-px bg-gray-200 dark:bg-gray-700 my-2" />
                 
                 <span className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1 mt-2">Heard</span>
-                <span className="text-xl font-medium text-gray-700 dark:text-gray-300 min-h-[30px] flex items-center justify-center w-full break-words">
+                <span className="text-6xl font-extrabold tracking-wider text-gray-700 dark:text-gray-300 min-h-[60px] flex items-center justify-center w-full break-words">
                   {transcripts[evaluatingWord] ? `"${transcripts[evaluatingWord]}"` : <Loader2 className="w-5 h-5 text-gray-400 animate-spin" />}
                 </span>
               </div>
@@ -385,7 +387,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
                 transition={{ duration: 0.3 }}
                 className="text-center mb-8"
               >
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-white/50 dark:bg-gray-800/50 p-4 rounded-3xl backdrop-blur-sm border-2 border-dashed border-gray-200 dark:border-gray-700">
+                <div className={`${words.length > 5 ? 'grid grid-cols-1 sm:grid-cols-2 gap-3' : 'space-y-3'} bg-white/50 dark:bg-gray-800/50 p-4 rounded-3xl backdrop-blur-sm border-2 border-dashed border-gray-200 dark:border-gray-700`}>
                   {words.map((w, idx) => {
                     const isDone = completedWords.has(w);
                     const isCurrent = evaluatingWord === w;
@@ -416,9 +418,10 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
                           )}
                         </div>
 
-                        <div className="flex items-center gap-2 shrink-0 ml-2">
+                        <div className="flex items-center gap-2 shrink-0 ml-2 relative">
                           <button
                             onClick={() => {
+                              setHasClickedMic(true);
                               if (isCurrent) {
                                 safeSetEvaluatingWordNull();
                               } else {
@@ -426,7 +429,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
                               }
                             }}
                             disabled={(evaluatingWord !== null && !isCurrent) || isDone || isMicResetting}
-                            className={`relative w-12 h-12 rounded-xl flex items-center justify-center transition-all ${isDone ? 'bg-green-500 text-white shadow-none opacity-50 cursor-default' : isCurrent ? 'bg-red-500 text-white shadow-lg' : isMicResetting ? 'bg-gray-300 dark:bg-gray-700 text-gray-400 cursor-not-allowed' : 'bg-gradient-to-br from-pink-500 to-rose-500 text-white shadow-md hover:scale-105 active:scale-95'}`}
+                            className={`relative w-12 h-12 rounded-xl flex items-center justify-center transition-all ${isDone ? 'bg-green-500 text-white shadow-none opacity-50 cursor-default' : isCurrent ? 'bg-red-500 text-white shadow-lg' : isMicResetting ? 'bg-gray-300 dark:bg-gray-700 text-gray-400 cursor-not-allowed' : 'bg-gradient-to-br from-pink-500 to-rose-500 text-white shadow-md hover:scale-105 active:scale-95'} ${idx === 0 && !hasClickedMic ? 'ring-2 ring-pink-400 ring-offset-2 animate-pulse' : ''}`}
                           >
                             {isCurrent && (
                               <>
@@ -438,6 +441,17 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
                               {isDone ? <CheckCircle2 className="w-6 h-6" /> : isCurrent ? <MicOff className="w-5 h-5 animate-bounce" /> : <Mic className="w-5 h-5" />}
                             </span>
                           </button>
+                          {idx === 0 && !hasClickedMic && (
+                            <motion.div
+                              initial={{ opacity: 0, y: 10, scale: 0.8 }}
+                              animate={{ opacity: 1, y: 0, scale: 1 }}
+                              transition={{ repeat: Infinity, repeatType: "reverse", duration: 1.5 }}
+                              className="absolute -top-10 left-1/2 -translate-x-1/2 bg-pink-500 text-white text-[10px] font-bold py-1 px-3 rounded-full shadow-lg whitespace-nowrap pointer-events-none z-10"
+                            >
+                              Tap to speak!
+                              <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-pink-500 rotate-45" />
+                            </motion.div>
+                          )}
                         </div>
                       </div>
                     );
@@ -467,7 +481,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
             <h3 className="text-3xl mb-4" style={{ color: accent.primary }}>
               Excellent Work!
             </h3>
-            <p className="text-white text-base sm:text-lg font-bold mt-2 block">
+            <p className="text-white text-base sm:text-lg font-bold mt-2 mb-6 block">
               You completed {words.length} out of {words.length} words correctly!
             </p>
             <div className="flex flex-wrap justify-center gap-3 mb-8">
