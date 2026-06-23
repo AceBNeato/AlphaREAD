@@ -52,29 +52,33 @@ export function StudentManager({ students, teachers, onRefresh }: StudentManager
     if (!studentFirstName.trim() || !studentLastName.trim() || !studentClassCode.trim()) return;
 
     try {
-      // Generate mnemonic student code: First 3 of First Name + First 1 of Last Name + 001
+      // Generate mnemonic student code: First 3 of First Name + First 1 of Last Name + Global Increment
       const fNamePart = (studentFirstName.trim().replace(/[^A-Za-z]/g, '') + "XXX").substring(0, 3).toUpperCase();
       const lNamePart = (studentLastName.trim().replace(/[^A-Za-z]/g, '') + "X").substring(0, 1).toUpperCase();
       const prefix = `${fNamePart}${lNamePart}`;
-      
-      // Query database for existing codes with this prefix to auto-increment
-      const { data: existingCodes } = await supabase
+
+      // Query database for all existing student codes to find the highest global number
+      const { data: allCodes } = await supabase
         .from("profiles")
         .select("student_code")
-        .like("student_code", `${prefix}%`)
-        .order("student_code", { ascending: false })
-        .limit(1);
+        .not("student_code", "is", null);
 
-      let seqNumber = "001";
-      if (existingCodes && existingCodes.length > 0 && existingCodes[0].student_code) {
-        const lastCode = existingCodes[0].student_code;
-        const numPart = lastCode.substring(prefix.length);
-        const parsed = parseInt(numPart, 10);
-        if (!isNaN(parsed)) {
-          seqNumber = (parsed + 1).toString().padStart(3, "0");
-        }
+      let maxSeq = 0;
+      if (allCodes) {
+        allCodes.forEach(row => {
+          const code = row.student_code;
+          if (code && code.length >= 7) {
+            const numPart = code.substring(4); // Extract everything after the 4-letter prefix
+            const parsed = parseInt(numPart, 10);
+            if (!isNaN(parsed) && parsed > maxSeq) {
+              maxSeq = parsed;
+            }
+          }
+        });
       }
-      
+
+      const seqNumber = (maxSeq + 1).toString().padStart(3, "0");
+
       const studentCode = `${prefix}${seqNumber}`;
       const studentId = crypto.randomUUID();
 
@@ -167,10 +171,10 @@ export function StudentManager({ students, teachers, onRefresh }: StudentManager
   const regeneratePin = async (id: string) => {
     const confirm = await confirmAction("Regenerate PIN?", "Generate a new 6-character PIN for this student? The old one will stop working.");
     if (!confirm) return;
-    
+
     const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
     const newPin = Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
-    
+
     const { error } = await supabase.from("profiles").update({ student_pin: newPin }).eq("id", id);
     if (error) {
       showAlert("Error", "Failed to regenerate PIN.");
@@ -187,28 +191,28 @@ export function StudentManager({ students, teachers, onRefresh }: StudentManager
           <Users className="w-5 h-5 text-blue-400" />
           All System Students ({students.length})
         </h2>
-        
+
         <div className="flex items-center gap-2 w-full sm:w-auto relative">
           <div className="relative flex-1 sm:w-48 md:w-64">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input 
-              type="text" 
-              placeholder="Search students..." 
+            <input
+              type="text"
+              placeholder="Search students..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-9 pr-4 py-2 bg-gray-900 border border-gray-800 rounded-xl text-sm text-white focus:border-blue-500 outline-none transition-colors"
             />
           </div>
-          
+
           <div>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => setIsFilterOpen(!isFilterOpen)}
               className="bg-transparent border-gray-800 text-gray-400 hover:text-white px-3"
             >
               <Filter className="w-4 h-4" />
             </Button>
-            
+
             {isFilterOpen && (
               <div className="absolute right-0 top-full mt-2 w-64 bg-gray-900 border border-gray-700 rounded-xl shadow-2xl p-4 z-20 animate-in fade-in slide-in-from-top-2">
                 <div className="flex items-center justify-between mb-3">
@@ -219,12 +223,12 @@ export function StudentManager({ students, teachers, onRefresh }: StudentManager
                     setFilterBinding("all");
                   }} className="text-xs text-blue-400 hover:text-blue-300">Clear All</button>
                 </div>
-                
+
                 <div className="space-y-3">
                   <div>
                     <label className="block text-xs text-gray-400 mb-1">By Class Code</label>
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       placeholder="e.g. A1"
                       value={filterClass}
                       onChange={(e) => setFilterClass(e.target.value)}
@@ -234,7 +238,7 @@ export function StudentManager({ students, teachers, onRefresh }: StudentManager
 
                   <div>
                     <label className="block text-xs text-gray-400 mb-1">By Teacher</label>
-                    <select 
+                    <select
                       value={filterTeacher}
                       onChange={(e) => setFilterTeacher(e.target.value)}
                       className="w-full px-3 py-1.5 bg-gray-950 border border-gray-800 rounded text-sm text-white"
@@ -249,7 +253,7 @@ export function StudentManager({ students, teachers, onRefresh }: StudentManager
 
                   <div>
                     <label className="block text-xs text-gray-400 mb-1">By Binding</label>
-                    <select 
+                    <select
                       value={filterBinding}
                       onChange={(e) => setFilterBinding(e.target.value)}
                       className="w-full px-3 py-1.5 bg-gray-950 border border-gray-800 rounded text-sm text-white"
@@ -281,7 +285,7 @@ export function StudentManager({ students, teachers, onRefresh }: StudentManager
       {isCreatingStudent && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <form onSubmit={handleCreateStudent} className="bg-gray-900 border border-gray-700 rounded-3xl p-6 sm:p-8 max-w-md w-full relative animate-in zoom-in duration-200 shadow-2xl">
-            <button 
+            <button
               type="button"
               onClick={() => setIsCreatingStudent(false)}
               className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors"
@@ -380,11 +384,11 @@ export function StudentManager({ students, teachers, onRefresh }: StudentManager
               {(() => {
                 const filteredStudents = students.filter(s => {
                   // Text search
-                  const matchesSearch = 
-                    (s.first_name || "").toLowerCase().includes(searchQuery.toLowerCase()) || 
+                  const matchesSearch =
+                    (s.first_name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
                     (s.last_name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
                     (s.class_code || "").toLowerCase().includes(searchQuery.toLowerCase());
-                  
+
                   // Filters
                   const matchesClass = filterClass ? (s.class_code || "").toLowerCase() === filterClass.toLowerCase() : true;
                   const matchesTeacher = filterTeacher === "unassigned" ? !s.teacher_id : (filterTeacher ? s.teacher_id === filterTeacher : true);
@@ -413,131 +417,131 @@ export function StudentManager({ students, teachers, onRefresh }: StudentManager
                       const isCodeVisible = visibleCodes.has(student.id);
                       const linkedTeacher = teachers.find(t => t.id === student.teacher_id);
 
-                  return (
-                    <tr key={student.id} className="hover:bg-gray-850/40">
-                      
-                      {/* Class Code */}
-                      <td className="py-4 px-6 font-mono font-bold text-indigo-400">
-                        {isEditing ? (
-                          <input
-                            type="text" value={editStudentClassCode}
-                            onChange={(e) => setEditStudentClassCode(e.target.value)}
-                            className="px-2 py-1 bg-gray-950 border border-gray-800 rounded text-white font-mono uppercase w-16"
-                          />
-                        ) : (
-                          student.class_code || "N/A"
-                        )}
-                      </td>
+                      return (
+                        <tr key={student.id} className="hover:bg-gray-850/40">
 
-                      {/* Student Name */}
-                      <td className="py-4 px-6 text-white font-bold">
-                        {isEditing ? (
-                          <div className="flex gap-1.5">
-                            <input
-                              type="text" value={editStudentFirstName}
-                              onChange={(e) => setEditStudentFirstName(e.target.value)}
-                              className="px-2 py-0.5 bg-gray-950 border border-gray-800 rounded text-white text-xs w-24"
-                            />
-                            <input
-                              type="text" value={editStudentLastName}
-                              onChange={(e) => setEditStudentLastName(e.target.value)}
-                              className="px-2 py-0.5 bg-gray-950 border border-gray-800 rounded text-white text-xs w-24"
-                            />
-                          </div>
-                        ) : (
-                          `${student.first_name} ${student.last_name}`
-                        )}
-                      </td>
-
-                      {/* Student Code */}
-                      <td className="py-4 px-6">
-                        <span className="font-mono text-white font-bold tracking-wider">
-                          {student.student_code}
-                        </span>
-                      </td>
-
-                      {/* Secret PIN */}
-                      <td className="py-4 px-6">
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono text-green-400 font-bold tracking-wider">
+                          {/* Class Code */}
+                          <td className="py-4 px-6 font-mono font-bold text-indigo-400">
                             {isEditing ? (
                               <input
-                                type="text" maxLength={6} value={editStudentPin}
-                                onChange={(e) => setEditStudentPin(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6))}
-                                className="px-2 py-1 bg-gray-950 border border-gray-800 rounded text-white font-mono w-24 text-center tracking-widest"
-                                placeholder="6 chars"
+                                type="text" value={editStudentClassCode}
+                                onChange={(e) => setEditStudentClassCode(e.target.value)}
+                                className="px-2 py-1 bg-gray-950 border border-gray-800 rounded text-white font-mono uppercase w-16"
                               />
                             ) : (
-                              isCodeVisible ? student.student_pin : "••••••"
+                              student.class_code || "N/A"
                             )}
-                          </span>
-                          {!isEditing && (
-                            <button onClick={() => toggleVisibility(student.id)} className="text-gray-400 hover:text-white">
-                              {isCodeVisible ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                            </button>
-                          )}
-                        </div>
-                      </td>
+                          </td>
 
-                      {/* Linked Teacher */}
-                      <td className="py-4 px-6 font-semibold text-gray-300">
-                        {isEditing ? (
-                          <select
-                            value={editStudentTeacherId}
-                            onChange={(e) => setEditStudentTeacherId(e.target.value)}
-                            className="bg-gray-955 border border-gray-800 rounded text-white text-xs px-2 py-1"
-                          >
-                            <option value="">-- No Teacher --</option>
-                            {teachers.map(t => (
-                              <option key={t.id} value={t.id}>{t.first_name}</option>
-                            ))}
-                          </select>
-                        ) : (
-                          linkedTeacher ? linkedTeacher.first_name : <span className="text-gray-500 font-normal">Unassigned</span>
-                        )}
-                      </td>
+                          {/* Student Name */}
+                          <td className="py-4 px-6 text-white font-bold">
+                            {isEditing ? (
+                              <div className="flex gap-1.5">
+                                <input
+                                  type="text" value={editStudentFirstName}
+                                  onChange={(e) => setEditStudentFirstName(e.target.value)}
+                                  className="px-2 py-0.5 bg-gray-950 border border-gray-800 rounded text-white text-xs w-24"
+                                />
+                                <input
+                                  type="text" value={editStudentLastName}
+                                  onChange={(e) => setEditStudentLastName(e.target.value)}
+                                  className="px-2 py-0.5 bg-gray-950 border border-gray-800 rounded text-white text-xs w-24"
+                                />
+                              </div>
+                            ) : (
+                              `${student.first_name} ${student.last_name}`
+                            )}
+                          </td>
 
-                      {/* Binding */}
-                      <td className="py-4 px-6">
-                        {student.activated_device_id ? (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-blue-900/40 border border-blue-800 rounded-full text-xs font-semibold text-blue-300">
-                            <Smartphone className="w-3.5 h-3.5" /> Bound
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-gray-800 border border-gray-700 rounded-full text-xs text-gray-400">
-                            Unbound
-                          </span>
-                        )}
-                      </td>
+                          {/* Student Code */}
+                          <td className="py-4 px-6">
+                            <span className="font-mono text-white font-bold tracking-wider">
+                              {student.student_code}
+                            </span>
+                          </td>
 
-                      {/* Actions */}
-                      <td className="py-4 px-6 text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          {student.activated_device_id && (
-                            <button onClick={() => unlockDevice(student.id)} className="p-1.5 bg-yellow-900/20 text-yellow-400 rounded-lg hover:bg-yellow-900/40" title="Unlock Device"><Unlock className="w-4 h-4" /></button>
-                          )}
-                          {isEditing ? (
-                            <>
-                              <button onClick={() => saveStudentEdit(student.id)} className="p-1.5 bg-green-900/20 text-green-400 rounded-lg"><Save className="w-4 h-4" /></button>
-                              <button onClick={() => setEditingStudentId(null)} className="p-1.5 bg-gray-800 text-gray-400 rounded-lg"><X className="w-4 h-4" /></button>
-                            </>
-                          ) : (
-                            <>
-                              <button onClick={() => startEditingStudent(student)} className="p-1.5 bg-blue-900/20 text-blue-400 rounded-lg" title="Edit Student"><Edit className="w-4 h-4" /></button>
-                              <button onClick={() => regeneratePin(student.id)} className="p-1.5 bg-purple-900/20 text-purple-400 rounded-lg" title="Regenerate PIN"><RefreshCw className="w-4 h-4" /></button>
-                              <button onClick={() => deleteStudent(student.id)} className="p-1.5 bg-red-900/20 text-red-400 rounded-lg" title="Delete Student"><Trash2 className="w-4 h-4" /></button>
-                            </>
-                          )}
-                        </div>
-                      </td>
+                          {/* Secret PIN */}
+                          <td className="py-4 px-6">
+                            <div className="flex items-center gap-2">
+                              <span className="font-mono text-green-400 font-bold tracking-wider">
+                                {isEditing ? (
+                                  <input
+                                    type="text" maxLength={6} value={editStudentPin}
+                                    onChange={(e) => setEditStudentPin(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6))}
+                                    className="px-2 py-1 bg-gray-950 border border-gray-800 rounded text-white font-mono w-24 text-center tracking-widest"
+                                    placeholder="6 chars"
+                                  />
+                                ) : (
+                                  isCodeVisible ? student.student_pin : "••••••"
+                                )}
+                              </span>
+                              {!isEditing && (
+                                <button onClick={() => toggleVisibility(student.id)} className="text-gray-400 hover:text-white">
+                                  {isCodeVisible ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                </button>
+                              )}
+                            </div>
+                          </td>
 
-                    </tr>
-                  );
-                })}
-              </>
-            );
-          })()}
-        </tbody>
+                          {/* Linked Teacher */}
+                          <td className="py-4 px-6 font-semibold text-gray-300">
+                            {isEditing ? (
+                              <select
+                                value={editStudentTeacherId}
+                                onChange={(e) => setEditStudentTeacherId(e.target.value)}
+                                className="bg-gray-955 border border-gray-800 rounded text-white text-xs px-2 py-1"
+                              >
+                                <option value="">-- No Teacher --</option>
+                                {teachers.map(t => (
+                                  <option key={t.id} value={t.id}>{t.first_name}</option>
+                                ))}
+                              </select>
+                            ) : (
+                              linkedTeacher ? linkedTeacher.first_name : <span className="text-gray-500 font-normal">Unassigned</span>
+                            )}
+                          </td>
+
+                          {/* Binding */}
+                          <td className="py-4 px-6">
+                            {student.activated_device_id ? (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-blue-900/40 border border-blue-800 rounded-full text-xs font-semibold text-blue-300">
+                                <Smartphone className="w-3.5 h-3.5" /> Bound
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-gray-800 border border-gray-700 rounded-full text-xs text-gray-400">
+                                Unbound
+                              </span>
+                            )}
+                          </td>
+
+                          {/* Actions */}
+                          <td className="py-4 px-6 text-right">
+                            <div className="flex items-center justify-end gap-2">
+                              {student.activated_device_id && (
+                                <button onClick={() => unlockDevice(student.id)} className="p-1.5 bg-yellow-900/20 text-yellow-400 rounded-lg hover:bg-yellow-900/40" title="Unlock Device"><Unlock className="w-4 h-4" /></button>
+                              )}
+                              {isEditing ? (
+                                <>
+                                  <button onClick={() => saveStudentEdit(student.id)} className="p-1.5 bg-green-900/20 text-green-400 rounded-lg"><Save className="w-4 h-4" /></button>
+                                  <button onClick={() => setEditingStudentId(null)} className="p-1.5 bg-gray-800 text-gray-400 rounded-lg"><X className="w-4 h-4" /></button>
+                                </>
+                              ) : (
+                                <>
+                                  <button onClick={() => startEditingStudent(student)} className="p-1.5 bg-blue-900/20 text-blue-400 rounded-lg" title="Edit Student"><Edit className="w-4 h-4" /></button>
+                                  <button onClick={() => regeneratePin(student.id)} className="p-1.5 bg-purple-900/20 text-purple-400 rounded-lg" title="Regenerate PIN"><RefreshCw className="w-4 h-4" /></button>
+                                  <button onClick={() => deleteStudent(student.id)} className="p-1.5 bg-red-900/20 text-red-400 rounded-lg" title="Delete Student"><Trash2 className="w-4 h-4" /></button>
+                                </>
+                              )}
+                            </div>
+                          </td>
+
+                        </tr>
+                      );
+                    })}
+                  </>
+                );
+              })()}
+            </tbody>
           </table>
         </div>
       </div>
