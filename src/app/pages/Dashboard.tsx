@@ -217,7 +217,7 @@ export default function Dashboard() {
                   {profile.id === "teacher-preview" || (profile as any).role === "teacher-preview" || (profile as any).role === "admin" ? "Open Dashboard" : "Exit App"}
                 </h3>
                 <p className="text-white/80 font-medium">
-                  {profile.id === "teacher-preview" || (profile as any).role === "teacher-preview" ? "Back to dashboard" : "See you next time!"}
+                  {profile.id === "teacher-preview" || (profile as any).role === "teacher-preview" || (profile as any).role === "admin" ? "Back to dashboard" : "See you next time!"}
                 </p>
               </div>
             </div>

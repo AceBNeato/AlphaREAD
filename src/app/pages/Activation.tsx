@@ -18,6 +18,7 @@ import {
   X
 } from "lucide-react";
 import { Button } from "../components/ui/button";
+import { PrivacyPolicyModal } from "../components/PrivacyPolicyModal";
 import { generateUUID } from "../utils/uuid";
 
 const POPUP_ITEMS = ["A", "B", "C", "D", "E", "F", "CAT", "DOG", "SUN", "AT", "IN", "UP", "BA", "MA", "DA", "BE"];
@@ -578,7 +579,10 @@ export default function Activation() {
               </form>
             )}
           </div>
-
+          
+          <div className="mt-8 text-center">
+            <PrivacyPolicyModal />
+          </div>
 
         </div>
       )}

@@ -24,6 +24,7 @@ import {
   RefreshCw
 } from "lucide-react";
 import { Button } from "../components/ui/button";
+import { promptAction, showAlert } from "../utils/alerts";
 import { TeacherManager } from "../components/admin/TeacherManager";
 import { StudentManager } from "../components/admin/StudentManager";
 
@@ -147,13 +148,19 @@ export default function AdminDashboard() {
             </Button>
             <Button
               onClick={async () => {
-                const newPin = prompt("Enter new master admin code (leave blank to cancel):");
+                const newPin = await promptAction(
+                  "Change Master Admin PIN", 
+                  "<p class='text-gray-400 text-sm mb-4'>Enter your new 8-character access code. This code will be required to access the dashboard.</p>", 
+                  "e.g. MASTER88"
+                );
+                
                 if (!newPin) return;
-                const { error } = await supabase.from("profiles").update({ pin_hash: newPin }).eq("id", adminProfile?.id);
+                
+                const { error } = await supabase.from("profiles").update({ pin_hash: newPin.toUpperCase().trim() }).eq("id", adminProfile?.id);
                 if (error) {
-                  alert("Failed to update admin PIN.");
+                  showAlert("Update Failed", "Failed to update the Admin PIN.", "error");
                 } else {
-                  alert("Admin PIN successfully updated!");
+                  showAlert("Success!", "Your Master Admin PIN has been successfully updated.", "success");
                 }
               }}
               variant="outline"

@@ -17,7 +17,7 @@ import {
   Edit,
   Key
 } from "lucide-react";
-import { confirmAction } from "../utils/alerts";
+import { confirmAction, promptAction, showAlert } from "../utils/alerts";
 import { Button } from "../components/ui/button";
 
 export default function TeacherDashboard() {
@@ -179,13 +179,19 @@ export default function TeacherDashboard() {
             </Button>
             <Button
               onClick={async () => {
-                const newPin = prompt("Enter a new 8-character access code:");
+                const newPin = await promptAction(
+                  "Change Access Code", 
+                  "<p class='text-gray-400 text-sm mb-4'>Enter your new 8-character access code. This is what you will use to log into your dashboard.</p>", 
+                  "e.g. TEACH123"
+                );
+                
                 if (!newPin) return;
-                const { error } = await supabase.from("profiles").update({ pin_hash: newPin }).eq("id", teacherProfile?.id);
+                
+                const { error } = await supabase.from("profiles").update({ pin_hash: newPin.toUpperCase().trim() }).eq("id", teacherProfile?.id);
                 if (error) {
-                  alert("Failed to update access code.");
+                  showAlert("Update Failed", "Failed to update access code.", "error");
                 } else {
-                  alert("Access code successfully updated!");
+                  showAlert("Success!", "Your access code has been successfully updated.", "success");
                 }
               }}
               variant="outline"
