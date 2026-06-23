@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   teacher_id UUID NULL REFERENCES public.profiles(id) ON DELETE SET NULL,
   class_code TEXT NULL,
   student_code TEXT NULL,
-  student_pin VARCHAR(6) NULL,
+  student_pin TEXT NULL,
   activated_device_id TEXT NULL,
   pin_hash TEXT NULL,
   pin_last_changed TIMESTAMPTZ NULL,
@@ -31,14 +31,29 @@ CREATE TABLE IF NOT EXISTS public.progress (
 );
 
 -- Ensure the new columns exist if the table was already created in an older version
+-- Drop trigger first in case this script is being re-run, so we can alter the column type
+DROP TRIGGER IF EXISTS tr_hash_pins ON public.profiles;
+
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS auth_id UUID NULL;
-ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS student_pin VARCHAR(6) NULL;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS student_pin TEXT NULL;
+ALTER TABLE public.profiles ALTER COLUMN student_pin TYPE TEXT;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS current_device_id TEXT;
+
+-- 1.5 Rate Limiting Table
+CREATE TABLE IF NOT EXISTS public.login_attempts (
+  ip_address TEXT,
+  email TEXT,
+  attempts INT DEFAULT 1,
+  last_attempt TIMESTAMPTZ DEFAULT now(),
+  blocked_until TIMESTAMPTZ NULL,
+  PRIMARY KEY (ip_address, email)
+);
 
 -- 2. Enable Row Level Security
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.progress ENABLE ROW LEVEL SECURITY;
 
--- 3. Clear existing RLS policies (so we can re-run this script safely)
+-- 3. Clear existing RLS policies
 DROP POLICY IF EXISTS "Public profiles select" ON public.profiles;
 DROP POLICY IF EXISTS "Admin full access profiles" ON public.profiles;
 DROP POLICY IF EXISTS "Teacher read own and students" ON public.profiles;
@@ -52,6 +67,7 @@ CREATE OR REPLACE FUNCTION public.is_admin(p_uid UUID)
 RETURNS BOOLEAN
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = public, extensions
 AS $$
 BEGIN
   RETURN EXISTS (
@@ -64,6 +80,7 @@ CREATE OR REPLACE FUNCTION public.is_teacher(p_uid UUID)
 RETURNS BOOLEAN
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = public, extensions
 AS $$
 BEGIN
   RETURN EXISTS (
@@ -76,6 +93,7 @@ CREATE OR REPLACE FUNCTION public.get_profile_id_by_auth(p_uid UUID)
 RETURNS UUID
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = public, extensions
 AS $$
 DECLARE
   v_id UUID;
@@ -86,12 +104,11 @@ END;
 $$;
 
 -- 5. RLS Policies for Profiles
--- Allow admins to do anything
 CREATE POLICY "Admin full access profiles" ON public.profiles
   FOR ALL
-  USING ( public.is_admin(auth.uid()) );
+  USING ( public.is_admin(auth.uid()) )
+  WITH CHECK ( public.is_admin(auth.uid()) );
 
--- Allow teachers to read their own profile and their students' profiles
 CREATE POLICY "Teacher read own and students" ON public.profiles
   FOR SELECT
   USING (
@@ -99,24 +116,21 @@ CREATE POLICY "Teacher read own and students" ON public.profiles
     (role = 'student' AND teacher_id = public.get_profile_id_by_auth(auth.uid()))
   );
 
--- Allow a newly authenticated user to view their own profile by email
 CREATE POLICY "Auth link profile read" ON public.profiles
   FOR SELECT
   USING (auth.jwt() ->> 'email' = email);
 
--- Allow a newly authenticated user to link their auth_id
 CREATE POLICY "Auth link profile update" ON public.profiles
   FOR UPDATE
   USING (auth.jwt() ->> 'email' = email AND auth_id IS NULL)
   WITH CHECK (auth.jwt() ->> 'email' = email);
 
 -- 6. RLS Policies for Progress
--- Admins can read all progress
 CREATE POLICY "Admin full access progress" ON public.progress
   FOR ALL
-  USING ( public.is_admin(auth.uid()) );
+  USING ( public.is_admin(auth.uid()) )
+  WITH CHECK ( public.is_admin(auth.uid()) );
 
--- Teachers can read their students' progress
 CREATE POLICY "Teacher read student progress" ON public.progress
   FOR SELECT
   USING (
@@ -125,29 +139,69 @@ CREATE POLICY "Teacher read student progress" ON public.progress
     )
   );
 
--- 7. RPC: Secure Student Login (Bypasses RLS to verify PIN and enforce device lock)
-CREATE OR REPLACE FUNCTION public.verify_student_login(p_code TEXT, p_pin TEXT, p_device_id TEXT)
+-- 6.5 Hash PINs Trigger
+CREATE OR REPLACE FUNCTION public.hash_pins_trigger()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW.pin_hash IS NOT NULL AND NEW.pin_hash NOT LIKE '$2%' THEN
+    NEW.pin_hash := crypt(NEW.pin_hash::text, gen_salt('bf'::text));
+  END IF;
+  IF NEW.student_pin IS NOT NULL AND NEW.student_pin NOT LIKE '$2%' THEN
+    NEW.student_pin := crypt(NEW.student_pin::text, gen_salt('bf'::text));
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, extensions;
+
+DROP TRIGGER IF EXISTS tr_hash_pins ON public.profiles;
+CREATE TRIGGER tr_hash_pins
+BEFORE INSERT OR UPDATE OF pin_hash, student_pin ON public.profiles
+FOR EACH ROW EXECUTE FUNCTION public.hash_pins_trigger();
+
+-- 7. RPC: Secure Student Login
+CREATE OR REPLACE FUNCTION public.verify_student_login(p_code TEXT, p_pin TEXT, p_device_id TEXT, p_ip TEXT DEFAULT 'unknown')
 RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = public, extensions
 AS $$
 DECLARE
   v_student public.profiles%ROWTYPE;
+  v_attempts INT;
+  v_blocked_until TIMESTAMPTZ;
 BEGIN
-  -- Find student
+  SELECT attempts, blocked_until INTO v_attempts, v_blocked_until 
+  FROM public.login_attempts WHERE ip_address = p_ip AND email = p_code;
+
+  IF v_blocked_until IS NOT NULL AND now() < v_blocked_until THEN
+    RETURN jsonb_build_object('error', 'Too many failed attempts. Try again in 1 minute.');
+  END IF;
+
   SELECT * INTO v_student FROM public.profiles 
-  WHERE student_code = p_code AND student_pin = p_pin AND role = 'student';
+  WHERE student_code = p_code 
+    AND (
+      (student_pin NOT LIKE '$2%' AND student_pin = p_pin) 
+      OR 
+      (student_pin LIKE '$2%' AND student_pin = crypt(p_pin::text, student_pin::text))
+    )
+    AND role = 'student';
   
   IF NOT FOUND THEN
-    RAISE EXCEPTION 'Invalid student code or PIN.';
+    INSERT INTO public.login_attempts (ip_address, email, attempts, last_attempt)
+    VALUES (p_ip, p_code, 1, now())
+    ON CONFLICT (ip_address, email) DO UPDATE 
+    SET attempts = login_attempts.attempts + 1,
+        last_attempt = now(),
+        blocked_until = CASE WHEN login_attempts.attempts + 1 >= 5 THEN now() + interval '1 minute' ELSE NULL END;
+    RETURN jsonb_build_object('error', 'Invalid student code or PIN.');
   END IF;
 
-  -- Device binding logic
+  DELETE FROM public.login_attempts WHERE ip_address = p_ip AND email = p_code;
+
   IF v_student.activated_device_id IS NOT NULL AND v_student.activated_device_id != p_device_id THEN
-    RAISE EXCEPTION 'This account is locked to another device.';
+    RETURN jsonb_build_object('error', 'This account is locked to another device.');
   END IF;
 
-  -- Bind device if not bound
   IF v_student.activated_device_id IS NULL THEN
     UPDATE public.profiles SET activated_device_id = p_device_id WHERE id = v_student.id;
     v_student.activated_device_id := p_device_id;
@@ -157,18 +211,17 @@ BEGIN
 END;
 $$;
 
--- 8. RPC: Secure Progress Recording for Students (Bypasses RLS)
+-- 8. RPC: Secure Progress Recording
 CREATE OR REPLACE FUNCTION public.record_student_progress(p_student_id UUID, p_device_id TEXT, p_level_id INT, p_score INT)
 RETURNS VOID
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = public, extensions
 AS $$
 DECLARE
   v_student public.profiles%ROWTYPE;
 BEGIN
-  -- Verify the student and device
   SELECT * INTO v_student FROM public.profiles WHERE id = p_student_id AND role = 'student';
-  
   IF NOT FOUND THEN
     RAISE EXCEPTION 'Student not found.';
   END IF;
@@ -177,16 +230,16 @@ BEGIN
     RAISE EXCEPTION 'Unauthorized device.';
   END IF;
 
-  -- Insert progress
   INSERT INTO public.progress (student_id, level_id, score) VALUES (p_student_id, p_level_id, p_score);
 END;
 $$;
 
--- 9. RPC: Check Staff Email (Bypasses RLS for pre-check)
+-- 9. RPC: Check Staff Email
 CREATE OR REPLACE FUNCTION public.check_staff_email(p_email TEXT, p_role TEXT)
 RETURNS BOOLEAN
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = public, extensions
 AS $$
 BEGIN
   RETURN EXISTS(
@@ -195,59 +248,92 @@ BEGIN
 END;
 $$;
 
--- 10. RPC: Verify Staff Login (Bypasses RLS to verify email and access code)
-CREATE OR REPLACE FUNCTION public.verify_staff_login(p_email TEXT, p_pin TEXT)
+-- 10. RPC: Verify Staff Login
+CREATE OR REPLACE FUNCTION public.verify_staff_login(p_email TEXT, p_pin TEXT, p_ip TEXT DEFAULT 'unknown')
 RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = public, extensions
 AS $$
 DECLARE
   v_user public.profiles%ROWTYPE;
+  v_attempts INT;
+  v_blocked_until TIMESTAMPTZ;
 BEGIN
-  SELECT * INTO v_user FROM public.profiles 
-  WHERE email = p_email AND pin_hash = p_pin AND role IN ('admin', 'teacher');
-  
-  IF NOT FOUND THEN
-    RAISE EXCEPTION 'Invalid email or access code.';
+  SELECT attempts, blocked_until INTO v_attempts, v_blocked_until 
+  FROM public.login_attempts WHERE ip_address = p_ip AND email = p_email;
+
+  IF v_blocked_until IS NOT NULL AND now() < v_blocked_until THEN
+    RETURN jsonb_build_object('error', 'Too many failed attempts. Try again in 1 minute.');
   END IF;
 
-  -- Sync the password to Supabase Auth to guarantee signInWithPassword works
-  -- (This uses pgcrypto's bcrypt to match Supabase's hashing)
+  SELECT * INTO v_user FROM public.profiles 
+  WHERE email = p_email 
+    AND (
+      (pin_hash NOT LIKE '$2%' AND pin_hash = p_pin) 
+      OR 
+      (pin_hash LIKE '$2%' AND pin_hash = crypt(p_pin::text, pin_hash::text))
+    )
+    AND role IN ('admin', 'teacher');
+  
+  IF NOT FOUND THEN
+    INSERT INTO public.login_attempts (ip_address, email, attempts, last_attempt)
+    VALUES (p_ip, p_email, 1, now())
+    ON CONFLICT (ip_address, email) DO UPDATE 
+    SET attempts = login_attempts.attempts + 1,
+        last_attempt = now(),
+        blocked_until = CASE WHEN login_attempts.attempts + 1 >= 5 THEN now() + interval '1 minute' ELSE NULL END;
+    RETURN jsonb_build_object('error', 'Invalid email or access code.');
+  END IF;
+
+  DELETE FROM public.login_attempts WHERE ip_address = p_ip AND email = p_email;
+
   UPDATE auth.users 
-  SET encrypted_password = crypt(p_pin, gen_salt('bf'))
+  SET encrypted_password = crypt(p_pin::text, gen_salt('bf'::text))
   WHERE email = p_email;
 
-  -- Self-healing: if the auth.users account was deleted and recreated, 
-  -- their UUID changed. We must sync the new UUID back to profiles!
   UPDATE public.profiles
   SET auth_id = (SELECT id FROM auth.users WHERE email = p_email LIMIT 1)
   WHERE email = p_email;
 
-  -- Re-fetch to return the fresh profile with the correct auth_id
   SELECT * INTO v_user FROM public.profiles WHERE email = p_email;
-
   RETURN row_to_json(v_user)::jsonb;
 END;
 $$;
 
--- 11. Seed the initial Admin
-INSERT INTO public.profiles (id, first_name, last_name, role, email, pin_hash) 
-SELECT gen_random_uuid(), 'Master', 'Admin', 'admin', 'admin@school.com', 'ADMIN123'
-WHERE NOT EXISTS (SELECT 1 FROM public.profiles WHERE role = 'admin' LIMIT 1);
-
--- 12. Add single-device login support column
-ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS current_device_id TEXT;
-
--- 13. Secure RPC for Device Registration
--- Bypasses RLS so teachers can register their device ID during login
+-- 11. Secure RPC for Device Registration
 CREATE OR REPLACE FUNCTION register_device_session(p_profile_id UUID, p_auth_id UUID, p_device_id TEXT)
 RETURNS void
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = public, extensions
 AS $$
 BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM public.profiles
+    WHERE id = p_profile_id
+      AND (auth_id = auth.uid() OR public.is_admin(auth.uid()))
+  ) THEN
+    RAISE EXCEPTION 'Unauthorized profile ownership.';
+  END IF;
+
   UPDATE public.profiles 
   SET auth_id = p_auth_id, current_device_id = p_device_id 
   WHERE id = p_profile_id;
 END;
 $$;
+
+-- 12. Seed the initial Admin
+-- Since the trigger is now active BEFORE this runs, ADMIN123 will be hashed instantly.
+INSERT INTO public.profiles (id, first_name, last_name, role, email, pin_hash) 
+SELECT gen_random_uuid(), 'Master', 'Admin', 'admin', 'admin@school.com', 'ADMIN123'
+WHERE NOT EXISTS (SELECT 1 FROM public.profiles WHERE role = 'admin' LIMIT 1);
+
+-- Re-hash any existing unhashed admins/teachers/students for security
+UPDATE public.profiles
+SET pin_hash = pin_hash
+WHERE pin_hash IS NOT NULL AND pin_hash NOT LIKE '$2%';
+
+UPDATE public.profiles
+SET student_pin = student_pin
+WHERE student_pin IS NOT NULL AND student_pin NOT LIKE '$2%';

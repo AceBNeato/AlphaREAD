@@ -53,10 +53,18 @@ export default function AdminLogin() {
       // Verify email + access code against the database via secure RPC
       const { data: admin, error: rpcError } = await supabase.rpc('verify_staff_login', {
         p_email: emailClean,
-        p_pin: codeClean
+        p_pin: codeClean,
+        p_ip: 'unknown'
       });
 
-      if (rpcError || !admin || admin.role !== 'admin') {
+      if (rpcError) {
+        throw new Error("Database Error: " + rpcError.message);
+      }
+      // Check if the database successfully committed the attempt but returned an error
+      if (admin?.error) {
+        throw new Error(admin.error);
+      }
+      if (!admin || admin.role !== 'admin') {
         throw new Error("Invalid admin email or access code.");
       }
 

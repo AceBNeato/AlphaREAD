@@ -169,10 +169,18 @@ export default function Activation() {
       // Verify email + access code via RPC to bypass RLS
       const { data: profile, error: rpcError } = await supabase.rpc('verify_staff_login', {
         p_email: emailClean,
-        p_pin: codeClean
+        p_pin: codeClean,
+        p_ip: 'unknown'
       });
 
-      if (rpcError || !profile) {
+      if (rpcError) {
+        throw new Error("Database Error: " + rpcError.message);
+      }
+      // Check if the database successfully committed the attempt but returned an error
+      if (profile?.error) {
+        throw new Error(profile.error);
+      }
+      if (!profile) {
         throw new Error("Invalid email or access code. Contact your administrator.");
       }
 
@@ -266,11 +274,17 @@ export default function Activation() {
       const { data: student, error: rpcError } = await supabase.rpc('verify_student_login', {
         p_code: studentCodeClean,
         p_pin: studentPinClean,
-        p_device_id: localDeviceId
+        p_device_id: localDeviceId,
+        p_ip: 'unknown'
       });
 
       if (rpcError) {
         throw new Error(rpcError.message || "Authentication failed.");
+      }
+      
+      // Check if the database successfully committed the attempt but returned an error
+      if (student?.error) {
+        throw new Error(student.error);
       }
 
       if (!student) {
