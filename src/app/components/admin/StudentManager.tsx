@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { supabase } from "../../../lib/supabase";
-import { Users, Search, Filter, Plus, X, UserPlus, Eye, EyeOff, Save, Edit, Trash2, Smartphone, Unlock } from "lucide-react";
+import { Users, Search, Filter, Plus, X, UserPlus, Eye, EyeOff, Save, Edit, Trash2, Smartphone, Unlock, RefreshCw } from "lucide-react";
 import { confirmAction, showAlert } from "../../utils/alerts";
 import { Button } from "../ui/button";
 
@@ -137,6 +137,22 @@ export function StudentManager({ students, teachers, onRefresh }: StudentManager
       showAlert("Error", "Failed to unlock device.");
     } else {
       showAlert("Success", "Device binding cleared successfully!", "success");
+      onRefresh();
+    }
+  };
+
+  const regeneratePin = async (id: string) => {
+    const confirm = await confirmAction("Regenerate PIN?", "Generate a new 6-character PIN for this student? The old one will stop working.");
+    if (!confirm) return;
+    
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    const newPin = Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
+    
+    const { error } = await supabase.from("profiles").update({ student_pin: newPin }).eq("id", id);
+    if (error) {
+      showAlert("Error", "Failed to regenerate PIN.");
+    } else {
+      showAlert("Success", `New Student PIN: ${newPin}<br><br>Please share this with the student.`, "success");
       onRefresh();
     }
   };
@@ -484,8 +500,9 @@ export function StudentManager({ students, teachers, onRefresh }: StudentManager
                             </>
                           ) : (
                             <>
-                              <button onClick={() => startEditingStudent(student)} className="p-1.5 bg-blue-900/20 text-blue-400 rounded-lg"><Edit className="w-4 h-4" /></button>
-                              <button onClick={() => deleteStudent(student.id)} className="p-1.5 bg-red-900/20 text-red-400 rounded-lg"><Trash2 className="w-4 h-4" /></button>
+                              <button onClick={() => startEditingStudent(student)} className="p-1.5 bg-blue-900/20 text-blue-400 rounded-lg" title="Edit Student"><Edit className="w-4 h-4" /></button>
+                              <button onClick={() => regeneratePin(student.id)} className="p-1.5 bg-purple-900/20 text-purple-400 rounded-lg" title="Regenerate PIN"><RefreshCw className="w-4 h-4" /></button>
+                              <button onClick={() => deleteStudent(student.id)} className="p-1.5 bg-red-900/20 text-red-400 rounded-lg" title="Delete Student"><Trash2 className="w-4 h-4" /></button>
                             </>
                           )}
                         </div>

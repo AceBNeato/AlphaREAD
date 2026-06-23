@@ -144,24 +144,9 @@ CREATE POLICY "Teacher read student progress" ON public.progress
     )
   );
 
--- 6.5 Hash PINs Trigger
-CREATE OR REPLACE FUNCTION public.hash_pins_trigger()
-RETURNS TRIGGER AS $$
-BEGIN
-  IF NEW.pin_hash IS NOT NULL AND NEW.pin_hash NOT LIKE '$2%' THEN
-    NEW.pin_hash := crypt(NEW.pin_hash::text, gen_salt('bf'::text));
-  END IF;
-  IF NEW.student_pin IS NOT NULL AND NEW.student_pin NOT LIKE '$2%' THEN
-    NEW.student_pin := crypt(NEW.student_pin::text, gen_salt('bf'::text));
-  END IF;
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, extensions;
-
-DROP TRIGGER IF EXISTS tr_hash_pins ON public.profiles;
-CREATE TRIGGER tr_hash_pins
-BEFORE INSERT OR UPDATE OF pin_hash, student_pin ON public.profiles
-FOR EACH ROW EXECUTE FUNCTION public.hash_pins_trigger();
+-- 6.5 Plaintext Password Configuration
+-- Hashing has been explicitly disabled for this application.
+-- Passwords will be stored in plain text to allow admins to view them in the dashboard.
 
 -- 7. RPC: Secure Student Login
 CREATE OR REPLACE FUNCTION public.verify_student_login(p_code TEXT, p_pin TEXT, p_device_id TEXT, p_ip TEXT DEFAULT 'unknown')
@@ -334,11 +319,4 @@ INSERT INTO public.profiles (id, first_name, last_name, role, email, pin_hash)
 SELECT gen_random_uuid(), 'Master', 'Admin', 'admin', 'admin@school.com', 'ADMIN123'
 WHERE NOT EXISTS (SELECT 1 FROM public.profiles WHERE role = 'admin' LIMIT 1);
 
--- Re-hash any existing unhashed admins/teachers/students for security
-UPDATE public.profiles
-SET pin_hash = pin_hash
-WHERE pin_hash IS NOT NULL AND pin_hash NOT LIKE '$2%';
-
-UPDATE public.profiles
-SET student_pin = student_pin
-WHERE student_pin IS NOT NULL AND student_pin NOT LIKE '$2%';
+-- Setup Complete!

@@ -340,8 +340,9 @@ export function TeacherManager({ teachers, onRefresh }: TeacherManagerProps) {
                             </>
                           ) : (
                             <>
-                              <button onClick={() => startEditingTeacher(teacher)} className="p-1.5 bg-blue-900/20 text-blue-400 rounded-lg"><Edit className="w-4 h-4" /></button>
-                              <button onClick={() => deleteTeacher(teacher.id)} className="p-1.5 bg-red-900/20 text-red-400 rounded-lg"><Trash2 className="w-4 h-4" /></button>
+                              <button onClick={() => startEditingTeacher(teacher)} className="p-1.5 bg-blue-900/20 text-blue-400 rounded-lg" title="Edit Profile"><Edit className="w-4 h-4" /></button>
+                              <button onClick={() => regenerateCode(teacher.id)} className="p-1.5 bg-purple-900/20 text-purple-400 rounded-lg" title="Regenerate Access Code"><RefreshCw className="w-4 h-4" /></button>
+                              <button onClick={() => deleteTeacher(teacher.id)} className="p-1.5 bg-red-900/20 text-red-400 rounded-lg" title="Delete Teacher"><Trash2 className="w-4 h-4" /></button>
                               <button
                                 onClick={async () => {
                                   const confirm = await confirmAction("Force Logout?", "This will kick the teacher out of their current device and allow them to log in on a new one.");

@@ -14,7 +14,8 @@ import {
   GraduationCap,
   Sparkles,
   Smartphone,
-  Edit
+  Edit,
+  Key
 } from "lucide-react";
 import { confirmAction } from "../utils/alerts";
 import { Button } from "../components/ui/button";
@@ -175,6 +176,23 @@ export default function TeacherDashboard() {
               className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-4 py-2.5 rounded-xl shadow-lg flex items-center gap-2 transition-all active:scale-95"
             >
               <ExternalLink className="w-4 h-4" /> Open App
+            </Button>
+            <Button
+              onClick={async () => {
+                const newPin = prompt("Enter a new 8-character access code:");
+                if (!newPin) return;
+                const { error } = await supabase.from("profiles").update({ pin_hash: newPin }).eq("id", teacherProfile?.id);
+                if (error) {
+                  alert("Failed to update access code.");
+                } else {
+                  alert("Access code successfully updated!");
+                }
+              }}
+              variant="outline"
+              className="bg-transparent border-gray-700 hover:bg-gray-700 text-indigo-400 font-bold px-4 py-2.5 rounded-xl flex items-center gap-2 transition-all"
+              title="Change My Access Code"
+            >
+              <Key className="w-4 h-4" /> Change Code
             </Button>
             <Button 
               onClick={handleLogout}

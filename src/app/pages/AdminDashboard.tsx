@@ -147,6 +147,23 @@ export default function AdminDashboard() {
             </Button>
             <Button
               onClick={async () => {
+                const newPin = prompt("Enter new master admin code (leave blank to cancel):");
+                if (!newPin) return;
+                const { error } = await supabase.from("profiles").update({ pin_hash: newPin }).eq("id", adminProfile?.id);
+                if (error) {
+                  alert("Failed to update admin PIN.");
+                } else {
+                  alert("Admin PIN successfully updated!");
+                }
+              }}
+              variant="outline"
+              className="bg-transparent border-gray-800 hover:bg-gray-850 text-blue-400 font-bold px-3 py-2 rounded-xl flex items-center gap-2"
+              title="Change Admin Password"
+            >
+              <Key className="w-4 h-4" /> Change PIN
+            </Button>
+            <Button
+              onClick={async () => {
                 await supabase.auth.signOut();
                 localStorage.removeItem("userProfile");
                 navigate("/", { replace: true });
