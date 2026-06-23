@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { useNavigate } from "react-router";
-import {Home, Mic, MicOff, CheckCircle2, XCircle, Sparkles, ArrowRight, ArrowLeft, RotateCcw, SkipForward, FastForward, Volume2, Shuffle, X} from "lucide-react";
+import {Home, Mic, MicOff, CheckCircle2, XCircle, Sparkles, ArrowRight, ArrowLeft, RotateCcw, SkipForward, FastForward, Volume2, Shuffle, X, AlertCircle, Loader2} from "lucide-react";
 import { confirmAction } from "../utils/alerts";
 import { Button } from "./ui/button";
 import { motion, AnimatePresence } from "motion/react";
@@ -10,6 +10,7 @@ import { CVC_SENTENCES } from "../data/levels";
 import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
 import { playSound } from "../utils/soundEffects";
 import { playTTS as playTTSUtil } from "../utils/tts";
+import { AudioVisualizer } from "./AudioVisualizer";
 
 interface LevelCVCSentencesProps {
   levelId: number;
@@ -69,7 +70,9 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete }: L
 
       const tClean = transcript.toLowerCase().replace(/[.,!?'"-]/g, "").trim();
       const targetClean = target.toLowerCase().replace(/[.,!?'"-]/g, "").trim();
-      const isCorrect = status === "correct" || status === "close" || tClean.includes(targetClean);
+      const tNoSpace = tClean.replace(/\s+/g, "");
+      const targetNoSpace = targetClean.replace(/\s+/g, "");
+      const isCorrect = status === "correct" || tClean.includes(targetClean) || tNoSpace.includes(targetNoSpace);
 
       if (status === null && !isCorrect) return;
 
@@ -175,10 +178,63 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete }: L
   const isFinalSet = currentSetIndex === totalSets - 1;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 dark:bg-none dark:bg-[#0d141c] flex flex-col overflow-x-hidden">
+    <div className={`flex flex-col overflow-x-hidden ${isSubPhase ? 'flex-1 w-full' : 'min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 dark:bg-none dark:bg-[#0d141c]'}`}>
       <Confetti active={showConfetti} />
 
+      {/* Listening Modal */}
+      <AnimatePresence>
+        {evaluatingSentenceId && !showConfetti && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4"
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              className="bg-white dark:bg-gray-800 rounded-3xl p-6 sm:p-8 max-w-sm w-full text-center shadow-2xl border-4"
+              style={{ borderColor: accent.primary }}
+            >
+              <div className="flex flex-col items-center justify-center gap-2 mb-6">
+                <div className="flex items-center justify-center gap-2">
+                  <Mic className="w-6 h-6 text-pink-500 animate-pulse" />
+                  <h3 className="text-2xl font-bold tracking-tight text-pink-500 animate-pulse">Listening...</h3>
+                </div>
+                <AudioVisualizer isListening={!!evaluatingSentenceId} isMobile={isMobile} />
+              </div>
+              <p className="text-gray-500 dark:text-gray-400 mb-6 font-medium">Please read the sentence clearly.</p>
+              
+              <div className="bg-gray-50 dark:bg-gray-900 rounded-2xl p-5 min-h-[100px] flex flex-col items-center justify-center border border-gray-100 dark:border-gray-800 shadow-inner">
+                <span className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Target</span>
+                <span className="text-xl font-extrabold mb-4 tracking-wider leading-snug" style={{ color: accent.primary }}>{evaluatingSentenceId}</span>
+                
+                <div className="w-full h-px bg-gray-200 dark:bg-gray-700 my-2" />
+                
+                <span className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1 mt-2">Heard</span>
+                <span className="text-lg font-medium text-gray-700 dark:text-gray-300 min-h-[30px] flex items-center justify-center w-full break-words">
+                  {sentenceTranscriptsMap[evaluatingSentenceId] ? `"${sentenceTranscriptsMap[evaluatingSentenceId]}"` : <Loader2 className="w-5 h-5 text-gray-400 animate-spin" />}
+                </span>
+              </div>
+              
+              {sentenceFeedbackMap[evaluatingSentenceId] === 'wrong' && (
+                <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} className="mt-5 text-red-500 font-bold flex items-center justify-center gap-2 bg-red-50 dark:bg-red-900/20 py-2 px-4 rounded-xl">
+                  <AlertCircle className="w-5 h-5" /> Let's try again!
+                </motion.div>
+              )}
+              {sentenceFeedbackMap[evaluatingSentenceId] === 'correct' && (
+                <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} className="mt-5 text-green-500 font-bold flex items-center justify-center gap-2 bg-green-50 dark:bg-green-900/20 py-2 px-4 rounded-xl">
+                  <CheckCircle2 className="w-5 h-5" /> Perfect!
+                </motion.div>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Header */}
+      {!isSubPhase && (
       <div className="sticky top-0 z-10 bg-white/80 dark:bg-[#0d141c]/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 px-4 py-3">
         <div className="max-w-4xl mx-auto flex items-center justify-between gap-3 w-full">
           <Button variant="ghost" size="sm" onClick={handleGoBack} className="rounded-full flex-shrink-0">
@@ -192,9 +248,10 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete }: L
           </span>
         </div>
       </div>
+      )}
 
       {/* Content */}
-      <div className="max-w-4xl mx-auto px-4 py-6 flex-1 flex flex-col w-full">
+      <div className={`max-w-2xl mx-auto px-4 flex-1 flex flex-col ${isSubPhase ? 'py-2' : 'py-6'}`}>
         <AnimatePresence mode="wait">
           {!showConfetti ? (
             <motion.div
@@ -202,7 +259,7 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete }: L
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 1.05 }}
-              className="w-full max-w-2xl mx-auto flex flex-col items-center"
+              className="flex flex-col items-center"
             >
               <div className="text-center mb-8">
                 <p className="text-white text-base sm:text-lg font-bold mt-2 block">

@@ -234,7 +234,9 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
     (target: string, status: "correct" | "close" | "wrong" | null, transcript: string) => {
       const tClean = transcript.toLowerCase().replace(/[.,!?'"-]/g, "").trim();
       const targetClean = target.toLowerCase().replace(/[.,!?'"-]/g, "").trim();
-      let isCorrect = status === "correct" || status === "close" || tClean.includes(targetClean);
+      const tNoSpace = tClean.replace(/\s+/g, "");
+      const targetNoSpace = targetClean.replace(/\s+/g, "");
+      let isCorrect = status === "correct" || (status === "close" && currentPhase !== "sentences") || tClean.includes(targetClean) || tNoSpace.includes(targetNoSpace);
 
       clearEvalTimeout();
 

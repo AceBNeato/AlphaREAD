@@ -208,9 +208,67 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:bg-none dark:bg-[#0d141c] overflow-x-hidden">
+    <div className={`overflow-x-hidden ${isSubPhase ? 'flex-1 w-full flex flex-col' : 'min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:bg-none dark:bg-[#0d141c]'}`}>
       <Confetti active={showConfetti} />
+      
+      {/* Listening Modal */}
+      <AnimatePresence>
+        {evaluatingWord && !showCompletionScreen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4"
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              className="bg-white dark:bg-gray-800 rounded-3xl p-6 sm:p-8 max-w-sm w-full text-center shadow-2xl border-4"
+              style={{ borderColor: accent.primary }}
+            >
+              <div className="flex flex-col items-center justify-center gap-2 mb-6">
+                <div className="flex items-center justify-center gap-2">
+                  <Mic className="w-6 h-6 text-pink-500 animate-pulse" />
+                  <h3 className="text-2xl font-bold tracking-tight text-pink-500 animate-pulse">Listening...</h3>
+                </div>
+                <AudioVisualizer isListening={!!evaluatingWord} isMobile={isMobile} />
+              </div>
+              <p className="text-gray-500 dark:text-gray-400 mb-6 font-medium">Please say the word clearly.</p>
+              
+              <div className="bg-gray-50 dark:bg-gray-900 rounded-2xl p-5 min-h-[100px] flex flex-col items-center justify-center border border-gray-100 dark:border-gray-800 shadow-inner">
+                <span className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Target</span>
+                <span className="text-4xl font-extrabold mb-4 tracking-wider" style={{ color: accent.primary }}>{evaluatingWord}</span>
+                
+                <div className="w-full h-px bg-gray-200 dark:bg-gray-700 my-2" />
+                
+                <span className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1 mt-2">Heard</span>
+                <span className="text-xl font-medium text-gray-700 dark:text-gray-300 min-h-[30px] flex items-center justify-center w-full break-words">
+                  {transcripts[evaluatingWord] ? `"${transcripts[evaluatingWord]}"` : <Loader2 className="w-5 h-5 text-gray-400 animate-spin" />}
+                </span>
+              </div>
+              
+              {evalFeedback[evaluatingWord] === 'wrong' && (
+                <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} className="mt-5 text-red-500 font-bold flex items-center justify-center gap-2 bg-red-50 dark:bg-red-900/20 py-2 px-4 rounded-xl">
+                  <AlertCircle className="w-5 h-5" /> Let's try again!
+                </motion.div>
+              )}
+              {evalFeedback[evaluatingWord] === 'correct' && (
+                <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} className="mt-5 text-green-500 font-bold flex items-center justify-center gap-2 bg-green-50 dark:bg-green-900/20 py-2 px-4 rounded-xl">
+                  <CheckCircle2 className="w-5 h-5" /> Perfect!
+                </motion.div>
+              )}
+              {evalFeedback[evaluatingWord] === 'close' && (
+                <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} className="mt-5 text-blue-500 font-bold flex items-center justify-center gap-2 bg-blue-50 dark:bg-blue-900/20 py-2 px-4 rounded-xl">
+                  <Sparkles className="w-5 h-5" /> Almost there!
+                </motion.div>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       {/* Header */}
+      {!isSubPhase && (
       <div className="sticky top-0 z-10 bg-white/80 dark:bg-[#0d141c]/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 px-4 py-3">
         <div className="max-w-2xl mx-auto flex items-center justify-between gap-3 w-full">
           <Button
@@ -237,6 +295,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
           </Button>
         </div>
       </div>
+      )}
 
       {/* iOS warning */}
       {isIOS && (
@@ -247,7 +306,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
       )}
 
       {/* Content */}
-      <div className="max-w-2xl mx-auto px-4 py-6">
+      <div className={`max-w-2xl mx-auto px-4 ${isSubPhase ? 'py-2' : 'py-6'}`}>
 
         {!(window as any).SpeechRecognition && !(window as any).webkitSpeechRecognition && (
           <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 text-amber-800 text-sm flex items-center gap-3">
@@ -326,7 +385,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
                 transition={{ duration: 0.3 }}
                 className="text-center mb-8"
               >
-                <div className="space-y-3 bg-white/50 dark:bg-gray-800/50 p-4 rounded-3xl backdrop-blur-sm border-2 border-dashed border-gray-200 dark:border-gray-700">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-white/50 dark:bg-gray-800/50 p-4 rounded-3xl backdrop-blur-sm border-2 border-dashed border-gray-200 dark:border-gray-700">
                   {words.map((w, idx) => {
                     const isDone = completedWords.has(w);
                     const isCurrent = evaluatingWord === w;
@@ -348,17 +407,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
                               <AlertCircle className="w-4 h-4" /> Try again!
                             </motion.div>
                           )}
-                          {isCurrent && !processingWord && (
-                            <div className="flex items-center gap-2 mt-1 sm:mt-0 flex-wrap">
-                              <span className="text-pink-500 text-sm font-bold animate-pulse">Listening...</span>
-                              <AudioVisualizer isListening={!!evaluatingWord} isMobile={isMobile} />
-                              {transcript && (
-                                <span className="p-1 bg-gray-200 rounded text-[10px] font-mono text-gray-700 ml-1 truncate max-w-[120px]">
-                                  [Heard: {transcript}]
-                                </span>
-                              )}
-                            </div>
-                          )}
+
                           {processingWord === w && (
                             <div className="flex items-center gap-2 mt-1 sm:mt-0 text-indigo-500">
                               <span className="text-sm font-bold animate-pulse">Thinking...</span>

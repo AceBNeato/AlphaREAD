@@ -242,16 +242,34 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-purple-50 dark:bg-none dark:bg-[#0d141c] overflow-x-hidden flex flex-col">
-      {/* Header */}
+      {/* Header with Progress Bar */}
       <div className="sticky top-0 z-10 bg-white/80 dark:bg-[#0d141c]/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 px-4 py-3">
-        <div className="max-w-4xl mx-auto flex items-center gap-3 w-full">
-          <Button variant="ghost" size="sm" onClick={handleGoBack} className="rounded-full"><X className="w-5 h-5" /> Exit</Button>
-          <div className="flex-1 text-center">
-            <h2 className="text-lg font-bold" style={{ color: accent.primary }}>
-              {step.isFinal ? "Final Review" : `Alphabet Master - ${step.type === "review" ? "Review Phase" : step.type === "match" ? "Listen and Match" : "Listen and Type"}`}
-            </h2>
+        <div className="max-w-4xl mx-auto flex items-center gap-3 sm:gap-5 w-full">
+          <Button variant="ghost" size="sm" onClick={handleGoBack} className="rounded-full p-2 h-auto text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+            <X className="w-6 h-6 sm:w-7 sm:h-7" />
+          </Button>
+          
+          <div className="flex-1 flex flex-col gap-1.5 mt-1">
+            <div className="flex justify-between items-center px-1">
+              <h2 className="text-sm sm:text-base font-bold tracking-tight" style={{ color: accent.primary }}>
+                {step.isFinal ? "Final Review" : `Alphabet Master - ${step.type === "review" ? "Review Phase" : step.type === "match" ? "Listen and Match" : "Listen and Type"}`}
+              </h2>
+            </div>
+            
+            {/* Duolingo-style Progress Bar */}
+            <div className="w-full bg-gray-200 dark:bg-gray-800 rounded-full h-4 sm:h-5 overflow-hidden relative shadow-inner">
+              <div 
+                className="absolute top-0 left-0 h-full rounded-full transition-all duration-700 ease-out flex flex-col justify-start"
+                style={{ 
+                  width: `${Math.max(5, (currentStep / STEPS.length) * 100)}%`, 
+                  backgroundColor: accent.primary 
+                }}
+              >
+                {/* Glossy reflection highlight */}
+                <div className="w-[calc(100%-12px)] h-[30%] bg-white/30 rounded-full mx-1.5 mt-1"></div>
+              </div>
+            </div>
           </div>
-          <span className="text-sm font-bold" style={{ color: accent.primary }}>Step {currentStep + 1}/{STEPS.length}</span>
         </div>
       </div>
 
