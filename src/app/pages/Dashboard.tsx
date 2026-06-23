@@ -137,16 +137,7 @@ export default function Dashboard() {
               <h2 className="text-xl font-bold text-gray-800 dark:text-white leading-tight">
                 {profile.name}
               </h2>
-              {profile.id !== "teacher-preview" && (profile as any).role !== "teacher-preview" && (
-                <div className="flex gap-2 mt-1.5">
-                  <span className="text-xs font-bold text-[#FF9600] bg-[#fff0d4] dark:bg-[#FF9600]/20 px-2 py-0.5 rounded-lg">
-                    Lesson {currentLevel}
-                  </span>
-                  <span className="text-xs font-bold text-[#58CC02] bg-[#e8f9d4] dark:bg-[#58CC02]/20 px-2 py-0.5 rounded-lg">
-                    {accuracy}% Acc
-                  </span>
-                </div>
-              )}
+
             </div>
           </div>
         </div>

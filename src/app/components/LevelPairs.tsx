@@ -7,6 +7,7 @@ import {ChevronRight, Home, ArrowRight, Shuffle, FastForward, Volume2, RotateCcw
 import { confirmAction } from "../utils/alerts";
 import { playSound, playExclusiveAudio } from "../utils/soundEffects";
 import { MatchButton } from "./MatchButton";
+import { Confetti } from "./ui/Confetti";
 
 interface LevelPairsProps {
   levelId: number;
@@ -69,6 +70,15 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
     const source = step.isFinal ? finalAlphabet : ALPHABET;
     return source.slice(step.start, step.end);
   }, [ALPHABET, finalAlphabet, step]);
+
+  const [showConfetti, setShowConfetti] = useState(false);
+  const confettiTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const triggerConfetti = () => {
+    setShowConfetti(true);
+    if (confettiTimeoutRef.current) clearTimeout(confettiTimeoutRef.current);
+    confettiTimeoutRef.current = setTimeout(() => setShowConfetti(false), 2500);
+  };
 
   // Review Phase States
   const [reviewOrder, setReviewOrder] = useState<string[]>([]);
@@ -148,7 +158,13 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
     if (val.length === 1) {
       if (val.toLowerCase() === letter.toLowerCase()) {
         playSound("correct", 0.4);
-        setTypeStatus(prev => ({ ...prev, [letter]: true }));
+        setTypeStatus(prev => {
+          const next = { ...prev, [letter]: true };
+          if (typeOrder.length > 0 && typeOrder.every(l => next[l] === true)) {
+            triggerConfetti();
+          }
+          return next;
+        });
       } else {
         playSound("wrong", 0.35);
         setTypeStatus(prev => ({ ...prev, [letter]: false }));
@@ -187,7 +203,13 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
   const checkMatch = (left: string, right: string) => {
     if (left === right) {
       playSound("correct", 0.4);
-      setMatchedPairs(prev => new Set(prev).add(left));
+      setMatchedPairs(prev => {
+        const next = new Set(prev).add(left);
+        if (next.size === baseActiveLetters.length) {
+          triggerConfetti();
+        }
+        return next;
+      });
       setSelectedSpeakerMatch(null);
       setSelectedLetterMatch(null);
     } else {
@@ -232,6 +254,8 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
           <span className="text-sm font-bold" style={{ color: accent.primary }}>Step {currentStep + 1}/{STEPS.length}</span>
         </div>
       </div>
+
+      <Confetti active={showConfetti} />
 
       <div className="max-w-4xl mx-auto px-4 py-6 flex-1 flex flex-col w-full">
         <AnimatePresence mode="wait">

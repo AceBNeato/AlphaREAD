@@ -143,19 +143,13 @@ export function LevelSyllableBuilder({
     // Use local audio files for CV and VC patterns
     if (pattern === "CV") {
       const audioPath = `${(import.meta as any).env.BASE_URL}audio/cv-audio/cv-${syllableLower}.MP3`;
-      playExclusiveAudio(audioPath).catch(() => {
-        const phoneticText = getPhoneticText(text, pattern);
-        playTTSUtil(phoneticText);
-      });
+      playExclusiveAudio(audioPath).catch(() => {});
       return;
     }
 
     if (pattern === "VC") {
       const audioPath = `${(import.meta as any).env.BASE_URL}audio/vc-audio/vc-${syllableLower}.MP3`;
-      playExclusiveAudio(audioPath).catch(() => {
-        const phoneticText = getPhoneticText(text, pattern);
-        playTTSUtil(phoneticText);
-      });
+      playExclusiveAudio(audioPath).catch(() => {});
       return;
     }
 
@@ -442,25 +436,28 @@ export function LevelSyllableBuilder({
                     {/* Show the actual target syllable only when not completed */}
                     {!completedTargets.has(currentTarget.syllable) && (
                       <div className="flex items-center gap-2">
-                        <span
-                          className="text-4xl sm:text-5xl tracking-widest cursor-pointer hover:scale-105 active:scale-95 transition-transform"
+                        <button
                           onClick={() => playTTS(currentTarget.syllable, currentTarget.pattern)}
-                          style={{ color: patternColors[currentTarget.pattern] }}
+                          className="flex items-center gap-2 px-4 py-2 bg-white rounded-2xl shadow-md border-b-[4px] hover:scale-105 active:scale-95 transition-all"
+                          style={{ borderColor: patternColors[currentTarget.pattern] }}
                           title="Click to hear again"
                         >
-                          {currentTarget.syllable.split("").map((ch, i) => (
-                            <span
-                              key={i}
-                              style={{
-                                color: VOWELS.includes(ch)
-                                  ? "#FF6B8A"
-                                  : "#1CB0F6",
-                              }}
-                            >
-                              {ch.toLowerCase()}
-                            </span>
-                          ))}
-                        </span>
+                          <div className="font-black text-4xl sm:text-5xl tracking-wide flex">
+                            {currentTarget.syllable.split("").map((ch, i) => (
+                              <span
+                                key={i}
+                                style={{
+                                  color: VOWELS.includes(ch)
+                                    ? "#FF6B8A"
+                                    : "#1CB0F6",
+                                }}
+                              >
+                                {ch.toLowerCase()}
+                              </span>
+                            ))}
+                          </div>
+                          <Volume2 className="w-6 h-6 opacity-50" style={{ color: patternColors[currentTarget.pattern] }} />
+                        </button>
                       </div>
                     )}
 
