@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { Lock, ArrowLeft, Loader2, Mail, ShieldCheck, KeyRound } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { supabase } from "../../lib/supabase";
+import { checkLockout, triggerLockout } from "../utils/alerts";
 
 export default function AdminLogin() {
   const navigate = useNavigate();
@@ -12,6 +13,14 @@ export default function AdminLogin() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
+  const [isLockedOut, setIsLockedOut] = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsLockedOut(checkLockout());
+    check();
+    const interval = setInterval(check, 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,6 +52,8 @@ export default function AdminLogin() {
   const handleVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     if (otpCode.length < 6) return;
+    if (checkLockout()) return;
+
     setLoading(true);
     setError("");
 
@@ -105,6 +116,9 @@ export default function AdminLogin() {
     } catch (err: any) {
       setError(err.message || "Authentication failed.");
       setOtpCode("");
+      if (err.message && err.message.includes("Too many failed")) {
+        triggerLockout();
+      }
     } finally {
       setLoading(false);
     }
@@ -141,6 +155,7 @@ export default function AdminLogin() {
               <input
                 type="email"
                 required
+                disabled={isLockedOut}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="admin@school.com"
@@ -158,7 +173,7 @@ export default function AdminLogin() {
 
             <Button
               type="submit"
-              disabled={loading || !email.trim()}
+              disabled={loading || !email.trim() || isLockedOut}
               className="w-full py-6 text-lg font-bold rounded-2xl bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-900/20 transition-all flex items-center justify-center gap-2"
             >
               {loading && <Loader2 className="w-5 h-5 animate-spin" />}
@@ -172,6 +187,7 @@ export default function AdminLogin() {
                 type="password"
                 maxLength={8}
                 required
+                disabled={isLockedOut}
                 value={otpCode}
                 onChange={(e) => setOtpCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8))}
                 placeholder="••••••••"
@@ -193,7 +209,7 @@ export default function AdminLogin() {
 
             <Button
               type="submit"
-              disabled={loading || otpCode.length < 6}
+              disabled={loading || otpCode.length < 6 || isLockedOut}
               className="w-full py-6 text-lg font-bold rounded-2xl bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-900/20 transition-all flex items-center justify-center gap-2"
             >
               {loading && <Loader2 className="w-5 h-5 animate-spin" />}

@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { PrivacyPolicyModal } from "../components/PrivacyPolicyModal";
+import { triggerLockout, checkLockout } from "../utils/alerts";
 import { generateUUID } from "../utils/uuid";
 
 const POPUP_ITEMS = ["A", "B", "C", "D", "E", "F", "CAT", "DOG", "SUN", "AT", "IN", "UP", "BA", "MA", "DA", "BE"];
@@ -79,6 +80,7 @@ export default function Activation() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
+  const [isLockedOut, setIsLockedOut] = useState(false);
 
   // Step state
   const [authStep, setAuthStep] = useState<"initial" | "teacher-code" | "student-pin">("initial");
@@ -106,8 +108,15 @@ export default function Activation() {
   }, [navigate]);
 
   useEffect(() => {
+    const check = () => setIsLockedOut(checkLockout());
+    check();
+    const interval = setInterval(check, 1000);
+
     window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("keydown", handleKeyDown);
+    };
   }, [handleKeyDown]);
 
   // Splash screen transition
@@ -159,6 +168,7 @@ export default function Activation() {
   const handleVerifyAccessCode = async (e: React.FormEvent) => {
     e.preventDefault();
     if (accessCode.length < 6) return;
+    if (checkLockout()) return;
 
     setLoading(true);
     setError("");
@@ -247,6 +257,9 @@ export default function Activation() {
     } catch (err: any) {
       setError(err.message || "Verification failed.");
       setAccessCode("");
+      if (err.message && err.message.includes("Too many failed")) {
+        triggerLockout();
+      }
     } finally {
       setLoading(false);
     }
@@ -256,6 +269,7 @@ export default function Activation() {
   const handleVerifyStudentPin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (studentPin.length !== 6) return;
+    if (checkLockout()) return;
 
     setLoading(true);
     setError("");
@@ -304,6 +318,9 @@ export default function Activation() {
     } catch (err: any) {
       setError(err.message || "Student login failed.");
       setStudentPin("");
+      if (err.message && err.message.includes("Too many failed")) {
+        triggerLockout();
+      }
     } finally {
       setLoading(false);
     }
@@ -430,6 +447,7 @@ export default function Activation() {
                     <input
                       type="text"
                       required
+                      disabled={isLockedOut}
                       value={userInput}
                       onChange={(e) => setUserInput(e.target.value)}
                       placeholder="e.g. AB3X9P or name@school.com"
@@ -446,7 +464,7 @@ export default function Activation() {
 
                 <Button
                   type="submit"
-                  disabled={loading || !userInput.trim()}
+                  disabled={loading || !userInput.trim() || isLockedOut}
                   className={`w-full py-4 text-base font-bold rounded-2xl transition-all flex items-center justify-center gap-2 shadow-lg ${isEmail
                     ? "bg-indigo-600 hover:bg-indigo-500 text-white"
                     : "bg-[#58CC02] hover:bg-[#49a802] text-white"
@@ -511,7 +529,7 @@ export default function Activation() {
 
                 <Button
                   type="submit"
-                  disabled={loading || accessCode.length < 6}
+                  disabled={loading || accessCode.length < 6 || isLockedOut}
                   className="w-full py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-indigo-950/30"
                 >
                   {loading && <Loader2 className="w-5 h-5 animate-spin" />}
@@ -547,6 +565,7 @@ export default function Activation() {
                     inputMode="text"
                     maxLength={6}
                     required
+                    disabled={isLockedOut}
                     autoFocus
                     value={studentPin}
                     onChange={(e) => setStudentPin(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6))}
@@ -570,7 +589,7 @@ export default function Activation() {
 
                 <Button
                   type="submit"
-                  disabled={loading || studentPin.length !== 6}
+                  disabled={loading || studentPin.length !== 6 || isLockedOut}
                   className="w-full py-4 bg-[#58CC02] hover:bg-[#49a802] text-white font-bold rounded-2xl flex items-center justify-center gap-2 shadow-lg"
                 >
                   {loading && <Loader2 className="w-5 h-5 animate-spin" />}

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { supabase } from "../../../lib/supabase";
-import { Users, Search, Filter, Plus, X, UserPlus, Eye, EyeOff, Save, Edit, Trash2, Smartphone, Unlock, RefreshCw } from "lucide-react";
+import { Users, Search, Filter, Plus, X, UserPlus, Eye, EyeOff, Save, Edit, Trash2, Smartphone, Unlock, RefreshCw, Copy, Check } from "lucide-react";
 import { confirmAction, showAlert } from "../../utils/alerts";
 import { Button } from "../ui/button";
 
@@ -34,6 +34,17 @@ export function StudentManager({ students, teachers, onRefresh }: StudentManager
   const [editStudentClassCode, setEditStudentClassCode] = useState("");
   const [editStudentTeacherId, setEditStudentTeacherId] = useState("");
   const [editStudentPin, setEditStudentPin] = useState("");
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const copyCode = async (code: string, id: string) => {
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopiedId(id);
+      setTimeout(() => setCopiedId(null), 2000);
+    } catch (err) {
+      console.error("Failed to copy", err);
+    }
+  };
 
   const toggleVisibility = (id: string) => {
     setVisibleCodes(prev => {
@@ -455,9 +466,18 @@ export function StudentManager({ students, teachers, onRefresh }: StudentManager
 
                           {/* Student Code */}
                           <td className="py-4 px-6">
-                            <span className="font-mono text-white font-bold tracking-wider">
-                              {student.student_code}
-                            </span>
+                            <div className="flex items-center gap-2">
+                              <span className="font-mono text-white font-bold tracking-wider">
+                                {student.student_code}
+                              </span>
+                              <button
+                                onClick={() => copyCode(student.student_code, `${student.id}-code`)}
+                                className="text-gray-400 hover:text-white p-1 transition-colors"
+                                title="Copy code"
+                              >
+                                {copiedId === `${student.id}-code` ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
+                              </button>
+                            </div>
                           </td>
 
                           {/* Secret PIN */}
@@ -476,9 +496,20 @@ export function StudentManager({ students, teachers, onRefresh }: StudentManager
                                 )}
                               </span>
                               {!isEditing && (
-                                <button onClick={() => toggleVisibility(student.id)} className="text-gray-400 hover:text-white">
-                                  {isCodeVisible ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                                </button>
+                                <>
+                                  <button onClick={() => toggleVisibility(student.id)} className="text-gray-400 hover:text-white">
+                                    {isCodeVisible ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                  </button>
+                                  {isCodeVisible && student.student_pin && (
+                                    <button
+                                      onClick={() => copyCode(student.student_pin, `${student.id}-pin`)}
+                                      className="text-gray-400 hover:text-white p-1 transition-colors ml-1"
+                                      title="Copy PIN"
+                                    >
+                                      {copiedId === `${student.id}-pin` ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
+                                    </button>
+                                  )}
+                                </>
                               )}
                             </div>
                           </td>
