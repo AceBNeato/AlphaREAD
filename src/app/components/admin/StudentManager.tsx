@@ -52,7 +52,30 @@ export function StudentManager({ students, teachers, onRefresh }: StudentManager
     if (!studentFirstName.trim() || !studentLastName.trim() || !studentClassCode.trim()) return;
 
     try {
-      const studentCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+      // Generate mnemonic student code: First 3 of First Name + First 1 of Last Name + 001
+      const fNamePart = (studentFirstName.trim().replace(/[^A-Za-z]/g, '') + "XXX").substring(0, 3).toUpperCase();
+      const lNamePart = (studentLastName.trim().replace(/[^A-Za-z]/g, '') + "X").substring(0, 1).toUpperCase();
+      const prefix = `${fNamePart}${lNamePart}`;
+      
+      // Query database for existing codes with this prefix to auto-increment
+      const { data: existingCodes } = await supabase
+        .from("profiles")
+        .select("student_code")
+        .like("student_code", `${prefix}%`)
+        .order("student_code", { ascending: false })
+        .limit(1);
+
+      let seqNumber = "001";
+      if (existingCodes && existingCodes.length > 0 && existingCodes[0].student_code) {
+        const lastCode = existingCodes[0].student_code;
+        const numPart = lastCode.substring(prefix.length);
+        const parsed = parseInt(numPart, 10);
+        if (!isNaN(parsed)) {
+          seqNumber = (parsed + 1).toString().padStart(3, "0");
+        }
+      }
+      
+      const studentCode = `${prefix}${seqNumber}`;
       const studentId = crypto.randomUUID();
 
       const { error } = await supabase.from("profiles").insert({
