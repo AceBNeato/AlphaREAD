@@ -127,6 +127,8 @@ export default function TeacherDashboard() {
       // Clear the current_device_id in the database to unlock the account for other devices
       await supabase.from("profiles").update({ current_device_id: null }).eq("id", teacherProfile.id);
     }
+    // Also destroy the secure Supabase Auth session
+    await supabase.auth.signOut();
     localStorage.removeItem("userProfile");
     navigate("/", { replace: true });
   };

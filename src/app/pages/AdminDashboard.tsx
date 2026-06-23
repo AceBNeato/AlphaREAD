@@ -146,7 +146,8 @@ export default function AdminDashboard() {
               <RefreshCw className="w-4 h-4" />
             </Button>
             <Button
-              onClick={() => {
+              onClick={async () => {
+                await supabase.auth.signOut();
                 localStorage.removeItem("userProfile");
                 navigate("/", { replace: true });
               }}
