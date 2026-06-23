@@ -197,11 +197,13 @@ export default function Dashboard() {
                   localStorage.removeItem("originalTeacherProfile");
                 }
                 navigate("/teacher-dashboard");
+              } else if ((profile as any).role === "admin") {
+                navigate("/admin");
               } else {
                 handleExitApp();
               }
             }}
-            className={`w-full rounded-3xl p-6 transition-all flex items-center justify-between group mt-2 cursor-pointer ${profile.id === "teacher-preview" || (profile as any).role === "teacher-preview"
+            className={`w-full rounded-3xl p-6 transition-all flex items-center justify-between group mt-2 cursor-pointer ${profile.id === "teacher-preview" || (profile as any).role === "teacher-preview" || (profile as any).role === "admin"
               ? "bg-gradient-to-br from-[#1CB0F6] to-[#0a8ed4] shadow-[0_8px_0_#0979b5] hover:shadow-[0_6px_0_#0979b5]"
               : "bg-gradient-to-br from-[#FF4B4B] to-[#e0336e] shadow-[0_8px_0_#b51e4f] hover:shadow-[0_6px_0_#b51e4f]"
               } hover:translate-y-[2px] active:shadow-none active:translate-y-[8px]`}
@@ -212,7 +214,7 @@ export default function Dashboard() {
               </div>
               <div className="text-left">
                 <h3 className="text-2xl font-black text-white tracking-wide">
-                  {profile.id === "teacher-preview" || (profile as any).role === "teacher-preview" ? "Open Dashboard" : "Exit App"}
+                  {profile.id === "teacher-preview" || (profile as any).role === "teacher-preview" || (profile as any).role === "admin" ? "Open Dashboard" : "Exit App"}
                 </h3>
                 <p className="text-white/80 font-medium">
                   {profile.id === "teacher-preview" || (profile as any).role === "teacher-preview" ? "Back to dashboard" : "See you next time!"}
