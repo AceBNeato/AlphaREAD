@@ -479,8 +479,8 @@ export function LevelBlends({ levelId, accent, categoryFilter, onComplete }: Lev
 
       <div className="sticky top-0 z-10 bg-white/80 dark:bg-[#0d141c]/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 px-4 py-3">
         <div className="max-w-2xl mx-auto flex items-center justify-between gap-3 w-full">
-          <Button variant="ghost" size="sm" onClick={handleGoBack} className="rounded-full">
-            <X className="w-5 h-5" /> Exit
+          <Button variant="ghost" size="sm" onClick={handleGoBack} className="rounded-full flex items-center gap-1">
+            <ArrowLeft className="w-5 h-5" /> Exit
           </Button>
           <div className="flex-1 flex flex-col gap-1.5 mt-1">
             <div className="flex justify-between items-center px-1">
@@ -524,7 +524,19 @@ export function LevelBlends({ levelId, accent, categoryFilter, onComplete }: Lev
                 <p className="text-white text-base sm:text-lg font-bold mt-2 block">
                   Review the patterns. Tap any word or heading to hear it spoken!
                 </p>
-                <div className="flex justify-center items-center w-full gap-3 sm:gap-4 max-w-sm mx-auto mt-6">
+                <div className="flex justify-center items-center w-full gap-3 sm:gap-4 max-w-md mx-auto mt-6">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      if (reviewIdx > 0) setReviewIdx(prev => prev - 1);
+                    }}
+                    disabled={reviewIdx === 0}
+                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#086ca5] hover:scale-105 active:scale-95 px-2 transition-all disabled:opacity-50 disabled:grayscale disabled:pointer-events-none h-9 py-2"
+                    style={{ background: 'linear-gradient(135deg, #1cb0f6 0%, #0a8ed4 100%)' }}
+                  >
+                    <ArrowLeft className="w-4 h-4 mr-1" /> Back
+                  </Button>
                   <Button
                     variant="outline"
                     size="sm"
@@ -537,6 +549,17 @@ export function LevelBlends({ levelId, accent, categoryFilter, onComplete }: Lev
                     <ShuffleIcon className="w-4 h-4 mr-1" /> Shuffle
                   </Button>
                   <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPhase("match")}
+                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#c99c00] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
+                    style={{
+                      background: "linear-gradient(135deg, rgb(255, 200, 0) 0%, rgb(255, 150, 0) 100%)",
+                    }}
+                  >
+                    <SkipForward className="w-4 h-4 mr-1" /> Forward
+                  </Button>
+                  <Button
                     size="sm"
                     onClick={() => setCurrentPhase("match")}
                     className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#3c8c01] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
@@ -544,7 +567,7 @@ export function LevelBlends({ levelId, accent, categoryFilter, onComplete }: Lev
                       background: "linear-gradient(135deg, rgb(88, 204, 2) 0%, rgb(70, 163, 2) 100%)",
                     }}
                   >
-                    Next <ArrowRight className="w-4 h-4 ml-1" />
+                    Proceed <ArrowRight className="w-4 h-4 ml-1" />
                   </Button>
                 </div>
               </div>
@@ -613,6 +636,14 @@ export function LevelBlends({ levelId, accent, categoryFilter, onComplete }: Lev
                 {/* Navigation Controls */}
                 <div className="flex justify-center items-center w-full gap-3 sm:gap-4 max-w-md mx-auto mt-6">
                   <Button
+                    onClick={() => setCurrentPhase("review")}
+                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#086ca5] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
+                    style={{ background: 'linear-gradient(135deg, #1cb0f6 0%, #0a8ed4 100%)' }}
+                  >
+                    <ArrowLeft className="w-4 h-4 sm:mr-1" />
+                    <span className="hidden sm:inline">Back</span>
+                  </Button>
+                  <Button
                     onClick={() => {
                       setMatchColumns(prev => ({
                         left: [...prev.left].sort(() => Math.random() - 0.5),
@@ -622,21 +653,25 @@ export function LevelBlends({ levelId, accent, categoryFilter, onComplete }: Lev
                     className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#8b40b8] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
                     style={{ background: 'linear-gradient(135deg, #ce82ff 0%, #a559d6 100%)' }}
                   >
-                    <ShuffleIcon className="w-4 h-4 mr-1" /> Shuffle
-                  </Button>
-                  <Button
-                    onClick={setupMatchPhase}
-                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#e11d48] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
-                    style={{ background: 'linear-gradient(135deg, #fb7185 0%, #e11d48 100%)' }}
-                  >
-                    <RotateCcw className="w-4 h-4 mr-1" /> Reset
+                    <ShuffleIcon className="w-4 h-4 sm:mr-1" />
+                    <span className="hidden sm:inline">Shuffle</span>
                   </Button>
                   <Button
                     onClick={handleSkip}
                     className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#c99c00] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
                     style={{ background: 'linear-gradient(135deg, #ffc800 0%, #ff9600 100%)' }}
                   >
-                    <FastForward className="w-4 h-4 mr-1" /> Skip
+                    <SkipForward className="w-4 h-4 sm:mr-1" />
+                    <span className="hidden sm:inline">Forward</span>
+                  </Button>
+                  <Button
+                    onClick={handleNextQuiz}
+                    disabled={matchedPairs.size !== matchColumns.left.length || matchColumns.left.length === 0}
+                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#3c8c01] hover:scale-105 active:scale-95 px-2 transition-all disabled:opacity-50 disabled:grayscale disabled:pointer-events-none h-9 py-2"
+                    style={{ background: 'linear-gradient(135deg, rgb(88, 204, 2) 0%, rgb(70, 163, 2) 100%)' }}
+                  >
+                    <span className="hidden sm:inline">Proceed</span>
+                    <ArrowRight className="w-4 h-4 sm:ml-1" />
                   </Button>
                 </div>
               </div>
@@ -727,26 +762,29 @@ export function LevelBlends({ levelId, accent, categoryFilter, onComplete }: Lev
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={handleShuffle}
+                  onClick={() => {
+                    if (wordSetIdx > 0) setWordSetIdx(prev => prev - 1);
+                    else setCurrentPhase("match");
+                  }}
                   className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#086ca5] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
                   style={{
-                    background: "linear-gradient(135deg, rgb(28, 176, 246) 0%, rgb(10, 142, 212) 100%)",
+                    background: "linear-gradient(135deg, #1cb0f6 0%, #0a8ed4 100%)",
                   }}
                 >
-                  <ShuffleIcon className="w-4 h-4 sm:mr-1" />
-                  <span className="hidden sm:inline">Shuffle</span>
+                  <ArrowLeft className="w-4 h-4 sm:mr-1" />
+                  <span className="hidden sm:inline">Back</span>
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={handleReset}
-                  className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#b81d1d] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
+                  onClick={handleShuffle}
+                  className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#8b40b8] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
                   style={{
-                    background: "linear-gradient(135deg, rgb(255, 75, 75) 0%, rgb(216, 42, 42) 100%)",
+                    background: "linear-gradient(135deg, rgb(206, 130, 255) 0%, rgb(165, 89, 214) 100%)",
                   }}
                 >
-                  <RotateCcw className="w-4 h-4 sm:mr-1" />
-                  <span className="hidden sm:inline">Reset</span>
+                  <ShuffleIcon className="w-4 h-4 sm:mr-1" />
+                  <span className="hidden sm:inline">Shuffle</span>
                 </Button>
                 <Button
                   variant="outline"
@@ -758,7 +796,7 @@ export function LevelBlends({ levelId, accent, categoryFilter, onComplete }: Lev
                   }}
                 >
                   <FastForward className="w-4 h-4 sm:mr-1" />
-                  <span className="hidden sm:inline">Skip</span>
+                  <span className="hidden sm:inline">Forward</span>
                 </Button>
                 <Button
                   size="sm"
@@ -769,7 +807,7 @@ export function LevelBlends({ levelId, accent, categoryFilter, onComplete }: Lev
                     background: "linear-gradient(135deg, rgb(88, 204, 2) 0%, rgb(70, 163, 2) 100%)",
                   }}
                 >
-                  <span className="hidden sm:inline">Next</span>
+                  <span className="hidden sm:inline">Proceed</span>
                   <ArrowRight className="w-4 h-4 sm:ml-1" />
                 </Button>
               </div>
@@ -961,26 +999,29 @@ export function LevelBlends({ levelId, accent, categoryFilter, onComplete }: Lev
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={handleShuffle}
+                  onClick={() => {
+                    if (sentenceSetIdx > 0) setSentenceSetIdx(prev => prev - 1);
+                    else setCurrentPhase("words");
+                  }}
                   className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#086ca5] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
                   style={{
-                    background: "linear-gradient(135deg, rgb(28, 176, 246) 0%, rgb(10, 142, 212) 100%)",
+                    background: "linear-gradient(135deg, #1cb0f6 0%, #0a8ed4 100%)",
                   }}
                 >
-                  <ShuffleIcon className="w-4 h-4 sm:mr-1" />
-                  <span className="hidden sm:inline">Shuffle</span>
+                  <ArrowLeft className="w-4 h-4 sm:mr-1" />
+                  <span className="hidden sm:inline">Back</span>
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={handleReset}
-                  className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#b81d1d] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
+                  onClick={handleShuffle}
+                  className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#8b40b8] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
                   style={{
-                    background: "linear-gradient(135deg, rgb(255, 75, 75) 0%, rgb(216, 42, 42) 100%)",
+                    background: "linear-gradient(135deg, rgb(206, 130, 255) 0%, rgb(165, 89, 214) 100%)",
                   }}
                 >
-                  <RotateCcw className="w-4 h-4 sm:mr-1" />
-                  <span className="hidden sm:inline">Reset</span>
+                  <ShuffleIcon className="w-4 h-4 sm:mr-1" />
+                  <span className="hidden sm:inline">Shuffle</span>
                 </Button>
                 <Button
                   variant="outline"
@@ -992,7 +1033,7 @@ export function LevelBlends({ levelId, accent, categoryFilter, onComplete }: Lev
                   }}
                 >
                   <FastForward className="w-4 h-4 sm:mr-1" />
-                  <span className="hidden sm:inline">Skip</span>
+                  <span className="hidden sm:inline">Forward</span>
                 </Button>
                 <Button
                   size="sm"
@@ -1003,7 +1044,7 @@ export function LevelBlends({ levelId, accent, categoryFilter, onComplete }: Lev
                     background: "linear-gradient(135deg, rgb(88, 204, 2) 0%, rgb(70, 163, 2) 100%)",
                   }}
                 >
-                  <span className="hidden sm:inline">Next</span>
+                  <span className="hidden sm:inline">Proceed</span>
                   <ArrowRight className="w-4 h-4 sm:ml-1" />
                 </Button>
               </div>
@@ -1192,7 +1233,7 @@ export function LevelBlends({ levelId, accent, categoryFilter, onComplete }: Lev
               </motion.div>
 
               <h3 className="text-3xl font-black mb-4" style={{ color: accent.primary }}>
-                {currentPhase === "match" ? "Patterns Mastered!" : currentPhase === "words" ? (wordSetIdx === totalWordSets - 1 ? "Words Mastered!" : "Set Complete!") : sentenceSetIdx === totalSentenceSets - 1 ? "Lesson Mastered!" : "Set Complete!"}
+                {currentPhase === "match" ? "Patterns Mastered!" : currentPhase === "words" ? (wordSetIdx === totalWordSets - 1 ? "Words Mastered!" : "Set Complete!") : sentenceSetIdx === totalSentenceSets - 1 ? "Level Mastered!" : "Set Complete!"}
               </h3>
 
               <p className="text-gray-600 dark:text-gray-400 mb-8 leading-relaxed">

@@ -169,15 +169,15 @@ export function getLetterPhonetic(letter: string): string {
 
 // Real CVC words for kids (Level 5)
 export const CVC_WORDS = [
-  "BAT", "BED", "BET", "BIB", "BIG", "BOX", "BUD", "BUG", "CAN", "CAR", "CAT",
+  "BAT", "BED", "BET", "BIB", "BIG", "BOX", "BUD", "BUG", "CAN", "CAR",
   "COB", "CUP", "CUT", "DID", "DIG", "DOG", "DOT", "FAN", "FED", "FIT",
   "FIX", "GAS", "GET", "GOT", "GUM", "GUN", "HAM", "HAT", "HER", "HID",
   "HIM", "HIP", "HOP", "HOT", "HUG", "HUM", "JAM", "JOG", "KIT", "LAD",
   "LED", "LET", "LID", "MAD", "MAN", "MEN", "MET", "MID", "MIX", "NAG",
-  "NAP", "NET", "PAD", "PAN", "PEN", "HEN", "MEN", "TEN", "BED", "RED", "FED", "LED",
-  "PIG", "DIG", "BIG", "FIG", "PIN", "WIN", "FIN", "BIN",
-  "DOG", "LOG", "FOG", "HOG", "HOT", "POT", "DOT", "COT",
-  "SUN", "RUN", "FUN", "BUN", "BUG", "MUG", "RUG", "HUG",
+  "NAP", "NET", "PAD", "PAN", "PEN", "PIN", "POT", "RAG", "RAM", "RAT",
+  "RED", "RID", "RUG", "RUN", "SAG", "SET", "SIN", "SIP", "SIT", "SIX",
+  "SUM", "TAN", "TAX", "TEN", "TIP", "TOP", "TUB", "TUG", "VAN", "VET",
+  "WED", "WET", "WIG", "WIN", "YET"
 ];
 
 export const CVC_SENTENCES = [

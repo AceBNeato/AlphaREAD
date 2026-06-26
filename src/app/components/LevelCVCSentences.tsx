@@ -17,12 +17,13 @@ interface LevelCVCSentencesProps {
   accent: { primary: string; dark: string; lightBg: string };
   isSubPhase?: boolean;
   onComplete?: () => void;
+  onBack?: () => void;
 }
 
-const SENTENCES_PER_SET = 6;
+const SENTENCES_PER_SET = 10;
 const totalSets = Math.ceil(CVC_SENTENCES.length / SENTENCES_PER_SET);
 
-export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete }: LevelCVCSentencesProps) {
+export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onBack }: LevelCVCSentencesProps) {
   const navigate = useNavigate();
 
   const [currentSetIndex, setCurrentSetIndex] = useState(0);
@@ -252,7 +253,7 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete }: L
       )}
 
       {/* Content */}
-      <div className={`max-w-2xl mx-auto px-4 flex-1 flex flex-col ${isSubPhase ? 'py-2' : 'py-6'}`}>
+      <div className={`w-full max-w-5xl mx-auto px-4 flex-1 flex flex-col ${isSubPhase ? 'py-2' : 'py-6'}`}>
         <AnimatePresence mode="wait">
           {!showConfetti ? (
             <motion.div
@@ -271,28 +272,35 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete }: L
               {/* Controls — identical to Lesson 5 */}
               <div className="flex justify-center items-center w-full gap-2 sm:gap-3 max-w-lg mx-auto mb-6">
                 <Button
-                variant="outline"
-                size="sm"
-                onClick={handleShuffle}
-                className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#883fba] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
-                style={{
-                  background: "linear-gradient(135deg, #ce82ff 0%, #a559d6 100%)",
-                }}
-              >
-                <Shuffle className="w-4 h-4 sm:mr-1" />
-                <span className="hidden sm:inline">Shuffle</span>
-              </Button>
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    if (currentSetIndex > 0) {
+                      setCurrentSetIndex(prev => prev - 1);
+                    } else if (onBack) {
+                      onBack();
+                    }
+                  }}
+                  disabled={currentSetIndex === 0 && !onBack}
+                  className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#086ca5] hover:scale-105 active:scale-95 px-2 transition-all disabled:opacity-50 disabled:grayscale disabled:pointer-events-none h-9 py-2"
+                  style={{
+                    background: "linear-gradient(135deg, #1cb0f6 0%, #0a8ed4 100%)",
+                  }}
+                >
+                  <ArrowLeft className="w-4 h-4 sm:mr-1" />
+                  <span className="hidden sm:inline">Back</span>
+                </Button>
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={handleReset}
-                  className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#b81d1d] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
+                  onClick={handleShuffle}
+                  className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#883fba] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
                   style={{
-                    background: "linear-gradient(135deg, rgb(255, 75, 75) 0%, rgb(216, 42, 42) 100%)",
+                    background: "linear-gradient(135deg, #ce82ff 0%, #a559d6 100%)",
                   }}
                 >
-                  <RotateCcw className="w-4 h-4 sm:mr-1" />
-                  <span className="hidden sm:inline">Reset</span>
+                  <Shuffle className="w-4 h-4 sm:mr-1" />
+                  <span className="hidden sm:inline">Shuffle</span>
                 </Button>
                 <Button
                   variant="outline"
@@ -304,7 +312,7 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete }: L
                   }}
                 >
                   <FastForward className="w-4 h-4 sm:mr-1" />
-                  <span className="hidden sm:inline">Skip</span>
+                  <span className="hidden sm:inline">Forward</span>
                 </Button>
                 <Button
                   size="sm"
@@ -315,14 +323,14 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete }: L
                     background: "linear-gradient(135deg, rgb(88, 204, 2) 0%, rgb(70, 163, 2) 100%)",
                   }}
                 >
-                  <span className="hidden sm:inline">Next</span>
+                  <span className="hidden sm:inline">Proceed</span>
                   <ArrowRight className="w-4 h-4 sm:ml-1" />
                 </Button>
               </div>
 
               {/* Sentence List — identical layout to Lesson 5 */}
               <div className="w-full text-center mb-8">
-                <div className="w-full bg-white/50 dark:bg-gray-800/50 p-4 rounded-3xl backdrop-blur-sm border-2 border-dashed border-gray-200 dark:border-gray-700 space-y-3">
+                <div className="w-full bg-white/50 dark:bg-gray-800/50 p-4 rounded-3xl backdrop-blur-sm border-2 border-dashed border-gray-200 dark:border-gray-700 grid grid-cols-1 md:grid-cols-2 gap-3">
                   {activeSentences.map((s, idx) => {
                     const isDone = completedSentences.has(s);
                     const isEval = evaluatingSentenceId === s;
@@ -332,7 +340,7 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete }: L
                     return (
                       <div
                         key={s}
-                        className={`flex items-center justify-between p-4 rounded-2xl transition-all
+                        className={`flex items-center justify-between p-4 h-full rounded-2xl transition-all
                           ${isDone || vFeedback === "correct" ? "bg-green-50 dark:bg-green-900/20" : vFeedback === "wrong" ? "bg-red-50 dark:bg-red-900/10" : "bg-white dark:bg-gray-800"}
                           shadow-sm border-2
                           ${isEval ? "border-pink-400 shadow-md" : isDone || vFeedback === "correct" ? "border-green-200" : vFeedback === "wrong" ? "border-red-200" : "border-transparent hover:border-gray-300 dark:hover:border-gray-600"}`}
@@ -442,7 +450,7 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete }: L
                 <Sparkles className="w-20 h-20 text-[#FFC800]" />
               </motion.div>
               <h3 className="text-3xl font-black mb-4" style={{ color: accent.primary }}>
-                {isFinalSet ? "Lesson Mastered! 🎉" : "Set Complete! ⭐"}
+                {isFinalSet ? "Level Mastered! 🎉" : "Set Complete! ⭐"}
               </h3>
               <p className="text-gray-600 dark:text-gray-400 mb-8 leading-relaxed">
                 {isFinalSet

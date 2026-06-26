@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router";
 import { LevelSyllableQuiz } from "./LevelSyllableQuiz";
 import { supabase } from "../../lib/supabase";
-import {Home, CheckCircle2, X} from "lucide-react";
+import {Home, CheckCircle2, X, ArrowLeft} from "lucide-react";
 import { Button } from "./ui/button";
 import { motion } from "motion/react";
 
@@ -69,12 +69,12 @@ export function LevelSyllablesMaster({ levelId, accent }: LevelSyllablesMasterPr
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-purple-50 dark:bg-none dark:bg-[#0d141c] flex flex-col overflow-x-hidden">
       <div className="sticky top-0 z-10 bg-white/80 dark:bg-[#0d141c]/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 px-4 py-3">
         <div className="max-w-md mx-auto flex items-center gap-3 w-full">
-          <Button variant="ghost" size="sm" onClick={() => navigate("/levels")} className="rounded-full">
-            <X className="w-5 h-5" /> Exit
+          <Button variant="ghost" size="sm" onClick={() => navigate("/levels")} className="rounded-full flex items-center gap-1">
+            <ArrowLeft className="w-5 h-5" /> Exit
           </Button>
           <div className="flex-1 text-center pr-8">
             <h2 className="text-lg font-bold tracking-tight" style={{ color: accent.primary }}>
-              Lesson 2: Syllable Master
+              Level 2: Syllable Master
             </h2>
           </div>
         </div>
@@ -87,7 +87,7 @@ export function LevelSyllablesMaster({ levelId, accent }: LevelSyllablesMasterPr
               Choose a Group
             </h1>
             <p className="text-gray-600 dark:text-gray-300 text-base sm:text-lg font-bold mt-2 block">
-              Build syllables, then listen and match by sound. Complete both to finish Lesson 2!
+              Build syllables, then listen and match by sound. Complete both to finish Level 2!
             </p>
           </div>
 
@@ -109,10 +109,10 @@ export function LevelSyllablesMaster({ levelId, accent }: LevelSyllablesMasterPr
                 >
                   <div className="flex justify-between items-center relative z-10">
                     <div>
-                      <h3 className="text-2xl sm:text-3xl font-black mb-2" style={{ color: cat.color }}>
+                      <h3 className="text-xl sm:text-2xl font-black mb-1" style={{ color: cat.color }}>
                         {cat.label}
                       </h3>
-                      <p className="text-gray-600 dark:text-gray-300 text-base sm:text-lg font-bold mt-2 block">
+                      <p className="text-gray-500 dark:text-gray-400 text-sm sm:text-base font-semibold mt-1">
                         {cat.desc}
                       </p>
                     </div>

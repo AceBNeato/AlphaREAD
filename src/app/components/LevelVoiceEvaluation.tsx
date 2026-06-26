@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { supabase } from "../../lib/supabase";
 import { Confetti } from "./ui/Confetti";
 import { evaluateSyllable, isSyllableTarget } from "../utils/PhonemeEvaluator";
-import { playSound } from "../utils/soundEffects";
+import { playSound, playExclusiveAudio } from "../utils/soundEffects";
 import { AudioVisualizer } from "./AudioVisualizer";
 import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
 import { playTTS } from "../utils/tts";
@@ -20,9 +20,10 @@ interface LevelVoiceEvaluationProps {
   customWords?: string[];
   isSubPhase?: boolean;
   onComplete?: () => void;
+  onBack?: () => void;
 }
 
-export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase, onComplete }: LevelVoiceEvaluationProps) {
+export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase, onComplete, onBack }: LevelVoiceEvaluationProps) {
   const navigate = useNavigate();
   const [words, setWords] = useState<string[]>(() => customWords ? customWords : shuffle(CVC_WORDS).slice(0, 10));
 
@@ -92,11 +93,22 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
   };
 
   const handlePlayTTS = async (text: string) => {
+    const upper = text.toUpperCase();
+
+    // Use local audio files for CVC words
+    if (CVC_WORDS.includes(upper)) {
+      const audioPath = `${(import.meta as any).env.BASE_URL}audio/cvc-audio/cvc-${text.toLowerCase()}.mp3`;
+      playExclusiveAudio(audioPath).catch((err) => {
+        console.warn(`[AlphabetGO] Local CVC audio not found: ${audioPath}, falling back to TTS`, err);
+        playTTS(text.toLowerCase());
+      });
+      return;
+    }
+
     // For CV/VC syllables, look up the phonetically correct TTS string
     // so "PI" says "Pee", "BA" says "Bah", "AB" says "Ab" — not the letter names.
     let speakText = text.toLowerCase();
     if (isSyllableTarget(text)) {
-      const upper = text.toUpperCase();
       // Determine pattern: first char consonant = CV, else VC
       const VOWELS = ["A", "E", "I", "O", "U"];
       const pattern = VOWELS.includes(upper[0]) ? "VC" : "CV";
@@ -308,7 +320,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
       )}
 
       {/* Content */}
-      <div className={`max-w-2xl mx-auto px-4 ${isSubPhase ? 'py-2' : 'py-6'}`}>
+      <div className={`w-full ${words.length === 15 ? 'max-w-5xl py-2' : `max-w-2xl ${isSubPhase ? 'py-2' : 'py-6'}`} mx-auto px-4`}>
 
         {!(window as any).SpeechRecognition && !(window as any).webkitSpeechRecognition && (
           <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 text-amber-800 text-sm flex items-center gap-3">
@@ -327,7 +339,21 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
             </div>
 
             {/* Teacher Controls Row */}
-            <div className="flex justify-center items-center w-full gap-2 sm:gap-3 max-w-lg mx-auto mb-6">
+            <div className={`flex justify-center items-center w-full gap-2 sm:gap-3 ${onBack ? 'max-w-xl' : 'max-w-lg'} mx-auto mb-6`}>
+              {onBack && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onBack}
+                  className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#086ca5] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
+                  style={{
+                    background: "linear-gradient(135deg, #1cb0f6 0%, #0a8ed4 100%)",
+                  }}
+                >
+                  <ArrowLeft className="w-4 h-4 sm:mr-1" />
+                  <span className="hidden sm:inline">Back</span>
+                </Button>
+              )}
               <Button
                 variant="outline"
                 size="sm"
@@ -362,7 +388,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
                 }}
               >
                 <FastForward className="w-4 h-4 sm:mr-1" />
-                <span className="hidden sm:inline">Skip</span>
+                <span className="hidden sm:inline">Forward</span>
               </Button>
               <Button
                 size="sm"
@@ -387,7 +413,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
                 transition={{ duration: 0.3 }}
                 className="text-center mb-8"
               >
-                <div className={`${words.length > 5 ? 'grid grid-cols-1 sm:grid-cols-2 gap-3' : 'space-y-3'} bg-white/50 dark:bg-gray-800/50 p-4 rounded-3xl backdrop-blur-sm border-2 border-dashed border-gray-200 dark:border-gray-700`}>
+                <div className={`${words.length === 15 ? 'grid grid-cols-1 sm:grid-cols-3 gap-3' : words.length > 5 ? 'grid grid-cols-1 sm:grid-cols-2 gap-3' : 'space-y-3'} bg-white/50 dark:bg-gray-800/50 p-4 rounded-3xl backdrop-blur-sm border-2 border-dashed border-gray-200 dark:border-gray-700`}>
                   {words.map((w, idx) => {
                     const isDone = completedWords.has(w);
                     const isCurrent = evaluatingWord === w;
@@ -396,9 +422,9 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
                     const transcript = transcripts[w];
 
                     return (
-                      <div key={w} className={`flex items-center justify-between p-4 rounded-2xl transition-all ${isDone ? 'bg-green-50 dark:bg-green-900/20' : 'bg-white dark:bg-gray-800'} shadow-sm border-2 ${isCurrent ? 'border-pink-400 shadow-md' : isIndexMatch ? 'border-indigo-400 bg-indigo-50/20 dark:bg-indigo-950/10' : isDone ? 'border-green-200' : 'border-transparent'}`}>
-                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 min-w-0 flex-1">
-                          <span className={`text-3xl font-bold w-20 text-left tracking-widest flex items-center gap-1.5 ${w.length === 3 ? 'lowercase' : 'uppercase'}`} style={{ color: isDone ? '#58CC02' : accent.primary }}>
+                      <div key={w} className={`flex items-center justify-between ${words.length === 15 ? 'p-2 sm:p-3' : 'p-4'} rounded-2xl transition-all ${isDone ? 'bg-green-50 dark:bg-green-900/20' : 'bg-white dark:bg-gray-800'} shadow-sm border-2 ${isCurrent ? 'border-pink-400 shadow-md' : isIndexMatch ? 'border-indigo-400 bg-indigo-50/20 dark:bg-indigo-950/10' : isDone ? 'border-green-200' : 'border-transparent'}`}>
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-3 min-w-0 flex-1">
+                          <span className={`${words.length === 15 ? 'text-xl sm:text-2xl w-14 sm:w-16' : 'text-3xl w-20'} font-bold text-left tracking-widest flex items-center gap-1.5 ${w.length === 3 ? 'lowercase' : 'uppercase'}`} style={{ color: isDone ? '#58CC02' : accent.primary }}>
                             {w}
                             {isIndexMatch && !isDone && <span className="w-2 h-2 rounded-full bg-indigo-500 animate-ping" />}
                           </span>
@@ -484,13 +510,13 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
             <p className="text-white text-base sm:text-lg font-bold mt-2 mb-6 block">
               You completed {words.length} out of {words.length} words correctly!
             </p>
-            <div className="flex flex-wrap justify-center gap-3 mb-8">
+            <div className={`${words.length === 15 ? 'grid grid-cols-2 sm:grid-cols-5 gap-3 max-w-3xl mx-auto' : 'flex flex-wrap justify-center gap-3'} mb-8`}>
               {words.map((word, i) => (
                 <motion.button
                   key={i}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => handlePlayTTS(word)}
-                  className="px-4 py-2.5 rounded-full text-white text-lg font-bold flex items-center gap-2 shadow-md cursor-pointer transition-all hover:brightness-105 active:brightness-95 border-b-4 border-black/20"
+                  className={`px-4 py-2.5 rounded-full text-white text-lg font-bold flex items-center justify-center gap-2 shadow-md cursor-pointer transition-all hover:brightness-105 active:brightness-95 border-b-4 border-black/20 ${words.length === 15 ? 'w-full' : ''}`}
                   style={{
                     background: `linear-gradient(135deg, ${accent.primary}, ${accent.dark})`,
                   }}

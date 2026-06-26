@@ -154,10 +154,10 @@ export default function Dashboard() {
                 </div>
                 <div className="text-left">
                   <h3 className="text-2xl font-black text-white tracking-wide">
-                    All Lessons
+                    All Levels
                   </h3>
                   <p className="text-white/80 font-medium">
-                    {levels.length} lessons to master
+                    {levels.length} levels to master
                   </p>
                 </div>
               </div>

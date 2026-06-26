@@ -24,7 +24,9 @@ export function MatchButton({
   children,
   className = "",
 }: MatchButtonProps) {
-  const base = `p-2 sm:p-3 h-14 sm:h-16 rounded-lg sm:rounded-2xl flex items-center justify-center transition-all shadow-sm border-2 border-b-[4px] ${className}`;
+  const hasHeight = className.includes("h-") || className.includes("aspect-");
+  const heightClass = hasHeight ? "" : "h-14 sm:h-16";
+  const base = `p-1 sm:p-2 ${heightClass} rounded-lg sm:rounded-2xl flex items-center justify-center transition-all shadow-sm border-2 border-b-[4px] ${className}`;
 
   // Clean, premium 3D design mapping
   const finalClass = isMatched

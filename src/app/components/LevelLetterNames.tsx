@@ -3,7 +3,7 @@ import { useNavigate } from "react-router";
 import { Button } from "./ui/button";
 import { allLetters as ALL_LETTERS, LETTER_NAMES, LETTER_TTS } from "../data/levels";
 import { motion, AnimatePresence } from "motion/react";
-import { ChevronRight, Home, ArrowRight, Shuffle, FastForward, Volume2, RotateCcw, Sparkles, Mic, MicOff, CheckCircle2, XCircle, X } from "lucide-react";
+import { ChevronRight, Home, ArrowRight, ArrowLeft, SkipForward, Shuffle, FastForward, Volume2, RotateCcw, Sparkles, Mic, MicOff, CheckCircle2, XCircle, X } from "lucide-react";
 import { confirmAction } from "../utils/alerts";
 import { playSound } from "../utils/soundEffects";
 import { MatchButton } from "./MatchButton";
@@ -31,57 +31,60 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
 
   // Randomized alphabet for the final set
   const [finalAlphabet] = useState(() => [...ALPHABET].sort(() => Math.random() - 0.5));
+  // Randomized combined sets
+  const [comboAL] = useState(() => [...ALPHABET.slice(0, 12)].sort(() => Math.random() - 0.5));
+  const [comboMZ] = useState(() => [...ALPHABET.slice(12, 26)].sort(() => Math.random() - 0.5));
 
   const STEPS = useMemo(() => [
-    { type: "review" as const, start: 0, end: 6, isFinal: false },
-    { type: "match" as const, start: 0, end: 6, isFinal: false },
-    { type: "voice" as const, start: 0, end: 6, isFinal: false },
-    { type: "type" as const, start: 0, end: 6, isFinal: false },
+    // ── Batch 1: A-F ──
+    { type: "review" as const, start: 0, end: 6, isFinal: false, combo: false },
+    { type: "match" as const, start: 0, end: 6, isFinal: false, combo: false },
+    { type: "voice" as const, start: 0, end: 6, isFinal: false, combo: false },
+    { type: "type" as const, start: 0, end: 6, isFinal: false, combo: false },
 
-    { type: "review" as const, start: 6, end: 12, isFinal: false },
-    { type: "match" as const, start: 6, end: 12, isFinal: false },
-    { type: "voice" as const, start: 6, end: 12, isFinal: false },
-    { type: "type" as const, start: 6, end: 12, isFinal: false },
+    // ── Batch 2: G-L ──
+    { type: "review" as const, start: 6, end: 12, isFinal: false, combo: false },
+    { type: "match" as const, start: 6, end: 12, isFinal: false, combo: false },
+    { type: "voice" as const, start: 6, end: 12, isFinal: false, combo: false },
+    { type: "type" as const, start: 6, end: 12, isFinal: false, combo: false },
 
-    { type: "review" as const, start: 12, end: 19, isFinal: false },
-    { type: "match" as const, start: 12, end: 19, isFinal: false },
-    { type: "voice" as const, start: 12, end: 19, isFinal: false },
-    { type: "type" as const, start: 12, end: 19, isFinal: false },
+    // ── Combined A-L Review + Eval (randomized, batched by 6) ──
+    { type: "review" as const, start: 0, end: 12, isFinal: false, combo: "AL" as const },
+    { type: "match" as const, start: 0, end: 12, isFinal: false, combo: "AL" as const },
+    { type: "type" as const, start: 0, end: 12, isFinal: false, combo: "AL" as const },
 
-    { type: "review" as const, start: 19, end: 26, isFinal: false },
-    { type: "match" as const, start: 19, end: 26, isFinal: false },
-    { type: "voice" as const, start: 19, end: 26, isFinal: false },
-    { type: "type" as const, start: 19, end: 26, isFinal: false },
+    // ── Batch 3: M-S ──
+    { type: "review" as const, start: 12, end: 19, isFinal: false, combo: false },
+    { type: "match" as const, start: 12, end: 19, isFinal: false, combo: false },
+    { type: "voice" as const, start: 12, end: 19, isFinal: false, combo: false },
+    { type: "type" as const, start: 12, end: 19, isFinal: false, combo: false },
 
-    // Final Comprehensive Test (Randomized batches of 6, 6, 7, 7)
-    { type: "review" as const, start: 0, end: 6, isFinal: true },
-    { type: "match" as const, start: 0, end: 6, isFinal: true },
-    { type: "voice" as const, start: 0, end: 6, isFinal: true },
-    { type: "type" as const, start: 0, end: 6, isFinal: true },
+    // ── Batch 4: T-Z ──
+    { type: "review" as const, start: 19, end: 26, isFinal: false, combo: false },
+    { type: "match" as const, start: 19, end: 26, isFinal: false, combo: false },
+    { type: "voice" as const, start: 19, end: 26, isFinal: false, combo: false },
+    { type: "type" as const, start: 19, end: 26, isFinal: false, combo: false },
 
-    { type: "review" as const, start: 6, end: 12, isFinal: true },
-    { type: "match" as const, start: 6, end: 12, isFinal: true },
-    { type: "voice" as const, start: 6, end: 12, isFinal: true },
-    { type: "type" as const, start: 6, end: 12, isFinal: true },
+    // ── Combined M-Z Review + Eval (randomized, batched by 6) ──
+    { type: "review" as const, start: 12, end: 26, isFinal: false, combo: "MZ" as const },
+    { type: "match" as const, start: 12, end: 26, isFinal: false, combo: "MZ" as const },
+    { type: "type" as const, start: 12, end: 26, isFinal: false, combo: "MZ" as const },
 
-    { type: "review" as const, start: 12, end: 19, isFinal: true },
-    { type: "match" as const, start: 12, end: 19, isFinal: true },
-    { type: "voice" as const, start: 12, end: 19, isFinal: true },
-    { type: "type" as const, start: 12, end: 19, isFinal: true },
-
-    { type: "review" as const, start: 19, end: 26, isFinal: true },
-    { type: "match" as const, start: 19, end: 26, isFinal: true },
-    { type: "voice" as const, start: 19, end: 26, isFinal: true },
-    { type: "type" as const, start: 19, end: 26, isFinal: true },
+    // ── Final A-Z Review + Eval (all randomized, batched by 6) ──
+    { type: "review" as const, start: 0, end: 26, isFinal: true, combo: false },
+    { type: "match" as const, start: 0, end: 26, isFinal: true, combo: false },
+    { type: "type" as const, start: 0, end: 26, isFinal: true, combo: false },
   ], []);
 
   const [currentStep, setCurrentStep] = useState(0);
   const step = STEPS[currentStep];
 
   const baseActiveLetters = useMemo(() => {
-    const source = step.isFinal ? finalAlphabet : ALPHABET;
-    return source.slice(step.start, step.end);
-  }, [ALPHABET, finalAlphabet, step]);
+    if (step.combo === "AL") return comboAL;
+    if (step.combo === "MZ") return comboMZ;
+    if (step.isFinal) return finalAlphabet;
+    return ALPHABET.slice(step.start, step.end);
+  }, [ALPHABET, finalAlphabet, comboAL, comboMZ, step]);
 
   const playNameTTS = (letter: string) => {
     setHasClickedTTS(true);
@@ -110,7 +113,30 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
     playNameTTS(letter);
   };
 
+  // Helper to partition letters into batches of 6 or 7 to avoid small trailing pages
+  const getLetterBatches = (letters: string[]): string[][] => {
+    const len = letters.length;
+    if (len <= 7) return [letters];
+    if (len === 12) return [letters.slice(0, 6), letters.slice(6, 12)];
+    if (len === 14) return [letters.slice(0, 7), letters.slice(7, 14)];
+    if (len === 26) {
+      return [
+        letters.slice(0, 6),
+        letters.slice(6, 12),
+        letters.slice(12, 19),
+        letters.slice(19, 26)
+      ];
+    }
+    // Fallback chunking by 6
+    const chunks: string[][] = [];
+    for (let i = 0; i < len; i += 6) {
+      chunks.push(letters.slice(i, i + 6));
+    }
+    return chunks;
+  };
+
   // Match Phase States
+  const [matchBatchIndex, setMatchBatchIndex] = useState(0);
   const [matchColumns, setMatchColumns] = useState<{ left: string[]; right: string[] }>({ left: [], right: [] });
   const [matchedPairs, setMatchedPairs] = useState<Set<string>>(new Set());
   const [selectedSpeakerMatch, setSelectedSpeakerMatch] = useState<string | null>(null);
@@ -118,14 +144,25 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
   const [wrongMatchPair, setWrongMatchPair] = useState<[string, string] | null>(null);
   const [hasClickedTTS, setHasClickedTTS] = useState(false);
 
+  const matchBatches = getLetterBatches(baseActiveLetters);
+  const matchTotalBatches = matchBatches.length;
+  const matchBatchLetters = matchBatches[matchBatchIndex] || [];
+  const needsMatchBatching = matchTotalBatches > 1;
+
   useEffect(() => {
     if (step.type === "match") {
-      setupMatchPhase();
+      setMatchBatchIndex(0);
     }
   }, [baseActiveLetters, step.type]);
 
-  const setupMatchPhase = () => {
-    const targets = [...baseActiveLetters].sort(() => Math.random() - 0.5);
+  useEffect(() => {
+    if (step.type === "match" && matchBatchLetters.length > 0) {
+      setupMatchPhase(matchBatchLetters);
+    }
+  }, [matchBatchIndex, step.type, baseActiveLetters]);
+
+  const setupMatchPhase = (letters?: string[]) => {
+    const targets = [...(letters || matchBatchLetters)].sort(() => Math.random() - 0.5);
     setMatchColumns({
       left: [...targets].sort(() => Math.random() - 0.5),
       right: [...targets].sort(() => Math.random() - 0.5)
@@ -238,18 +275,30 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
 
 
   // Listen & Type Phase States
+  const [typeBatchIndex, setTypeBatchIndex] = useState(0);
   const [typeOrder, setTypeOrder] = useState<string[]>([]);
   const [typeInputs, setTypeInputs] = useState<Record<string, string>>({});
   const [typeStatus, setTypeStatus] = useState<Record<string, boolean | null>>({});
 
+  const typeBatches = getLetterBatches(baseActiveLetters);
+  const typeTotalBatches = typeBatches.length;
+  const typeBatchLetters = typeBatches[typeBatchIndex] || [];
+  const needsTypeBatching = typeTotalBatches > 1;
+
   useEffect(() => {
     if (step.type === "type") {
-      setupTypePhase();
+      setTypeBatchIndex(0);
     }
   }, [baseActiveLetters, step.type]);
 
-  const setupTypePhase = () => {
-    setTypeOrder([...baseActiveLetters].sort(() => Math.random() - 0.5));
+  useEffect(() => {
+    if (step.type === "type" && typeBatchLetters.length > 0) {
+      setupTypePhase(typeBatchLetters);
+    }
+  }, [typeBatchIndex, step.type, baseActiveLetters]);
+
+  const setupTypePhase = (letters?: string[]) => {
+    setTypeOrder([...(letters || typeBatchLetters)].sort(() => Math.random() - 0.5));
     setTypeInputs({});
     setTypeStatus({});
   };
@@ -314,6 +363,46 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
     }
   };
 
+  const handleStepBack = () => {
+    if (currentStep > 0) {
+      setCurrentStep(prev => prev - 1);
+    }
+  };
+
+  // Match batch navigation
+  const handleMatchNext = () => {
+    if (needsMatchBatching && matchBatchIndex < matchTotalBatches - 1) {
+      setMatchBatchIndex(prev => prev + 1);
+    } else {
+      handleStepNext();
+    }
+  };
+
+  const handleMatchBack = () => {
+    if (matchBatchIndex > 0) {
+      setMatchBatchIndex(prev => prev - 1);
+    } else {
+      handleStepBack();
+    }
+  };
+
+  // Type batch navigation
+  const handleTypeNext = () => {
+    if (needsTypeBatching && typeBatchIndex < typeTotalBatches - 1) {
+      setTypeBatchIndex(prev => prev + 1);
+    } else {
+      handleStepNext();
+    }
+  };
+
+  const handleTypeBack = () => {
+    if (typeBatchIndex > 0) {
+      setTypeBatchIndex(prev => prev - 1);
+    } else {
+      handleStepBack();
+    }
+  };
+
   const handleFinish = async () => {
     setIsSaving(true);
 
@@ -357,9 +446,6 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
   const handleLetterMatchClick = (letter: string) => {
     if (matchedPairs.has(letter) || wrongMatchPair) return;
 
-    // User requested letter buttons to also have audio
-    playNameTTS(letter);
-
     setSelectedLetterMatch(letter);
     if (selectedSpeakerMatch) checkMatch(selectedSpeakerMatch, letter);
   };
@@ -371,27 +457,29 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
       {/* Header */}
       <div className="sticky top-0 z-50 bg-white/80 dark:bg-[#0d141c]/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 px-4 py-3 shadow-sm">
         <div className="max-w-2xl mx-auto flex items-center gap-3 sm:gap-5 w-full">
-          <Button variant="ghost" size="sm" onClick={handleGoBack} className="rounded-full p-2 h-auto text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
-            <X className="w-6 h-6 sm:w-7 sm:h-7" />
+          <Button variant="ghost" size="sm" onClick={handleGoBack} className="rounded-full p-2 h-auto text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 flex items-center gap-1">
+            <ArrowLeft className="w-6 h-6 sm:w-7 sm:h-7" />
+            <span className="hidden sm:inline font-bold">Exit</span>
           </Button>
-          
+
           <div className="flex-1 flex flex-col gap-1.5 mt-1">
             <div className="flex justify-between items-center px-1">
               <h2 className="text-sm sm:text-base font-bold tracking-tight" style={{ color: accent.primary }}>
-              {step.type === 'review' ? 'Letter Names - Review Phase' :
-                step.type === 'match' ? 'Letter Names - Listen & Match' :
-                  step.type === 'voice' ? 'Letter Names - Say the Name!' :
-                    'Letter Names - Listen & Type'}
+                {step.isFinal ? 'Final Review - ' : step.combo === 'AL' ? 'Combined A-L - ' : step.combo === 'MZ' ? 'Combined M-Z - ' : 'Letter Names - '}
+                {step.type === 'review' ? 'Review Phase' :
+                  step.type === 'match' ? 'Listen & Match' :
+                    step.type === 'voice' ? 'Say the Name!' :
+                      'Listen & Type'}
               </h2>
             </div>
-            
+
             {/* Duolingo-style Progress Bar */}
             <div className="w-full bg-gray-200 dark:bg-gray-800 rounded-full h-4 sm:h-5 overflow-hidden relative shadow-inner">
-              <div 
+              <div
                 className="absolute top-0 left-0 h-full rounded-full transition-all duration-700 ease-out flex flex-col justify-start"
-                style={{ 
-                  width: `${Math.max(5, (currentStep / STEPS.length) * 100)}%`, 
-                  backgroundColor: accent.primary 
+                style={{
+                  width: `${Math.max(5, (currentStep / STEPS.length) * 100)}%`,
+                  backgroundColor: accent.primary
                 }}
               >
                 {/* Glossy reflection highlight */}
@@ -409,42 +497,66 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
               <div className="text-center mb-8">
                 <p className="text-gray-600 dark:text-gray-300 text-base sm:text-lg font-bold mt-2 block">Tap the letters to hear their sounds</p>
                 {/* Navigation Controls moved to top */}
-                <div className="flex justify-center items-center w-full gap-3 sm:gap-4 max-w-sm mx-auto mt-6">
+                <div className="flex justify-center items-center w-full gap-2 sm:gap-4 max-w-xl mx-auto mt-6">
                   <Button
-                    onClick={handleShuffleReview}
-                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-4 border-[#8b40b8] hover:scale-105 active:scale-95 px-2"
-                    style={{ background: 'linear-gradient(135deg, #ce82ff 0%, #a559d6 100%)' }}
+                    size="sm"
+                    onClick={() => setCurrentStep(prev => Math.max(0, prev - 1))}
+                    disabled={currentStep === 0}
+                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#086ca5] hover:scale-105 active:scale-95 disabled:opacity-50 disabled:grayscale disabled:pointer-events-none px-2 transition-all h-9 py-2"
+                    style={{ background: 'linear-gradient(135deg, #1cb0f6 0%, #0a8ed4 100%)' }}
                   >
-                    <Shuffle className="w-4 h-4 mr-1" /> Shuffle
+                    <ArrowLeft className="w-4 h-4 sm:mr-1 mx-auto sm:mx-0" />
+                    <span className="hidden sm:inline">Back</span>
                   </Button>
                   <Button
+                    size="sm"
+                    onClick={handleShuffleReview}
+                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#8b40b8] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
+                    style={{ background: 'linear-gradient(135deg, #ce82ff 0%, #a559d6 100%)' }}
+                  >
+                    <Shuffle className="w-4 h-4 sm:mr-1 mx-auto sm:mx-0" />
+                    <span className="hidden sm:inline">Shuffle</span>
+                  </Button>
+                  <Button
+                    size="sm"
                     onClick={handleStepNext}
-                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-4 border-[#3c8c01] hover:scale-105 active:scale-95"
+                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#c99c00] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
+                    style={{ background: 'linear-gradient(135deg, #ffc800 0%, #ff9600 100%)' }}
+                  >
+                    <SkipForward className="w-4 h-4 sm:mr-1 mx-auto sm:mx-0" />
+                    <span className="hidden sm:inline">Forward</span>
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={handleStepNext}
+                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#3c8c01] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
                     style={{ background: 'linear-gradient(135deg, #58cc02 0%, #46a302 100%)' }}
                   >
-                    Proceed <ChevronRight className="w-4 h-4 ml-1" />
+                    <span className="hidden sm:inline">Proceed</span>
+                    <ChevronRight className="w-4 h-4 sm:ml-1 mx-auto sm:mx-0" />
                   </Button>
                 </div>
               </div>
 
               {/* Grid of all letters in the set */}
-              <div className="flex flex-wrap justify-center gap-4 sm:gap-6 lg:gap-8 mb-12 w-full max-w-3xl mx-auto">
+              <div className={`flex flex-wrap justify-center gap-2 sm:gap-3 ${(step.combo || step.isFinal) ? 'lg:gap-4' : 'gap-4 sm:gap-6 lg:gap-8'} mb-12 w-full max-w-4xl mx-auto`}>
                 {reviewOrder.map((l: string) => {
                   const isVowel = VOWELS.has(l);
                   const bgStart = isVowel ? "#FF6B8A" : "#1CB0F6";
                   const bgEnd = isVowel ? "#FF4B8A" : "#0a8ed4";
                   const borderColor = isVowel ? "#C82A52" : "#086CA5";
+                  const isSmall = !!(step.combo || step.isFinal);
 
                   return (
-                    <motion.div key={l} initial={{ scale: 0 }} animate={{ scale: 1 }} className="flex flex-col items-center w-[100px] sm:w-[130px]">
+                    <motion.div key={l} initial={{ scale: 0 }} animate={{ scale: 1 }} className={`flex flex-col items-center ${isSmall ? 'w-[70px] sm:w-[90px]' : 'w-[100px] sm:w-[130px]'}`}>
                       <div
                         onClick={() => handleLetterClick(l)}
-                        className="w-full aspect-square rounded-[1.5rem] shadow-lg flex flex-col items-center justify-center cursor-pointer transition-all hover:scale-105 active:scale-95 border-b-[6px] hover:shadow-xl select-none"
+                        className={`w-full aspect-square rounded-xl sm:rounded-2xl shadow-lg flex items-center justify-center cursor-pointer transition-all hover:scale-105 active:scale-95 border-b-[4px] sm:border-b-[6px] hover:shadow-xl select-none`}
                         style={{ background: `linear-gradient(135deg, ${bgStart}, ${bgEnd})`, borderColor: borderColor }}
                       >
-                        <div className="flex items-baseline justify-center">
-                          <span className="text-white text-5xl sm:text-6xl font-black drop-shadow-sm">{l}</span>
-                          <span className="text-white/90 text-3xl sm:text-4xl font-bold drop-shadow-sm ml-1">{l.toLowerCase()}</span>
+                        <div className="flex items-center justify-center gap-0.5">
+                          <span className={`text-white font-black drop-shadow-sm ${isSmall ? 'text-2xl sm:text-3xl' : 'text-5xl sm:text-6xl'}`}>{l}</span>
+                          <span className={`text-white/90 font-bold drop-shadow-sm ${isSmall ? 'text-2xl sm:text-3xl' : 'text-5xl sm:text-6xl'}`}>{l.toLowerCase()}</span>
                         </div>
                       </div>
                     </motion.div>
@@ -455,45 +567,55 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
           )}
 
           {!showConfetti && step.type === "match" && (
-            <motion.div key={`match-${currentStep}`} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="flex flex-col items-center w-full">
+            <motion.div key={`match-${currentStep}-${matchBatchIndex}`} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="flex flex-col items-center w-full">
               <div className="text-center mb-6">
-                <p className="text-gray-600 dark:text-gray-300 text-base sm:text-lg font-bold mt-2 block">Tap a speaker, then tap the matching letter!</p>
+                <p className="text-gray-600 dark:text-gray-300 text-base sm:text-lg font-bold mt-2 block">
+                  Tap a speaker, then tap the matching letter!{needsMatchBatching ? ` (Batch ${matchBatchIndex + 1}/${matchTotalBatches})` : ''}
+                </p>
                 {/* Navigation Controls moved to top */}
-                <div className="flex justify-center items-center w-full gap-3 sm:gap-4 max-w-md mx-auto mt-6">
+                <div className="flex justify-center items-center w-full gap-2 sm:gap-4 max-w-xl mx-auto mt-6">
                   <Button
+                    size="sm"
+                    onClick={handleMatchBack}
+                    disabled={matchBatchIndex === 0 && currentStep === 0}
+                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#086ca5] hover:scale-105 active:scale-95 disabled:opacity-50 disabled:grayscale disabled:pointer-events-none px-2 transition-all h-9 py-2"
+                    style={{ background: 'linear-gradient(135deg, #1cb0f6 0%, #0a8ed4 100%)' }}
+                  >
+                    <ArrowLeft className="w-4 h-4 sm:mr-1 mx-auto sm:mx-0" />
+                    <span className="hidden sm:inline">Back</span>
+                  </Button>
+                  <Button
+                    size="sm"
                     onClick={() => {
                       setMatchColumns(prev => ({
                         left: [...prev.left].sort(() => Math.random() - 0.5),
                         right: [...prev.right].sort(() => Math.random() - 0.5)
                       }));
                     }}
-                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-4 border-[#8b40b8] hover:scale-105 active:scale-95 px-2"
+                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#8b40b8] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
                     style={{ background: 'linear-gradient(135deg, #ce82ff 0%, #a559d6 100%)' }}
                   >
-                    <Shuffle className="w-4 h-4 mr-1" /> Shuffle
+                    <Shuffle className="w-4 h-4 sm:mr-1 mx-auto sm:mx-0" />
+                    <span className="hidden sm:inline">Shuffle</span>
                   </Button>
                   <Button
-                    onClick={setupMatchPhase}
-                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-4 border-[#e11d48] hover:scale-105 active:scale-95 px-2"
-                    style={{ background: 'linear-gradient(135deg, #fb7185 0%, #e11d48 100%)' }}
-                  >
-                    <RotateCcw className="w-4 h-4 mr-1" /> Reset
-                  </Button>
-                  <Button
-                    onClick={handleStepNext}
-                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-4 border-[#c99c00] hover:scale-105 active:scale-95 px-2"
+                    size="sm"
+                    onClick={handleMatchNext}
+                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#c99c00] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
                     style={{ background: 'linear-gradient(135deg, #ffc800 0%, #ff9600 100%)' }}
                   >
-                    <FastForward className="w-4 h-4 mr-1" /> Skip
+                    <SkipForward className="w-4 h-4 sm:mr-1 mx-auto sm:mx-0" />
+                    <span className="hidden sm:inline">Forward</span>
                   </Button>
-
                   <Button
-                    onClick={handleStepNext}
+                    size="sm"
+                    onClick={handleMatchNext}
                     disabled={matchedPairs.size !== matchColumns.left.length || matchColumns.left.length === 0}
-                    className={`flex-1 rounded-xl font-bold text-white shadow-md border-b-4 ${matchedPairs.size === matchColumns.left.length ? 'border-[#3c8c01] hover:scale-105 active:scale-95' : 'opacity-50 grayscale cursor-not-allowed'}`}
+                    className={`flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] ${matchedPairs.size === matchColumns.left.length ? 'border-[#3c8c01] hover:scale-105 active:scale-95' : 'opacity-50 grayscale cursor-not-allowed'} px-2 transition-all h-9 py-2`}
                     style={{ background: 'linear-gradient(135deg, #58cc02 0%, #46a302 100%)' }}
                   >
-                    Next <ChevronRight className="w-4 h-4 ml-1" />
+                    <span className="hidden sm:inline">Proceed</span>
+                    <ChevronRight className="w-4 h-4 sm:ml-1 mx-auto sm:mx-0" />
                   </Button>
                 </div>
               </div>
@@ -579,6 +701,14 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
                 {/* Navigation Controls moved to top */}
                 <div className="flex justify-center items-center w-full gap-3 sm:gap-4 max-w-md mx-auto mt-6">
                   <Button
+                    onClick={() => setCurrentStep(prev => Math.max(0, prev - 1))}
+                    disabled={currentStep === 0}
+                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-4 border-[#086ca5] hover:scale-105 active:scale-95 disabled:opacity-50 disabled:grayscale disabled:pointer-events-none px-2"
+                    style={{ background: 'linear-gradient(135deg, #1cb0f6 0%, #0a8ed4 100%)' }}
+                  >
+                    <ArrowLeft className="w-4 h-4 mr-1" /> Back
+                  </Button>
+                  <Button
                     onClick={() => {
                       setShuffledVoiceLetters(prev => [...prev].sort(() => Math.random() - 0.5));
                     }}
@@ -588,18 +718,11 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
                     <Shuffle className="w-4 h-4 mr-1" /> Shuffle
                   </Button>
                   <Button
-                    onClick={setupVoicePhase}
-                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-4 border-[#e11d48] hover:scale-105 active:scale-95 px-2"
-                    style={{ background: 'linear-gradient(135deg, #fb7185 0%, #e11d48 100%)' }}
-                  >
-                    <RotateCcw className="w-4 h-4 mr-1" /> Reset
-                  </Button>
-                  <Button
                     onClick={handleStepNext}
                     className="flex-1 rounded-xl font-bold text-white shadow-md border-b-4 border-[#c99c00] hover:scale-105 active:scale-95 px-2"
                     style={{ background: 'linear-gradient(135deg, #ffc800 0%, #ff9600 100%)' }}
                   >
-                    <FastForward className="w-4 h-4 mr-1" /> Skip
+                    <SkipForward className="w-4 h-4 mr-1" /> Forward
                   </Button>
 
                   <Button
@@ -608,7 +731,7 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
                     className={`flex-1 rounded-xl font-bold text-white shadow-md border-b-4 ${completedVoiceLetters.size === shuffledVoiceLetters.length ? 'border-[#3c8c01] hover:scale-105 active:scale-95' : 'opacity-50 grayscale cursor-not-allowed'}`}
                     style={{ background: 'linear-gradient(135deg, #58cc02 0%, #46a302 100%)' }}
                   >
-                    Next <ChevronRight className="w-4 h-4 ml-1" />
+                    Proceed <ChevronRight className="w-4 h-4 ml-1" />
                   </Button>
                 </div>
               </div>
@@ -710,7 +833,7 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
                   })}
                 </div>
               </div>
-              
+
               {/* Listening Modal */}
               <AnimatePresence>
                 {evaluatingLetter && !showConfetti && (
@@ -737,29 +860,29 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
                         {micReady && <AudioVisualizer isListening={!!evaluatingLetter} isMobile={isMobile} />}
                       </div>
                       <p className="text-gray-500 dark:text-gray-400 mb-6 font-medium">Please say the letter name clearly.</p>
-                      
+
                       <div className="bg-gray-50 dark:bg-gray-900 rounded-2xl p-5 min-h-[100px] flex flex-col items-center justify-center border border-gray-100 dark:border-gray-800 shadow-inner">
                         <span className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Target</span>
                         <span className="text-6xl font-extrabold mb-4 tracking-wider flex items-baseline justify-center" style={{ color: accent.primary }}>
                           {evaluatingLetter}
                           <span className="text-[0.6em] opacity-85 ml-1">{evaluatingLetter.toLowerCase()}</span>
                         </span>
-                        
+
                         <div className="w-full h-px bg-gray-200 dark:bg-gray-700 my-2" />
-                        
+
                         <span className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1 mt-2">Heard</span>
                         <span className="text-5xl font-extrabold tracking-wider text-gray-700 dark:text-gray-300 min-h-[50px] flex items-center justify-center w-full break-words">
                           {voiceTranscriptsMap[evaluatingLetter] ? `"${voiceTranscriptsMap[evaluatingLetter]}"` : <span className="w-5 h-5 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin"></span>}
                         </span>
                       </div>
-                      
-                      <Button 
+
+                      <Button
                         onClick={() => {
                           setEvaluatingLetter(null);
                           setVoiceFeedbackMap(prev => ({ ...prev, [evaluatingLetter]: null }));
                           clearEvalTimeout();
                         }}
-                        variant="ghost" 
+                        variant="ghost"
                         className="mt-6 text-gray-500 hover:text-red-500"
                       >
                         Cancel
@@ -772,106 +895,128 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
           )}
 
           {!showConfetti && step.type === "type" && (
-            <motion.div key={`type-${currentStep}`} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="flex flex-col items-center w-full">
+            <motion.div key={`type-${currentStep}-${typeBatchIndex}`} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="flex flex-col items-center w-full">
               <div className="text-center mb-8">
-                <p className="text-gray-600 dark:text-gray-300 text-base sm:text-lg font-bold mt-2 block">Tap the speaker, then type the letter!</p>
+                <p className="text-gray-600 dark:text-gray-300 text-base sm:text-lg font-bold mt-2 block">
+                  Tap the speaker, then type the letter!{needsTypeBatching ? ` (Batch ${typeBatchIndex + 1}/${typeTotalBatches})` : ''}
+                </p>
                 {/* Navigation Controls moved to top */}
-                <div className="flex justify-center items-center w-full gap-3 sm:gap-4 max-w-md mx-auto mt-6">
+                <div className="flex justify-center items-center w-full gap-2 sm:gap-4 max-w-xl mx-auto mt-6">
                   <Button
+                    size="sm"
+                    onClick={handleTypeBack}
+                    disabled={typeBatchIndex === 0 && currentStep === 0}
+                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#086ca5] hover:scale-105 active:scale-95 disabled:opacity-50 disabled:grayscale disabled:pointer-events-none px-2 transition-all h-9 py-2"
+                    style={{ background: 'linear-gradient(135deg, #1cb0f6 0%, #0a8ed4 100%)' }}
+                  >
+                    <ArrowLeft className="w-4 h-4 sm:mr-1 mx-auto sm:mx-0" />
+                    <span className="hidden sm:inline">Back</span>
+                  </Button>
+                  <Button
+                    size="sm"
                     onClick={handleShuffleType}
-                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-4 border-[#8b40b8] hover:scale-105 active:scale-95 px-2"
+                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#8b40b8] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
                     style={{ background: 'linear-gradient(135deg, #ce82ff 0%, #a559d6 100%)' }}
                   >
-                    <Shuffle className="w-4 h-4 mr-1" /> Shuffle
+                    <Shuffle className="w-4 h-4 sm:mr-1 mx-auto sm:mx-0" />
+                    <span className="hidden sm:inline">Shuffle</span>
                   </Button>
                   <Button
-                    onClick={setupTypePhase}
-                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-4 border-[#e11d48] hover:scale-105 active:scale-95 px-2"
-                    style={{ background: 'linear-gradient(135deg, #fb7185 0%, #e11d48 100%)' }}
-                  >
-                    <RotateCcw className="w-4 h-4 mr-1" /> Reset
-                  </Button>
-                  <Button
-                    onClick={handleStepNext}
-                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-4 border-[#c99c00] hover:scale-105 active:scale-95 px-2"
+                    size="sm"
+                    onClick={handleTypeNext}
+                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#c99c00] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
                     style={{ background: 'linear-gradient(135deg, #ffc800 0%, #ff9600 100%)' }}
                   >
-                    <FastForward className="w-4 h-4 mr-1" /> Skip
+                    <SkipForward className="w-4 h-4 sm:mr-1 mx-auto sm:mx-0" />
+                    <span className="hidden sm:inline">Forward</span>
                   </Button>
-
                   <Button
-                    onClick={handleStepNext}
+                    size="sm"
+                    onClick={handleTypeNext}
                     disabled={!isTypePhaseComplete}
-                    className={`flex-1 rounded-xl font-bold text-white shadow-md border-b-4 ${isTypePhaseComplete ? 'border-[#3c8c01] hover:scale-105 active:scale-95' : 'opacity-50 grayscale cursor-not-allowed'}`}
+                    className={`flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] ${isTypePhaseComplete ? 'border-[#3c8c01] hover:scale-105 active:scale-95' : 'opacity-50 grayscale cursor-not-allowed'} px-2 transition-all h-9 py-2`}
                     style={{ background: 'linear-gradient(135deg, #58cc02 0%, #46a302 100%)' }}
                   >
-                    Next <ChevronRight className="w-4 h-4 ml-1" />
+                    <span className="hidden sm:inline">Proceed</span>
+                    <ChevronRight className="w-4 h-4 sm:ml-1 mx-auto sm:mx-0" />
                   </Button>
                 </div>
               </div>
 
-              <div className="flex justify-center gap-4 sm:gap-8 w-full max-w-2xl mx-auto mb-10 px-2 sm:px-4">
-                {/* Left Column: TTS Speakers */}
-                <div className="flex flex-col gap-3 sm:gap-4 flex-1 min-w-0">
-                  {typeOrder.map((letter, idx) => {
-                    const isCorrect = typeStatus[letter] === true;
-                    return (
-                      <div key={`speaker-${letter}`} className="relative w-full">
-                        <MatchButton
-                          gradientStart={accent.primary}
-                          gradientEnd={accent.dark}
-                          isMatched={isCorrect} // grays it out if correct
-                          isSelected={false}
-                          isWrong={false}
-                          onClick={() => playTypeSound(letter)}
-                          className={`w-full ${idx === 0 && !hasClickedTTS ? 'ring-2 ring-indigo-400 ring-offset-2 animate-pulse' : ''}`}
-                        >
-                          <Volume2 className={`w-8 h-8 ${isCorrect ? "opacity-50" : ""}`} />
-                        </MatchButton>
-                        {idx === 0 && !hasClickedTTS && (
-                          <motion.div
-                            initial={{ opacity: 0, y: 10, scale: 0.8 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            transition={{ repeat: Infinity, repeatType: "reverse", duration: 1.5 }}
-                            className="absolute -top-10 left-1/2 -translate-x-1/2 bg-indigo-500 text-white text-[10px] font-bold py-1 px-3 rounded-full shadow-lg whitespace-nowrap pointer-events-none z-10"
-                          >
-                            Click to listen!
-                            <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-indigo-500 rotate-45" />
-                          </motion.div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
+          {/* Reference letter pool for the user to see what letters are in the batch */}
+          <div className="flex flex-wrap justify-center gap-2 sm:gap-3 mb-6 max-w-xl mx-auto px-2">
+            {[...typeOrder].sort().map((letter) => (
+              <span
+                key={`ref-${letter}`}
+                className="px-4 py-2 sm:px-5 sm:py-2.5 bg-white dark:bg-gray-800 border-2 border-b-[4px] border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-200 rounded-xl font-black text-lg sm:text-xl shadow-sm flex items-center justify-center min-w-[3rem] sm:min-w-[4rem]"
+              >
+                {letter}{letter.toLowerCase()}
+              </span>
+            ))}
+          </div>
 
-                {/* Right Column: Inputs */}
-                <div className="flex flex-col gap-3 sm:gap-4 flex-1 min-w-0">
-                  {typeOrder.map((letter) => {
-                    const status = typeStatus[letter];
-                    const val = typeInputs[letter] || "";
-
-                    return (
+          <div className="flex justify-center gap-3 sm:gap-6 w-full max-w-xl mx-auto mb-10 px-2 sm:px-4">
+            {/* Left Column: TTS Speakers */}
+            <div className="flex flex-col gap-2 sm:gap-3 flex-1 min-w-0">
+              {typeOrder.map((letter, idx) => {
+                const isCorrect = typeStatus[letter] === true;
+                return (
+                  <div key={`speaker-${letter}`} className="relative w-full h-11 sm:h-12">
+                    <MatchButton
+                      gradientStart={accent.primary}
+                      gradientEnd={accent.dark}
+                      isMatched={isCorrect} // grays it out if correct
+                      isSelected={false}
+                      isWrong={false}
+                      onClick={() => playTypeSound(letter)}
+                      className={`w-full h-full ${idx === 0 && !hasClickedTTS ? 'ring-2 ring-indigo-400 ring-offset-2 animate-pulse' : ''}`}
+                    >
+                      <Volume2 className={`w-6 h-6 ${isCorrect ? "opacity-50" : ""}`} />
+                    </MatchButton>
+                    {idx === 0 && !hasClickedTTS && (
                       <motion.div
-                        key={`input-${letter}`}
-                        animate={{ x: status === false ? [-5, 5, -5, 5, 0] : 0 }}
-                        className="w-full h-14 sm:h-16 flex"
+                        initial={{ opacity: 0, y: 10, scale: 0.8 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        transition={{ repeat: Infinity, repeatType: "reverse", duration: 1.5 }}
+                        className="absolute -top-10 left-1/2 -translate-x-1/2 bg-indigo-500 text-white text-[10px] font-bold py-1 px-3 rounded-full shadow-lg whitespace-nowrap pointer-events-none z-10"
                       >
-                        <input
-                          type="text"
-                          value={val}
-                          onChange={(e) => handleTypeChange(letter, e.target.value)}
-                          disabled={status === true}
-                          className={`w-full h-full text-center text-2xl sm:text-3xl font-black rounded-lg sm:rounded-2xl border-2 sm:border-b-[4px] outline-none transition-all shadow-sm
-                            ${status === true ? 'bg-gray-100 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700/50 text-green-600 dark:text-green-500 opacity-50 grayscale' :
-                              status === false ? 'bg-red-50 border-red-400 text-red-600' :
-                                'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-200 focus:border-blue-400'}
-                          `}
-                        />
+                        Click to listen!
+                        <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-indigo-500 rotate-45" />
                       </motion.div>
-                    );
-                  })}
-                </div>
-              </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Right Column: Inputs */}
+            <div className="flex flex-col gap-2 sm:gap-3 flex-1 min-w-0">
+              {typeOrder.map((letter) => {
+                const status = typeStatus[letter];
+                const val = typeInputs[letter] || "";
+
+                return (
+                  <motion.div
+                    key={`input-${letter}`}
+                    animate={{ x: status === false ? [-5, 5, -5, 5, 0] : 0 }}
+                    className="w-full h-11 sm:h-12 flex"
+                  >
+                    <input
+                      type="text"
+                      value={val}
+                      onChange={(e) => handleTypeChange(letter, e.target.value)}
+                      disabled={status === true}
+                      className={`w-full h-full text-center text-xl sm:text-2xl font-black rounded-lg sm:rounded-2xl border-2 sm:border-b-[4px] outline-none transition-all shadow-sm
+                            ${status === true ? 'bg-gray-100 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700/50 text-green-600 dark:text-green-500 opacity-50 grayscale' :
+                          status === false ? 'bg-red-50 border-red-400 text-red-600' :
+                            'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-200 focus:border-blue-400'}
+                          `}
+                    />
+                  </motion.div>
+                );
+              })}
+            </div>
+          </div>
             </motion.div>
           )}
 

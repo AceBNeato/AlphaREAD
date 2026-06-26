@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router";
 import { LevelBlends } from "./LevelBlends";
 import { supabase } from "../../lib/supabase";
-import { CheckCircle2, X } from "lucide-react";
+import { CheckCircle2, X, ArrowLeft } from "lucide-react";
 import { Button } from "./ui/button";
 
 interface LevelBlendsMasterProps {
@@ -70,12 +70,12 @@ export function LevelBlendsMaster({ levelId, accent }: LevelBlendsMasterProps) {
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-purple-50 dark:bg-none dark:bg-[#0d141c] flex flex-col overflow-x-hidden">
       <div className="sticky top-0 z-10 bg-white/80 dark:bg-[#0d141c]/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 px-4 py-3">
         <div className="max-w-md mx-auto flex items-center gap-3 w-full">
-          <Button variant="ghost" size="sm" onClick={() => navigate("/levels")} className="rounded-full">
-            <X className="w-5 h-5" /> Exit
+          <Button variant="ghost" size="sm" onClick={() => navigate("/levels")} className="rounded-full flex items-center gap-1">
+            <ArrowLeft className="w-5 h-5" /> Exit
           </Button>
           <div className="flex-1 text-center pr-8">
             <h2 className="text-lg font-bold tracking-tight" style={{ color: accent.primary }}>
-              Lesson 6: Consonant Blends
+              Level 6: Consonant Blends
             </h2>
           </div>
         </div>
@@ -106,10 +106,10 @@ export function LevelBlendsMaster({ levelId, accent }: LevelBlendsMasterProps) {
                 >
                   <div className="flex justify-between items-center relative z-10">
                     <div>
-                      <h3 className="text-xl font-black mb-1" style={{ color: cat.color }}>
+                      <h3 className="text-lg sm:text-xl font-black mb-1" style={{ color: cat.color }}>
                         {cat.label}
                       </h3>
-                      <p className="text-white text-base sm:text-lg font-bold mt-2 block">
+                      <p className="text-gray-500 dark:text-gray-400 text-sm sm:text-base font-semibold mt-1">
                         {cat.desc}
                       </p>
                     </div>

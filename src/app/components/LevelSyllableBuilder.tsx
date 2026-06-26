@@ -23,6 +23,7 @@ interface LevelSyllableBuilderProps {
   patterns: SyllablePattern[];
   accent: { primary: string; dark: string; lightBg: string };
   onComplete?: () => void;
+  onBack?: () => void;
   customTargets?: SyllableTarget[];
   isSubPhase?: boolean;
   embedded?: boolean;
@@ -45,6 +46,7 @@ export function LevelSyllableBuilder({
   patterns,
   accent,
   onComplete,
+  onBack,
   customTargets,
   isSubPhase,
   embedded,
@@ -127,8 +129,6 @@ export function LevelSyllableBuilder({
     }
   }, [allDone, onComplete]);
 
-  if (allDone && embedded) return null;
-
   /**
    * Returns the phonetically correct TTS string for a syllable.
    * Uses the existing CV_PHONETICS / VC_PHONETICS maps from levels.ts so that:
@@ -162,7 +162,18 @@ export function LevelSyllableBuilder({
       return;
     }
 
-    // CVC: no local audio files — use Google TTS
+    // Use local audio files for CVC words
+    if (pattern === "CVC") {
+      const audioPath = `${(import.meta as any).env.BASE_URL}audio/cvc-audio/cvc-${syllableLower}.mp3`;
+      playExclusiveAudio(audioPath).catch((err) => {
+        console.warn(`[AlphabetGO] Local CVC audio not found: ${audioPath}, falling back to TTS`, err);
+        const phoneticText = getPhoneticText(text, pattern);
+        playTTSUtil(phoneticText);
+      });
+      return;
+    }
+
+    // Fallback
     const phoneticText = getPhoneticText(text, pattern);
     playTTSUtil(phoneticText);
   };
@@ -269,6 +280,8 @@ export function LevelSyllableBuilder({
       setCurrentIndex(prev => Math.max(prev - 1, 0));
       setSelectedLetters([]);
       setFeedback(null);
+    } else if (onBack) {
+      onBack();
     }
   };
 
@@ -295,6 +308,7 @@ export function LevelSyllableBuilder({
     }
     navigate("/levels", { replace: true });
   };
+
 
 
 
@@ -400,7 +414,7 @@ export function LevelSyllableBuilder({
                   <div className="flex justify-center items-center w-full gap-2 sm:gap-3 max-w-lg mx-auto mb-6">
                     <Button
                       onClick={goPrev}
-                      disabled={currentIndex === 0}
+                      disabled={currentIndex === 0 && !onBack}
                       className="flex-1 rounded-xl font-bold text-white shadow-md border-b-4 border-[#086ca5] hover:scale-105 active:scale-95 disabled:opacity-50 disabled:grayscale disabled:pointer-events-none px-2"
                       style={{ background: 'linear-gradient(135deg, #1cb0f6 0%, #0a8ed4 100%)' }}
                     >
@@ -421,7 +435,7 @@ export function LevelSyllableBuilder({
                       style={{ background: 'linear-gradient(135deg, #ffc800 0%, #ff9600 100%)' }}
                     >
                       <FastForward className="w-4 h-4 sm:mr-1" />
-                      <span className="hidden sm:inline">Skip</span>
+                      <span className="hidden sm:inline">Forward</span>
                     </Button>
                     <Button
                       onClick={goNext}
@@ -659,9 +673,9 @@ export function LevelSyllableBuilder({
             variant="ghost"
             size="sm"
             onClick={handleGoBack}
-            className="rounded-full"
+            className="rounded-full flex items-center gap-1"
           >
-            <X className="w-5 h-5" /> Exit
+            <ArrowLeft className="w-5 h-5" /> Exit
           </Button>
           <div className="flex-1 text-center">
             <h2 className="text-lg font-bold tracking-tight text-center flex-1" style={{ color: accent.primary }}>

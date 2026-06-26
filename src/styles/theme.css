@@ -30,7 +30,7 @@
   --chart-3: oklch(0.398 0.07 227.392);
   --chart-4: oklch(0.828 0.189 84.429);
   --chart-5: oklch(0.769 0.188 70.08);
-  --radius: 0px;
+  --radius: 0.5rem;
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
   --sidebar-primary: #030213;
@@ -123,12 +123,11 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
-    border-radius: 0 !important;
   }
 
   body {
     @apply bg-background text-foreground;
-    font-family: 'VT323', monospace;
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   }
   
   /* Apply glassmorphism blur to standard card classes */
@@ -145,9 +144,7 @@
   * These are in @layer base, so Tailwind utility classes (like text-sm, text-lg) automatically override them.
   */
 
-  p {
-    font-family: 'Outfit', sans-serif;
-  }
+  /* Removed specific p font override so it inherits body font */
 
   html {
     font-size: var(--font-size);

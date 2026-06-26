@@ -5,44 +5,150 @@ import { LevelCVCSentences } from "./LevelCVCSentences";
 import { supabase } from "../../lib/supabase";
 import { useNavigate } from "react-router";
 import { SyllableTarget, CVC_WORDS, shuffle } from "../data/levels";
-import { X } from "lucide-react";
+import { X, ArrowLeft, Shuffle, ChevronRight } from "lucide-react";
 import { Button } from "./ui/button";
 import { confirmAction } from "../utils/alerts";
+import { motion } from "motion/react";
 
 interface LevelCVCMasterProps {
   levelId: number;
   accent: { primary: string; dark: string; lightBg: string };
 }
 
-type StepPhase = "build" | "eval" | "milestone" | "sentences";
+type StepPhase = "preview" | "build" | "eval" | "milestone" | "sentences";
 
 interface GameStep {
   phase: StepPhase;
   words: string[];
+  batchNumber?: number;
+  totalBatches?: number;
+}
+
+function LevelCVCPreview({
+  accent,
+  words,
+  onComplete,
+  onBack,
+  canBack,
+  batchNumber,
+  totalBatches,
+}: {
+  accent: { primary: string; dark: string; lightBg: string };
+  words: string[];
+  onComplete: () => void;
+  onBack: () => void;
+  canBack: boolean;
+  batchNumber?: number;
+  totalBatches?: number;
+}) {
+  const [order, setOrder] = useState<string[]>(words);
+  useEffect(() => {
+    setOrder(words);
+  }, [words]);
+
+  const handleShuffle = () => setOrder([...order].sort(() => Math.random() - 0.5));
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: 50 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: -50 }}
+      className="flex flex-col items-center w-full max-w-4xl mx-auto px-4 py-8"
+    >
+      <div className="text-center mb-8">
+        <p className="text-gray-600 dark:text-gray-300 text-base sm:text-lg font-bold mt-2 block">
+          Review CVC words before we start! {batchNumber && totalBatches ? `(Batch ${batchNumber} of ${totalBatches})` : ""}
+        </p>
+
+        <div className="flex justify-center items-center w-full gap-3 sm:gap-4 max-w-md mx-auto mt-6">
+          <Button
+            onClick={onBack}
+            disabled={!canBack}
+            className="flex-1 rounded-xl font-bold text-white shadow-md border-b-4 border-[#086ca5] hover:scale-105 active:scale-95 disabled:opacity-50 disabled:grayscale disabled:pointer-events-none px-2"
+            style={{ background: 'linear-gradient(135deg, #1cb0f6 0%, #0a8ed4 100%)' }}
+          >
+            <ArrowLeft className="w-4 h-4 mr-1" /> Back
+          </Button>
+          <Button
+            onClick={handleShuffle}
+            className="flex-1 rounded-xl font-bold text-white shadow-md border-b-4 border-[#8b40b8] hover:scale-105 active:scale-95 px-2"
+            style={{ background: 'linear-gradient(135deg, #ce82ff 0%, #a559d6 100%)' }}
+          >
+            <Shuffle className="w-4 h-4 mr-1" /> Shuffle
+          </Button>
+          <Button
+            onClick={onComplete}
+            className="flex-1 rounded-xl font-bold text-white shadow-md border-b-4 border-[#3c8c01] hover:scale-105 active:scale-95"
+            style={{ background: 'linear-gradient(135deg, #58cc02 0%, #46a302 100%)' }}
+          >
+            Proceed <ChevronRight className="w-4 h-4 ml-1" />
+          </Button>
+        </div>
+      </div>
+
+      <div className="flex flex-wrap justify-center gap-2 sm:gap-3 mb-12 w-full max-w-4xl mx-auto">
+        {order.map((word) => {
+          return (
+            <motion.div
+              key={word}
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              className="flex flex-col items-center w-[70px] sm:w-[90px]"
+            >
+              <div
+                className="w-full aspect-square rounded-xl sm:rounded-2xl shadow-md flex items-center justify-center border-b-[4px] border-orange-400 select-none cursor-default"
+                style={{
+                  background: 'linear-gradient(135deg, #FF9600 0%, #e08000 100%)',
+                }}
+              >
+                <span className="text-white text-lg sm:text-xl font-black drop-shadow-sm">
+                  {word}
+                </span>
+              </div>
+            </motion.div>
+          );
+        })}
+      </div>
+    </motion.div>
+  );
 }
 
 export function LevelCVCMaster({ levelId, accent }: LevelCVCMasterProps) {
   const navigate = useNavigate();
 
-  // Dynamically generate a single random pool of 10 CVC words each time the level starts!
+  // Dynamically generate a pool of 60 random CVC words each time the level starts!
   const STEPS: GameStep[] = useMemo(() => {
-    const randomWords = shuffle([...CVC_WORDS]).slice(0, 10);
+    const randomWords = shuffle([...CVC_WORDS]).slice(0, 60);
 
-    // Break into chunks of 5 words
-    const chunk1 = randomWords.slice(0, 5);
-    const chunk2 = randomWords.slice(5, 10);
+    // Break into 4 chunks of 15 words each
+    const chunk1 = randomWords.slice(0, 15);
+    const chunk2 = randomWords.slice(15, 30);
+    const chunk3 = randomWords.slice(30, 45);
+    const chunk4 = randomWords.slice(45, 60);
 
     return [
-      // 5 first
+      // Batch 1 Preview (words 1-30)
+      { phase: "preview", words: CVC_WORDS.slice(0, 30), batchNumber: 1, totalBatches: 3 },
+      // Batch 2 Preview (words 31-60)
+      { phase: "preview", words: CVC_WORDS.slice(30, 60), batchNumber: 2, totalBatches: 3 },
+      // Batch 3 Preview (words 61-85)
+      { phase: "preview", words: CVC_WORDS.slice(60, 85), batchNumber: 3, totalBatches: 3 },
+      
+      // Chunk 1 (15 words)
       { phase: "build", words: chunk1 },
       { phase: "eval", words: chunk1 },
-
-      // 5 next
+      
+      // Chunk 2 (15 words)
       { phase: "build", words: chunk2 },
       { phase: "eval", words: chunk2 },
 
-      // 10 last (eval only)
-      { phase: "eval", words: [...chunk1, ...chunk2] },
+      // Chunk 3 (15 words)
+      { phase: "build", words: chunk3 },
+      { phase: "eval", words: chunk3 },
+
+      // Chunk 4 (15 words)
+      { phase: "build", words: chunk4 },
+      { phase: "eval", words: chunk4 },
 
       // Final sentences quiz
       { phase: "sentences", words: [] }
@@ -75,6 +181,9 @@ export function LevelCVCMaster({ levelId, accent }: LevelCVCMasterProps) {
   };
 
   const getPhaseTitle = () => {
+    if (step.phase === "preview") {
+      return `CVC Master - Word Preview ${step.batchNumber && step.totalBatches ? `(${step.batchNumber}/${step.totalBatches})` : ""}`;
+    }
     if (step.phase === "build") return "CVC Master - Word Builder";
     if (step.phase === "eval" || step.phase === "milestone") return "CVC Master - Voice Evaluation";
     if (step.phase === "sentences") return "CVC Master - Read Sentences";
@@ -83,8 +192,22 @@ export function LevelCVCMaster({ levelId, accent }: LevelCVCMasterProps) {
 
   let content = null;
 
+  // Phase: CVC Preview
+  if (step.phase === "preview") {
+    content = (
+      <LevelCVCPreview
+        accent={accent}
+        words={step.words}
+        onComplete={handleNextStep}
+        onBack={() => setCurrentStep(prev => Math.max(0, prev - 1))}
+        canBack={currentStep > 0}
+        batchNumber={step.batchNumber}
+        totalBatches={step.totalBatches}
+      />
+    );
+  }
   // Phase: CVC Builder
-  if (step.phase === "build") {
+  else if (step.phase === "build") {
     const customTargets: SyllableTarget[] = step.words.map(w => ({
       syllable: w,
       letters: w.split(""),
@@ -100,6 +223,7 @@ export function LevelCVCMaster({ levelId, accent }: LevelCVCMasterProps) {
         isSubPhase={true}
         embedded={true}
         onComplete={handleNextStep}
+        onBack={() => setCurrentStep(prev => Math.max(0, prev - 1))}
       />
     );
   }
@@ -113,6 +237,7 @@ export function LevelCVCMaster({ levelId, accent }: LevelCVCMasterProps) {
         customWords={step.words}
         isSubPhase={true}
         onComplete={handleNextStep}
+        onBack={() => setCurrentStep(prev => Math.max(0, prev - 1))}
       />
     );
   }
@@ -124,6 +249,7 @@ export function LevelCVCMaster({ levelId, accent }: LevelCVCMasterProps) {
         accent={accent}
         isSubPhase={true}
         onComplete={handleNextStep}
+        onBack={() => setCurrentStep(prev => Math.max(0, prev - 1))}
       />
     );
   }
@@ -132,8 +258,9 @@ export function LevelCVCMaster({ levelId, accent }: LevelCVCMasterProps) {
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-green-50 via-blue-50 to-purple-50 dark:bg-none dark:bg-[#0d141c] overflow-x-hidden">
       <div className="sticky top-0 z-50 bg-white/80 dark:bg-[#0d141c]/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 px-4 py-3 shadow-sm">
         <div className="max-w-4xl mx-auto flex items-center gap-3 sm:gap-5 w-full">
-          <Button variant="ghost" size="sm" onClick={handleGoBack} className="rounded-full p-2 h-auto text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
-            <X className="w-6 h-6 sm:w-7 sm:h-7" />
+          <Button variant="ghost" size="sm" onClick={handleGoBack} className="rounded-full p-2 h-auto text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 flex items-center gap-1">
+            <ArrowLeft className="w-6 h-6 sm:w-7 sm:h-7" />
+            <span className="hidden sm:inline font-bold">Exit</span>
           </Button>
           
           <div className="flex-1 flex flex-col gap-1.5 mt-1">

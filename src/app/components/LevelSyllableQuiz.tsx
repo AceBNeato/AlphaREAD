@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router";
-import {Home, Volume2, ArrowRight, Shuffle, RotateCcw, SkipForward, CheckCircle2, XCircle, Sparkles, ChevronRight, FastForward, X} from "lucide-react";
+import { Home, Volume2, ArrowRight, ArrowLeft, Shuffle, RotateCcw, SkipForward, CheckCircle2, XCircle, Sparkles, ChevronRight, FastForward, X } from "lucide-react";
 import { confirmAction } from "../utils/alerts";
 import { Button } from "./ui/button";
 import { motion, AnimatePresence } from "motion/react";
@@ -18,6 +18,7 @@ interface Step {
   type: "review" | "build" | "match" | "type";
   items: string[];
   setLabel: string;  // e.g. "Set 1/6"
+  isFullPreview?: boolean;
 }
 
 interface LevelSyllableQuizProps {
@@ -27,7 +28,7 @@ interface LevelSyllableQuizProps {
   onComplete: () => void;
 }
 
-const CHUNK_SIZE = 6;
+const CHUNK_SIZE = 15;
 const VOWELS = new Set(['A', 'E', 'I', 'O', 'U']);
 
 function getAudioPath(syllable: string, pattern: Pattern): string {
@@ -47,20 +48,48 @@ function playAudio(syllable: string, pattern: Pattern) {
 // Build step array from all syllables
 function buildSteps(allSyllables: string[]): Step[] {
   const steps: Step[] = [];
-  const totalChunks = Math.ceil(allSyllables.length / CHUNK_SIZE);
+
+  // Limit to max 60 syllables per session (like CVC)
+  const sessionSyllables = allSyllables.slice(0, 60);
+
+  // ── Phase 1: Review ALL syllables (batched into ~30 per screen, clickable audio) ──
+  const REVIEW_BATCH_SIZE = 30;
+  const totalReviewBatches = Math.ceil(sessionSyllables.length / REVIEW_BATCH_SIZE);
+  for (let i = 0; i < totalReviewBatches; i++) {
+    const batch = sessionSyllables.slice(i * REVIEW_BATCH_SIZE, (i + 1) * REVIEW_BATCH_SIZE);
+    steps.push({
+      type: "review",
+      items: batch,
+      setLabel: `Review ${i + 1}/${totalReviewBatches}`,
+    });
+  }
+
+  // ── Phase 2: Assessment of ALL syllables (Build → Match → Type, in chunks) ──
+  const totalChunks = Math.ceil(sessionSyllables.length / CHUNK_SIZE);
   for (let i = 0; i < totalChunks; i++) {
-    const chunk = allSyllables.slice(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE);
+    const chunk = sessionSyllables.slice(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE);
     const label = `Set ${i + 1}/${totalChunks}`;
-    steps.push({ type: "review", items: chunk, setLabel: label });
     steps.push({ type: "build", items: chunk, setLabel: label });
     steps.push({ type: "match", items: chunk, setLabel: label });
     steps.push({ type: "type", items: chunk, setLabel: label });
   }
+
+  // ── Phase 3: Final Review of ALL syllables (clickable audio, same UI as Phase 1) ──
+  for (let i = 0; i < totalReviewBatches; i++) {
+    const batch = sessionSyllables.slice(i * REVIEW_BATCH_SIZE, (i + 1) * REVIEW_BATCH_SIZE);
+    steps.push({
+      type: "review",
+      items: batch,
+      setLabel: `Final Review ${i + 1}/${totalReviewBatches}`,
+      isFullPreview: true,  // marks it as the final review
+    });
+  }
+
   return steps;
 }
 
 // ── Review Phase ──────────────────────────────────────────────────────────────
-function ReviewPhase({ items, pattern, accent, onNext }: { items: string[]; pattern: Pattern; accent: any; onNext: () => void; }) {
+function ReviewPhase({ items, pattern, accent, onNext, onBack, canBack, isFullPreview }: { items: string[]; pattern: Pattern; accent: any; onNext: () => void; onBack?: () => void; canBack?: boolean; isFullPreview?: boolean; }) {
   const [reviewOrder, setReviewOrder] = useState<string[]>([]);
   useEffect(() => setReviewOrder(items), [items]);
 
@@ -73,66 +102,84 @@ function ReviewPhase({ items, pattern, accent, onNext }: { items: string[]; patt
   return (
     <motion.div initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -50 }} className="flex flex-col items-center w-full h-full">
       <div className="text-center mb-8">
-        <p className="text-gray-600 dark:text-gray-300 text-base sm:text-lg font-bold mt-2 block">Tap the syllables to hear their sounds</p>
+        <p className="text-gray-600 dark:text-gray-300 text-base sm:text-lg font-bold mt-2 block">
+          {isFullPreview ? `🎉 Great work! Review all syllables! (${items.length} words)` : `Tap the syllables to hear their sounds (${items.length} words)`}
+        </p>
 
         {/* Navigation Controls moved to top */}
-        <div className="flex justify-center items-center w-full gap-3 sm:gap-4 max-w-sm mx-auto mt-6">
-          <Button 
-            onClick={handleShuffle} 
-            className="flex-1 rounded-xl font-bold text-white shadow-md border-b-4 border-[#8b40b8] hover:scale-105 active:scale-95 px-2"
-            style={{ background: 'linear-gradient(135deg, #ce82ff 0%, #a559d6 100%)' }}
+        <div className="flex justify-center items-center w-full gap-2 sm:gap-4 max-w-xl mx-auto mt-6">
+          <Button
+            size="sm"
+            onClick={onBack}
+            disabled={!canBack}
+            className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#086ca5] hover:scale-105 active:scale-95 disabled:opacity-50 disabled:grayscale disabled:pointer-events-none px-2 transition-all h-9 py-2"
+            style={{ background: 'linear-gradient(135deg, #1cb0f6 0%, #0a8ed4 100%)' }}
           >
-            <Shuffle className="w-4 h-4 mr-1" /> Shuffle
+            <ArrowLeft className="w-4 h-4 sm:mr-1 mx-auto sm:mx-0" />
+            <span className="hidden sm:inline">Back</span>
           </Button>
           <Button
+            size="sm"
+            onClick={handleShuffle}
+            className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#8b40b8] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
+            style={{ background: 'linear-gradient(135deg, #ce82ff 0%, #a559d6 100%)' }}
+          >
+            <Shuffle className="w-4 h-4 sm:mr-1 mx-auto sm:mx-0" />
+            <span className="hidden sm:inline">Shuffle</span>
+          </Button>
+          <Button
+            size="sm"
             onClick={onNext}
-            className="flex-1 rounded-xl font-bold text-white shadow-md border-b-4 border-[#3c8c01] hover:scale-105 active:scale-95"
+            className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#3c8c01] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
             style={{ background: 'linear-gradient(135deg, #58cc02 0%, #46a302 100%)' }}
           >
-            Proceed <ChevronRight className="w-4 h-4 ml-1" />
+            <span className="hidden sm:inline">Proceed</span>
+            <ChevronRight className="w-4 h-4 sm:ml-1 mx-auto sm:mx-0" />
           </Button>
         </div>
       </div>
 
-      <div className="flex flex-wrap justify-center gap-4 sm:gap-6 lg:gap-8 mb-12 w-full max-w-3xl mx-auto">
+      <div className="flex flex-wrap justify-center gap-2 sm:gap-3 max-w-4xl mx-auto mb-12 w-full">
         {reviewOrder.map((syl) => {
-          // Vowel coloring (we use pink for syllables if they start with a vowel, or blue if consonant, as a stylistic choice)
           const isVowelStart = VOWELS.has(syl[0].toUpperCase());
           const bgStart = isVowelStart ? "#FF6B8A" : "#1CB0F6";
           const bgEnd = isVowelStart ? "#FF4B8A" : "#0a8ed4";
           const borderColor = isVowelStart ? "#C82A52" : "#086CA5";
 
           return (
-            <motion.div key={syl} initial={{ scale: 0 }} animate={{ scale: 1 }} className="flex flex-col items-center w-[110px] sm:w-[140px]">
+            <motion.div key={syl} initial={{ scale: 0 }} animate={{ scale: 1 }} className="flex flex-col items-center w-[70px] sm:w-[90px]">
               <div
                 onClick={() => handleSyllableClick(syl)}
-                className="w-full aspect-square rounded-[1.5rem] shadow-lg flex flex-col items-center justify-center cursor-pointer transition-all hover:scale-105 active:scale-95 border-b-[6px] hover:shadow-xl select-none"
+                className="w-full aspect-square rounded-xl sm:rounded-2xl shadow-md flex items-center justify-center border-b-[4px] select-none cursor-pointer transition-all hover:scale-105 active:scale-95 hover:shadow-xl"
                 style={{ background: `linear-gradient(135deg, ${bgStart}, ${bgEnd})`, borderColor }}
               >
-                <div className="flex items-baseline justify-center">
-                  <span className="text-white text-4xl sm:text-5xl font-black drop-shadow-sm">{syl}</span>
-                </div>
+                <span className="text-white font-black drop-shadow-sm text-lg sm:text-xl">{syl}</span>
               </div>
             </motion.div>
           );
         })}
       </div>
-
-
     </motion.div>
   );
 }
 
 // ── Match Phase ───────────────────────────────────────────────────────────────
 function MatchPhase({
-  items, pattern, accent, onNext, isLastStep,
+  items, pattern, accent, onNext, onBack, canBack, isLastStep,
 }: {
   items: string[];
   pattern: Pattern;
   accent: { primary: string; dark: string };
   onNext: () => void;
+  onBack?: () => void;
+  canBack?: boolean;
   isLastStep: boolean;
 }) {
+  const MATCH_BATCH = 5;
+  const [batchIndex, setBatchIndex] = useState(0);
+  const totalBatches = Math.ceil(items.length / MATCH_BATCH);
+  const batchItems = items.slice(batchIndex * MATCH_BATCH, (batchIndex + 1) * MATCH_BATCH);
+
   const [leftCol, setLeftCol] = useState<string[]>([]);
   const [rightCol, setRightCol] = useState<string[]>([]);
   const [selectedLeft, setSelectedLeft] = useState<string | null>(null);
@@ -144,7 +191,7 @@ function MatchPhase({
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const reset = useCallback((newItems?: string[]) => {
-    const src = newItems ?? items;
+    const src = newItems ?? batchItems;
     setLeftCol(shuffle([...src]));
     setRightCol(shuffle([...src]));
     setMatchedPairs(new Set());
@@ -152,9 +199,9 @@ function MatchPhase({
     setSelectedRight(null);
     setWrongPair(null);
     setShowConfetti(false);
-  }, [items]);
+  }, [batchItems]);
 
-  useEffect(() => { reset(); }, [reset]);
+  useEffect(() => { reset(batchItems); }, [batchIndex]);
 
   useEffect(() => () => { if (timeoutRef.current) clearTimeout(timeoutRef.current); }, []);
 
@@ -192,13 +239,29 @@ function MatchPhase({
 
   const handleRightClick = (syl: string) => {
     if (matchedPairs.has(syl) || wrongPair) return;
-    playAudio(syl, pattern); // word button also plays audio
+    playAudio(syl, pattern);
     setSelectedRight(syl);
     if (selectedLeft) checkMatch(selectedLeft, syl);
   };
 
   const isWrongLeft = (s: string) => wrongPair?.[0] === s;
   const isWrongRight = (s: string) => wrongPair?.[1] === s;
+
+  const handleNextBatch = () => {
+    if (batchIndex < totalBatches - 1) {
+      setBatchIndex(prev => prev + 1);
+    } else {
+      onNext();
+    }
+  };
+
+  const handlePrevBatch = () => {
+    if (batchIndex > 0) {
+      setBatchIndex(prev => prev - 1);
+    } else if (onBack) {
+      onBack();
+    }
+  };
 
   return (
     <motion.div
@@ -211,40 +274,56 @@ function MatchPhase({
 
       <div className="text-center mb-6">
         <p className="text-gray-600 dark:text-gray-300 text-base sm:text-lg font-bold mt-2 block">
-          Tap a speaker, then tap the matching word!
+          Tap a speaker, then tap the matching word! (Batch {batchIndex + 1}/{totalBatches})
         </p>
-        
-        {/* Navigation Controls moved to top */}
-        <div className="flex justify-center items-center w-full gap-3 sm:gap-4 max-w-md mx-auto mt-6">
-          <Button 
+
+        {/* Navigation Controls */}
+        <div className="flex justify-center items-center w-full gap-2 sm:gap-4 max-w-xl mx-auto mt-6">
+          <Button
+            size="sm"
+            onClick={handlePrevBatch}
+            disabled={batchIndex === 0 && !canBack}
+            className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#086ca5] hover:scale-105 active:scale-95 disabled:opacity-50 disabled:grayscale disabled:pointer-events-none px-2 transition-all h-9 py-2"
+            style={{ background: 'linear-gradient(135deg, #1cb0f6 0%, #0a8ed4 100%)' }}
+          >
+            <ArrowLeft className="w-4 h-4 sm:mr-1 mx-auto sm:mx-0" />
+            <span className="hidden sm:inline">Back</span>
+          </Button>
+          <Button
+            size="sm"
             onClick={() => {
               setLeftCol([...leftCol].sort(() => Math.random() - 0.5));
               setRightCol([...rightCol].sort(() => Math.random() - 0.5));
-            }} 
-            className="flex-1 rounded-xl font-bold text-white shadow-md border-b-4 border-[#8b40b8] hover:scale-105 active:scale-95 px-2"
+            }}
+            className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#8b40b8] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
             style={{ background: 'linear-gradient(135deg, #ce82ff 0%, #a559d6 100%)' }}
           >
-            <Shuffle className="w-4 h-4 mr-1" /> Shuffle
+            <Shuffle className="w-4 h-4 sm:mr-1 mx-auto sm:mx-0" />
+            <span className="hidden sm:inline">Shuffle</span>
           </Button>
-          <Button 
-            onClick={() => reset()} 
-            className="flex-1 rounded-xl font-bold text-white shadow-md border-b-4 border-[#e11d48] hover:scale-105 active:scale-95 px-2"
+          <Button
+            size="sm"
+            onClick={() => reset()}
+            className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#e11d48] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
             style={{ background: 'linear-gradient(135deg, #fb7185 0%, #e11d48 100%)' }}
           >
-            <RotateCcw className="w-4 h-4 mr-1" /> Reset
+            <RotateCcw className="w-4 h-4 sm:mr-1 mx-auto sm:mx-0" />
+            <span className="hidden sm:inline">Reset</span>
           </Button>
-          <Button 
-            onClick={onNext} 
-            className="flex-1 rounded-xl font-bold text-white shadow-md border-b-4 border-[#c99c00] hover:scale-105 active:scale-95 px-2"
+          <Button
+            size="sm"
+            onClick={handleNextBatch}
+            className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#c99c00] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
             style={{ background: 'linear-gradient(135deg, #ffc800 0%, #ff9600 100%)' }}
           >
-            <FastForward className="w-4 h-4 mr-1" /> Skip
+            <SkipForward className="w-4 h-4 sm:mr-1 mx-auto sm:mx-0" />
+            <span className="hidden sm:inline">Forward</span>
           </Button>
-          
           <Button
-            onClick={onNext}
+            size="sm"
+            onClick={handleNextBatch}
             disabled={!allDone}
-            className={`flex-1 rounded-xl font-bold text-white shadow-md border-b-4 ${allDone ? 'border-[#3c8c01] hover:scale-105 active:scale-95' : 'opacity-50 grayscale cursor-not-allowed'}`}
+            className={`flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] ${allDone ? 'border-[#3c8c01] hover:scale-105 active:scale-95' : 'opacity-50 grayscale cursor-not-allowed'} px-2 transition-all h-9 py-2`}
             style={{ background: 'linear-gradient(135deg, #58cc02 0%, #46a302 100%)' }}
           >
             Next <ChevronRight className="w-4 h-4 ml-1" />
@@ -314,18 +393,23 @@ function MatchPhase({
   );
 }
 
-// ── Type Phase ──────────────────────────────────────────────────────────────
-function TypePhase({ items, pattern, accent, onNext }: { items: string[]; pattern: Pattern; accent: any; onNext: () => void; }) {
+function TypePhase({ items, pattern, accent, onNext, onBack, canBack }: { items: string[]; pattern: Pattern; accent: any; onNext: () => void; onBack?: () => void; canBack?: boolean; }) {
+  const TYPE_BATCH = 5;
+  const [batchIndex, setBatchIndex] = useState(0);
+  const totalBatches = Math.ceil(items.length / TYPE_BATCH);
+  const batchItems = items.slice(batchIndex * TYPE_BATCH, (batchIndex + 1) * TYPE_BATCH);
+
   const [typeOrder, setTypeOrder] = useState<string[]>([]);
   const [typeInputs, setTypeInputs] = useState<Record<string, string>>({});
   const [typeStatus, setTypeStatus] = useState<Record<string, boolean | null>>({});
   const [hasClickedTTS, setHasClickedTTS] = useState(false);
 
   useEffect(() => {
-    setTypeOrder([...items].sort(() => Math.random() - 0.5));
+    setTypeOrder([...batchItems].sort(() => Math.random() - 0.5));
     setTypeInputs({});
     setTypeStatus({});
-  }, [items]);
+    setHasClickedTTS(false);
+  }, [batchIndex]);
 
   const handleShuffleType = () => {
     setTypeOrder(prev => [...prev].sort(() => Math.random() - 0.5));
@@ -339,9 +423,9 @@ function TypePhase({ items, pattern, accent, onNext }: { items: string[]; patter
 
   const handleTypeChange = (syllable: string, val: string) => {
     if (val.length > 2) return;
-    
+
     setTypeInputs(prev => ({ ...prev, [syllable]: val }));
-    
+
     if (val.length === 2) {
       if (val.toLowerCase() === syllable.toLowerCase()) {
         playSound("correct", 0.4);
@@ -361,45 +445,78 @@ function TypePhase({ items, pattern, accent, onNext }: { items: string[]; patter
 
   const isTypePhaseComplete = typeOrder.length > 0 && typeOrder.every(syllable => typeStatus[syllable] === true);
 
+  const handleNextBatch = () => {
+    if (batchIndex < totalBatches - 1) {
+      setBatchIndex(prev => prev + 1);
+    } else {
+      onNext();
+    }
+  };
+
+  const handlePrevBatch = () => {
+    if (batchIndex > 0) {
+      setBatchIndex(prev => prev - 1);
+    } else if (onBack) {
+      onBack();
+    }
+  };
+
   return (
     <motion.div initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -50 }} className="flex flex-col items-center w-full">
       <div className="text-center mb-8">
-        <p className="text-gray-600 dark:text-gray-300 text-base sm:text-lg font-bold mt-2 block">Tap the speaker, then type the syllable!</p>
-        
-        <div className="flex justify-center items-center w-full gap-3 sm:gap-4 max-w-md mx-auto mt-6">
-          <Button 
-            onClick={handleShuffleType} 
-            className="flex-1 rounded-xl font-bold text-white shadow-md border-b-4 border-[#8b40b8] hover:scale-105 active:scale-95 px-2"
+        <p className="text-gray-600 dark:text-gray-300 text-base sm:text-lg font-bold mt-2 block">Tap the speaker, then type the syllable! (Batch {batchIndex + 1}/{totalBatches})</p>
+
+        <div className="flex justify-center items-center w-full gap-2 sm:gap-4 max-w-xl mx-auto mt-6">
+          <Button
+            size="sm"
+            onClick={handlePrevBatch}
+            disabled={batchIndex === 0 && !canBack}
+            className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#086ca5] hover:scale-105 active:scale-95 disabled:opacity-50 disabled:grayscale disabled:pointer-events-none px-2 transition-all h-9 py-2"
+            style={{ background: 'linear-gradient(135deg, #1cb0f6 0%, #0a8ed4 100%)' }}
+          >
+            <ArrowLeft className="w-4 h-4 sm:mr-1 mx-auto sm:mx-0" />
+            <span className="hidden sm:inline">Back</span>
+          </Button>
+          <Button
+            size="sm"
+            onClick={handleShuffleType}
+            className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#8b40b8] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
             style={{ background: 'linear-gradient(135deg, #ce82ff 0%, #a559d6 100%)' }}
           >
-            <Shuffle className="w-4 h-4 mr-1" /> Shuffle
+            <Shuffle className="w-4 h-4 sm:mr-1 mx-auto sm:mx-0" />
+            <span className="hidden sm:inline">Shuffle</span>
           </Button>
-          <Button 
+          <Button
+            size="sm"
             onClick={() => {
-              setTypeOrder([...items].sort(() => Math.random() - 0.5));
+              setTypeOrder([...batchItems].sort(() => Math.random() - 0.5));
               setTypeInputs({});
               setTypeStatus({});
-            }} 
-            className="flex-1 rounded-xl font-bold text-white shadow-md border-b-4 border-[#e11d48] hover:scale-105 active:scale-95 px-2"
+            }}
+            className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#e11d48] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
             style={{ background: 'linear-gradient(135deg, #fb7185 0%, #e11d48 100%)' }}
           >
-            <RotateCcw className="w-4 h-4 mr-1" /> Reset
+            <RotateCcw className="w-4 h-4 sm:mr-1 mx-auto sm:mx-0" />
+            <span className="hidden sm:inline">Reset</span>
           </Button>
-          <Button 
-            onClick={onNext} 
-            className="flex-1 rounded-xl font-bold text-white shadow-md border-b-4 border-[#c99c00] hover:scale-105 active:scale-95 px-2"
+          <Button
+            size="sm"
+            onClick={handleNextBatch}
+            className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#c99c00] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
             style={{ background: 'linear-gradient(135deg, #ffc800 0%, #ff9600 100%)' }}
           >
-            <FastForward className="w-4 h-4 mr-1" /> Skip
+            <SkipForward className="w-4 h-4 sm:mr-1 mx-auto sm:mx-0" />
+            <span className="hidden sm:inline">Forward</span>
           </Button>
-          
           <Button
-            onClick={onNext}
+            size="sm"
+            onClick={handleNextBatch}
             disabled={!isTypePhaseComplete}
-            className={`flex-1 rounded-xl font-bold text-white shadow-md border-b-4 ${isTypePhaseComplete ? 'border-[#3c8c01] hover:scale-105 active:scale-95' : 'opacity-50 grayscale cursor-not-allowed'}`}
+            className={`flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] ${isTypePhaseComplete ? 'border-[#3c8c01] hover:scale-105 active:scale-95' : 'opacity-50 grayscale cursor-not-allowed'} px-2 transition-all h-9 py-2`}
             style={{ background: 'linear-gradient(135deg, #58cc02 0%, #46a302 100%)' }}
           >
-            Next <ChevronRight className="w-4 h-4 ml-1" />
+            <span className="hidden sm:inline">Next</span>
+            <ChevronRight className="w-4 h-4 sm:ml-1 mx-auto sm:mx-0" />
           </Button>
         </div>
       </div>
@@ -443,7 +560,7 @@ function TypePhase({ items, pattern, accent, onNext }: { items: string[]; patter
           {typeOrder.map((syllable) => {
             const status = typeStatus[syllable];
             const val = typeInputs[syllable] || "";
-            
+
             return (
               <motion.div
                 key={`input-${syllable}`}
@@ -456,9 +573,9 @@ function TypePhase({ items, pattern, accent, onNext }: { items: string[]; patter
                   onChange={(e) => handleTypeChange(syllable, e.target.value)}
                   disabled={status === true}
                   className={`w-full h-full text-center text-2xl sm:text-3xl font-black rounded-lg sm:rounded-2xl border-2 sm:border-b-[4px] outline-none transition-all shadow-sm
-                    ${status === true ? 'bg-gray-100 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700/50 text-green-600 dark:text-green-500 opacity-50 grayscale' : 
-                      status === false ? 'bg-red-50 border-red-400 text-red-600' : 
-                      'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-200 focus:border-blue-400'}
+                    ${status === true ? 'bg-gray-100 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700/50 text-green-600 dark:text-green-500 opacity-50 grayscale' :
+                      status === false ? 'bg-red-50 border-red-400 text-red-600' :
+                        'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-200 focus:border-blue-400'}
                   `}
                 />
               </motion.div>
@@ -529,9 +646,10 @@ export function LevelSyllableQuiz({ pattern, levelId, accent, onComplete }: Leve
     }
   };
 
-  const getPhaseTitle = (type: string) => {
-    switch (type) {
-      case "review": return "Review Phase";
+  const getPhaseTitle = () => {
+    if (!step) return "";
+    switch (step.type) {
+      case "review": return step.isFullPreview ? "Final Review" : "Review Phase";
       case "build": return "Syllable Builder";
       case "match": return "Listen and Match";
       case "type": return "Listen and Type";
@@ -549,24 +667,25 @@ export function LevelSyllableQuiz({ pattern, levelId, accent, onComplete }: Leve
           <Button variant="ghost" size="sm" onClick={async () => {
             const confirmExit = await confirmAction("Leave?", "Progress won't be saved.");
             if (confirmExit) navigate("/levels");
-          }} className="rounded-full p-2 h-auto text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+          }} className="rounded-full p-2 h-auto text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 flex items-center gap-1">
             <X className="w-6 h-6 sm:w-7 sm:h-7" />
+            <span className="hidden sm:inline font-bold">Exit</span>
           </Button>
-          
+
           <div className="flex-1 flex flex-col gap-1.5 mt-1">
             <div className="flex justify-between items-center px-1">
               <h2 className="text-sm sm:text-base font-bold tracking-tight" style={{ color: accent.primary }}>
-                Syllable Master - {getPhaseTitle(step?.type)}
+                Syllable Master - {getPhaseTitle()}
               </h2>
             </div>
-            
+
             {/* Duolingo-style Progress Bar */}
             <div className="w-full bg-gray-200 dark:bg-gray-800 rounded-full h-4 sm:h-5 overflow-hidden relative shadow-inner">
-              <div 
+              <div
                 className="absolute top-0 left-0 h-full rounded-full transition-all duration-700 ease-out flex flex-col justify-start"
-                style={{ 
-                  width: `${Math.max(5, (currentStep / steps.length) * 100)}%`, 
-                  backgroundColor: accent.primary 
+                style={{
+                  width: `${Math.max(5, (currentStep / steps.length) * 100)}%`,
+                  backgroundColor: accent.primary
                 }}
               >
                 {/* Glossy reflection highlight */}
@@ -601,6 +720,9 @@ export function LevelSyllableQuiz({ pattern, levelId, accent, onComplete }: Leve
               pattern={pattern}
               accent={accent}
               onNext={handleNext}
+              onBack={() => setCurrentStep(prev => Math.max(0, prev - 1))}
+              canBack={currentStep > 0}
+              isFullPreview={step.isFullPreview}
             />
           ) : step?.type === "build" ? (
             <LevelSyllableBuilder
@@ -615,6 +737,7 @@ export function LevelSyllableQuiz({ pattern, levelId, accent, onComplete }: Leve
                 pattern: pattern
               }))}
               onComplete={handleNext}
+              onBack={() => setCurrentStep(prev => Math.max(0, prev - 1))}
             />
           ) : step?.type === "match" ? (
             <MatchPhase
@@ -623,6 +746,8 @@ export function LevelSyllableQuiz({ pattern, levelId, accent, onComplete }: Leve
               pattern={pattern}
               accent={accent}
               onNext={handleNext}
+              onBack={() => setCurrentStep(prev => Math.max(0, prev - 1))}
+              canBack={currentStep > 0}
               isLastStep={currentStep === steps.length - 1}
             />
           ) : (
@@ -632,6 +757,8 @@ export function LevelSyllableQuiz({ pattern, levelId, accent, onComplete }: Leve
               pattern={pattern}
               accent={accent}
               onNext={handleNext}
+              onBack={() => setCurrentStep(prev => Math.max(0, prev - 1))}
+              canBack={currentStep > 0}
             />
           )}
         </AnimatePresence>

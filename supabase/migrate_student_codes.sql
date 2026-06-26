@@ -18,7 +18,7 @@ BEGIN
         prefix := UPPER(SUBSTRING(REGEXP_REPLACE(COALESCE(r.first_name, ''), '[^A-Za-z]', '', 'g') || 'XXX' FROM 1 FOR 3)) || 
                   UPPER(SUBSTRING(REGEXP_REPLACE(COALESCE(r.last_name, ''), '[^A-Za-z]', '', 'g') || 'X' FROM 1 FOR 1));
                   
-        -- Increment the global sequence by 1
+        -- Increment the global sequence by 1a
         seq_num := seq_num + 1;
         new_code := prefix || LPAD(seq_num::text, 3, '0');
         

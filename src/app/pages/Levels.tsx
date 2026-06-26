@@ -109,7 +109,7 @@ export default function Levels() {
             </h1>
           </div>
           <p className="text-gray-600 dark:text-gray-400">
-            Master the alphabet through {levels.length} fun, progressive lessons!
+            Master the alphabet through {levels.length} fun, progressive levels!
           </p>
         </header>
 
@@ -133,7 +133,7 @@ export default function Levels() {
                     </div>
                     <div className="flex-1">
                       <h3 className="text-xl text-gray-800 dark:text-gray-100 mb-1">
-                        Lesson {level.id}: {level.title}
+                        Level {level.id}: {level.title}
                       </h3>
                       <p className="text-sm text-gray-500 dark:text-gray-400">
                         {level.subtitle}
