@@ -28,7 +28,6 @@ interface LevelSyllableQuizProps {
   onComplete: () => void;
 }
 
-const CHUNK_SIZE = 15;
 const VOWELS = new Set(['A', 'E', 'I', 'O', 'U']);
 
 function getAudioPath(syllable: string, pattern: Pattern): string {
@@ -49,8 +48,8 @@ function playAudio(syllable: string, pattern: Pattern) {
 function buildSteps(allSyllables: string[]): Step[] {
   const steps: Step[] = [];
 
-  // Limit to max 60 syllables per session (like CVC)
-  const sessionSyllables = allSyllables.slice(0, 60);
+  // Use all syllables (58 for VC, 83 for CV)
+  const sessionSyllables = allSyllables;
 
   // ── Phase 1: Review ALL syllables (batched into ~30 per screen, clickable audio) ──
   const REVIEW_BATCH_SIZE = 30;
@@ -64,15 +63,18 @@ function buildSteps(allSyllables: string[]): Step[] {
     });
   }
 
-  // ── Phase 2: Assessment of ALL syllables (Build → Match → Type, in chunks) ──
-  const totalChunks = Math.ceil(sessionSyllables.length / CHUNK_SIZE);
-  for (let i = 0; i < totalChunks; i++) {
-    const chunk = sessionSyllables.slice(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE);
-    const label = `Set ${i + 1}/${totalChunks}`;
-    steps.push({ type: "build", items: chunk, setLabel: label });
-    steps.push({ type: "match", items: chunk, setLabel: label });
-    steps.push({ type: "type", items: chunk, setLabel: label });
-  }
+  // ── Phase 2: Assessment of ALL syllables ──
+  // 1. Build Phase: ALL syllables in one single build step!
+  steps.push({
+    type: "build",
+    items: sessionSyllables,
+    setLabel: "Syllable Builder",
+  });
+
+  // 2. Match and Type Phases: ALL syllables in one single step!
+  // The components MatchPhase and TypePhase will handle batching internally (by 8)
+  steps.push({ type: "match", items: sessionSyllables, setLabel: "Listen and Match" });
+  steps.push({ type: "type", items: sessionSyllables, setLabel: "Listen and Type" });
 
   // ── Phase 3: Final Review of ALL syllables (clickable audio, same UI as Phase 1) ──
   for (let i = 0; i < totalReviewBatches; i++) {
@@ -96,14 +98,16 @@ function ReviewPhase({ items, pattern, accent, onNext, onBack, canBack, isFullPr
   const handleShuffle = () => setReviewOrder([...reviewOrder].sort(() => Math.random() - 0.5));
 
   const handleSyllableClick = (syl: string) => {
-    playAudio(syl, pattern);
+    if (isFullPreview) {
+      playAudio(syl, pattern);
+    }
   };
 
   return (
     <motion.div initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -50 }} className="flex flex-col items-center w-full h-full">
       <div className="text-center mb-8">
         <p className="text-gray-600 dark:text-gray-300 text-base sm:text-lg font-bold mt-2 block">
-          {isFullPreview ? `🎉 Great work! Review all syllables! (${items.length} words)` : `Tap the syllables to hear their sounds (${items.length} words)`}
+          {isFullPreview ? `🎉 Great work! Review all syllables! (${items.length} words)` : `Review syllables before we start! (${items.length} words)`}
         </p>
 
         {/* Navigation Controls moved to top */}
@@ -139,7 +143,7 @@ function ReviewPhase({ items, pattern, accent, onNext, onBack, canBack, isFullPr
         </div>
       </div>
 
-      <div className="flex flex-wrap justify-center gap-2 sm:gap-3 max-w-4xl mx-auto mb-12 w-full">
+      <div className="flex flex-wrap justify-center gap-3 sm:gap-4 max-w-5xl mx-auto mb-12 w-full">
         {reviewOrder.map((syl) => {
           const isVowelStart = VOWELS.has(syl[0].toUpperCase());
           const bgStart = isVowelStart ? "#FF6B8A" : "#1CB0F6";
@@ -147,13 +151,17 @@ function ReviewPhase({ items, pattern, accent, onNext, onBack, canBack, isFullPr
           const borderColor = isVowelStart ? "#C82A52" : "#086CA5";
 
           return (
-            <motion.div key={syl} initial={{ scale: 0 }} animate={{ scale: 1 }} className="flex flex-col items-center w-[70px] sm:w-[90px]">
+            <motion.div key={syl} initial={{ scale: 0 }} animate={{ scale: 1 }} className="flex flex-col items-center w-[70px] sm:w-[95px]">
               <div
                 onClick={() => handleSyllableClick(syl)}
-                className="w-full aspect-square rounded-xl sm:rounded-2xl shadow-md flex items-center justify-center border-b-[4px] select-none cursor-pointer transition-all hover:scale-105 active:scale-95 hover:shadow-xl"
+                className={`w-full aspect-square rounded-xl sm:rounded-2xl shadow-md flex items-center justify-center border-b-[4px] select-none ${
+                  isFullPreview
+                    ? "cursor-pointer transition-all hover:scale-105 active:scale-95 hover:shadow-xl"
+                    : "cursor-default"
+                }`}
                 style={{ background: `linear-gradient(135deg, ${bgStart}, ${bgEnd})`, borderColor }}
               >
-                <span className="text-white font-black drop-shadow-sm text-lg sm:text-xl">{syl}</span>
+                <span className="text-white font-black drop-shadow-sm text-2xl sm:text-3xl">{syl.toLowerCase()}</span>
               </div>
             </motion.div>
           );
@@ -175,7 +183,7 @@ function MatchPhase({
   canBack?: boolean;
   isLastStep: boolean;
 }) {
-  const MATCH_BATCH = 5;
+  const MATCH_BATCH = 6;
   const [batchIndex, setBatchIndex] = useState(0);
   const totalBatches = Math.ceil(items.length / MATCH_BATCH);
   const batchItems = items.slice(batchIndex * MATCH_BATCH, (batchIndex + 1) * MATCH_BATCH);
@@ -331,16 +339,17 @@ function MatchPhase({
         </div>
       </div>
 
+
       {/* Two-column match */}
-      <div className="w-full grid grid-cols-2 gap-3 mb-6 max-w-full">
+      <div className="w-full grid grid-cols-2 gap-4 sm:gap-8 mb-6 max-w-full">
         {/* Left: speaker buttons */}
-        <div className="flex flex-col gap-3 min-w-0">
+        <div className="flex flex-col gap-4 sm:gap-6 min-w-0">
           {leftCol.map((syl, idx) => {
             const isDone = matchedPairs.has(syl);
             const isSelected = selectedLeft === syl;
             const isWrong = isWrongLeft(syl);
             return (
-              <div key={`left-${syl}`} className="relative w-full">
+              <div key={`left-${syl}`} className="relative w-full h-14 sm:h-16">
                 <MatchButton
                   gradientStart={accent.primary}
                   gradientEnd={accent.dark}
@@ -348,7 +357,7 @@ function MatchPhase({
                   isSelected={isSelected}
                   isWrong={isWrong}
                   onClick={() => handleLeftClick(syl)}
-                  className={`w-full ${idx === 0 && !hasClickedTTS ? 'ring-2 ring-indigo-400 ring-offset-2 animate-pulse' : ''}`}
+                  className={`w-full h-full ${idx === 0 && !hasClickedTTS ? 'ring-2 ring-indigo-400 ring-offset-2 animate-pulse' : ''}`}
                 >
                   <Volume2 className={`w-8 h-8 ${isDone ? "opacity-50" : ""}`} />
                 </MatchButton>
@@ -369,7 +378,7 @@ function MatchPhase({
         </div>
 
         {/* Right: word buttons */}
-        <div className="flex flex-col gap-3 flex-1 min-w-0">
+        <div className="flex flex-col gap-4 sm:gap-6 flex-1 min-w-0">
           {rightCol.map((syl) => {
             const isDone = matchedPairs.has(syl);
             const isSelected = selectedRight === syl;
@@ -381,7 +390,7 @@ function MatchPhase({
                 isSelected={isSelected}
                 isWrong={isWrong}
                 onClick={() => handleRightClick(syl)}
-                className="font-black text-2xl tracking-widest"
+                className="font-black text-2xl sm:text-3xl tracking-widest h-14 sm:h-16 flex items-center justify-center"
               >
                 {syl.toLowerCase()}
               </MatchButton>
@@ -394,7 +403,7 @@ function MatchPhase({
 }
 
 function TypePhase({ items, pattern, accent, onNext, onBack, canBack }: { items: string[]; pattern: Pattern; accent: any; onNext: () => void; onBack?: () => void; canBack?: boolean; }) {
-  const TYPE_BATCH = 5;
+  const TYPE_BATCH = 6;
   const [batchIndex, setBatchIndex] = useState(0);
   const totalBatches = Math.ceil(items.length / TYPE_BATCH);
   const batchItems = items.slice(batchIndex * TYPE_BATCH, (batchIndex + 1) * TYPE_BATCH);
@@ -424,7 +433,7 @@ function TypePhase({ items, pattern, accent, onNext, onBack, canBack }: { items:
   const handleTypeChange = (syllable: string, val: string) => {
     if (val.length > 2) return;
 
-    setTypeInputs(prev => ({ ...prev, [syllable]: val }));
+    setTypeInputs(prev => ({ ...prev, [syllable]: val.toLowerCase() }));
 
     if (val.length === 2) {
       if (val.toLowerCase() === syllable.toLowerCase()) {
@@ -521,13 +530,25 @@ function TypePhase({ items, pattern, accent, onNext, onBack, canBack }: { items:
         </div>
       </div>
 
-      <div className="flex justify-center gap-4 sm:gap-8 w-full max-w-2xl mx-auto mb-10 px-2 sm:px-4">
+      {/* Reference syllable pool for the user to see what syllables are in the batch */}
+      <div className="flex flex-wrap justify-center gap-2 sm:gap-3 mb-6 max-w-xl mx-auto px-2">
+        {[...typeOrder].sort().map((syllable) => (
+          <span
+            key={`ref-${syllable}`}
+            className="px-3.5 py-1.5 sm:px-5 sm:py-2 bg-white dark:bg-gray-800 border-2 border-b-[4px] border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-200 rounded-xl font-black text-base sm:text-lg shadow-sm flex items-center justify-center min-w-[3rem] sm:min-w-[4rem] hover:scale-105 active:translate-y-[1px] active:border-b-[2px] transition-all select-none cursor-pointer"
+          >
+            {syllable.toLowerCase()}
+          </span>
+        ))}
+      </div>
+
+      <div className="flex justify-center gap-3 sm:gap-6 w-full max-w-2xl mx-auto mb-10 px-2 sm:px-4">
         {/* Left Column: TTS Speakers */}
         <div className="flex flex-col gap-3 sm:gap-4 flex-1 min-w-0">
           {typeOrder.map((syllable, idx) => {
             const isCorrect = typeStatus[syllable] === true;
             return (
-              <div key={`speaker-${syllable}`} className="relative w-full">
+              <div key={`speaker-${syllable}`} className="relative w-full h-14 sm:h-16">
                 <MatchButton
                   gradientStart={accent.primary}
                   gradientEnd={accent.dark}
@@ -535,7 +556,7 @@ function TypePhase({ items, pattern, accent, onNext, onBack, canBack }: { items:
                   isSelected={false}
                   isWrong={false}
                   onClick={() => playTypeSound(syllable)}
-                  className={`w-full ${idx === 0 && !hasClickedTTS ? 'ring-2 ring-indigo-400 ring-offset-2 animate-pulse' : ''}`}
+                  className={`w-full h-full ${idx === 0 && !hasClickedTTS ? 'ring-2 ring-indigo-400 ring-offset-2 animate-pulse' : ''}`}
                 >
                   <Volume2 className={`w-8 h-8 ${isCorrect ? "opacity-50" : ""}`} />
                 </MatchButton>
@@ -628,9 +649,6 @@ export function LevelSyllableQuiz({ pattern, levelId, accent, onComplete }: Leve
   const [showFinalConfetti, setShowFinalConfetti] = useState(false);
 
   const step = steps[currentStep];
-  const totalReviewSets = Math.ceil(allSyllables.length / CHUNK_SIZE);
-  const progressPct = (currentStep / steps.length) * 100;
-
   const handleNext = () => {
     if (currentStep < steps.length - 1) {
       if (steps[currentStep].type !== "review") {
@@ -638,7 +656,7 @@ export function LevelSyllableQuiz({ pattern, levelId, accent, onComplete }: Leve
       } else {
         playSound("click", 0.2);
       }
-      setCurrentStep(prev => prev + 1);
+      setCurrentStep(prev => Math.min(prev + 1, steps.length - 1));
     } else {
       playSound("complete", 0.5);
       setShowFinalConfetti(true);
@@ -750,7 +768,7 @@ export function LevelSyllableQuiz({ pattern, levelId, accent, onComplete }: Leve
               canBack={currentStep > 0}
               isLastStep={currentStep === steps.length - 1}
             />
-          ) : (
+          ) : step?.type === "type" ? (
             <TypePhase
               key={`type-${currentStep}`}
               items={step.items}
@@ -760,7 +778,7 @@ export function LevelSyllableQuiz({ pattern, levelId, accent, onComplete }: Leve
               onBack={() => setCurrentStep(prev => Math.max(0, prev - 1))}
               canBack={currentStep > 0}
             />
-          )}
+          ) : null}
         </AnimatePresence>
       </div>
     </div>

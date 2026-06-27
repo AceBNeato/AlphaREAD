@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { useNavigate } from "react-router";
-import {Home, ArrowRight, ArrowLeft, RotateCcw, Sparkles, CheckCircle2, Volume2, FastForward, X} from "lucide-react";
+import { Home, ArrowRight, ArrowLeft, RotateCcw, Sparkles, CheckCircle2, Volume2, FastForward, X } from "lucide-react";
 import { confirmAction } from "../utils/alerts";
 import { Button } from "./ui/button";
 import {
@@ -68,10 +68,10 @@ export function LevelSyllableBuilder({
   // Build the letter pool for the CURRENT target to ensure exactly 12 buttons
   const letterPool = useMemo(() => {
     if (!currentTarget) return [];
-    
+
     const letters: { id: string; letter: string; isVowel: boolean }[] = [];
     const added = new Set<string>();
-    
+
     // Add letters for the current target
     currentTarget.letters.forEach((l) => {
       if (!added.has(l)) {
@@ -88,7 +88,7 @@ export function LevelSyllableBuilder({
     const allPool = [...CONSONANTS, ...VOWELS].filter((l) => !added.has(l));
     const distractorsNeeded = Math.max(0, 12 - letters.length);
     const extras = shuffle(allPool).slice(0, distractorsNeeded);
-    
+
     extras.forEach((l) => {
       letters.push({
         id: `x-${l}`,
@@ -96,7 +96,7 @@ export function LevelSyllableBuilder({
         isVowel: VOWELS.includes(l),
       });
     });
-    
+
     return shuffle(letters);
   }, [currentTarget]);
 
@@ -152,13 +152,13 @@ export function LevelSyllableBuilder({
     // Use local audio files for CV and VC patterns
     if (pattern === "CV") {
       const audioPath = `${(import.meta as any).env.BASE_URL}audio/cv-audio/cv-${syllableLower}.MP3`;
-      playExclusiveAudio(audioPath).catch(() => {});
+      playExclusiveAudio(audioPath).catch(() => { });
       return;
     }
 
     if (pattern === "VC") {
       const audioPath = `${(import.meta as any).env.BASE_URL}audio/vc-audio/vc-${syllableLower}.MP3`;
-      playExclusiveAudio(audioPath).catch(() => {});
+      playExclusiveAudio(audioPath).catch(() => { });
       return;
     }
 
@@ -357,10 +357,10 @@ export function LevelSyllableBuilder({
                 </h3>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
                   {p === "VC"
-                    ? "Build syllables like AB, IM, OT"
+                    ? "Build syllables like ab, im, ot"
                     : p === "CV"
-                      ? "Build syllables like BA, MI, TO"
-                      : "Build words like BAT, MUG, TIP"}
+                      ? "Build syllables like ba, mi, to"
+                      : "Build words like bat, mug, tip"}
                 </p>
                 <div className="mt-4">
                   <span
@@ -641,8 +641,8 @@ export function LevelSyllableBuilder({
                                 : "#086CA5",
                         } as React.CSSProperties}
                       >
-                        <span className="text-white text-3xl sm:text-4xl font-black drop-shadow-sm">
-                          {item.letter}{item.letter.toLowerCase()}
+                        <span className="text-white text-2xl sm:text-3xl font-black drop-shadow-sm">
+                          {item.letter.toUpperCase()}{item.letter.toLowerCase()}
                         </span>
 
                       </button>

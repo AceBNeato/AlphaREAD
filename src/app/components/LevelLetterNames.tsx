@@ -80,10 +80,10 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
   const step = STEPS[currentStep];
 
   const baseActiveLetters = useMemo(() => {
-    if (step.combo === "AL") return comboAL;
-    if (step.combo === "MZ") return comboMZ;
-    if (step.isFinal) return finalAlphabet;
-    return ALPHABET.slice(step.start, step.end);
+    if (step?.combo === "AL") return comboAL;
+    if (step?.combo === "MZ") return comboMZ;
+    if (step?.isFinal) return finalAlphabet;
+    return ALPHABET.slice(step?.start || 0, step?.end || ALPHABET.length);
   }, [ALPHABET, finalAlphabet, comboAL, comboMZ, step]);
 
   const playNameTTS = (letter: string) => {
@@ -95,6 +95,7 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
   // Global states
   const [showConfetti, setShowConfetti] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isCompleted, setIsCompleted] = useState(false);
 
   // Review Phase States
   const [reviewOrder, setReviewOrder] = useState<string[]>([]);
@@ -356,7 +357,7 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
       } else {
         playSound("click", 0.2);
       }
-      setCurrentStep(prev => prev + 1);
+      setCurrentStep(prev => Math.min(prev + 1, STEPS.length - 1));
     } else {
       playSound("complete", 0.5);
       setShowConfetti(true);
@@ -415,7 +416,7 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
       localStorage.setItem("completedLevels", JSON.stringify(completedLevels));
     }
     setIsSaving(false);
-    navigate("/levels");
+    setIsCompleted(true);
   };
 
   const checkMatch = (left: string, right: string) => {
@@ -450,6 +451,53 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
     if (selectedSpeakerMatch) checkMatch(selectedSpeakerMatch, letter);
   };
 
+  if (isCompleted) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-purple-50 dark:bg-none dark:bg-[#0d141c] flex flex-col items-center justify-center p-4">
+        <Confetti active={true} />
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5 }}
+          className="text-center py-12 max-w-lg w-full mx-auto flex flex-col items-center"
+        >
+          {/* Mascot Section */}
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: [0, 1.2, 1] }}
+            transition={{ delay: 0.2, duration: 0.6 }}
+            className="w-48 h-48 relative flex items-center justify-center mb-6"
+          >
+            {/* Glowing background */}
+            <div className="absolute inset-0 bg-yellow-400/20 dark:bg-yellow-400/10 rounded-full blur-xl animate-pulse" />
+            <motion.img
+              src={`${(import.meta as any).env.BASE_URL}dragon.png`}
+              alt="Mascot"
+              className="w-44 h-44 object-contain relative z-10"
+              animate={{ y: [0, -10, 0] }}
+              transition={{ repeat: Infinity, duration: 2.5, ease: "easeInOut" }}
+            />
+          </motion.div>
+
+          <h1 className="text-3xl sm:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-yellow-500 via-orange-500 to-red-500 drop-shadow-sm mb-4">
+            Level Complete!
+          </h1>
+          <p className="text-gray-600 dark:text-gray-300 text-lg font-medium leading-relaxed max-w-sm mx-auto mb-8">
+            Amazing job! You have fully mastered letter names in <span className="font-bold text-blue-500">Letter Names Master</span>!
+          </p>
+
+          <Button
+            onClick={() => navigate("/levels")}
+            className="w-full sm:w-auto px-10 py-6 rounded-2xl font-bold text-white text-lg shadow-lg border-b-[4px] border-[#3c8c01] hover:scale-[1.02] active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
+            style={{ background: 'linear-gradient(135deg, #58cc02 0%, #46a302 100%)' }}
+          >
+            Keep Going! <ArrowRight className="w-5 h-5" />
+          </Button>
+        </motion.div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-purple-50 dark:bg-none dark:bg-[#0d141c] overflow-x-hidden flex flex-col">
       <Confetti active={showConfetti} />
@@ -465,10 +513,10 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
           <div className="flex-1 flex flex-col gap-1.5 mt-1">
             <div className="flex justify-between items-center px-1">
               <h2 className="text-sm sm:text-base font-bold tracking-tight" style={{ color: accent.primary }}>
-                {step.isFinal ? 'Final Review - ' : step.combo === 'AL' ? 'Combined A-L - ' : step.combo === 'MZ' ? 'Combined M-Z - ' : 'Letter Names - '}
-                {step.type === 'review' ? 'Review Phase' :
-                  step.type === 'match' ? 'Listen & Match' :
-                    step.type === 'voice' ? 'Say the Name!' :
+                {step?.isFinal ? 'Final Review - ' : step?.combo === 'AL' ? 'Combined A-L - ' : step?.combo === 'MZ' ? 'Combined M-Z - ' : 'Letter Names - '}
+                {step?.type === 'review' ? 'Review Phase' :
+                  step?.type === 'match' ? 'Listen & Match' :
+                    step?.type === 'voice' ? 'Say the Name!' :
                       'Listen & Type'}
               </h2>
             </div>

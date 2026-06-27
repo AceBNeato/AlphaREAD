@@ -35,12 +35,11 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
     { type: "review" as const, start: 0, end: 26, isFinal: false, isFullAlphabetPreview: true, combo: false },
 
     // ── Batch 1: A-F ──
-    { type: "review" as const, start: 0, end: 6, isFinal: false, combo: false },
     { type: "match" as const, start: 0, end: 6, isFinal: false, combo: false },
     { type: "type" as const, start: 0, end: 6, isFinal: false, combo: false },
+    { type: "review" as const, start: 0, end: 6, isFinal: false, combo: false }, // Review shows after assessment
 
     // ── Batch 2: G-L ──
-    { type: "review" as const, start: 6, end: 12, isFinal: false, combo: false },
     { type: "match" as const, start: 6, end: 12, isFinal: false, combo: false },
     { type: "type" as const, start: 6, end: 12, isFinal: false, combo: false },
 
@@ -48,7 +47,6 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
     { type: "review" as const, start: 0, end: 12, isFinal: false, combo: "AL" as const },
 
     // ── Batch 3: M-S ──
-    { type: "review" as const, start: 12, end: 19, isFinal: false, combo: false },
     { type: "match" as const, start: 12, end: 19, isFinal: false, combo: false },
     { type: "type" as const, start: 12, end: 19, isFinal: false, combo: false },
 
@@ -56,7 +54,6 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
     { type: "review" as const, start: 0, end: 19, isFinal: false, combo: "AS" as const },
 
     // ── Batch 4: T-Z ──
-    { type: "review" as const, start: 19, end: 26, isFinal: false, combo: false },
     { type: "match" as const, start: 19, end: 26, isFinal: false, combo: false },
     { type: "type" as const, start: 19, end: 26, isFinal: false, combo: false },
 
@@ -71,13 +68,13 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
   const [isCompleted, setIsCompleted] = useState(false);
 
   const baseActiveLetters = useMemo(() => {
-    if (step.isFullAlphabetPreview) {
+    if (step?.isFullAlphabetPreview) {
       return ALPHABET;
     }
-    if (step.combo === "AL") return comboAL;
-    if (step.combo === "AS") return comboAS;
-    if (step.isFinal) return finalAlphabet;
-    return ALPHABET.slice(step.start, step.end);
+    if (step?.combo === "AL") return comboAL;
+    if (step?.combo === "AS") return comboAS;
+    if (step?.isFinal) return finalAlphabet;
+    return ALPHABET.slice(step?.start || 0, step?.end || ALPHABET.length);
   }, [ALPHABET, finalAlphabet, comboAL, comboAS, step]);
 
   const [showConfetti, setShowConfetti] = useState(false);
@@ -255,7 +252,7 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
     if (step.type !== 'review') playSound("complete", 0.5); else playSound("click", 0.3);
 
     if (currentStep < STEPS.length - 1) {
-      setCurrentStep(prev => prev + 1);
+      setCurrentStep(prev => Math.min(prev + 1, STEPS.length - 1));
     } else {
       const completedLevels = JSON.parse(localStorage.getItem("completedLevels") || "[]");
       if (!completedLevels.includes(levelId)) {
@@ -405,9 +402,9 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
           <div className="flex-1 flex flex-col gap-1.5 mt-1">
             <div className="flex justify-between items-center px-1">
               <h2 className="text-sm sm:text-base font-bold tracking-tight" style={{ color: accent.primary }}>
-                {step.isFinal ? 'Final Review - ' : step.combo === 'AL' ? 'Combined A-L - ' : step.combo === 'AS' ? 'Combined A-S - ' : 'Alphabet Master - '}
-                {step.type === 'review' ? 'Review Phase' :
-                  step.type === 'match' ? 'Listen & Match' :
+                {step?.isFinal ? 'Final Review - ' : step?.combo === 'AL' ? 'Combined A-L - ' : step?.combo === 'AS' ? 'Combined A-S - ' : 'Alphabet Master - '}
+                {step?.type === 'review' ? 'Review Phase' :
+                  step?.type === 'match' ? 'Listen & Match' :
                     'Listen & Type'}
               </h2>
             </div>
@@ -464,15 +461,6 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
                   <Button
                     size="sm"
                     onClick={handleStepNext}
-                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#c99c00] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
-                    style={{ background: 'linear-gradient(135deg, #ffc800 0%, #ff9600 100%)' }}
-                  >
-                    <SkipForward className="w-4 h-4 sm:mr-1 mx-auto sm:mx-0" />
-                    <span className="hidden sm:inline">Forward</span>
-                  </Button>
-                  <Button
-                    size="sm"
-                    onClick={handleStepNext}
                     className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#3c8c01] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
                     style={{ background: 'linear-gradient(135deg, #58cc02 0%, #46a302 100%)' }}
                   >
@@ -518,7 +506,7 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
                 <p className="text-white text-base sm:text-lg font-bold mt-2 block">
                   Tap a speaker, then tap the matching letter!{needsMatchBatching ? ` (Batch ${matchBatchIndex + 1}/${matchTotalBatches})` : ''}
                 </p>
-                
+
                 {/* Navigation Controls moved to top */}
                 <div className="flex justify-center items-center w-full gap-2 sm:gap-4 max-w-xl mx-auto mt-6">
                   <Button
@@ -531,23 +519,23 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
                     <ArrowLeft className="w-4 h-4 sm:mr-1 mx-auto sm:mx-0" />
                     <span className="hidden sm:inline">Back</span>
                   </Button>
-                  <Button 
+                  <Button
                     size="sm"
                     onClick={() => {
                       setMatchColumns(prev => ({
                         left: [...prev.left].sort(() => Math.random() - 0.5),
                         right: [...prev.right].sort(() => Math.random() - 0.5)
                       }));
-                    }} 
+                    }}
                     className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#8b40b8] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
                     style={{ background: 'linear-gradient(135deg, #ce82ff 0%, #a559d6 100%)' }}
                   >
                     <Shuffle className="w-4 h-4 sm:mr-1 mx-auto sm:mx-0" />
                     <span className="hidden sm:inline">Shuffle</span>
                   </Button>
-                  <Button 
+                  <Button
                     size="sm"
-                    onClick={handleMatchNext} 
+                    onClick={handleMatchNext}
                     className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#c99c00] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
                     style={{ background: 'linear-gradient(135deg, #ffc800 0%, #ff9600 100%)' }}
                   >
@@ -567,16 +555,17 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
                 </div>
               </div>
 
+
               <div className="flex justify-center gap-4 sm:gap-8 w-full max-w-2xl mx-auto mb-10 px-2 sm:px-4">
                 {/* Left Column: TTS Speakers */}
-                <div className="flex flex-col gap-3 sm:gap-4 flex-1 min-w-0">
+                <div className={`flex flex-col ${matchColumns.left.length >= 7 ? 'gap-5 sm:gap-5' : 'gap-4 sm:gap-6'} flex-1 min-w-0`}>
                   {matchColumns.left.map((letter, idx) => {
                     const isMatched = matchedPairs.has(letter);
                     const isSelected = selectedSpeakerMatch === letter;
                     const isWrong = !!(wrongMatchPair && wrongMatchPair[0] === letter);
 
                     return (
-                      <div key={`speaker-${letter}`} className="relative w-full">
+                      <div key={`speaker-${letter}`} className={`relative w-full ${matchColumns.left.length >= 7 ? 'h-14 sm:h-16' : 'h-14 sm:h-16'}`}>
                         <MatchButton
                           gradientStart={accent.primary}
                           gradientEnd={accent.dark}
@@ -585,9 +574,9 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
                           isWrong={isWrong}
                           onClick={() => handleSpeakerMatchClick(letter)}
                           disabled={!!wrongMatchPair}
-                          className={`w-full ${idx === 0 && !hasClickedTTS ? 'ring-2 ring-indigo-400 ring-offset-2 animate-pulse' : ''}`}
+                          className={`w-full h-full ${idx === 0 && !hasClickedTTS ? 'ring-2 ring-indigo-400 ring-offset-2 animate-pulse' : ''}`}
                         >
-                          <Volume2 className={`w-8 h-8 ${isMatched ? "opacity-50" : ""}`} />
+                          <Volume2 className={`${matchColumns.left.length >= 7 ? 'w-6 h-6' : 'w-8 h-8'} ${isMatched ? "opacity-50" : ""}`} />
                         </MatchButton>
                         {idx === 0 && !hasClickedTTS && (
                           <motion.div
@@ -606,7 +595,7 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
                 </div>
 
                 {/* Right Column: Letters */}
-                <div className="flex flex-col gap-3 sm:gap-4 flex-1 min-w-0">
+                <div className={`flex flex-col ${matchColumns.left.length >= 7 ? 'gap-5 sm:gap-5' : 'gap-4 sm:gap-6'} flex-1 min-w-0`}>
                   {matchColumns.right.map((letter) => {
                     const isMatched = matchedPairs.has(letter);
                     const isSelected = selectedLetterMatch === letter;
@@ -620,7 +609,7 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
                         isWrong={isWrong}
                         onClick={() => handleLetterMatchClick(letter)}
                         disabled={!!wrongMatchPair}
-                        className="font-black text-2xl sm:text-3xl tracking-widest"
+                        className={`font-black tracking-widest flex items-center justify-center ${matchColumns.left.length >= 7 ? 'text-xl sm:text-2xl h-14 sm:h-16' : 'text-2xl sm:text-3xl h-14 sm:h-16'}`}
                       >
                         {letter}{letter.toLowerCase()}
                       </MatchButton>
@@ -630,139 +619,139 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
               </div>
 
               {wrongMatchPair && (
-            <motion.p initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="text-red-500 font-bold text-lg mb-4 text-center">Not quite, try again!</motion.p>
-          )}
-        </motion.div>
+                <motion.p initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="text-red-500 font-bold text-lg mb-4 text-center">Not quite, try again!</motion.p>
+              )}
+            </motion.div>
 
-        ) : step.type === "type" ? (
-        <motion.div key={`type-${currentStep}-${typeBatchIndex}`} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="flex flex-col items-center w-full">
-          <div className="text-center mb-8">
-            <p className="text-white text-base sm:text-lg font-bold mt-2 block">
-              Tap the speaker, then type the letter!{needsTypeBatching ? ` (Batch ${typeBatchIndex + 1}/${typeTotalBatches})` : ''}
-            </p>
+          ) : step.type === "type" ? (
+            <motion.div key={`type-${currentStep}-${typeBatchIndex}`} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="flex flex-col items-center w-full">
+              <div className="text-center mb-8">
+                <p className="text-white text-base sm:text-lg font-bold mt-2 block">
+                  Tap the speaker, then type the letter!{needsTypeBatching ? ` (Batch ${typeBatchIndex + 1}/${typeTotalBatches})` : ''}
+                </p>
 
-            {/* Navigation Controls moved to top */}
-            <div className="flex justify-center items-center w-full gap-2 sm:gap-4 max-w-xl mx-auto mt-6">
-              <Button
-                size="sm"
-                onClick={handleTypeBack}
-                disabled={typeBatchIndex === 0 && currentStep === 0}
-                className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#086ca5] hover:scale-105 active:scale-95 disabled:opacity-50 disabled:grayscale disabled:pointer-events-none px-2 transition-all h-9 py-2"
-                style={{ background: 'linear-gradient(135deg, #1cb0f6 0%, #0a8ed4 100%)' }}
-              >
-                <ArrowLeft className="w-4 h-4 sm:mr-1 mx-auto sm:mx-0" />
-                <span className="hidden sm:inline">Back</span>
-              </Button>
-              <Button
-                size="sm"
-                onClick={handleShuffleType}
-                className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#8b40b8] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
-                style={{ background: 'linear-gradient(135deg, #ce82ff 0%, #a559d6 100%)' }}
-              >
-                <Shuffle className="w-4 h-4 sm:mr-1 mx-auto sm:mx-0" />
-                <span className="hidden sm:inline">Shuffle</span>
-              </Button>
-              <Button
-                size="sm"
-                onClick={handleTypeNext}
-                className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#c99c00] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
-                style={{ background: 'linear-gradient(135deg, #ffc800 0%, #ff9600 100%)' }}
-              >
-                <SkipForward className="w-4 h-4 sm:mr-1 mx-auto sm:mx-0" />
-                <span className="hidden sm:inline">Forward</span>
-              </Button>
-              <Button
-                size="sm"
-                onClick={handleTypeNext}
-                disabled={!isTypePhaseComplete}
-                className={`flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] ${isTypePhaseComplete ? 'border-[#3c8c01] hover:scale-105 active:scale-95' : 'opacity-50 grayscale cursor-not-allowed'} px-2 transition-all h-9 py-2`}
-                style={{ background: 'linear-gradient(135deg, #58cc02 0%, #46a302 100%)' }}
-              >
-                <span className="hidden sm:inline">Proceed</span>
-                <ChevronRight className="w-4 h-4 sm:ml-1 mx-auto sm:mx-0" />
-              </Button>
-            </div>
-          </div>
-
-          {/* Reference letter pool for the user to see what letters are in the batch */}
-          <div className="flex flex-wrap justify-center gap-2 sm:gap-3 mb-6 max-w-xl mx-auto px-2">
-            {[...typeOrder].sort().map((letter) => (
-              <span
-                key={`ref-${letter}`}
-                className="px-4 py-2 sm:px-5 sm:py-2.5 bg-white dark:bg-gray-800 border-2 border-b-[4px] border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-200 rounded-xl font-black text-lg sm:text-xl shadow-sm flex items-center justify-center min-w-[3rem] sm:min-w-[4rem]"
-              >
-                {letter}{letter.toLowerCase()}
-              </span>
-            ))}
-          </div>
-
-          <div className="flex justify-center gap-3 sm:gap-6 w-full max-w-xl mx-auto mb-10 px-2 sm:px-4">
-            {/* Left Column: TTS Speakers */}
-            <div className="flex flex-col gap-2 sm:gap-3 flex-1 min-w-0">
-              {typeOrder.map((letter, idx) => {
-                const isCorrect = typeStatus[letter] === true;
-                return (
-                  <div key={`speaker-${letter}`} className="relative w-full h-11 sm:h-12">
-                    <MatchButton
-                      gradientStart={accent.primary}
-                      gradientEnd={accent.dark}
-                      isMatched={isCorrect}
-                      isSelected={false}
-                      isWrong={false}
-                      onClick={() => playTypeSound(letter)}
-                      className={`w-full h-full ${idx === 0 && !hasClickedTTS ? 'ring-2 ring-indigo-400 ring-offset-2 animate-pulse' : ''}`}
-                    >
-                      <Volume2 className={`w-6 h-6 ${isCorrect ? "opacity-50" : ""}`} />
-                    </MatchButton>
-                    {idx === 0 && !hasClickedTTS && (
-                      <motion.div
-                        initial={{ opacity: 0, y: 10, scale: 0.8 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        transition={{ repeat: Infinity, repeatType: "reverse", duration: 1.5 }}
-                        className="absolute -top-10 left-1/2 -translate-x-1/2 bg-indigo-500 text-white text-[10px] font-bold py-1 px-3 rounded-full shadow-lg whitespace-nowrap pointer-events-none z-10"
-                      >
-                        Tap to listen!
-                        <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-indigo-500 rotate-45" />
-                      </motion.div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Right Column: Inputs */}
-            <div className="flex flex-col gap-2 sm:gap-3 flex-1 min-w-0">
-              {typeOrder.map((letter) => {
-                const status = typeStatus[letter];
-                const val = typeInputs[letter] || "";
-
-                return (
-                  <motion.div
-                    key={`input-${letter}`}
-                    animate={{ x: status === false ? [-5, 5, -5, 5, 0] : 0 }}
-                    className="w-full h-11 sm:h-12 flex"
+                {/* Navigation Controls moved to top */}
+                <div className="flex justify-center items-center w-full gap-2 sm:gap-4 max-w-xl mx-auto mt-6">
+                  <Button
+                    size="sm"
+                    onClick={handleTypeBack}
+                    disabled={typeBatchIndex === 0 && currentStep === 0}
+                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#086ca5] hover:scale-105 active:scale-95 disabled:opacity-50 disabled:grayscale disabled:pointer-events-none px-2 transition-all h-9 py-2"
+                    style={{ background: 'linear-gradient(135deg, #1cb0f6 0%, #0a8ed4 100%)' }}
                   >
-                    <input
-                      type="text"
-                      value={val}
-                      onChange={(e) => handleTypeChange(letter, e.target.value)}
-                      disabled={status === true}
-                      className={`w-full h-full text-center text-xl sm:text-2xl font-black rounded-lg sm:rounded-2xl border-2 sm:border-b-[4px] outline-none transition-all shadow-sm
+                    <ArrowLeft className="w-4 h-4 sm:mr-1 mx-auto sm:mx-0" />
+                    <span className="hidden sm:inline">Back</span>
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={handleShuffleType}
+                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#8b40b8] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
+                    style={{ background: 'linear-gradient(135deg, #ce82ff 0%, #a559d6 100%)' }}
+                  >
+                    <Shuffle className="w-4 h-4 sm:mr-1 mx-auto sm:mx-0" />
+                    <span className="hidden sm:inline">Shuffle</span>
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={handleTypeNext}
+                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#c99c00] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
+                    style={{ background: 'linear-gradient(135deg, #ffc800 0%, #ff9600 100%)' }}
+                  >
+                    <SkipForward className="w-4 h-4 sm:mr-1 mx-auto sm:mx-0" />
+                    <span className="hidden sm:inline">Forward</span>
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={handleTypeNext}
+                    disabled={!isTypePhaseComplete}
+                    className={`flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] ${isTypePhaseComplete ? 'border-[#3c8c01] hover:scale-105 active:scale-95' : 'opacity-50 grayscale cursor-not-allowed'} px-2 transition-all h-9 py-2`}
+                    style={{ background: 'linear-gradient(135deg, #58cc02 0%, #46a302 100%)' }}
+                  >
+                    <span className="hidden sm:inline">Proceed</span>
+                    <ChevronRight className="w-4 h-4 sm:ml-1 mx-auto sm:mx-0" />
+                  </Button>
+                </div>
+              </div>
+
+              {/* Reference letter pool for the user to see what letters are in the batch */}
+              <div className="flex flex-wrap justify-center gap-2 sm:gap-3 mb-6 max-w-xl mx-auto px-2">
+                {[...typeOrder].sort().map((letter) => (
+                  <span
+                    key={`ref-${letter}`}
+                    className="px-3.5 py-1.5 sm:px-5 sm:py-2 bg-white dark:bg-gray-800 border-2 border-b-[4px] border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-200 rounded-xl font-black text-base sm:text-lg shadow-sm flex items-center justify-center min-w-[3rem] sm:min-w-[4rem] hover:scale-105 active:translate-y-[1px] active:border-b-[2px] transition-all select-none cursor-pointer"
+                  >
+                    {letter}{letter.toLowerCase()}
+                  </span>
+                ))}
+              </div>
+
+              <div className="flex justify-center gap-3 sm:gap-6 w-full max-w-2xl mx-auto mb-10 px- sm:px-4">
+                {/* Left Column: TTS Speakers */}
+                <div className={`flex flex-col ${typeOrder.length >= 7 ? 'gap-2 sm:gap-3' : 'gap-5 sm:gap-5'} flex-1 min-w-0`}>
+                  {typeOrder.map((letter, idx) => {
+                    const isCorrect = typeStatus[letter] === true;
+                    return (
+                      <div key={`speaker-${letter}`} className={`relative w-full ${typeOrder.length >= 7 ? 'h-14 sm:h-14' : 'h-14 sm:h-16'}`}>
+                        <MatchButton
+                          gradientStart={accent.primary}
+                          gradientEnd={accent.dark}
+                          isMatched={isCorrect}
+                          isSelected={false}
+                          isWrong={false}
+                          onClick={() => playTypeSound(letter)}
+                          className={`w-full h-full ${idx === 0 && !hasClickedTTS ? 'ring-2 ring-indigo-400 ring-offset-2 animate-pulse' : ''}`}
+                        >
+                          <Volume2 className={`${typeOrder.length >= 7 ? 'w-6 h-6' : 'w-8 h-8'} ${isCorrect ? "opacity-50" : ""}`} />
+                        </MatchButton>
+                        {idx === 0 && !hasClickedTTS && (
+                          <motion.div
+                            initial={{ opacity: 0, y: 10, scale: 0.8 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            transition={{ repeat: Infinity, repeatType: "reverse", duration: 1.5 }}
+                            className="absolute -top-10 left-1/2 -translate-x-1/2 bg-indigo-500 text-white text-[10px] font-bold py-1 px-3 rounded-full shadow-lg whitespace-nowrap pointer-events-none z-10"
+                          >
+                            Tap to listen!
+                            <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-indigo-500 rotate-45" />
+                          </motion.div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Right Column: Inputs */}
+                <div className={`flex flex-col ${typeOrder.length >= 7 ? 'gap-2 sm:gap-3' : 'gap-5 sm:gap-5'} flex-1 min-w-0`}>
+                  {typeOrder.map((letter) => {
+                    const status = typeStatus[letter];
+                    const val = typeInputs[letter] || "";
+
+                    return (
+                      <motion.div
+                        key={`input-${letter}`}
+                        animate={{ x: status === false ? [-5, 5, -5, 5, 0] : 0 }}
+                        className={`w-full flex ${typeOrder.length >= 7 ? 'h-14 sm:h-14' : 'h-14 sm:h-16'}`}
+                      >
+                        <input
+                          type="text"
+                          value={val}
+                          onChange={(e) => handleTypeChange(letter, e.target.value)}
+                          disabled={status === true}
+                          className={`w-full h-full text-center font-black rounded-lg sm:rounded-2xl border-2 sm:border-b-[4px] outline-none transition-all shadow-sm ${typeOrder.length >= 7 ? 'text-xl sm:text-2xl' : 'text-2xl sm:text-3xl'}
                             ${status === true ? 'bg-gray-100 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700/50 text-green-600 dark:text-green-500 opacity-50 grayscale' :
-                          status === false ? 'bg-red-50 border-red-400 text-red-600' :
-                            'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-200 focus:border-blue-400'}
+                              status === false ? 'bg-red-50 border-red-400 text-red-600' :
+                                'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-200 focus:border-blue-400'}
                           `}
-                    />
-                  </motion.div>
-                );
-              })}
-            </div>
-          </div>
-        </motion.div>
+                        />
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              </div>
+            </motion.div>
 
           ) : null}
-      </AnimatePresence>
-    </div>
+        </AnimatePresence>
+      </div>
     </div >
   );
 }
