@@ -143,7 +143,11 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
 
   const handleNextQuiz = () => {
     playSound("complete", 0.5);
-    setShowConfetti(true);
+    if (!isFinalSet) {
+      setCurrentSetIndex(prev => prev + 1);
+    } else {
+      setShowConfetti(true);
+    }
   };
 
   const handleSkip = () => {
@@ -265,14 +269,16 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
             >
               <div className="text-center mb-8">
                 <p className="text-white text-base sm:text-lg font-bold mt-2 block">
-                  Say each sentence out loud into the microphone.
+                  Read the sentences out loud into the microphone. (Batch {currentSetIndex + 1} of {totalSets})
+                </p>
+                <p className="text-sm font-semibold text-pink-300 dark:text-pink-400 mt-1 block">
+                  Completed {(currentSetIndex * SENTENCES_PER_SET) + completedSentences.size} of {CVC_SENTENCES.length} sentences
                 </p>
               </div>
 
               {/* Controls — identical to Lesson 5 */}
               <div className="flex justify-center items-center w-full gap-2 sm:gap-3 max-w-lg mx-auto mb-6">
                 <Button
-                  variant="outline"
                   size="sm"
                   onClick={() => {
                     if (currentSetIndex > 0) {
@@ -291,7 +297,6 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
                   <span className="hidden sm:inline">Back</span>
                 </Button>
                 <Button
-                  variant="outline"
                   size="sm"
                   onClick={handleShuffle}
                   className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#883fba] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
@@ -303,7 +308,6 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
                   <span className="hidden sm:inline">Shuffle</span>
                 </Button>
                 <Button
-                  variant="outline"
                   size="sm"
                   onClick={handleSkip}
                   className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#c99c00] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"

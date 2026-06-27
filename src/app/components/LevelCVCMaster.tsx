@@ -10,13 +10,15 @@ import { Button } from "./ui/button";
 import { confirmAction } from "../utils/alerts";
 import { motion, AnimatePresence } from "motion/react";
 import { Confetti } from "./ui/Confetti";
+import { playExclusiveAudio } from "../utils/soundEffects";
+import { playTTS } from "../utils/tts";
 
 interface LevelCVCMasterProps {
   levelId: number;
   accent: { primary: string; dark: string; lightBg: string };
 }
 
-type StepPhase = "preview" | "build" | "eval" | "milestone" | "sentences";
+type StepPhase = "preview" | "build" | "eval" | "milestone" | "sentences" | "review";
 
 interface GameStep {
   phase: StepPhase;
@@ -33,6 +35,7 @@ function LevelCVCPreview({
   canBack,
   batchNumber,
   totalBatches,
+  isReview,
 }: {
   accent: { primary: string; dark: string; lightBg: string };
   words: string[];
@@ -41,6 +44,7 @@ function LevelCVCPreview({
   canBack: boolean;
   batchNumber?: number;
   totalBatches?: number;
+  isReview?: boolean;
 }) {
   const [order, setOrder] = useState<string[]>(words);
   useEffect(() => {
@@ -58,7 +62,10 @@ function LevelCVCPreview({
     >
       <div className="text-center mb-8">
         <p className="text-gray-600 dark:text-gray-300 text-base sm:text-lg font-bold mt-2 block">
-          Review CVC words before we start! {batchNumber && totalBatches ? `(Batch ${batchNumber} of ${totalBatches})` : ""}
+          {isReview 
+            ? `🎉 Great work! Review CVC words! ${batchNumber && totalBatches ? "(Batch " + batchNumber + " of " + totalBatches + ")" : ""}`
+            : `Review CVC words before we start! ${batchNumber && totalBatches ? "(Batch " + batchNumber + " of " + totalBatches + ")" : ""}`
+          }
         </p>
 
         <div className="flex justify-center items-center w-full gap-3 sm:gap-4 max-w-md mx-auto mt-6">
@@ -97,7 +104,16 @@ function LevelCVCPreview({
               className="flex flex-col items-center w-[70px] sm:w-[90px]"
             >
               <div
-                className="w-full aspect-square rounded-xl sm:rounded-2xl shadow-md flex items-center justify-center border-b-[4px] border-orange-400 select-none cursor-default"
+                onClick={() => {
+                  if (isReview) {
+                    const audioPath = `${(import.meta as any).env.BASE_URL}audio/cvc-audio/cvc-${word.toLowerCase()}.mp3`;
+                    playExclusiveAudio(audioPath).catch((err: any) => {
+                      console.warn(`[AlphabetGO] Local CVC audio not found: ${audioPath}, falling back to TTS`, err);
+                      playTTS(word.toLowerCase());
+                    });
+                  }
+                }}
+                className={`w-full aspect-square rounded-xl sm:rounded-2xl shadow-md flex items-center justify-center border-b-[4px] border-[#c2410c] select-none transition-all ${isReview ? 'cursor-pointer hover:brightness-110 active:translate-y-1 active:border-b-0' : 'cursor-default'}`}
                 style={{
                   background: 'linear-gradient(135deg, #FF9600 0%, #e08000 100%)',
                 }}
@@ -117,39 +133,26 @@ function LevelCVCPreview({
 export function LevelCVCMaster({ levelId, accent }: LevelCVCMasterProps) {
   const navigate = useNavigate();
 
-  // Dynamically generate a pool of 60 random CVC words each time the level starts!
+  // Dynamically generate a pool of all 85 CVC words each time the level starts!
   const STEPS: GameStep[] = useMemo(() => {
-    const randomWords = shuffle([...CVC_WORDS]).slice(0, 60);
-
-    // Break into 4 chunks of 15 words each
-    const chunk1 = randomWords.slice(0, 15);
-    const chunk2 = randomWords.slice(15, 30);
-    const chunk3 = randomWords.slice(30, 45);
-    const chunk4 = randomWords.slice(45, 60);
+    const randomWords = shuffle([...CVC_WORDS]);
 
     return [
-      // Batch 1 Preview (words 1-30)
-      { phase: "preview", words: CVC_WORDS.slice(0, 30), batchNumber: 1, totalBatches: 3 },
-      // Batch 2 Preview (words 31-60)
-      { phase: "preview", words: CVC_WORDS.slice(30, 60), batchNumber: 2, totalBatches: 3 },
-      // Batch 3 Preview (words 61-85)
-      { phase: "preview", words: CVC_WORDS.slice(60, 85), batchNumber: 3, totalBatches: 3 },
+      // Previews are batched manually to fit nicely on screen
+      { phase: "preview", words: randomWords.slice(0, 30), batchNumber: 1, totalBatches: 3 },
+      { phase: "preview", words: randomWords.slice(30, 60), batchNumber: 2, totalBatches: 3 },
+      { phase: "preview", words: randomWords.slice(60, 85), batchNumber: 3, totalBatches: 3 },
       
-      // Chunk 1 (15 words)
-      { phase: "build", words: chunk1 },
-      { phase: "eval", words: chunk1 },
+      // Word Builder - all 85 syllables in one run (showing 1 of 85, etc.)
+      { phase: "build", words: randomWords },
       
-      // Chunk 2 (15 words)
-      { phase: "build", words: chunk2 },
-      { phase: "eval", words: chunk2 },
+      // Voice Evaluation - all 85 syllables in one run (batched internally by 15)
+      { phase: "eval", words: randomWords },
 
-      // Chunk 3 (15 words)
-      { phase: "build", words: chunk3 },
-      { phase: "eval", words: chunk3 },
-
-      // Chunk 4 (15 words)
-      { phase: "build", words: chunk4 },
-      { phase: "eval", words: chunk4 },
+      // Clickable Review Phase - batched manually to fit on screen
+      { phase: "review", words: randomWords.slice(0, 30), batchNumber: 1, totalBatches: 3 },
+      { phase: "review", words: randomWords.slice(30, 60), batchNumber: 2, totalBatches: 3 },
+      { phase: "review", words: randomWords.slice(60, 85), batchNumber: 3, totalBatches: 3 },
 
       // Final sentences quiz
       { phase: "sentences", words: [] }
@@ -186,6 +189,9 @@ export function LevelCVCMaster({ levelId, accent }: LevelCVCMasterProps) {
     if (step.phase === "preview") {
       return `CVC Master - Word Preview ${step.batchNumber && step.totalBatches ? `(${step.batchNumber}/${step.totalBatches})` : ""}`;
     }
+    if (step.phase === "review") {
+      return `CVC Master - Word Review ${step.batchNumber && step.totalBatches ? `(${step.batchNumber}/${step.totalBatches})` : ""}`;
+    }
     if (step.phase === "build") return "CVC Master - Word Builder";
     if (step.phase === "eval" || step.phase === "milestone") return "CVC Master - Voice Evaluation";
     if (step.phase === "sentences") return "CVC Master - Read Sentences";
@@ -195,7 +201,7 @@ export function LevelCVCMaster({ levelId, accent }: LevelCVCMasterProps) {
   let content = null;
 
   // Phase: CVC Preview
-  if (step.phase === "preview") {
+  if (step.phase === "preview" || step.phase === "review") {
     content = (
       <LevelCVCPreview
         accent={accent}
@@ -205,6 +211,7 @@ export function LevelCVCMaster({ levelId, accent }: LevelCVCMasterProps) {
         canBack={currentStep > 0}
         batchNumber={step.batchNumber}
         totalBatches={step.totalBatches}
+        isReview={step.phase === "review"}
       />
     );
   }

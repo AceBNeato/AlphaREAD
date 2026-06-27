@@ -67,7 +67,7 @@ export default function Lesson() {
   }
 
   // To test levels 3-6 while in development, comment out the overlay below!
-  const isUnderConstruction = level.id >= 3 && level.id <= 6;
+  const isUnderConstruction = level.id >= 5 && level.id <= 6;
 
   return (
     <>

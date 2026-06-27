@@ -202,21 +202,7 @@ export function LevelSyllableBuilder({
             playTTS(formed, currentTarget.pattern);
           }, 1000);
 
-          // Give the child 2.5 seconds total to hear the TTS and celebrate before moving on
-          if (successTimeoutRef.current) clearTimeout(successTimeoutRef.current);
-          successTimeoutRef.current = setTimeout(() => {
-            setCompletedTargets((prevSet) => {
-              const newCompleted = new Set(prevSet);
-              newCompleted.add(currentTarget.syllable);
-              if (newCompleted.size >= targets.length) {
-                playSound("complete", 0.5);
-              }
-              return newCompleted;
-            });
-            setFeedback(null);
-            setSelectedLetters([]);
-            setShowConfetti(false);
-          }, 2500);
+          // Removed auto-advance. Word stays on screen until user clicks Next.
         } else {
           playSound("wrong", 0.35);
           setFeedback("wrong");
@@ -234,10 +220,9 @@ export function LevelSyllableBuilder({
   };
 
   const goNext = () => {
-    // If they click next while the success animation is playing, skip the wait!
+    if (ttsTimeoutRef.current) clearTimeout(ttsTimeoutRef.current);
+
     if (feedback === "correct") {
-      if (ttsTimeoutRef.current) clearTimeout(ttsTimeoutRef.current);
-      if (successTimeoutRef.current) clearTimeout(successTimeoutRef.current);
       setCompletedTargets((prevSet) => {
         const newCompleted = new Set(prevSet);
         newCompleted.add(currentTarget.syllable);
@@ -246,13 +231,11 @@ export function LevelSyllableBuilder({
         }
         return newCompleted;
       });
-      setFeedback(null);
-      setSelectedLetters([]);
-      setShowConfetti(false);
-
-      // Auto advance to next if possible
       if (currentIndex < targets.length - 1) {
-        setCurrentIndex(prev => Math.min(prev + 1, targets.length - 1));
+        setCurrentIndex(prev => prev + 1);
+        setSelectedLetters([]);
+        setFeedback(null);
+        setShowConfetti(false);
       }
       return;
     }
@@ -266,7 +249,6 @@ export function LevelSyllableBuilder({
           newTargets.push(skipped);
           return newTargets;
         });
-        // Index stays the same to show the next target in the newly shifted array
       } else {
         setCurrentIndex(prev => Math.min(prev + 1, targets.length - 1));
       }
@@ -439,7 +421,7 @@ export function LevelSyllableBuilder({
                     </Button>
                     <Button
                       onClick={goNext}
-                      disabled={currentIndex === targets.length - 1}
+                      disabled={currentIndex === targets.length - 1 && feedback !== "correct"}
                       className="flex-1 rounded-xl font-bold text-white shadow-md border-b-4 border-[#3c8c01] hover:scale-105 active:scale-95 disabled:opacity-50 disabled:grayscale disabled:pointer-events-none px-2"
                       style={{ background: 'linear-gradient(135deg, #58cc02 0%, #46a302 100%)' }}
                     >
@@ -462,8 +444,7 @@ export function LevelSyllableBuilder({
                   >
 
 
-                    {/* Show the actual target syllable only when not completed */}
-                    {!completedTargets.has(currentTarget.syllable) && (
+                    {/* Show the actual target syllable */}
                       <div className="flex items-center gap-2 relative">
                         <button
                           onClick={() => playTTS(currentTarget.syllable, currentTarget.pattern)}
@@ -499,40 +480,6 @@ export function LevelSyllableBuilder({
                           </motion.div>
                         )}
                       </div>
-                    )}
-
-                    {completedTargets.has(currentTarget.syllable) ? (
-                      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center justify-center py-4 w-full">
-                        <h3 className="text-[10px] font-bold text-gray-400 mb-3 uppercase tracking-widest">Built Syllables</h3>
-                        <div className="flex flex-wrap justify-center gap-3 max-w-sm">
-                          {targets.filter(t => completedTargets.has(t.syllable)).map((target, idx) => (
-                            <button
-                              key={target.syllable}
-                              onClick={() => playTTS(target.syllable, target.pattern)}
-                              className="flex items-center gap-2 px-4 py-2 bg-white rounded-2xl shadow-md border-b-[4px] hover:scale-105 active:scale-95 transition-all"
-                              style={{ borderColor: patternColors[target.pattern] }}
-                            >
-                              <div className="font-black text-3xl tracking-wide flex">
-                                {target.syllable.split("").map((ch, i) => (
-                                  <span
-                                    key={i}
-                                    style={{
-                                      color: ["A", "E", "I", "O", "U"].includes(ch.toUpperCase())
-                                        ? "#FF6B8A"
-                                        : "#1CB0F6",
-                                    }}
-                                  >
-                                    {ch.toLowerCase()}
-                                  </span>
-                                ))}
-                              </div>
-                              <Volume2 className="w-5 h-5 opacity-50" style={{ color: patternColors[target.pattern] }} />
-                            </button>
-                          ))}
-                        </div>
-                      </motion.div>
-                    ) : (
-                      <>
                         <span className="text-xs text-gray-500 dark:text-gray-400">
                           Tap letters below in the correct order
                         </span>
@@ -582,9 +529,7 @@ export function LevelSyllableBuilder({
                             );
                           })}
                         </motion.div>
-                      </>
-                    )}
-                  </div>
+                    </div>
 
 
 
@@ -592,8 +537,7 @@ export function LevelSyllableBuilder({
               </AnimatePresence>
 
               {/* Letter Pool */}
-              {!completedTargets.has(currentTarget.syllable) && (
-                <div className="grid grid-cols-4 sm:grid-cols-6 gap-3 mb-4">
+              <div className="grid grid-cols-4 sm:grid-cols-6 gap-3 mb-4">
                   {letterPool.map((item, i) => {
                     const timesInTarget = currentTarget.syllable
                       .split("")
@@ -649,7 +593,6 @@ export function LevelSyllableBuilder({
                     );
                   })}
                 </div>
-              )}
 
 
             </>
