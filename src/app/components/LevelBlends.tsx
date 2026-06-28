@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useNavigate } from "react-router";
-import { Volume2, Mic, MicOff, CheckCircle2, XCircle, Sparkles, ArrowRight, ArrowLeft, RotateCcw, FastForward, Shuffle, ChevronRight } from "lucide-react";
+import { Volume2, Mic, MicOff, CheckCircle2, XCircle, Sparkles, ArrowRight, ArrowLeft, RotateCcw, FastForward, Shuffle, ChevronRight, Loader2, AlertCircle } from "lucide-react";
 import { confirmAction } from "../utils/alerts";
 import { Button } from "./ui/button";
 import { motion, AnimatePresence } from "motion/react";
@@ -277,12 +277,12 @@ export function LevelBlends({ levelId, accent, categoryFilter, onComplete }: Lev
 
   const [evaluatingWordId, setEvaluatingWordId] = useState<string | null>(null);
   const [completedWords, setCompletedWords] = useState<Set<string>>(new Set());
-  const [wordFeedbackMap, setWordFeedbackMap] = useState<Record<string, "correct" | "wrong" | null>>({});
+  const [wordFeedbackMap, setWordFeedbackMap] = useState<Record<string, "correct" | "close" | "wrong" | null>>({});
   const [wordTranscriptsMap, setWordTranscriptsMap] = useState<Record<string, string>>({});
 
   const [evaluatingSentenceId, setEvaluatingSentenceId] = useState<string | null>(null);
   const [completedSentences, setCompletedSentences] = useState<Set<string>>(new Set());
-  const [sentenceFeedbackMap, setSentenceFeedbackMap] = useState<Record<string, "correct" | "wrong" | null>>({});
+  const [sentenceFeedbackMap, setSentenceFeedbackMap] = useState<Record<string, "correct" | "close" | "wrong" | null>>({});
   const [sentenceTranscriptsMap, setSentenceTranscriptsMap] = useState<Record<string, string>>({});
 
   const [showConfetti, setShowConfetti] = useState(false);
@@ -1100,17 +1100,40 @@ export function LevelBlends({ levelId, accent, categoryFilter, onComplete }: Lev
 
                 <div className="bg-gray-50 dark:bg-gray-900 rounded-2xl p-5 min-h-[100px] flex flex-col items-center justify-center border border-gray-100 dark:border-gray-800 shadow-inner">
                   <span className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Target</span>
-                  <span className="text-4xl font-extrabold mb-4 tracking-wider flex items-baseline justify-center uppercase" style={{ color: accent.primary }}>
+                  <span className={`${currentPhase === "sentences" ? "text-2xl sm:text-3xl" : "text-5xl sm:text-6xl"} font-extrabold mb-4 tracking-wider flex items-baseline justify-center ${currentPhase === "sentences" ? "" : "uppercase"}`} style={{ color: accent.primary }}>
                     {evaluatingTargetForMic}
                   </span>
 
                   <div className="w-full h-px bg-gray-200 dark:bg-gray-700 my-2" />
 
                   <span className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1 mt-2">Heard</span>
-                  <span className="text-lg font-bold text-gray-700 dark:text-gray-200 min-h-[28px]">
-                    {(currentPhase === "words-eval" ? wordTranscriptsMap[evaluatingTargetForMic] : sentenceTranscriptsMap[evaluatingTargetForMic]) || "..."}
+                  <span className={`${currentPhase === "sentences" ? "text-xl sm:text-2xl" : "text-4xl sm:text-5xl"} font-extrabold tracking-wider text-gray-700 dark:text-gray-300 min-h-[60px] flex items-center justify-center w-full break-words`}>
+                    {(currentPhase === "words-eval" ? wordTranscriptsMap[evaluatingTargetForMic] : sentenceTranscriptsMap[evaluatingTargetForMic]) ? `"${currentPhase === "words-eval" ? wordTranscriptsMap[evaluatingTargetForMic] : sentenceTranscriptsMap[evaluatingTargetForMic]}"` : <Loader2 className="w-5 h-5 text-gray-400 animate-spin" />}
                   </span>
                 </div>
+
+                {(() => {
+                  const vFeedback = currentPhase === "words-eval" ? wordFeedbackMap[evaluatingTargetForMic] : sentenceFeedbackMap[evaluatingTargetForMic];
+                  return (
+                    <>
+                      {vFeedback === 'wrong' && (
+                        <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} className="mt-5 text-red-500 font-bold flex items-center justify-center gap-2 bg-red-50 dark:bg-red-900/20 py-2 px-4 rounded-xl">
+                          <AlertCircle className="w-5 h-5" /> Let's try again!
+                        </motion.div>
+                      )}
+                      {vFeedback === 'correct' && (
+                        <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} className="mt-5 text-green-500 font-bold flex items-center justify-center gap-2 bg-green-50 dark:bg-green-900/20 py-2 px-4 rounded-xl">
+                          <CheckCircle2 className="w-5 h-5" /> Perfect!
+                        </motion.div>
+                      )}
+                      {vFeedback === 'close' && (
+                        <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} className="mt-5 text-blue-500 font-bold flex items-center justify-center gap-2 bg-blue-50 dark:bg-blue-900/20 py-2 px-4 rounded-xl">
+                          <Sparkles className="w-5 h-5" /> Almost there!
+                        </motion.div>
+                      )}
+                    </>
+                  );
+                })()}
 
                 <div className="mt-6 flex gap-3">
                   <Button

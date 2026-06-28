@@ -355,6 +355,16 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
                   <Sparkles className="w-5 h-5" /> Almost there!
                 </motion.div>
               )}
+
+              <div className="mt-6 flex gap-3">
+                <Button
+                  variant="outline"
+                  onClick={() => safeSetEvaluatingWordNull()}
+                  className="flex-1 rounded-xl font-bold text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 border-2"
+                >
+                  Cancel
+                </Button>
+              </div>
             </motion.div>
           </motion.div>
         )}

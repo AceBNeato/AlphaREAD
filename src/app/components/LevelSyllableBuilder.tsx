@@ -448,7 +448,7 @@ export function LevelSyllableBuilder({
                       <div className="flex items-center gap-2 relative">
                         <button
                           onClick={() => playTTS(currentTarget.syllable, currentTarget.pattern)}
-                          className={`flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-black/20 hover:scale-105 active:scale-95 active:translate-y-1 active:border-b-0 transition-all ${!hasClickedTTS && currentIndex === 0 ? 'ring-2 ring-indigo-400 ring-offset-2 animate-pulse' : ''}`}
+                          className={`flex items-center justify-center gap-3 px-6 py-3 bg-white rounded-2xl shadow-md border-b-[4px] hover:scale-105 active:scale-95 transition-all ${!hasClickedTTS && currentIndex === 0 ? 'ring-2 ring-indigo-400 ring-offset-2 animate-pulse' : ''}`}
                           style={{ borderColor: patternColors[currentTarget.pattern] }}
                           title="Click to hear again"
                         >
