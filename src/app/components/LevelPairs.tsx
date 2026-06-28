@@ -443,7 +443,7 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
                     size="sm"
                     onClick={() => setCurrentStep(prev => Math.max(0, prev - 1))}
                     disabled={currentStep === 0}
-                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#086ca5] hover:scale-105 active:scale-95 disabled:opacity-50 disabled:grayscale disabled:pointer-events-none px-2 transition-all h-9 py-2"
+                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-black/20 hover:scale-105 active:scale-95 active:translate-y-1 active:border-b-0 disabled:opacity-50 disabled:grayscale disabled:pointer-events-none px-2 transition-all h-9 py-2"
                     style={{ background: 'linear-gradient(135deg, #1cb0f6 0%, #0a8ed4 100%)' }}
                   >
                     <ArrowLeft className="w-4 h-4 sm:mr-1 mx-auto sm:mx-0" />
@@ -452,7 +452,7 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
                   <Button
                     size="sm"
                     onClick={handleShuffleReview}
-                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#8b40b8] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
+                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-black/20 hover:scale-105 active:scale-95 active:translate-y-1 active:border-b-0 px-2 transition-all h-9 py-2"
                     style={{ background: 'linear-gradient(135deg, #ce82ff 0%, #a559d6 100%)' }}
                   >
                     <Shuffle className="w-4 h-4 sm:mr-1 mx-auto sm:mx-0" />
@@ -461,7 +461,7 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
                   <Button
                     size="sm"
                     onClick={handleStepNext}
-                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#3c8c01] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
+                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-black/20 hover:scale-105 active:scale-95 active:translate-y-1 active:border-b-0 px-2 transition-all h-9 py-2"
                     style={{ background: 'linear-gradient(135deg, #58cc02 0%, #46a302 100%)' }}
                   >
                     <span className="hidden sm:inline">Proceed</span>
@@ -486,7 +486,7 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
                         onClick={() => {
                           if (!isPreview) handleLetterClick(l);
                         }}
-                        className={`w-full aspect-square rounded-[1.2rem] sm:rounded-[1.5rem] shadow-md flex flex-col items-center justify-center border-b-[6px] select-none ${isPreview ? "cursor-default" : "cursor-pointer transition-all hover:scale-105 active:scale-95 hover:shadow-xl"}`}
+                        className={`w-full aspect-square rounded-2xl sm:rounded-3xl shadow-lg border-b-[6px] border-b-black/20 flex flex-col items-center justify-center cursor-pointer transition-all active:translate-y-[6px] active:border-b-0 hover:shadow-xl`}
                         style={{ background: `linear-gradient(135deg, ${bgStart}, ${bgEnd})`, borderColor: borderColor }}
                       >
                         <div className="flex items-center justify-center gap-0.5">
@@ -513,7 +513,7 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
                     size="sm"
                     onClick={handleMatchBack}
                     disabled={matchBatchIndex === 0 && currentStep === 0}
-                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#086ca5] hover:scale-105 active:scale-95 disabled:opacity-50 disabled:grayscale disabled:pointer-events-none px-2 transition-all h-9 py-2"
+                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-black/20 hover:scale-105 active:scale-95 active:translate-y-1 active:border-b-0 disabled:opacity-50 disabled:grayscale disabled:pointer-events-none px-2 transition-all h-9 py-2"
                     style={{ background: 'linear-gradient(135deg, #1cb0f6 0%, #0a8ed4 100%)' }}
                   >
                     <ArrowLeft className="w-4 h-4 sm:mr-1 mx-auto sm:mx-0" />
@@ -527,7 +527,7 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
                         right: [...prev.right].sort(() => Math.random() - 0.5)
                       }));
                     }}
-                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#8b40b8] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
+                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-black/20 hover:scale-105 active:scale-95 active:translate-y-1 active:border-b-0 px-2 transition-all h-9 py-2"
                     style={{ background: 'linear-gradient(135deg, #ce82ff 0%, #a559d6 100%)' }}
                   >
                     <Shuffle className="w-4 h-4 sm:mr-1 mx-auto sm:mx-0" />
@@ -536,7 +536,7 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
                   <Button
                     size="sm"
                     onClick={handleMatchNext}
-                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#c99c00] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
+                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-black/20 hover:scale-105 active:scale-95 active:translate-y-1 active:border-b-0 px-2 transition-all h-9 py-2"
                     style={{ background: 'linear-gradient(135deg, #ffc800 0%, #ff9600 100%)' }}
                   >
                     <SkipForward className="w-4 h-4 sm:mr-1 mx-auto sm:mx-0" />
@@ -546,7 +546,7 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
                     size="sm"
                     onClick={handleMatchNext}
                     disabled={matchedPairs.size !== matchColumns.left.length || matchColumns.left.length === 0}
-                    className={`flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] ${matchedPairs.size === matchColumns.left.length ? 'border-[#3c8c01] hover:scale-105 active:scale-95' : 'opacity-50 grayscale cursor-not-allowed'} px-2 transition-all h-9 py-2`}
+                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-black/20 hover:scale-105 active:scale-95 active:translate-y-1 active:border-b-0 disabled:opacity-50 disabled:grayscale disabled:pointer-events-none disabled:cursor-not-allowed px-2 transition-all h-9 py-2"
                     style={{ background: 'linear-gradient(135deg, #58cc02 0%, #46a302 100%)' }}
                   >
                     <span className="hidden sm:inline">Proceed</span>
@@ -636,7 +636,7 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
                     size="sm"
                     onClick={handleTypeBack}
                     disabled={typeBatchIndex === 0 && currentStep === 0}
-                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#086ca5] hover:scale-105 active:scale-95 disabled:opacity-50 disabled:grayscale disabled:pointer-events-none px-2 transition-all h-9 py-2"
+                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-black/20 hover:scale-105 active:scale-95 active:translate-y-1 active:border-b-0 disabled:opacity-50 disabled:grayscale disabled:pointer-events-none px-2 transition-all h-9 py-2"
                     style={{ background: 'linear-gradient(135deg, #1cb0f6 0%, #0a8ed4 100%)' }}
                   >
                     <ArrowLeft className="w-4 h-4 sm:mr-1 mx-auto sm:mx-0" />
@@ -645,7 +645,7 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
                   <Button
                     size="sm"
                     onClick={handleShuffleType}
-                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#8b40b8] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
+                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-black/20 hover:scale-105 active:scale-95 active:translate-y-1 active:border-b-0 px-2 transition-all h-9 py-2"
                     style={{ background: 'linear-gradient(135deg, #ce82ff 0%, #a559d6 100%)' }}
                   >
                     <Shuffle className="w-4 h-4 sm:mr-1 mx-auto sm:mx-0" />
@@ -654,7 +654,7 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
                   <Button
                     size="sm"
                     onClick={handleTypeNext}
-                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#c99c00] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
+                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-black/20 hover:scale-105 active:scale-95 active:translate-y-1 active:border-b-0 px-2 transition-all h-9 py-2"
                     style={{ background: 'linear-gradient(135deg, #ffc800 0%, #ff9600 100%)' }}
                   >
                     <SkipForward className="w-4 h-4 sm:mr-1 mx-auto sm:mx-0" />
@@ -664,7 +664,7 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
                     size="sm"
                     onClick={handleTypeNext}
                     disabled={!isTypePhaseComplete}
-                    className={`flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] ${isTypePhaseComplete ? 'border-[#3c8c01] hover:scale-105 active:scale-95' : 'opacity-50 grayscale cursor-not-allowed'} px-2 transition-all h-9 py-2`}
+                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-black/20 hover:scale-105 active:scale-95 active:translate-y-1 active:border-b-0 disabled:opacity-50 disabled:grayscale disabled:pointer-events-none disabled:cursor-not-allowed px-2 transition-all h-9 py-2"
                     style={{ background: 'linear-gradient(135deg, #58cc02 0%, #46a302 100%)' }}
                   >
                     <span className="hidden sm:inline">Proceed</span>

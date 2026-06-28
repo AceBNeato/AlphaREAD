@@ -288,7 +288,7 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
                     }
                   }}
                   disabled={currentSetIndex === 0 && !onBack}
-                  className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#086ca5] hover:scale-105 active:scale-95 px-2 transition-all disabled:opacity-50 disabled:grayscale disabled:pointer-events-none h-9 py-2"
+                  className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-black/20 hover:scale-105 active:scale-95 active:translate-y-1 active:border-b-0 px-2 transition-all disabled:opacity-50 disabled:grayscale disabled:pointer-events-none h-9 py-2"
                   style={{
                     background: "linear-gradient(135deg, #1cb0f6 0%, #0a8ed4 100%)",
                   }}
@@ -299,7 +299,7 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
                 <Button
                   size="sm"
                   onClick={handleShuffle}
-                  className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#883fba] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
+                  className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-black/20 hover:scale-105 active:scale-95 active:translate-y-1 active:border-b-0 px-2 transition-all h-9 py-2"
                   style={{
                     background: "linear-gradient(135deg, #ce82ff 0%, #a559d6 100%)",
                   }}
@@ -310,7 +310,7 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
                 <Button
                   size="sm"
                   onClick={handleSkip}
-                  className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#c99c00] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
+                  className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-black/20 hover:scale-105 active:scale-95 active:translate-y-1 active:border-b-0 px-2 transition-all h-9 py-2"
                   style={{
                     background: "linear-gradient(135deg, rgb(255, 200, 0) 0%, rgb(255, 150, 0) 100%)",
                   }}
@@ -322,7 +322,7 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
                   size="sm"
                   onClick={handleNextQuiz}
                   disabled={completedSentences.size < activeSentences.length}
-                  className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#3c8c01] hover:scale-105 active:scale-95 px-2 transition-all disabled:opacity-50 disabled:grayscale disabled:pointer-events-none h-9 py-2"
+                  className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-black/20 hover:scale-105 active:scale-95 active:translate-y-1 active:border-b-0 px-2 transition-all disabled:opacity-50 disabled:grayscale disabled:pointer-events-none h-9 py-2"
                   style={{
                     background: "linear-gradient(135deg, rgb(88, 204, 2) 0%, rgb(70, 163, 2) 100%)",
                   }}
@@ -411,7 +411,7 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
                                   ? "bg-red-500 text-white shadow-lg"
                                   : vFeedback === "wrong"
                                     ? "bg-red-400 text-white"
-                                    : "bg-gradient-to-br from-pink-500 to-rose-500 text-white shadow-md hover:scale-105 active:scale-95"
+                                    : "bg-gradient-to-br from-pink-500 to-rose-500 text-white shadow-md hover:scale-105 active:translate-y-1"
                               }`}
                           >
                             {isEval && (

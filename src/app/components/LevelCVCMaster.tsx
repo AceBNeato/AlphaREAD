@@ -72,21 +72,21 @@ function LevelCVCPreview({
           <Button
             onClick={onBack}
             disabled={!canBack}
-            className="flex-1 rounded-xl font-bold text-white shadow-md border-b-4 border-[#086ca5] hover:scale-105 active:scale-95 disabled:opacity-50 disabled:grayscale disabled:pointer-events-none px-2"
+            className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#086ca5] hover:scale-105 active:translate-y-1 active:border-b-0 disabled:opacity-50 disabled:grayscale disabled:pointer-events-none px-2"
             style={{ background: 'linear-gradient(135deg, #1cb0f6 0%, #0a8ed4 100%)' }}
           >
             <ArrowLeft className="w-4 h-4 mr-1" /> Back
           </Button>
           <Button
             onClick={handleShuffle}
-            className="flex-1 rounded-xl font-bold text-white shadow-md border-b-4 border-[#8b40b8] hover:scale-105 active:scale-95 px-2"
+            className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#8b40b8] hover:scale-105 active:translate-y-1 active:border-b-0 px-2"
             style={{ background: 'linear-gradient(135deg, #ce82ff 0%, #a559d6 100%)' }}
           >
             <Shuffle className="w-4 h-4 mr-1" /> Shuffle
           </Button>
           <Button
             onClick={onComplete}
-            className="flex-1 rounded-xl font-bold text-white shadow-md border-b-4 border-[#3c8c01] hover:scale-105 active:scale-95"
+            className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#3c8c01] hover:scale-105 active:translate-y-1 active:border-b-0 px-2"
             style={{ background: 'linear-gradient(135deg, #58cc02 0%, #46a302 100%)' }}
           >
             Proceed <ChevronRight className="w-4 h-4 ml-1" />
@@ -119,7 +119,7 @@ function LevelCVCPreview({
                 }}
               >
                 <span className="text-white text-lg sm:text-xl font-black drop-shadow-sm">
-                  {word}
+                  {word.toLowerCase()}
                 </span>
               </div>
             </motion.div>

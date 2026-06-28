@@ -67,7 +67,7 @@ export default function Lesson() {
   }
 
   // To test levels 3-6 while in development, comment out the overlay below!
-  const isUnderConstruction = level.id >= 5 && level.id <= 6;
+  const isUnderConstruction = level.id >= 6 && level.id <= 6;
 
   return (
     <>
@@ -75,7 +75,7 @@ export default function Lesson() {
       {/* 
         NOTE: Comment out this entire block to work on Levels 3-6 without the overlay 
       */}
-      {isUnderConstruction && (
+      {/* {isUnderConstruction && (
         <div className="fixed inset-0 z-[9999] bg-black/80 flex flex-col items-center justify-center p-4 backdrop-blur-sm">
           <div className="bg-white dark:bg-gray-800 p-8 rounded-3xl shadow-2xl text-center max-w-md w-full border-4 border-yellow-400">
             <div className="text-yellow-500 mb-4 flex justify-center">
@@ -92,7 +92,7 @@ export default function Lesson() {
             </Button>
           </div>
         </div>
-      )}
+      )} */}
     </>
   );
 }

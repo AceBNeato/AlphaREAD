@@ -116,7 +116,7 @@ function ReviewPhase({ items, pattern, accent, onNext, onBack, canBack, isFullPr
             size="sm"
             onClick={onBack}
             disabled={!canBack}
-            className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#086ca5] hover:scale-105 active:scale-95 disabled:opacity-50 disabled:grayscale disabled:pointer-events-none px-2 transition-all h-9 py-2"
+            className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-black/20 hover:scale-105 active:scale-95 active:translate-y-1 active:border-b-0 disabled:opacity-50 disabled:grayscale disabled:pointer-events-none px-2 transition-all h-9 py-2"
             style={{ background: 'linear-gradient(135deg, #1cb0f6 0%, #0a8ed4 100%)' }}
           >
             <ArrowLeft className="w-4 h-4 sm:mr-1 mx-auto sm:mx-0" />
@@ -125,7 +125,7 @@ function ReviewPhase({ items, pattern, accent, onNext, onBack, canBack, isFullPr
           <Button
             size="sm"
             onClick={handleShuffle}
-            className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#8b40b8] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
+            className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-black/20 hover:scale-105 active:scale-95 active:translate-y-1 active:border-b-0 px-2 transition-all h-9 py-2"
             style={{ background: 'linear-gradient(135deg, #ce82ff 0%, #a559d6 100%)' }}
           >
             <Shuffle className="w-4 h-4 sm:mr-1 mx-auto sm:mx-0" />
@@ -134,7 +134,7 @@ function ReviewPhase({ items, pattern, accent, onNext, onBack, canBack, isFullPr
           <Button
             size="sm"
             onClick={onNext}
-            className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#3c8c01] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
+            className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-black/20 hover:scale-105 active:scale-95 active:translate-y-1 active:border-b-0 px-2 transition-all h-9 py-2"
             style={{ background: 'linear-gradient(135deg, #58cc02 0%, #46a302 100%)' }}
           >
             <span className="hidden sm:inline">Proceed</span>
@@ -156,7 +156,7 @@ function ReviewPhase({ items, pattern, accent, onNext, onBack, canBack, isFullPr
                 onClick={() => handleSyllableClick(syl)}
                 className={`w-full aspect-square rounded-xl sm:rounded-2xl shadow-md flex items-center justify-center border-b-[4px] select-none ${
                   isFullPreview
-                    ? "cursor-pointer transition-all hover:scale-105 active:scale-95 hover:shadow-xl"
+                    ? "cursor-pointer transition-all hover:scale-105 active:translate-y-1 hover:shadow-xl"
                     : "cursor-default"
                 }`}
                 style={{ background: `linear-gradient(135deg, ${bgStart}, ${bgEnd})`, borderColor }}
@@ -291,7 +291,7 @@ function MatchPhase({
             size="sm"
             onClick={handlePrevBatch}
             disabled={batchIndex === 0 && !canBack}
-            className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#086ca5] hover:scale-105 active:scale-95 disabled:opacity-50 disabled:grayscale disabled:pointer-events-none px-2 transition-all h-9 py-2"
+            className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-black/20 hover:scale-105 active:scale-95 active:translate-y-1 active:border-b-0 disabled:opacity-50 disabled:grayscale disabled:pointer-events-none px-2 transition-all h-9 py-2"
             style={{ background: 'linear-gradient(135deg, #1cb0f6 0%, #0a8ed4 100%)' }}
           >
             <ArrowLeft className="w-4 h-4 sm:mr-1 mx-auto sm:mx-0" />
@@ -303,7 +303,7 @@ function MatchPhase({
               setLeftCol([...leftCol].sort(() => Math.random() - 0.5));
               setRightCol([...rightCol].sort(() => Math.random() - 0.5));
             }}
-            className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#8b40b8] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
+            className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-black/20 hover:scale-105 active:scale-95 active:translate-y-1 active:border-b-0 px-2 transition-all h-9 py-2"
             style={{ background: 'linear-gradient(135deg, #ce82ff 0%, #a559d6 100%)' }}
           >
             <Shuffle className="w-4 h-4 sm:mr-1 mx-auto sm:mx-0" />
@@ -312,7 +312,7 @@ function MatchPhase({
           <Button
             size="sm"
             onClick={() => reset()}
-            className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#e11d48] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
+            className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-black/20 hover:scale-105 active:scale-95 active:translate-y-1 active:border-b-0 px-2 transition-all h-9 py-2"
             style={{ background: 'linear-gradient(135deg, #fb7185 0%, #e11d48 100%)' }}
           >
             <RotateCcw className="w-4 h-4 sm:mr-1 mx-auto sm:mx-0" />
@@ -321,7 +321,7 @@ function MatchPhase({
           <Button
             size="sm"
             onClick={handleNextBatch}
-            className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#c99c00] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
+            className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-black/20 hover:scale-105 active:scale-95 active:translate-y-1 active:border-b-0 px-2 transition-all h-9 py-2"
             style={{ background: 'linear-gradient(135deg, #ffc800 0%, #ff9600 100%)' }}
           >
             <SkipForward className="w-4 h-4 sm:mr-1 mx-auto sm:mx-0" />
@@ -331,7 +331,7 @@ function MatchPhase({
             size="sm"
             onClick={handleNextBatch}
             disabled={!allDone}
-            className={`flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] ${allDone ? 'border-[#3c8c01] hover:scale-105 active:scale-95' : 'opacity-50 grayscale cursor-not-allowed'} px-2 transition-all h-9 py-2`}
+            className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-black/20 hover:scale-105 active:scale-95 active:translate-y-1 active:border-b-0 disabled:opacity-50 disabled:grayscale disabled:pointer-events-none disabled:cursor-not-allowed px-2 transition-all h-9 py-2"
             style={{ background: 'linear-gradient(135deg, #58cc02 0%, #46a302 100%)' }}
           >
             Next <ChevronRight className="w-4 h-4 ml-1" />
@@ -480,7 +480,7 @@ function TypePhase({ items, pattern, accent, onNext, onBack, canBack }: { items:
             size="sm"
             onClick={handlePrevBatch}
             disabled={batchIndex === 0 && !canBack}
-            className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#086ca5] hover:scale-105 active:scale-95 disabled:opacity-50 disabled:grayscale disabled:pointer-events-none px-2 transition-all h-9 py-2"
+            className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-black/20 hover:scale-105 active:scale-95 active:translate-y-1 active:border-b-0 disabled:opacity-50 disabled:grayscale disabled:pointer-events-none px-2 transition-all h-9 py-2"
             style={{ background: 'linear-gradient(135deg, #1cb0f6 0%, #0a8ed4 100%)' }}
           >
             <ArrowLeft className="w-4 h-4 sm:mr-1 mx-auto sm:mx-0" />
@@ -489,7 +489,7 @@ function TypePhase({ items, pattern, accent, onNext, onBack, canBack }: { items:
           <Button
             size="sm"
             onClick={handleShuffleType}
-            className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#8b40b8] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
+            className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-black/20 hover:scale-105 active:scale-95 active:translate-y-1 active:border-b-0 px-2 transition-all h-9 py-2"
             style={{ background: 'linear-gradient(135deg, #ce82ff 0%, #a559d6 100%)' }}
           >
             <Shuffle className="w-4 h-4 sm:mr-1 mx-auto sm:mx-0" />
@@ -502,7 +502,7 @@ function TypePhase({ items, pattern, accent, onNext, onBack, canBack }: { items:
               setTypeInputs({});
               setTypeStatus({});
             }}
-            className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#e11d48] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
+            className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-black/20 hover:scale-105 active:scale-95 active:translate-y-1 active:border-b-0 px-2 transition-all h-9 py-2"
             style={{ background: 'linear-gradient(135deg, #fb7185 0%, #e11d48 100%)' }}
           >
             <RotateCcw className="w-4 h-4 sm:mr-1 mx-auto sm:mx-0" />
@@ -511,7 +511,7 @@ function TypePhase({ items, pattern, accent, onNext, onBack, canBack }: { items:
           <Button
             size="sm"
             onClick={handleNextBatch}
-            className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#c99c00] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
+            className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-black/20 hover:scale-105 active:scale-95 active:translate-y-1 active:border-b-0 px-2 transition-all h-9 py-2"
             style={{ background: 'linear-gradient(135deg, #ffc800 0%, #ff9600 100%)' }}
           >
             <SkipForward className="w-4 h-4 sm:mr-1 mx-auto sm:mx-0" />
@@ -521,7 +521,7 @@ function TypePhase({ items, pattern, accent, onNext, onBack, canBack }: { items:
             size="sm"
             onClick={handleNextBatch}
             disabled={!isTypePhaseComplete}
-            className={`flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] ${isTypePhaseComplete ? 'border-[#3c8c01] hover:scale-105 active:scale-95' : 'opacity-50 grayscale cursor-not-allowed'} px-2 transition-all h-9 py-2`}
+            className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-black/20 hover:scale-105 active:scale-95 active:translate-y-1 active:border-b-0 disabled:opacity-50 disabled:grayscale disabled:pointer-events-none disabled:cursor-not-allowed px-2 transition-all h-9 py-2"
             style={{ background: 'linear-gradient(135deg, #58cc02 0%, #46a302 100%)' }}
           >
             <span className="hidden sm:inline">Next</span>

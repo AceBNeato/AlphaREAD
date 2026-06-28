@@ -325,7 +325,7 @@ export function LevelSyllableBuilder({
                   setCompletedTargets(new Set());
                   setSelectedLetters([]);
                 }}
-                className="p-8 rounded-3xl border-3 shadow-lg hover:shadow-xl transition-all hover:scale-[1.03] active:scale-95 bg-white dark:bg-gray-800 cursor-pointer"
+                className="p-8 rounded-3xl border-3 shadow-lg hover:shadow-xl transition-all hover:scale-[1.03] active:translate-y-1 bg-white dark:bg-gray-800 cursor-pointer"
                 style={{ borderColor: patternColors[p] }}
               >
                 <div
@@ -369,7 +369,7 @@ export function LevelSyllableBuilder({
                   setSelectedLetters([]);
                   setFeedback(null);
                 }}
-                className="text-xs px-4 py-2 rounded-full border-2 border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all cursor-pointer font-bold shadow-sm active:scale-95"
+                className="text-xs px-4 py-2 rounded-full border-2 border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all cursor-pointer font-bold shadow-sm active:translate-y-1"
               >
                 ← Switch Pattern (VC / CV)
               </button>
@@ -397,7 +397,7 @@ export function LevelSyllableBuilder({
                     <Button
                       onClick={goPrev}
                       disabled={currentIndex === 0 && !onBack}
-                      className="flex-1 rounded-xl font-bold text-white shadow-md border-b-4 border-[#086ca5] hover:scale-105 active:scale-95 disabled:opacity-50 disabled:grayscale disabled:pointer-events-none px-2"
+                      className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-black/20 hover:scale-105 active:scale-95 active:translate-y-1 active:border-b-0 disabled:opacity-50 disabled:grayscale disabled:pointer-events-none px-2"
                       style={{ background: 'linear-gradient(135deg, #1cb0f6 0%, #0a8ed4 100%)' }}
                     >
                       <ArrowLeft className="w-4 h-4 sm:mr-1" />
@@ -405,7 +405,7 @@ export function LevelSyllableBuilder({
                     </Button>
                     <Button
                       onClick={resetSelection}
-                      className="flex-1 rounded-xl font-bold text-white shadow-md border-b-4 border-[#b81d1d] hover:scale-105 active:scale-95 px-2"
+                      className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-black/20 hover:scale-105 active:scale-95 active:translate-y-1 active:border-b-0 px-2"
                       style={{ background: 'linear-gradient(135deg, #ff4b4b 0%, #d82a2a 100%)' }}
                     >
                       <RotateCcw className="w-4 h-4 sm:mr-1" />
@@ -413,7 +413,7 @@ export function LevelSyllableBuilder({
                     </Button>
                     <Button
                       onClick={() => onComplete?.()}
-                      className="flex-1 rounded-xl font-bold text-white shadow-md border-b-4 border-[#c99c00] hover:scale-105 active:scale-95 px-2"
+                      className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-black/20 hover:scale-105 active:scale-95 active:translate-y-1 active:border-b-0 px-2"
                       style={{ background: 'linear-gradient(135deg, #ffc800 0%, #ff9600 100%)' }}
                     >
                       <FastForward className="w-4 h-4 sm:mr-1" />
@@ -422,7 +422,7 @@ export function LevelSyllableBuilder({
                     <Button
                       onClick={goNext}
                       disabled={currentIndex === targets.length - 1 && feedback !== "correct"}
-                      className="flex-1 rounded-xl font-bold text-white shadow-md border-b-4 border-[#3c8c01] hover:scale-105 active:scale-95 disabled:opacity-50 disabled:grayscale disabled:pointer-events-none px-2"
+                      className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-black/20 hover:scale-105 active:scale-95 active:translate-y-1 active:border-b-0 disabled:opacity-50 disabled:grayscale disabled:pointer-events-none px-2"
                       style={{ background: 'linear-gradient(135deg, #58cc02 0%, #46a302 100%)' }}
                     >
                       <span className="hidden sm:inline">Next</span>
@@ -448,7 +448,7 @@ export function LevelSyllableBuilder({
                       <div className="flex items-center gap-2 relative">
                         <button
                           onClick={() => playTTS(currentTarget.syllable, currentTarget.pattern)}
-                          className={`flex items-center gap-2 px-4 py-2 bg-white rounded-2xl shadow-md border-b-[4px] hover:scale-105 active:scale-95 transition-all ${!hasClickedTTS && currentIndex === 0 ? 'ring-2 ring-indigo-400 ring-offset-2 animate-pulse' : ''}`}
+                          className={`flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-black/20 hover:scale-105 active:scale-95 active:translate-y-1 active:border-b-0 transition-all ${!hasClickedTTS && currentIndex === 0 ? 'ring-2 ring-indigo-400 ring-offset-2 animate-pulse' : ''}`}
                           style={{ borderColor: patternColors[currentTarget.pattern] }}
                           title="Click to hear again"
                         >
@@ -565,7 +565,7 @@ export function LevelSyllableBuilder({
                           !isDisabled && handleLetterClick(item.letter)
                         }
                         disabled={!!feedback || isDisabled}
-                        className={`aspect-square rounded-[1rem] flex flex-col items-center justify-center transition-all shadow-md active:scale-95 cursor-pointer relative border-b-[4px] select-none ${isVisuallySelected
+                        className={`aspect-square rounded-[1rem] flex flex-col items-center justify-center transition-all shadow-md active:translate-y-1 active:border-b-0 cursor-pointer relative border-b-[4px] select-none ${isVisuallySelected
                           ? "opacity-30 border-b-2 translate-y-[2px] pointer-events-none"
                           : "active:border-b-0 active:translate-y-[4px]"
                           }`}

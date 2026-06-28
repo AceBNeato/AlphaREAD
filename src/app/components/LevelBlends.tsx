@@ -1,16 +1,14 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useNavigate } from "react-router";
-import { Home, Volume2, Mic, MicOff, CheckCircle2, XCircle, Sparkles, ArrowRight, ArrowLeft, AlertCircle, RotateCcw, SkipForward, FastForward, X, Shuffle as ShuffleIcon } from "lucide-react";
+import { Volume2, Mic, MicOff, CheckCircle2, XCircle, Sparkles, ArrowRight, ArrowLeft, RotateCcw, FastForward, Shuffle, ChevronRight } from "lucide-react";
 import { confirmAction } from "../utils/alerts";
 import { Button } from "./ui/button";
 import { motion, AnimatePresence } from "motion/react";
-import { supabase } from "../../lib/supabase";
 import { Confetti } from "./ui/Confetti";
-import { LETTER_NAMES, LETTER_TTS, shuffle } from "../data/levels";
+import { shuffle } from "../data/levels";
 import { BLENDS_DATA, BLENDS_SENTENCES, BlendWord } from "../data/blends";
 import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
 import { AudioVisualizer } from "./AudioVisualizer";
-import { MatchButton } from "./MatchButton";
 import { playSound, playExclusiveAudio } from "../utils/soundEffects";
 import { playTTS as playTTSUtil } from "../utils/tts";
 
@@ -21,23 +19,132 @@ interface LevelBlendsProps {
   onComplete?: () => void;
 }
 
-type Phase = "review" | "match" | "words" | "sentences";
+type Phase = "full-review" | "vowels-review" | "words-preview" | "words-eval" | "words-review" | "sentences";
 
-const VOWELS = ["A", "E", "I", "O", "U"];
+interface GameStep {
+  phase: Phase;
+  words?: string[];
+  patterns?: { pattern: string; category: string; name: string; words: BlendWord[] }[];
+  batchNumber?: number;
+  totalBatches?: number;
+}
+
+// Sub-component for the grid of words
+function LevelBlendsGrid({
+  accent,
+  words,
+  onComplete,
+  onBack,
+  canBack,
+  batchNumber,
+  totalBatches,
+  isReview,
+  allWordsMap,
+  categoryFilter
+}: {
+  accent: { primary: string; dark: string; lightBg: string };
+  words: string[];
+  onComplete: () => void;
+  onBack: () => void;
+  canBack: boolean;
+  batchNumber?: number;
+  totalBatches?: number;
+  isReview?: boolean;
+  allWordsMap: Record<string, BlendWord>;
+  categoryFilter?: string;
+}) {
+  const [order, setOrder] = useState<string[]>(words);
+  useEffect(() => {
+    setOrder(words);
+  }, [words]);
+
+  const handleShuffle = () => setOrder([...order].sort(() => Math.random() - 0.5));
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: 50 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: -50 }}
+      className="flex flex-col items-center w-full max-w-4xl mx-auto px-4 py-8"
+    >
+      <div className="text-center mb-8">
+        <p className="text-white text-base sm:text-lg font-bold mt-2 block">
+          {isReview 
+            ? `🎉 Great work! Review ${categoryFilter || "Blends"} words! ${batchNumber && totalBatches ? "(Batch " + batchNumber + " of " + totalBatches + ")" : ""}`
+            : `Review ${categoryFilter || "Blends"} words before we start! ${batchNumber && totalBatches ? "(Batch " + batchNumber + " of " + totalBatches + ")" : ""}`
+          }
+        </p>
+
+        <div className="flex justify-center items-center w-full gap-3 sm:gap-4 max-w-md mx-auto mt-6">
+          <Button
+            onClick={onBack}
+            disabled={!canBack}
+            className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#086ca5] hover:scale-105 active:scale-95 active:translate-y-1 active:border-b-0 px-2 transition-all disabled:opacity-50 disabled:grayscale disabled:pointer-events-none h-9 py-2"
+            style={{ background: 'linear-gradient(135deg, #1cb0f6 0%, #0a8ed4 100%)' }}
+          >
+            <ArrowLeft className="w-4 h-4 mr-1" /> Back
+          </Button>
+          <Button
+            onClick={handleShuffle}
+            className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#8b40b8] hover:scale-105 active:scale-95 active:translate-y-1 active:border-b-0 px-2 transition-all h-9 py-2"
+            style={{ background: 'linear-gradient(135deg, #ce82ff 0%, #a559d6 100%)' }}
+          >
+            <Shuffle className="w-4 h-4 mr-1" /> Shuffle
+          </Button>
+          <Button
+            onClick={onComplete}
+            className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#3c8c01] hover:scale-105 active:scale-95 active:translate-y-1 active:border-b-0 px-2 transition-all h-9 py-2"
+            style={{ background: 'linear-gradient(135deg, #58cc02 0%, #46a302 100%)' }}
+          >
+            Proceed <ChevronRight className="w-4 h-4 ml-1" />
+          </Button>
+        </div>
+      </div>
+
+      <div className="flex flex-wrap justify-center gap-3 sm:gap-4 mb-12 w-full max-w-[680px] mx-auto">
+        {order.map((wordStr) => {
+          const w = allWordsMap[wordStr];
+          return (
+            <motion.div
+              key={wordStr}
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              className="flex flex-col items-center w-[100px] sm:w-[120px]"
+            >
+              <div
+                onClick={() => {
+                  if (isReview) {
+                    playSound("click", 0.2);
+                    playTTSUtil(wordStr.toLowerCase());
+                  }
+                }}
+                className={`w-full aspect-square rounded-xl sm:rounded-2xl shadow-md flex items-center justify-center border-b-[4px] select-none transition-all ${isReview ? 'cursor-pointer hover:brightness-110 active:translate-y-1 active:border-b-0 border-amber-600' : 'cursor-default border-gray-300'}`}
+                style={{
+                  background: isReview ? 'linear-gradient(135deg, #FF9600 0%, #e08000 100%)' : '#ffffff',
+                }}
+              >
+                <div className="flex items-center gap-1 select-none text-xl sm:text-2xl font-bold tracking-wider text-gray-700">
+                  {wordStr.split("").map((char, index) => {
+                    const isHighlighted = w?.highlights.includes(index);
+                    return (
+                      <span key={index} className={isHighlighted ? (isReview ? "text-yellow-200 font-extrabold" : "text-rose-500 font-extrabold") : (isReview ? "text-white" : "")}>
+                        {char.toLowerCase()}
+                      </span>
+                    );
+                  })}
+                </div>
+              </div>
+            </motion.div>
+          );
+        })}
+      </div>
+    </motion.div>
+  );
+}
 
 export function LevelBlends({ levelId, accent, categoryFilter, onComplete }: LevelBlendsProps) {
   const navigate = useNavigate();
 
-  const [currentPhase, setCurrentPhase] = useState<Phase>("review");
-
-  // Review State
-  const [reviewIdx, setReviewIdx] = useState(0);
-
-  // Tutorial State
-  const [hasClickedTTS, setHasClickedTTS] = useState(false);
-  const [hasClickedMic, setHasClickedMic] = useState(false);
-
-  // Pattern Quiz State
   const filteredData = useMemo(() => {
     if (!categoryFilter) return BLENDS_DATA;
     if (categoryFilter === "2-Letter Blends") {
@@ -46,7 +153,6 @@ export function LevelBlends({ levelId, accent, categoryFilter, onComplete }: Lev
     return BLENDS_DATA.filter(d => d.name === categoryFilter);
   }, [categoryFilter]);
 
-  // Pattern Quiz State
   const allPatternsRaw = useMemo(() => {
     const list: { pattern: string; category: string; name: string; words: BlendWord[] }[] = [];
     filteredData.forEach((d) => {
@@ -57,111 +163,6 @@ export function LevelBlends({ levelId, accent, categoryFilter, onComplete }: Lev
     return list;
   }, [filteredData]);
 
-  const [reviewBatch, setReviewBatch] = useState<{ pattern: string; category: string; name: string; words: BlendWord[] }[]>([]);
-
-  useEffect(() => {
-    if (currentPhase === "review") {
-      setReviewBatch(allPatternsRaw.slice(reviewIdx * 6, reviewIdx * 6 + 6));
-    }
-  }, [currentPhase, reviewIdx, allPatternsRaw]);
-  const [patternIdx, setPatternIdx] = useState(0);
-
-  // Match Phase State
-  const [matchColumns, setMatchColumns] = useState<{ left: string[]; right: string[] }>({ left: [], right: [] });
-  const [matchedPairs, setMatchedPairs] = useState<Set<string>>(new Set());
-  const [selectedSpeakerMatch, setSelectedSpeakerMatch] = useState<string | null>(null);
-  const [selectedLetterMatch, setSelectedLetterMatch] = useState<string | null>(null);
-  const [wrongMatchPair, setWrongMatchPair] = useState<[string, string] | null>(null);
-
-  const setupMatchPhase = useCallback(() => {
-    const currentBatch = allPatternsRaw.slice(reviewIdx * 6, reviewIdx * 6 + 6);
-    const targets = currentBatch.map(p => p.pattern);
-    setMatchColumns({
-      left: shuffle([...targets]),
-      right: shuffle([...targets])
-    });
-    setMatchedPairs(new Set());
-    setSelectedSpeakerMatch(null);
-    setSelectedLetterMatch(null);
-    setWrongMatchPair(null);
-  }, [allPatternsRaw, reviewIdx]);
-
-  useEffect(() => {
-    if (currentPhase === "match") {
-      setupMatchPhase();
-    }
-  }, [currentPhase, setupMatchPhase]);
-
-  const checkMatch = useCallback((speaker: string, letter: string) => {
-    if (speaker === letter) {
-      playSound("correct", 0.4);
-      setMatchedPairs(prev => {
-        const next = new Set(prev).add(speaker);
-        if (next.size === matchColumns.left.length && matchColumns.left.length > 0) {
-          setShowConfetti(true);
-          playSound("complete");
-        }
-        return next;
-      });
-      setSelectedSpeakerMatch(null);
-      setSelectedLetterMatch(null);
-    } else {
-      playSound("wrong", 0.35);
-      setWrongMatchPair([speaker, letter]);
-      setTimeout(() => {
-        setWrongMatchPair(null);
-        setSelectedSpeakerMatch(null);
-        setSelectedLetterMatch(null);
-      }, 1000);
-    }
-  }, [matchColumns.left.length]);
-
-  const handleSpeakerMatchClick = (pattern: string) => {
-    setHasClickedTTS(true);
-    if (matchedPairs.has(pattern) || wrongMatchPair) return;
-    playSound("click", 0.2);
-    const cat = allPatternsRaw.find(p => p.pattern === pattern)?.category || "";
-    playPatternAudio(pattern, cat);
-    if (selectedSpeakerMatch === pattern) {
-      setSelectedSpeakerMatch(null);
-    } else {
-      setSelectedSpeakerMatch(pattern);
-      if (selectedLetterMatch) {
-        checkMatch(pattern, selectedLetterMatch);
-      }
-    }
-  };
-
-  const handleLetterMatchClick = (pattern: string) => {
-    setHasClickedTTS(true);
-    if (matchedPairs.has(pattern) || wrongMatchPair) return;
-    playSound("click", 0.2);
-    const cat = allPatternsRaw.find(p => p.pattern === pattern)?.category || "";
-    playPatternAudio(pattern, cat);
-    if (selectedLetterMatch === pattern) {
-      setSelectedLetterMatch(null);
-    } else {
-      setSelectedLetterMatch(pattern);
-      if (selectedSpeakerMatch) {
-        checkMatch(selectedSpeakerMatch, pattern);
-      }
-    }
-  };
-
-  const playPatternAudio = useCallback((pattern: string, category: string) => {
-    let folder = "";
-    if (category === "3-Letter Blends" || category === "Three-Letter Blends") {
-      folder = "3letterblend";
-    } else {
-      folder = "2letterblend";
-    }
-    playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/${folder}/${folder}-${pattern}.mp3`);
-  }, []);
-
-
-
-  // Word Quiz State
-  const WORDS_PER_SET = 6;
   const allWordsRaw = useMemo(() => {
     const list: { word: string; category: string }[] = [];
     filteredData.forEach((d) => {
@@ -173,36 +174,106 @@ export function LevelBlends({ levelId, accent, categoryFilter, onComplete }: Lev
     });
     return shuffle(list);
   }, [filteredData]);
-  const totalWordSets = Math.ceil(allWordsRaw.length / WORDS_PER_SET);
+
+  const allWordsMap = useMemo(() => {
+    const map: Record<string, BlendWord> = {};
+    filteredData.forEach((d) => {
+      d.patterns.forEach((p) => {
+        p.words.forEach((w) => {
+          map[w.word] = w;
+        });
+      });
+    });
+    return map;
+  }, [filteredData]);
+
+  const wordsBatchSize = useMemo(() => {
+    const len = allWordsRaw.length;
+    return len === 0 ? 15 : Math.ceil(len / Math.ceil(len / 15));
+  }, [allWordsRaw.length]);
+
+  const sentencesBatchSize = useMemo(() => {
+    const len = BLENDS_SENTENCES.length;
+    return len === 0 ? 12 : Math.ceil(len / Math.ceil(len / 12));
+  }, []);
+
+  const STEPS: GameStep[] = useMemo(() => {
+    const words = allWordsRaw.map(w => w.word);
+    const totalBatches = Math.ceil(words.length / wordsBatchSize);
+    
+    const steps: GameStep[] = [];
+    
+    // Phase 1: Full Review
+    const patternBatches = Math.ceil(allPatternsRaw.length / 6);
+    for (let i = 0; i < patternBatches; i++) {
+      steps.push({ phase: "full-review", batchNumber: i + 1, totalBatches: patternBatches });
+    }
+
+    // Phase 2: Patterns Review (Buttons only)
+    const shuffledPatternsReview = shuffle([...allPatternsRaw]);
+    const PATTERN_REVIEW_BATCH_SIZE = 14;
+    const patternReviewBatches = Math.ceil(shuffledPatternsReview.length / PATTERN_REVIEW_BATCH_SIZE);
+    for (let i = 0; i < patternReviewBatches; i++) {
+      steps.push({ 
+        phase: "vowels-review", 
+        batchNumber: i + 1, 
+        totalBatches: patternReviewBatches,
+        patterns: shuffledPatternsReview.slice(i * PATTERN_REVIEW_BATCH_SIZE, i * PATTERN_REVIEW_BATCH_SIZE + PATTERN_REVIEW_BATCH_SIZE)
+      });
+    }
+
+    for (let i = 0; i < totalBatches; i++) {
+      steps.push({
+        phase: "words-preview",
+        words: words.slice(i * wordsBatchSize, i * wordsBatchSize + wordsBatchSize),
+        batchNumber: i + 1,
+        totalBatches
+      });
+    }
+
+    steps.push({ phase: "words-eval" });
+
+    for (let i = 0; i < totalBatches; i++) {
+      steps.push({
+        phase: "words-review",
+        words: words.slice(i * wordsBatchSize, i * wordsBatchSize + wordsBatchSize),
+        batchNumber: i + 1,
+        totalBatches
+      });
+    }
+
+    steps.push({ phase: "sentences" });
+
+    return steps;
+  }, [allWordsRaw, wordsBatchSize]);
+
+  const [currentStepIdx, setCurrentStepIdx] = useState(0);
+  const currentStep = STEPS[currentStepIdx];
+  const currentPhase = currentStep?.phase || "vowels-review";
+
+  const [vowelsOrder, setVowelsOrder] = useState(() => currentStep.patterns || []);
+  useEffect(() => {
+    if (currentStep.phase === "vowels-review" && currentStep.patterns) {
+      setVowelsOrder(currentStep.patterns);
+    }
+  }, [currentStep]);
+  const handleShuffleVowels = () => setVowelsOrder([...vowelsOrder].sort(() => Math.random() - 0.5));
+
   const [wordSetIdx, setWordSetIdx] = useState(0);
-  const [activeWords, setActiveWords] = useState<{ word: string; category: string }[]>([]);
-  const [wordIdx, setWordIdx] = useState(0);
+  const activeWords = useMemo(() => {
+    return allWordsRaw.slice(wordSetIdx * wordsBatchSize, wordSetIdx * wordsBatchSize + wordsBatchSize);
+  }, [allWordsRaw, wordSetIdx, wordsBatchSize]);
 
-  // Sentence Quiz State
-  const SENTENCES_PER_SET = 6;
-  const totalSentenceSets = Math.ceil(BLENDS_SENTENCES.length / SENTENCES_PER_SET);
+  const [activeWordsOrder, setActiveWordsOrder] = useState(() => activeWords);
+  useEffect(() => {
+    setActiveWordsOrder(activeWords);
+  }, [activeWords]);
+  const handleShuffleWords = () => setActiveWordsOrder([...activeWordsOrder].sort(() => Math.random() - 0.5));
+
   const [sentenceSetIdx, setSentenceSetIdx] = useState(0);
-  const [activeSentences, setActiveSentences] = useState<string[]>([]);
-
-  useEffect(() => {
-    setActiveWords(allWordsRaw.slice(wordSetIdx * WORDS_PER_SET, wordSetIdx * WORDS_PER_SET + WORDS_PER_SET));
-    setCompletedWords(new Set());
-    setWordFeedbackMap({});
-    setWordTranscriptsMap({});
-  }, [wordSetIdx, allWordsRaw]);
-
-  useEffect(() => {
-    setActiveSentences(BLENDS_SENTENCES.slice(sentenceSetIdx * SENTENCES_PER_SET, sentenceSetIdx * SENTENCES_PER_SET + SENTENCES_PER_SET));
-    setCompletedSentences(new Set());
-    setSentenceFeedbackMap({});
-    setSentenceTranscriptsMap({});
-  }, [sentenceSetIdx]);
-
-  // Voice Eval States
-  const [evaluatingPatternId, setEvaluatingPatternId] = useState<string | null>(null);
-  const [completedPatterns, setCompletedPatterns] = useState<Set<string>>(new Set());
-  const [patternFeedbackMap, setPatternFeedbackMap] = useState<Record<string, "correct" | "wrong" | null>>({});
-  const [patternTranscriptsMap, setPatternTranscriptsMap] = useState<Record<string, string>>({});
+  const activeSentences = useMemo(() => {
+    return BLENDS_SENTENCES.slice(sentenceSetIdx * sentencesBatchSize, sentenceSetIdx * sentencesBatchSize + sentencesBatchSize);
+  }, [sentenceSetIdx, sentencesBatchSize]);
 
   const [evaluatingWordId, setEvaluatingWordId] = useState<string | null>(null);
   const [completedWords, setCompletedWords] = useState<Set<string>>(new Set());
@@ -216,10 +287,10 @@ export function LevelBlends({ levelId, accent, categoryFilter, onComplete }: Lev
 
   const [showConfetti, setShowConfetti] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isCompleted, setIsCompleted] = useState(false);
 
-  const [micReady, setMicReady] = useState(false);
-  const micReadyTimerRef = useRef<NodeJS.Timeout | null>(null);
-
+  const [hasClickedMic, setHasClickedMic] = useState(false);
+  const [hasClickedSentenceMic, setHasClickedSentenceMic] = useState(false);
   const evaluationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const clearEvalTimeout = useCallback(() => {
@@ -233,70 +304,72 @@ export function LevelBlends({ levelId, accent, categoryFilter, onComplete }: Lev
     return () => clearEvalTimeout();
   }, [clearEvalTimeout]);
 
+  useEffect(() => {
+    if (currentPhase === "words-eval") {
+      if (activeWords.length > 0 && completedWords.size === activeWords.length) {
+        const nextIdx = wordSetIdx + 1;
+        if (nextIdx * wordsBatchSize < allWordsRaw.length) {
+          setTimeout(() => {
+            setWordSetIdx(nextIdx);
+            setCompletedWords(new Set());
+            setWordFeedbackMap({});
+            setWordTranscriptsMap({});
+          }, 1000);
+        } else {
+          setTimeout(() => {
+            playSound("complete", 0.5);
+            setCurrentStepIdx(prev => prev + 1);
+            setCompletedWords(new Set());
+            setWordSetIdx(0);
+          }, 1000);
+        }
+      }
+    } else if (currentPhase === "sentences") {
+      if (activeSentences.length > 0 && completedSentences.size === activeSentences.length) {
+        const nextIdx = sentenceSetIdx + 1;
+        if (nextIdx * sentencesBatchSize < BLENDS_SENTENCES.length) {
+          setTimeout(() => {
+            setSentenceSetIdx(nextIdx);
+            setCompletedSentences(new Set());
+            setSentenceFeedbackMap({});
+            setSentenceTranscriptsMap({});
+          }, 1000);
+        } else {
+          setTimeout(() => {
+            playSound("complete", 0.5);
+            setShowConfetti(true);
+            setCompletedSentences(new Set());
+            setSentenceSetIdx(0);
+          }, 1000);
+        }
+      }
+    }
+  }, [completedWords.size, activeWords.length, currentPhase, wordSetIdx, allWordsRaw.length, completedSentences.size, activeSentences.length, sentenceSetIdx]);
+
   const evaluatingTargetForMic = useMemo(() => {
-    if (currentPhase === "match" && evaluatingPatternId) {
-      return allPatternsRaw.find(p => p.pattern === evaluatingPatternId)?.category || null;
-    }
-    if (currentPhase === "words" && evaluatingWordId) {
-      return evaluatingWordId;
-    }
-    if (currentPhase === "sentences" && evaluatingSentenceId) {
-      return evaluatingSentenceId;
-    }
+    if (currentPhase === "words-eval" && evaluatingWordId) return evaluatingWordId;
+    if (currentPhase === "sentences" && evaluatingSentenceId) return evaluatingSentenceId;
     return null;
-  }, [currentPhase, evaluatingPatternId, evaluatingWordId, evaluatingSentenceId, allPatternsRaw]);
+  }, [currentPhase, evaluatingWordId, evaluatingSentenceId]);
 
   const isMobile = useMemo(() => /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent), []);
 
-  const activeVowelData = useMemo(() => {
-    return filteredData.find((d) => d.name === filteredData[reviewIdx]?.name) || null;
-  }, [reviewIdx, filteredData]);
-
-  const playTTS = (text: string) => {
-    setHasClickedTTS(true);
-    const ttsText = text.length === 1 ? (LETTER_TTS[text] || text) : text.toLowerCase();
-    playTTSUtil(ttsText);
-  };
-
-  const handleNextQuiz = useCallback(() => {
-    if (currentPhase === "match" || currentPhase === "words" || currentPhase === "sentences") {
-      setShowConfetti(true);
-      playSound("complete", 0.5);
-    }
-  }, [currentPhase]);
+  const handleNextStep = useCallback(() => {
+    playSound("click", 0.3);
+    setCurrentStepIdx(prev => prev + 1);
+  }, []);
 
   const handleResult = useCallback(
     (target: string, status: "correct" | "close" | "wrong" | null, transcript: string) => {
       const tClean = transcript.toLowerCase().replace(/[.,!?'"-]/g, "").trim();
       const targetClean = target.toLowerCase().replace(/[.,!?'"-]/g, "").trim();
-      let isCorrect = status === "correct" || status === "close" || tClean.includes(targetClean);
+      const tNoSpace = tClean.replace(/\s+/g, "");
+      const targetNoSpace = targetClean.replace(/\s+/g, "");
+      let isCorrect = status === "correct" || (status === "close" && currentPhase !== "sentences") || tClean.includes(targetClean) || tNoSpace.includes(targetNoSpace);
 
       clearEvalTimeout();
 
-      if (currentPhase === "match" && evaluatingPatternId) {
-        setPatternTranscriptsMap(prev => ({ ...prev, [evaluatingPatternId]: transcript }));
-        const vName = LETTER_NAMES[target]?.toLowerCase() || "";
-        const vTTS = LETTER_TTS[target]?.toLowerCase() || "";
-        isCorrect = isCorrect || (vName && tClean.includes(vName)) || (vTTS && tClean.includes(vTTS)) || tClean.includes(targetClean);
-
-        if (status === null && !isCorrect) return;
-
-        if (isCorrect) {
-          playSound("correct", 0.4);
-          setPatternFeedbackMap(prev => ({ ...prev, [evaluatingPatternId]: "correct" }));
-          evaluationTimeoutRef.current = setTimeout(() => {
-            setCompletedPatterns(prev => new Set(prev).add(evaluatingPatternId));
-            setEvaluatingPatternId(null);
-          }, 1500);
-        } else {
-          playSound("wrong", 0.35);
-          setPatternFeedbackMap(prev => ({ ...prev, [evaluatingPatternId]: "wrong" }));
-          evaluationTimeoutRef.current = setTimeout(() => {
-            setPatternFeedbackMap(prev => ({ ...prev, [evaluatingPatternId]: null }));
-            setEvaluatingPatternId(null);
-          }, 2000);
-        }
-      } else if (currentPhase === "words" && evaluatingWordId) {
+      if (currentPhase === "words-eval" && evaluatingWordId) {
         setWordTranscriptsMap(prev => ({ ...prev, [evaluatingWordId]: transcript }));
         if (status === null && !isCorrect) return;
 
@@ -336,7 +409,7 @@ export function LevelBlends({ levelId, accent, categoryFilter, onComplete }: Lev
         }
       }
     },
-    [currentPhase, evaluatingPatternId, evaluatingWordId, evaluatingSentenceId]
+    [currentPhase, evaluatingWordId, evaluatingSentenceId, clearEvalTimeout]
   );
 
   useSpeechRecognition({
@@ -345,19 +418,12 @@ export function LevelBlends({ levelId, accent, categoryFilter, onComplete }: Lev
     singleShot: currentPhase === "sentences",
     onResult: handleResult,
     onError: () => {
-      setEvaluatingPatternId(null);
       setEvaluatingWordId(null);
       setEvaluatingSentenceId(null);
     },
     onSilenceTimeout: () => {
       clearEvalTimeout();
-      if (currentPhase === "match" && evaluatingPatternId) {
-        setPatternFeedbackMap(prev => ({ ...prev, [evaluatingPatternId]: "wrong" }));
-        evaluationTimeoutRef.current = setTimeout(() => {
-          setPatternFeedbackMap(prev => ({ ...prev, [evaluatingPatternId]: null }));
-          setEvaluatingPatternId(null);
-        }, 1500);
-      } else if (currentPhase === "words" && evaluatingWordId) {
+      if (currentPhase === "words-eval" && evaluatingWordId) {
         setWordFeedbackMap(prev => ({ ...prev, [evaluatingWordId]: "wrong" }));
         evaluationTimeoutRef.current = setTimeout(() => {
           setWordFeedbackMap(prev => ({ ...prev, [evaluatingWordId]: null }));
@@ -373,47 +439,11 @@ export function LevelBlends({ levelId, accent, categoryFilter, onComplete }: Lev
     }
   });
 
-  const handleBack = () => {
-    playSound("click", 0.2);
-    clearEvalTimeout();
-    setEvaluatingPatternId(null);
-    setEvaluatingWordId(null);
-    setEvaluatingSentenceId(null);
-    if (currentPhase === "sentences") setCurrentPhase("words");
-    else if (currentPhase === "words") setCurrentPhase("match");
-    else if (currentPhase === "match") setCurrentPhase("review");
-    else navigate(-1);
-  };
-
-  const handleShuffle = () => {
-    playSound("click", 0.2);
-    clearEvalTimeout();
-    setEvaluatingPatternId(null);
-    setEvaluatingWordId(null);
-    setEvaluatingSentenceId(null);
-    if (currentPhase === "match") {
-      setMatchColumns(prev => ({
-        left: shuffle([...prev.left]),
-        right: shuffle([...prev.right])
-      }));
-    } else if (currentPhase === "words") {
-      setActiveWords(prev => shuffle([...prev]));
-    } else if (currentPhase === "sentences") {
-      setActiveSentences(prev => shuffle([...prev]));
-    }
-  };
-
-
   const handleReset = () => {
     clearEvalTimeout();
-    setEvaluatingPatternId(null);
     setEvaluatingWordId(null);
     setEvaluatingSentenceId(null);
-    if (currentPhase === "match") {
-      setCompletedPatterns(new Set());
-      setPatternFeedbackMap({});
-      setPatternTranscriptsMap({});
-    } else if (currentPhase === "words") {
+    if (currentPhase === "words-eval") {
       setCompletedWords(new Set());
       setWordFeedbackMap({});
       setWordTranscriptsMap({});
@@ -426,21 +456,24 @@ export function LevelBlends({ levelId, accent, categoryFilter, onComplete }: Lev
 
   const handleSkip = () => {
     clearEvalTimeout();
-    setEvaluatingPatternId(null);
     setEvaluatingWordId(null);
     setEvaluatingSentenceId(null);
-    if (currentPhase === "match") {
-      setMatchedPairs(new Set(matchColumns.left));
-      setShowConfetti(true);
-      playSound("complete");
-    } else if (currentPhase === "words") {
+    if (currentPhase === "words-eval") {
       setCompletedWords(new Set(activeWords.map(w => w.word)));
-      handleNextQuiz();
     } else if (currentPhase === "sentences") {
       setCompletedSentences(new Set(activeSentences));
-      handleNextQuiz();
     }
   };
+
+  const playPatternAudio = useCallback((pattern: string, category: string) => {
+    let folder = "";
+    if (category === "3-Letter Blends" || category === "Three-Letter Blends") {
+      folder = "3letterblend";
+    } else {
+      folder = "2letterblend";
+    }
+    playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/${folder}/${folder}-${pattern}.mp3`);
+  }, []);
 
   const handleGoBack = async () => {
     const confirmExit = await confirmAction("Are you sure you want to leave?", "Your progress will not be saved.");
@@ -451,8 +484,6 @@ export function LevelBlends({ levelId, accent, categoryFilter, onComplete }: Lev
   const handleFinish = async () => {
     playSound("complete", 0.5);
     setIsSaving(true);
-
-
     const completedLevels = JSON.parse(localStorage.getItem("completedLevels") || "[]");
     if (!completedLevels.includes(levelId)) {
       completedLevels.push(levelId);
@@ -466,15 +497,51 @@ export function LevelBlends({ levelId, accent, categoryFilter, onComplete }: Lev
     }
   };
 
-
+  if (isCompleted) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-purple-50 dark:bg-none dark:bg-[#0d141c] flex flex-col items-center justify-center p-4">
+        <Confetti active={true} />
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5 }}
+          className="text-center py-12 max-w-lg w-full mx-auto flex flex-col items-center"
+        >
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: [0, 1.2, 1] }}
+            transition={{ delay: 0.2, duration: 0.6 }}
+            className="w-48 h-48 relative flex items-center justify-center mb-6"
+          >
+            <div className="absolute inset-0 bg-yellow-400/20 dark:bg-yellow-400/10 rounded-full blur-xl animate-pulse" />
+            <motion.img
+              src={`${(import.meta as any).env.BASE_URL}dragon.png`}
+              alt="Mascot"
+              className="w-44 h-44 object-contain relative z-10"
+              animate={{ y: [0, -10, 0] }}
+              transition={{ repeat: Infinity, duration: 2.5, ease: "easeInOut" }}
+            />
+          </motion.div>
+          <h1 className="text-3xl sm:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-yellow-500 via-orange-500 to-red-500 drop-shadow-sm mb-4">
+            Level Complete!
+          </h1>
+          <p className="text-gray-600 dark:text-gray-300 text-lg font-medium leading-relaxed max-w-sm mx-auto mb-8">
+            Amazing job! You have fully mastered long vowels in <span className="font-bold text-blue-500">Long Vowels Master</span>!
+          </p>
+          <Button
+            onClick={() => navigate("/levels")}
+            className="w-full sm:w-auto px-10 py-6 rounded-2xl font-bold text-white text-lg shadow-lg border-b-[4px] border-[#3c8c01] hover:scale-[1.02] active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
+            style={{ background: 'linear-gradient(135deg, #58cc02 0%, #46a302 100%)' }}
+          >
+            Keep Going! <ArrowRight className="w-5 h-5" />
+          </Button>
+        </motion.div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-50 dark:bg-none dark:bg-[#0d141c] flex flex-col overflow-x-hidden">
-      <style>{`
-        .py-4 {
-          padding-block: calc(0.20rem * 4);
-        }
-      `}</style>
       <Confetti active={showConfetti} />
 
       <div className="sticky top-0 z-10 bg-white/80 dark:bg-[#0d141c]/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 px-4 py-3">
@@ -485,23 +552,22 @@ export function LevelBlends({ levelId, accent, categoryFilter, onComplete }: Lev
           <div className="flex-1 flex flex-col gap-1.5 mt-1">
             <div className="flex justify-between items-center px-1">
               <h2 className="text-sm sm:text-base font-bold tracking-tight" style={{ color: accent.primary }}>
-                {currentPhase === "review" && `${categoryFilter || "Blends"} Review`}
-                {currentPhase === "match" && `${categoryFilter || "Blends"} - Listen & Match`}
-                {currentPhase === "words" && `${categoryFilter || "Blends"} - Voice Evaluation`}
+                {currentPhase === "full-review" && `${categoryFilter || "Blends"} Review`}
+                {currentPhase === "vowels-review" && `Patterns Review`}
+                {currentPhase === "words-preview" && `${categoryFilter || "Blends"} - Words Preview`}
+                {currentPhase === "words-eval" && `${categoryFilter || "Blends"} - Voice Evaluation`}
+                {currentPhase === "words-review" && `${categoryFilter || "Blends"} - Words Review`}
                 {currentPhase === "sentences" && `${categoryFilter || "Blends"} - Read the Sentences`}
               </h2>
             </div>
-            
-            {/* Duolingo-style Progress Bar */}
             <div className="w-full bg-gray-200 dark:bg-gray-800 rounded-full h-4 sm:h-5 overflow-hidden relative shadow-inner">
               <div 
                 className="absolute top-0 left-0 h-full rounded-full transition-all duration-700 ease-out flex flex-col justify-start"
                 style={{ 
-                  width: `${Math.max(5, (({review:0, match:1, words:2, sentences:3}[currentPhase] || 0) / 3) * 100)}%`, 
+                  width: `${Math.max(5, (currentStepIdx / STEPS.length) * 100)}%`, 
                   backgroundColor: accent.primary 
                 }}
               >
-                {/* Glossy reflection highlight */}
                 <div className="w-[calc(100%-12px)] h-[30%] bg-white/30 rounded-full mx-1.5 mt-1"></div>
               </div>
             </div>
@@ -509,18 +575,17 @@ export function LevelBlends({ levelId, accent, categoryFilter, onComplete }: Lev
         </div>
       </div>
 
-      <div className="w-full max-w-2xl mx-auto px-4 py-2 flex-1 flex flex-col justify-start">
+      <div className="w-full max-w-4xl mx-auto px-4 py-2 flex-1 flex flex-col justify-start">
         <AnimatePresence mode="wait">
-          {!showConfetti && currentPhase === "review" ? (
+          {!showConfetti && currentPhase === "full-review" ? (
             <motion.div
-              key={`phase-review-${reviewIdx}`}
+              key={`full-review-${currentStep.batchNumber}`}
               initial={{ opacity: 0, scale: 0.98 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 1.02 }}
               className="w-full flex-1 flex flex-col"
             >
               <div className="text-center mb-8">
-
                 <p className="text-white text-base sm:text-lg font-bold mt-2 block">
                   Review the patterns. Tap any word or heading to hear it spoken!
                 </p>
@@ -528,89 +593,57 @@ export function LevelBlends({ levelId, accent, categoryFilter, onComplete }: Lev
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => {
-                      if (reviewIdx > 0) setReviewIdx(prev => prev - 1);
-                    }}
-                    disabled={reviewIdx === 0}
-                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#086ca5] hover:scale-105 active:scale-95 px-2 transition-all disabled:opacity-50 disabled:grayscale disabled:pointer-events-none h-9 py-2"
+                    onClick={() => setCurrentStepIdx(p => Math.max(0, p - 1))}
+                    disabled={currentStepIdx === 0}
+                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#086ca5] hover:scale-105 active:scale-95 active:translate-y-1 active:border-b-0 px-2 transition-all disabled:opacity-50 disabled:grayscale disabled:pointer-events-none h-9 py-2"
                     style={{ background: 'linear-gradient(135deg, #1cb0f6 0%, #0a8ed4 100%)' }}
                   >
                     <ArrowLeft className="w-4 h-4 mr-1" /> Back
                   </Button>
                   <Button
-                    variant="outline"
                     size="sm"
-                    onClick={() => setReviewBatch(prev => shuffle([...prev]))}
-                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#8b40b8] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
-                    style={{
-                      background: "linear-gradient(135deg, #ce82ff 0%, #a559d6 100%)",
-                    }}
+                    onClick={handleNextStep}
+                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#3c8c01] hover:scale-105 active:scale-95 active:translate-y-1 active:border-b-0 px-2 transition-all h-9 py-2"
+                    style={{ background: "linear-gradient(135deg, rgb(88, 204, 2) 0%, rgb(70, 163, 2) 100%)" }}
                   >
-                    <ShuffleIcon className="w-4 h-4 mr-1" /> Shuffle
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPhase("match")}
-                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#c99c00] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
-                    style={{
-                      background: "linear-gradient(135deg, rgb(255, 200, 0) 0%, rgb(255, 150, 0) 100%)",
-                    }}
-                  >
-                    <SkipForward className="w-4 h-4 mr-1" /> Forward
-                  </Button>
-                  <Button
-                    size="sm"
-                    onClick={() => setCurrentPhase("match")}
-                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#3c8c01] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
-                    style={{
-                      background: "linear-gradient(135deg, rgb(88, 204, 2) 0%, rgb(70, 163, 2) 100%)",
-                    }}
-                  >
-                    Proceed <ArrowRight className="w-4 h-4 ml-1" />
+                    Proceed <ChevronRight className="w-4 h-4 ml-1" />
                   </Button>
                 </div>
               </div>
-
-              <div className={`grid gap-6 items-stretch mb-8 flex-1 w-full mx-auto ${reviewBatch.length === 1 ? 'grid-cols-1 max-w-sm' : reviewBatch.length === 2 ? 'grid-cols-1 md:grid-cols-2 max-w-2xl' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'}`}>
-                {reviewBatch.map((pattern) => {
+              <div className={`grid gap-6 items-stretch mb-8 flex-1 w-full mx-auto ${(allPatternsRaw.slice(((currentStep.batchNumber || 1) - 1) * 6, (currentStep.batchNumber || 1) * 6)).length === 1 ? 'grid-cols-1 max-w-sm' : (allPatternsRaw.slice(((currentStep.batchNumber || 1) - 1) * 6, (currentStep.batchNumber || 1) * 6)).length === 2 ? 'grid-cols-1 md:grid-cols-2 max-w-2xl' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'}`}>
+                {allPatternsRaw.slice(((currentStep.batchNumber || 1) - 1) * 6, (currentStep.batchNumber || 1) * 6).map((pattern) => {
                   return (
                     <div
                       key={pattern.pattern}
-                      className="bg-white dark:bg-gray-800/80 rounded-3xl p-6 border-2 border-amber-200 dark:border-gray-700 shadow-lg flex flex-col justify-start"
+                      className="bg-gradient-to-b from-white to-amber-50/50 dark:from-gray-800/90 dark:to-gray-900/90 rounded-3xl p-6 border-2 border-amber-200/50 dark:border-gray-700 shadow-xl flex flex-col justify-start relative overflow-hidden group hover:border-amber-300 dark:hover:border-gray-600 transition-all"
                     >
                       <div
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          playPatternAudio(pattern.pattern, pattern.category);
-                        }}
-                        className="text-center border-b-2 border-dashed border-amber-100 dark:border-gray-700 pb-4 mb-6 cursor-pointer hover:bg-amber-50 dark:hover:bg-gray-700 rounded-xl transition-colors active:scale-95"
+                        onClick={() => playPatternAudio(pattern.pattern, pattern.category)}
+                        className="text-center border-b-[3px] border-amber-100 dark:border-gray-700/60 pb-4 mb-6 cursor-pointer hover:bg-amber-50/80 dark:hover:bg-gray-700/50 rounded-2xl transition-all active:translate-y-[2px] active:border-b-0"
                       >
-
                         <span className="text-2xl font-black text-gray-700 dark:text-gray-200 flex items-center justify-center gap-2">
                           {pattern.pattern} <Volume2 className="w-5 h-5 text-amber-400" />
                         </span>
                       </div>
-
-                      <div className="space-y-4 flex-1">
+                      <div className={`gap-4 flex-1 ${pattern.words.length > 5 ? 'grid grid-cols-1 sm:grid-cols-2' : 'flex flex-col'}`}>
                         {pattern.words.map((w: BlendWord) => {
                           return (
                             <div
                               key={w.word}
-                              onClick={() => playTTS(w.word)}
-                              className="flex items-center justify-between p-4 rounded-2xl border-2 transition-all cursor-pointer active:scale-95 bg-gray-50/30 dark:bg-gray-900/30 border-gray-100 dark:border-gray-850 hover:bg-gray-50 dark:hover:bg-gray-900"
+                              onClick={() => playTTSUtil(w.word.toLowerCase())}
+                              className="flex items-center justify-between px-5 py-3.5 rounded-2xl border-2 transition-all cursor-pointer active:translate-y-1 bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md hover:border-amber-300 dark:hover:border-amber-600 group/word"
                             >
                               <div className="flex items-center gap-1 select-none text-2xl font-bold tracking-wider text-gray-700 dark:text-gray-200">
                                 {w.word.split("").map((char, index) => {
                                   const isHighlighted = w.highlights.includes(index);
                                   return (
                                     <span key={index} className={isHighlighted ? "text-rose-500 font-extrabold" : ""}>
-                                      {char}
+                                      {char.toLowerCase()}
                                     </span>
                                   );
                                 })}
                               </div>
-                              <Volume2 className="w-5 h-5 text-gray-400" />
+                              <Volume2 className="w-5 h-5 text-gray-400 group-hover/word:text-amber-500 transition-colors" />
                             </div>
                           );
                         })}
@@ -619,157 +652,117 @@ export function LevelBlends({ levelId, accent, categoryFilter, onComplete }: Lev
                   );
                 })}
               </div>
-
-
             </motion.div>
-          ) : !showConfetti && currentPhase === "match" && matchColumns.left.length > 0 ? (
+          ) : !showConfetti && currentPhase === "vowels-review" ? (
             <motion.div
-              key={`phase-match-${reviewIdx}`}
-              initial={{ opacity: 0, scale: 0.9 }}
+              key="vowels-review"
+              initial={{ opacity: 0, scale: 0.98 }}
               animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              className="flex flex-col items-center w-full"
+              exit={{ opacity: 0, scale: 1.02 }}
+              className="w-full flex-1 flex flex-col items-center"
             >
-              <div className="text-center mb-6">
-                <p className="text-white text-base sm:text-lg font-bold mt-2 block">Tap a speaker, then tap the matching blend!</p>
-
-                {/* Navigation Controls */}
+              <div className="text-center mb-8">
+                <p className="text-white text-base sm:text-lg font-bold mt-2 block">
+                  Review the patterns. Tap any pattern to hear it spoken! {currentStep.batchNumber && currentStep.totalBatches ? `(Batch ${currentStep.batchNumber} of ${currentStep.totalBatches})` : ""}
+                </p>
                 <div className="flex justify-center items-center w-full gap-3 sm:gap-4 max-w-md mx-auto mt-6">
                   <Button
-                    onClick={() => setCurrentPhase("review")}
-                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#086ca5] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentStepIdx(p => Math.max(0, p - 1))}
+                    disabled={currentStepIdx === 0}
+                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#086ca5] hover:scale-105 active:scale-95 active:translate-y-1 active:border-b-0 px-2 transition-all disabled:opacity-50 disabled:grayscale disabled:pointer-events-none h-9 py-2"
                     style={{ background: 'linear-gradient(135deg, #1cb0f6 0%, #0a8ed4 100%)' }}
                   >
-                    <ArrowLeft className="w-4 h-4 sm:mr-1" />
-                    <span className="hidden sm:inline">Back</span>
+                    <ArrowLeft className="w-4 h-4 mr-1" /> Back
                   </Button>
                   <Button
-                    onClick={() => {
-                      setMatchColumns(prev => ({
-                        left: [...prev.left].sort(() => Math.random() - 0.5),
-                        right: [...prev.right].sort(() => Math.random() - 0.5)
-                      }));
-                    }}
-                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#8b40b8] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
-                    style={{ background: 'linear-gradient(135deg, #ce82ff 0%, #a559d6 100%)' }}
+                    variant="outline"
+                    size="sm"
+                    onClick={handleShuffleVowels}
+                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#8b40b8] hover:scale-105 active:scale-95 active:translate-y-1 active:border-b-0 px-2 transition-all h-9 py-2"
+                    style={{ background: "linear-gradient(135deg, #ce82ff 0%, #a559d6 100%)" }}
                   >
-                    <ShuffleIcon className="w-4 h-4 sm:mr-1" />
-                    <span className="hidden sm:inline">Shuffle</span>
+                    <Shuffle className="w-4 h-4 mr-1" /> Shuffle
                   </Button>
                   <Button
-                    onClick={handleSkip}
-                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#c99c00] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
-                    style={{ background: 'linear-gradient(135deg, #ffc800 0%, #ff9600 100%)' }}
+                    size="sm"
+                    onClick={handleNextStep}
+                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#3c8c01] hover:scale-105 active:scale-95 active:translate-y-1 active:border-b-0 px-2 transition-all h-9 py-2"
+                    style={{ background: "linear-gradient(135deg, rgb(88, 204, 2) 0%, rgb(70, 163, 2) 100%)" }}
                   >
-                    <SkipForward className="w-4 h-4 sm:mr-1" />
-                    <span className="hidden sm:inline">Forward</span>
-                  </Button>
-                  <Button
-                    onClick={handleNextQuiz}
-                    disabled={matchedPairs.size !== matchColumns.left.length || matchColumns.left.length === 0}
-                    className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#3c8c01] hover:scale-105 active:scale-95 px-2 transition-all disabled:opacity-50 disabled:grayscale disabled:pointer-events-none h-9 py-2"
-                    style={{ background: 'linear-gradient(135deg, rgb(88, 204, 2) 0%, rgb(70, 163, 2) 100%)' }}
-                  >
-                    <span className="hidden sm:inline">Proceed</span>
-                    <ArrowRight className="w-4 h-4 sm:ml-1" />
+                    Proceed <ChevronRight className="w-4 h-4 ml-1" />
                   </Button>
                 </div>
               </div>
-
-              <div className="flex justify-center gap-4 sm:gap-8 w-full max-w-2xl mx-auto mb-10 px-2 sm:px-4">
-                {/* Left Column: Speakers */}
-                <div className="flex flex-col gap-3 sm:gap-4 flex-1 min-w-0">
-                  {matchColumns.left.map((pattern, idx) => {
-                    const isMatched = matchedPairs.has(pattern);
-                    const isSelected = selectedSpeakerMatch === pattern;
-                    const isWrong = !!(wrongMatchPair && wrongMatchPair[0] === pattern);
-
-                    return (
-                      <div key={`speaker-${pattern}`} className="relative w-full">
-                        <MatchButton
-                          gradientStart={accent.primary}
-                          gradientEnd={accent.dark}
-                          isMatched={isMatched}
-                          isSelected={isSelected}
-                          isWrong={isWrong}
-                          onClick={() => handleSpeakerMatchClick(pattern)}
-                          disabled={!!wrongMatchPair}
-                          className={`w-full ${idx === 0 && !hasClickedTTS ? 'ring-2 ring-indigo-400 ring-offset-2 animate-pulse' : ''}`}
-                        >
-                          <Volume2 className={`w-8 h-8 ${isMatched ? "opacity-50" : ""}`} />
-                        </MatchButton>
-                        {idx === 0 && !hasClickedTTS && (
-                          <motion.div
-                            initial={{ opacity: 0, y: 10, scale: 0.8 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            transition={{ repeat: Infinity, repeatType: "reverse", duration: 1.5 }}
-                            className="absolute -top-10 left-1/2 -translate-x-1/2 bg-indigo-500 text-white text-[10px] font-bold py-1 px-3 rounded-full shadow-lg whitespace-nowrap pointer-events-none z-10"
-                          >
-                            Tap to listen!
-                            <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-indigo-500 rotate-45" />
-                          </motion.div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-
-                {/* Right Column: Blends */}
-                <div className="flex flex-col gap-3 sm:gap-4 flex-1 min-w-0">
-                  {matchColumns.right.map((pattern) => {
-                    const isMatched = matchedPairs.has(pattern);
-                    const isSelected = selectedLetterMatch === pattern;
-                    const isWrong = !!(wrongMatchPair && wrongMatchPair[1] === pattern);
-
-                    return (
-                      <MatchButton
-                        key={`letter-${pattern}`}
-                        isMatched={isMatched}
-                        isSelected={isSelected}
-                        isWrong={isWrong}
-                        onClick={() => handleLetterMatchClick(pattern)}
-                        disabled={!!wrongMatchPair}
-                        className="font-black text-2xl sm:text-3xl"
-                      >
-                        {pattern}
-                      </MatchButton>
-                    );
-                  })}
-                </div>
+              <div className="flex flex-wrap justify-center gap-3 sm:gap-4 mb-12 w-full max-w-[680px] mx-auto">
+                {vowelsOrder.map((pattern, idx) => (
+                  <motion.div
+                    key={pattern.pattern}
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    className="flex flex-col items-center w-[100px] sm:w-[120px]"
+                  >
+                    <div
+                      onClick={() => {
+                        playSound("click", 0.2);
+                        playPatternAudio(pattern.pattern, pattern.category);
+                      }}
+                      className="w-full aspect-square rounded-xl sm:rounded-2xl shadow-md flex flex-col items-center justify-center border-b-[4px] select-none transition-all cursor-pointer hover:brightness-110 active:translate-y-1 active:border-b-0 border-amber-600 relative overflow-hidden"
+                      style={{ background: 'linear-gradient(135deg, #FF9600 0%, #e08000 100%)' }}
+                    >
+                      <span className="text-white text-3xl sm:text-4xl font-black drop-shadow-sm tracking-widest">
+                        {pattern.pattern}
+                      </span>
+                    </div>
+                  </motion.div>
+                ))}
               </div>
-
-              {wrongMatchPair && (
-                <motion.p initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="text-red-500 font-bold text-lg mb-4 text-center">Not quite, try again!</motion.p>
-              )}
             </motion.div>
-          ) : !showConfetti && currentPhase === "words" ? (
+          ) : !showConfetti && (currentPhase === "words-preview" || currentPhase === "words-review") ? (
+            <LevelBlendsGrid
+              key={`${currentPhase}-${currentStep.batchNumber}`}
+              accent={accent}
+              words={currentStep.words || []}
+              onComplete={handleNextStep}
+              onBack={() => setCurrentStepIdx(p => Math.max(0, p - 1))}
+              canBack={currentStepIdx > 0}
+              batchNumber={currentStep.batchNumber}
+              totalBatches={currentStep.totalBatches}
+              isReview={currentPhase === "words-review"}
+              allWordsMap={allWordsMap}
+              categoryFilter={categoryFilter}
+            />
+          ) : !showConfetti && currentPhase === "words-eval" ? (
             <motion.div
-              key={`phase-words-${wordSetIdx}`}
+              key="phase-words"
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 1.05 }}
-              className="w-full max-w-2xl mx-auto flex flex-col items-center"
+              className="w-full max-w-4xl mx-auto flex flex-col items-center"
             >
-
-              <div className="text-center mb-8">
+              <div className="text-center mb-6">
                 <p className="text-white text-base sm:text-lg font-bold mt-2 block">
-                  Say each word out loud into the microphone.
+                  Say each word out loud into the microphone. ({wordSetIdx + 1}/{Math.ceil(allWordsRaw.length / wordsBatchSize)})
                 </p>
               </div>
 
-              {/* Controls */}
               <div className="flex justify-center items-center w-full gap-2 sm:gap-3 max-w-lg mx-auto mb-6">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => {
-                    if (wordSetIdx > 0) setWordSetIdx(prev => prev - 1);
-                    else setCurrentPhase("match");
+                    if (wordSetIdx > 0) {
+                      setWordSetIdx(p => p - 1);
+                      setCompletedWords(new Set());
+                      setWordFeedbackMap({});
+                      setWordTranscriptsMap({});
+                    } else {
+                      setCurrentStepIdx(p => Math.max(0, p - 1));
+                    }
                   }}
-                  className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#086ca5] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
-                  style={{
-                    background: "linear-gradient(135deg, #1cb0f6 0%, #0a8ed4 100%)",
-                  }}
+                  className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#086ca5] hover:scale-105 active:scale-95 active:translate-y-1 active:border-b-0 px-2 transition-all h-9 py-2"
+                  style={{ background: "linear-gradient(135deg, #1cb0f6 0%, #0a8ed4 100%)" }}
                 >
                   <ArrowLeft className="w-4 h-4 sm:mr-1" />
                   <span className="hidden sm:inline">Back</span>
@@ -777,82 +770,74 @@ export function LevelBlends({ levelId, accent, categoryFilter, onComplete }: Lev
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={handleShuffle}
-                  className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#8b40b8] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
-                  style={{
-                    background: "linear-gradient(135deg, rgb(206, 130, 255) 0%, rgb(165, 89, 214) 100%)",
-                  }}
+                  onClick={handleReset}
+                  className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#c0392b] hover:scale-105 active:scale-95 active:translate-y-1 active:border-b-0 px-2 transition-all h-9 py-2"
+                  style={{ background: "linear-gradient(135deg, rgb(255, 75, 75) 0%, rgb(216, 42, 42) 100%)" }}
                 >
-                  <ShuffleIcon className="w-4 h-4 sm:mr-1" />
+                  <RotateCcw className="w-4 h-4 sm:mr-1" />
+                  <span className="hidden sm:inline">Reset</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleShuffleWords}
+                  className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#8b40b8] hover:scale-105 active:scale-95 active:translate-y-1 active:border-b-0 px-2 transition-all h-9 py-2"
+                  style={{ background: "linear-gradient(135deg, #ce82ff 0%, #a559d6 100%)" }}
+                >
+                  <Shuffle className="w-4 h-4 sm:mr-1" />
                   <span className="hidden sm:inline">Shuffle</span>
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={handleSkip}
-                  className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#c99c00] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
-                  style={{
-                    background: "linear-gradient(135deg, rgb(255, 200, 0) 0%, rgb(255, 150, 0) 100%)",
-                  }}
+                  className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#f39c12] hover:scale-105 active:scale-95 active:translate-y-1 active:border-b-0 px-2 transition-all h-9 py-2"
+                  style={{ background: "linear-gradient(135deg, rgb(255, 200, 0) 0%, rgb(255, 150, 0) 100%)" }}
                 >
                   <FastForward className="w-4 h-4 sm:mr-1" />
                   <span className="hidden sm:inline">Forward</span>
                 </Button>
-                <Button
-                  size="sm"
-                  onClick={handleNextQuiz}
-                  disabled={completedWords.size < activeWords.length}
-                  className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#3c8c01] hover:scale-105 active:scale-95 px-2 transition-all disabled:opacity-50 disabled:grayscale disabled:pointer-events-none h-9 py-2"
-                  style={{
-                    background: "linear-gradient(135deg, rgb(88, 204, 2) 0%, rgb(70, 163, 2) 100%)",
-                  }}
-                >
-                  <span className="hidden sm:inline">Proceed</span>
-                  <ArrowRight className="w-4 h-4 sm:ml-1" />
-                </Button>
               </div>
 
               <div className="w-full text-center mb-8">
-                <div className={`w-full bg-white/50 dark:bg-gray-800/50 p-4 rounded-3xl backdrop-blur-sm border-2 border-dashed border-gray-200 dark:border-gray-700 ${activeWords.length > 5 ? 'grid grid-cols-1 sm:grid-cols-2 gap-3' : 'space-y-3'}`}>
-                  {activeWords.map((w, idx) => {
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 bg-white/50 dark:bg-gray-800/50 p-4 rounded-3xl backdrop-blur-sm border-2 border-dashed border-gray-200 dark:border-gray-700">
+                  {activeWordsOrder.map((w, idx) => {
                     const isDone = completedWords.has(w.word);
                     const isEval = evaluatingWordId === w.word;
                     const vFeedback = wordFeedbackMap[w.word];
-                    const vTranscript = wordTranscriptsMap[w.word];
-
+                    const fullWord = allWordsMap[w.word];
+                    
                     return (
                       <div
                         key={w.word}
                         className={`flex items-center justify-between p-4 rounded-2xl transition-all ${isDone || vFeedback === "correct" ? 'bg-green-50 dark:bg-green-900/20' : vFeedback === "wrong" ? 'bg-red-50 dark:bg-red-900/10' : 'bg-white dark:bg-gray-800'} shadow-sm border-2 ${isEval ? 'border-pink-400 shadow-md' : isDone || vFeedback === "correct" ? 'border-green-200' : vFeedback === "wrong" ? 'border-red-200' : 'border-transparent hover:border-gray-300 dark:hover:border-gray-600'}`}
                       >
-                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
+                        <div className="flex items-center gap-2 sm:gap-4">
                           <div className="relative">
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => playTTS(w.word)}
-                              className={`rounded-full w-10 h-10 flex-shrink-0 ${idx === 0 && !hasClickedTTS ? 'ring-2 ring-indigo-400 ring-offset-2 animate-pulse bg-indigo-50 dark:bg-indigo-900/20 text-indigo-500' : 'bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300'}`}
+                              onClick={() => {
+                                setHasClickedMic(true);
+                                playTTSUtil(w.word.toLowerCase());
+                              }}
+                              className={`rounded-full w-10 h-10 sm:w-12 sm:h-12 flex-shrink-0 flex items-center justify-center bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 transition-all`}
                             >
-                              <Volume2 className="w-4 h-4" />
+                              <Volume2 className="w-5 h-5" />
                             </Button>
-                            {idx === 0 && !hasClickedTTS && (
-                              <motion.div
-                                initial={{ opacity: 0, y: 10, scale: 0.8 }}
-                                animate={{ opacity: 1, y: 0, scale: 1 }}
-                                transition={{ repeat: Infinity, repeatType: "reverse", duration: 1.5 }}
-                                className="absolute -top-10 left-1/2 -translate-x-1/2 bg-indigo-500 text-white text-[10px] font-bold py-1 px-3 rounded-full shadow-lg whitespace-nowrap pointer-events-none z-10"
-                              >
-                                Tap to listen!
-                                <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-indigo-500 rotate-45" />
-                              </motion.div>
-                            )}
                           </div>
-                          <span className="text-3xl font-bold min-w-[60px] text-left tracking-widest uppercase flex items-center gap-1.5" style={{ color: isDone || vFeedback === "correct" ? '#58CC02' : accent.primary }}>
-                            {w.word}
+                          <span className={`text-3xl font-bold min-w-[60px] text-left tracking-widest lowercase flex items-center gap-1.5 ${isDone || vFeedback === "correct" ? "text-[#58CC02]" : "text-gray-700 dark:text-gray-200"}`}>
+                            {w.word.split("").map((char, charIdx) => {
+                              const isHighlighted = fullWord?.highlights.includes(charIdx);
+                              return (
+                                <span key={charIdx} className={isHighlighted && !(isDone || vFeedback === "correct") ? "text-rose-500 font-extrabold" : ""}>
+                                  {char.toLowerCase()}
+                                </span>
+                              );
+                            })}
                           </span>
                         </div>
-
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2">
                           <div className="relative">
                             <button
                               onClick={() => {
@@ -863,9 +848,6 @@ export function LevelBlends({ levelId, accent, categoryFilter, onComplete }: Lev
                                   setEvaluatingWordId(w.word);
                                   setWordFeedbackMap(prev => ({ ...prev, [w.word]: null }));
                                   setWordTranscriptsMap(prev => ({ ...prev, [w.word]: "" }));
-                                  setMicReady(false);
-                                  if (micReadyTimerRef.current) clearTimeout(micReadyTimerRef.current);
-                                  micReadyTimerRef.current = setTimeout(() => setMicReady(true), 220);
                                 }
                               }}
                               disabled={(evaluatingWordId !== null && !isEval) || isDone}
@@ -875,7 +857,7 @@ export function LevelBlends({ levelId, accent, categoryFilter, onComplete }: Lev
                                   ? 'bg-red-500 text-white shadow-lg'
                                   : vFeedback === "wrong"
                                     ? 'bg-red-400 text-white'
-                                    : 'bg-gradient-to-br from-pink-500 to-rose-500 text-white shadow-md hover:scale-105 active:scale-95'
+                                    : 'bg-gradient-to-br from-pink-500 to-rose-500 text-white shadow-md hover:scale-105 active:translate-y-1'
                                 } ${idx === 0 && !hasClickedMic ? 'ring-2 ring-pink-400 ring-offset-2 animate-pulse' : ''}`}
                             >
                               {isEval && (
@@ -906,107 +888,37 @@ export function LevelBlends({ levelId, accent, categoryFilter, onComplete }: Lev
                   })}
                 </div>
               </div>
-              
-              {/* Listening Modal for Words */}
-              <AnimatePresence>
-                {evaluatingWordId && !showConfetti && (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4"
-                  >
-                    <motion.div
-                      initial={{ scale: 0.9, y: 20 }}
-                      animate={{ scale: 1, y: 0 }}
-                      exit={{ scale: 0.9, y: 20 }}
-                      className="bg-white dark:bg-gray-800 rounded-3xl p-6 sm:p-8 max-w-sm w-full text-center shadow-2xl border-4"
-                      style={{ borderColor: accent.primary }}
-                    >
-                      <div className="flex flex-col items-center justify-center gap-2 mb-6">
-                        <div className="flex items-center justify-center gap-2">
-                          <Mic className="w-6 h-6 text-pink-500 animate-pulse" />
-                          <h3 className="text-2xl font-bold tracking-tight text-pink-500 animate-pulse">
-                            {micReady ? "Listening..." : "Get ready..."}
-                          </h3>
-                        </div>
-                        {micReady && <AudioVisualizer isListening={!!evaluatingWordId} isMobile={isMobile} />}
-                      </div>
-                      <p className="text-gray-500 dark:text-gray-400 mb-6 font-medium">Please read the word out loud clearly.</p>
-                      
-                      <div className="bg-gray-50 dark:bg-gray-900 rounded-2xl p-5 min-h-[100px] flex flex-col items-center justify-center border border-gray-100 dark:border-gray-800 shadow-inner">
-                        <span className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Target Word</span>
-                        <span className="text-4xl font-extrabold mb-4 tracking-wider flex items-baseline justify-center uppercase" style={{ color: accent.primary }}>
-                          {evaluatingWordId}
-                        </span>
-                        
-                        <div className="w-full h-px bg-gray-200 dark:bg-gray-700 my-2" />
-                        
-                        <span className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1 mt-2">Heard</span>
-                        <span className="text-xl font-medium text-gray-700 dark:text-gray-300 min-h-[32px] flex items-center justify-center">
-                          {wordTranscriptsMap[evaluatingWordId] ? (
-                            `"${wordTranscriptsMap[evaluatingWordId]}"`
-                          ) : (
-                            <span className="text-gray-400 italic">Waiting for speech...</span>
-                          )}
-                        </span>
-                      </div>
-
-                      {wordFeedbackMap[evaluatingWordId] === "wrong" && (
-                        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mt-6 p-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-xl font-bold border border-red-200 dark:border-red-800 flex items-center justify-center gap-2">
-                          <XCircle className="w-5 h-5" /> Not quite, try again!
-                        </motion.div>
-                      )}
-                      
-                      {wordFeedbackMap[evaluatingWordId] === "correct" && (
-                        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mt-6 p-3 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded-xl font-bold border border-green-200 dark:border-green-800 flex items-center justify-center gap-2">
-                          <CheckCircle2 className="w-5 h-5" /> Excellent!
-                        </motion.div>
-                      )}
-
-                      <Button
-                        variant="outline"
-                        onClick={() => {
-                          clearEvalTimeout();
-                          setWordFeedbackMap(prev => ({ ...prev, [evaluatingWordId]: null }));
-                          setEvaluatingWordId(null);
-                        }}
-                        className="mt-6 w-full rounded-xl border-2 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 font-bold"
-                      >
-                        Cancel
-                      </Button>
-                    </motion.div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
             </motion.div>
           ) : !showConfetti && currentPhase === "sentences" ? (
             <motion.div
-              key={`phase-sentences-${sentenceSetIdx}`}
+              key="phase-sentences"
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 1.05 }}
-              className="w-full max-w-2xl mx-auto flex flex-col items-center"
+              className="w-full max-w-5xl mx-auto flex flex-col items-center"
             >
-              <div className="text-center mb-8">
+              <div className="text-center mb-6">
                 <p className="text-white text-base sm:text-lg font-bold mt-2 block">
-                  Say each sentence out loud into the microphone.
+                  Say each sentence out loud into the microphone. ({sentenceSetIdx + 1}/{Math.ceil(BLENDS_SENTENCES.length / sentencesBatchSize)})
                 </p>
               </div>
 
-              {/* Controls */}
               <div className="flex justify-center items-center w-full gap-2 sm:gap-3 max-w-lg mx-auto mb-6">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => {
-                    if (sentenceSetIdx > 0) setSentenceSetIdx(prev => prev - 1);
-                    else setCurrentPhase("words");
+                    if (sentenceSetIdx > 0) {
+                      setSentenceSetIdx(p => p - 1);
+                      setCompletedSentences(new Set());
+                      setSentenceFeedbackMap({});
+                      setSentenceTranscriptsMap({});
+                    } else {
+                      setCurrentStepIdx(p => Math.max(0, p - 1));
+                    }
                   }}
-                  className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#086ca5] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
-                  style={{
-                    background: "linear-gradient(135deg, #1cb0f6 0%, #0a8ed4 100%)",
-                  }}
+                  className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#086ca5] hover:scale-105 active:scale-95 active:translate-y-1 active:border-b-0 px-2 transition-all h-9 py-2"
+                  style={{ background: "linear-gradient(135deg, #1cb0f6 0%, #0a8ed4 100%)" }}
                 >
                   <ArrowLeft className="w-4 h-4 sm:mr-1" />
                   <span className="hidden sm:inline">Back</span>
@@ -1014,48 +926,31 @@ export function LevelBlends({ levelId, accent, categoryFilter, onComplete }: Lev
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={handleShuffle}
-                  className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#8b40b8] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
-                  style={{
-                    background: "linear-gradient(135deg, rgb(206, 130, 255) 0%, rgb(165, 89, 214) 100%)",
-                  }}
+                  onClick={handleReset}
+                  className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#c0392b] hover:scale-105 active:scale-95 active:translate-y-1 active:border-b-0 px-2 transition-all h-9 py-2"
+                  style={{ background: "linear-gradient(135deg, rgb(255, 75, 75) 0%, rgb(216, 42, 42) 100%)" }}
                 >
-                  <ShuffleIcon className="w-4 h-4 sm:mr-1" />
-                  <span className="hidden sm:inline">Shuffle</span>
+                  <RotateCcw className="w-4 h-4 sm:mr-1" />
+                  <span className="hidden sm:inline">Reset</span>
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={handleSkip}
-                  className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#c99c00] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
-                  style={{
-                    background: "linear-gradient(135deg, rgb(255, 200, 0) 0%, rgb(255, 150, 0) 100%)",
-                  }}
+                  className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#f39c12] hover:scale-105 active:scale-95 active:translate-y-1 active:border-b-0 px-2 transition-all h-9 py-2"
+                  style={{ background: "linear-gradient(135deg, rgb(255, 200, 0) 0%, rgb(255, 150, 0) 100%)" }}
                 >
                   <FastForward className="w-4 h-4 sm:mr-1" />
                   <span className="hidden sm:inline">Forward</span>
                 </Button>
-                <Button
-                  size="sm"
-                  onClick={handleNextQuiz}
-                  disabled={completedSentences.size < activeSentences.length}
-                  className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#3c8c01] hover:scale-105 active:scale-95 px-2 transition-all disabled:opacity-50 disabled:grayscale disabled:pointer-events-none h-9 py-2"
-                  style={{
-                    background: "linear-gradient(135deg, rgb(88, 204, 2) 0%, rgb(70, 163, 2) 100%)",
-                  }}
-                >
-                  <span className="hidden sm:inline">Proceed</span>
-                  <ArrowRight className="w-4 h-4 sm:ml-1" />
-                </Button>
               </div>
 
               <div className="w-full text-center mb-8">
-                <div className="w-full bg-white/50 dark:bg-gray-800/50 p-4 rounded-3xl backdrop-blur-sm border-2 border-dashed border-gray-200 dark:border-gray-700 space-y-3">
+                <div className="w-full gap-3 bg-white/50 dark:bg-gray-800/50 p-4 rounded-3xl backdrop-blur-sm border-2 border-dashed border-gray-200 dark:border-gray-700 grid grid-cols-1 lg:grid-cols-2">
                   {activeSentences.map((s, idx) => {
                     const isDone = completedSentences.has(s);
                     const isEval = evaluatingSentenceId === s;
                     const vFeedback = sentenceFeedbackMap[s];
-                    const vTranscript = sentenceTranscriptsMap[s];
 
                     return (
                       <div
@@ -1067,12 +962,15 @@ export function LevelBlends({ levelId, accent, categoryFilter, onComplete }: Lev
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => playTTS(s)}
-                              className={`rounded-full w-10 h-10 flex-shrink-0 ${idx === 0 && !hasClickedTTS ? 'ring-2 ring-indigo-400 ring-offset-2 animate-pulse bg-indigo-50 dark:bg-indigo-900/20 text-indigo-500' : 'bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300'}`}
+                              onClick={() => {
+                                setHasClickedSentenceMic(true);
+                                playTTSUtil(s.toLowerCase());
+                              }}
+                              className={`rounded-full w-10 h-10 flex-shrink-0 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 ${idx === 0 && !hasClickedSentenceMic ? 'ring-2 ring-indigo-400 ring-offset-2 animate-pulse' : ''}`}
                             >
                               <Volume2 className="w-4 h-4" />
                             </Button>
-                            {idx === 0 && !hasClickedTTS && (
+                            {idx === 0 && !hasClickedSentenceMic && (
                               <motion.div
                                 initial={{ opacity: 0, y: 10, scale: 0.8 }}
                                 animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -1084,138 +982,59 @@ export function LevelBlends({ levelId, accent, categoryFilter, onComplete }: Lev
                               </motion.div>
                             )}
                           </div>
-                          <span className="text-xl font-bold text-left leading-snug flex items-center gap-1.5" style={{ color: isDone || vFeedback === "correct" ? '#58CC02' : accent.primary }}>
+                          <span className={`text-xl font-bold text-left leading-snug flex items-center gap-1.5 ${isDone || vFeedback === "correct" ? "text-[#58CC02]" : "text-gray-700 dark:text-gray-200"}`}>
                             {s}
                           </span>
                         </div>
-
-                        <div className="flex items-center gap-3">
-                          <div className="relative">
-                            <button
-                              onClick={() => {
-                                setHasClickedMic(true);
-                                if (isEval) {
-                                  setEvaluatingSentenceId(null);
-                                } else if (!isDone) {
-                                  setEvaluatingSentenceId(s);
-                                  setSentenceFeedbackMap(prev => ({ ...prev, [s]: null }));
-                                  setSentenceTranscriptsMap(prev => ({ ...prev, [s]: "" }));
-                                  setMicReady(false);
-                                  if (micReadyTimerRef.current) clearTimeout(micReadyTimerRef.current);
-                                  micReadyTimerRef.current = setTimeout(() => setMicReady(true), 220);
-                                }
-                              }}
-                              disabled={(evaluatingSentenceId !== null && !isEval) || isDone}
-                              className={`relative w-12 h-12 rounded-xl flex items-center justify-center transition-all flex-shrink-0 ${isDone || vFeedback === "correct"
-                                ? 'bg-green-500 text-white shadow-none opacity-50 cursor-default'
-                                : isEval
-                                  ? 'bg-red-500 text-white shadow-lg'
-                                  : vFeedback === "wrong"
-                                    ? 'bg-red-400 text-white'
-                                    : 'bg-gradient-to-br from-pink-500 to-rose-500 text-white shadow-md hover:scale-105 active:scale-95'
-                                } ${idx === 0 && !hasClickedMic ? 'ring-2 ring-pink-400 ring-offset-2 animate-pulse' : ''}`}
-                            >
-                              {isEval && (
-                                <>
-                                  <span className="absolute inset-0 rounded-xl bg-red-500/40 animate-ping" />
-                                  <span className="absolute -inset-1 rounded-xl bg-red-500/20 animate-pulse" />
-                                </>
-                              )}
-                              <span className="relative z-10">
-                                {isDone || vFeedback === "correct" ? <CheckCircle2 className="w-6 h-6" /> : vFeedback === "wrong" ? <XCircle className="w-6 h-6" /> : isEval ? <MicOff className="w-5 h-5 animate-bounce" /> : <Mic className="w-5 h-5" />}
-                              </span>
-                            </button>
-                            {idx === 0 && !hasClickedMic && (
-                              <motion.div
-                                initial={{ opacity: 0, y: 10, scale: 0.8 }}
-                                animate={{ opacity: 1, y: 0, scale: 1 }}
-                                transition={{ repeat: Infinity, repeatType: "reverse", duration: 1.5 }}
-                                className="absolute -top-10 left-1/2 -translate-x-1/2 bg-pink-500 text-white text-[10px] font-bold py-1 px-3 rounded-full shadow-lg whitespace-nowrap pointer-events-none z-10"
-                              >
-                                Tap to speak!
-                                <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-pink-500 rotate-45" />
-                              </motion.div>
+                        <div className="relative">
+                          <button
+                            onClick={() => {
+                              setHasClickedSentenceMic(true);
+                              if (isEval) {
+                                setEvaluatingSentenceId(null);
+                              } else if (!isDone) {
+                                setEvaluatingSentenceId(s);
+                                setSentenceFeedbackMap(prev => ({ ...prev, [s]: null }));
+                                setSentenceTranscriptsMap(prev => ({ ...prev, [s]: "" }));
+                              }
+                            }}
+                            disabled={(evaluatingSentenceId !== null && !isEval) || isDone}
+                            className={`relative w-12 h-12 rounded-xl flex items-center justify-center transition-all flex-shrink-0 ${isDone || vFeedback === "correct"
+                              ? 'bg-green-500 text-white shadow-none opacity-50 cursor-default'
+                              : isEval
+                                ? 'bg-red-500 text-white shadow-lg'
+                                : vFeedback === "wrong"
+                                  ? 'bg-red-400 text-white'
+                                  : 'bg-gradient-to-br from-pink-500 to-rose-500 text-white shadow-md hover:scale-105 active:translate-y-1'
+                              } ${idx === 0 && !hasClickedSentenceMic ? 'ring-2 ring-pink-400 ring-offset-2 animate-pulse' : ''}`}
+                          >
+                            {isEval && (
+                              <>
+                                <span className="absolute inset-0 rounded-xl bg-red-500/40 animate-ping" />
+                                <span className="absolute -inset-1 rounded-xl bg-red-500/20 animate-pulse" />
+                              </>
                             )}
-                          </div>
+                            <span className="relative z-10">
+                              {isDone || vFeedback === "correct" ? <CheckCircle2 className="w-6 h-6" /> : vFeedback === "wrong" ? <XCircle className="w-6 h-6" /> : isEval ? <MicOff className="w-5 h-5 animate-bounce" /> : <Mic className="w-5 h-5" />}
+                            </span>
+                          </button>
+                          {idx === 0 && !hasClickedSentenceMic && (
+                            <motion.div
+                              initial={{ opacity: 0, y: 10, scale: 0.8 }}
+                              animate={{ opacity: 1, y: 0, scale: 1 }}
+                              transition={{ repeat: Infinity, repeatType: "reverse", duration: 1.5 }}
+                              className="absolute -top-10 left-1/2 -translate-x-1/2 bg-pink-500 text-white text-[10px] font-bold py-1 px-3 rounded-full shadow-lg whitespace-nowrap pointer-events-none z-10"
+                            >
+                              Tap to speak!
+                              <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-pink-500 rotate-45" />
+                            </motion.div>
+                          )}
                         </div>
                       </div>
                     );
                   })}
                 </div>
               </div>
-
-              {/* Listening Modal for Sentences */}
-              <AnimatePresence>
-                {evaluatingSentenceId && !showConfetti && (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4"
-                  >
-                    <motion.div
-                      initial={{ scale: 0.9, y: 20 }}
-                      animate={{ scale: 1, y: 0 }}
-                      exit={{ scale: 0.9, y: 20 }}
-                      className="bg-white dark:bg-gray-800 rounded-3xl p-6 sm:p-8 max-w-sm w-full text-center shadow-2xl border-4"
-                      style={{ borderColor: accent.primary }}
-                    >
-                      <div className="flex flex-col items-center justify-center gap-2 mb-6">
-                        <div className="flex items-center justify-center gap-2">
-                          <Mic className="w-6 h-6 text-pink-500 animate-pulse" />
-                          <h3 className="text-2xl font-bold tracking-tight text-pink-500 animate-pulse">
-                            {micReady ? "Listening..." : "Get ready..."}
-                          </h3>
-                        </div>
-                        {micReady && <AudioVisualizer isListening={!!evaluatingSentenceId} isMobile={isMobile} />}
-                      </div>
-                      <p className="text-gray-500 dark:text-gray-400 mb-6 font-medium">Please read the sentence out loud clearly.</p>
-                      
-                      <div className="bg-gray-50 dark:bg-gray-900 rounded-2xl p-5 min-h-[100px] flex flex-col items-center justify-center border border-gray-100 dark:border-gray-800 shadow-inner">
-                        <span className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Target</span>
-                        <span className="text-2xl font-bold mb-4 tracking-wider flex items-baseline justify-center" style={{ color: accent.primary }}>
-                          {evaluatingSentenceId}
-                        </span>
-                        
-                        <div className="w-full h-px bg-gray-200 dark:bg-gray-700 my-2" />
-                        
-                        <span className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1 mt-2">Heard</span>
-                        <span className="text-xl font-medium text-gray-700 dark:text-gray-300 min-h-[32px] flex items-center justify-center">
-                          {sentenceTranscriptsMap[evaluatingSentenceId] ? (
-                            `"${sentenceTranscriptsMap[evaluatingSentenceId]}"`
-                          ) : (
-                            <span className="text-gray-400 italic">Waiting for speech...</span>
-                          )}
-                        </span>
-                      </div>
-
-                      {sentenceFeedbackMap[evaluatingSentenceId] === "wrong" && (
-                        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mt-6 p-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-xl font-bold border border-red-200 dark:border-red-800 flex items-center justify-center gap-2">
-                          <XCircle className="w-5 h-5" /> Not quite, try again!
-                        </motion.div>
-                      )}
-                      
-                      {sentenceFeedbackMap[evaluatingSentenceId] === "correct" && (
-                        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mt-6 p-3 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded-xl font-bold border border-green-200 dark:border-green-800 flex items-center justify-center gap-2">
-                          <CheckCircle2 className="w-5 h-5" /> Excellent!
-                        </motion.div>
-                      )}
-
-                      <Button
-                        variant="outline"
-                        onClick={() => {
-                          clearEvalTimeout();
-                          setSentenceFeedbackMap(prev => ({ ...prev, [evaluatingSentenceId]: null }));
-                          setEvaluatingSentenceId(null);
-                        }}
-                        className="mt-6 w-full rounded-xl border-2 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 font-bold"
-                      >
-                        Cancel
-                      </Button>
-                    </motion.div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
             </motion.div>
           ) : showConfetti ? (
             <motion.div
@@ -1233,95 +1052,83 @@ export function LevelBlends({ levelId, accent, categoryFilter, onComplete }: Lev
               </motion.div>
 
               <h3 className="text-3xl font-black mb-4" style={{ color: accent.primary }}>
-                {currentPhase === "match" ? "Patterns Mastered!" : currentPhase === "words" ? (wordSetIdx === totalWordSets - 1 ? "Words Mastered!" : "Set Complete!") : sentenceSetIdx === totalSentenceSets - 1 ? "Level Mastered!" : "Set Complete!"}
+                Level Mastered!
               </h3>
 
               <p className="text-gray-600 dark:text-gray-400 mb-8 leading-relaxed">
-                {currentPhase === "match"
-                  ? "You correctly identified all the consonant blends! Ready to read some words?"
-                  : currentPhase === "words"
-                    ? (wordSetIdx === totalWordSets - 1
-                      ? "You successfully read all the blend words out loud! Ready for sentences?"
-                      : "You successfully read 6 blend words! Ready for the next set?")
-                    : (sentenceSetIdx === totalSentenceSets - 1
-                      ? "You successfully read all the sentences! Awesome job!"
-                      : "You successfully read 6 sentences! Ready for the next set?")}
+                You successfully read all the sentences! Awesome job!
               </p>
 
-              {currentPhase === "match" ? (
-                <Button
-                  onClick={() => {
-                    setShowConfetti(false);
-                    if (reviewIdx < Math.ceil(allPatternsRaw.length / 6) - 1) {
-                      setReviewIdx(r => r + 1);
-
-                      setCurrentPhase("review");
-                    } else {
-                      setCurrentPhase("words");
-                    }
-                  }}
-                  size="lg"
-                  className="rounded-2xl px-10 py-6 text-lg text-white font-bold w-full shadow-xl animate-bounce"
-                  style={{ background: `linear-gradient(135deg, ${accent.primary} 0%, ${accent.dark} 100%)` }}
-                >
-                  {reviewIdx < Math.ceil(allPatternsRaw.length / 6) - 1 ? "Next Batch" : "Start Reading Words"} <ArrowRight className="ml-2 w-5 h-5" />
-                </Button>
-              ) : currentPhase === "words" ? (
-                wordSetIdx === totalWordSets - 1 ? (
-                  <Button
-                    onClick={() => {
-                      setCurrentPhase("sentences");
-                      setShowConfetti(false);
-                    }}
-                    size="lg"
-                    className="rounded-2xl px-10 py-6 text-lg text-white font-bold w-full shadow-xl animate-bounce"
-                    style={{ background: `linear-gradient(135deg, ${accent.primary} 0%, ${accent.dark} 100%)` }}
-                  >
-                    Start Reading Sentences <ArrowRight className="ml-2 w-5 h-5" />
-                  </Button>
-                ) : (
-                  <Button
-                    onClick={() => {
-                      setWordSetIdx(prev => Math.min(prev + 1, totalWordSets - 1));
-                      setShowConfetti(false);
-                    }}
-                    size="lg"
-                    className="rounded-2xl px-10 py-6 text-lg text-white font-bold w-full shadow-xl animate-bounce"
-                    style={{ background: `linear-gradient(135deg, ${accent.primary} 0%, ${accent.dark} 100%)` }}
-                  >
-                    Start Next 6 Words <ArrowRight className="ml-2 w-5 h-5" />
-                  </Button>
-                )
-              ) : sentenceSetIdx === totalSentenceSets - 1 ? (
-                <Button
-                  disabled={isSaving}
-                  onClick={handleFinish}
-                  size="lg"
-                  className="rounded-2xl px-10 py-6 text-lg text-white font-bold w-full shadow-xl animate-bounce"
-                  style={{ background: `linear-gradient(135deg, ${accent.primary} 0%, ${accent.dark} 100%)` }}
-                >
-                  {isSaving ? "Saving..." : "Back to Levels"}
-                </Button>
-              ) : (
-                <Button
-                  onClick={() => {
-                    setSentenceSetIdx(prev => Math.min(prev + 1, totalSentenceSets - 1));
-                    setShowConfetti(false);
-                  }}
-                  size="lg"
-                  className="rounded-2xl px-10 py-6 text-lg text-white font-bold w-full shadow-xl animate-bounce"
-                  style={{ background: `linear-gradient(135deg, ${accent.primary} 0%, ${accent.dark} 100%)` }}
-                >
-                  Start Next 6 Sentences <ArrowRight className="ml-2 w-5 h-5" />
-                </Button>
-              )}
+              <Button
+                disabled={isSaving}
+                onClick={handleFinish}
+                size="lg"
+                className="rounded-2xl px-10 py-6 text-lg text-white font-bold w-full shadow-xl animate-bounce"
+                style={{ background: `linear-gradient(135deg, ${accent.primary} 0%, ${accent.dark} 100%)` }}
+              >
+                {isSaving ? "Saving..." : "Continue"}
+              </Button>
             </motion.div>
           ) : null}
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {evaluatingTargetForMic && !showConfetti && (currentPhase === "words-eval" || currentPhase === "sentences") && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4"
+            >
+              <motion.div
+                initial={{ scale: 0.9, y: 20 }}
+                animate={{ scale: 1, y: 0 }}
+                exit={{ scale: 0.9, y: 20 }}
+                className="bg-white dark:bg-gray-800 rounded-3xl p-6 sm:p-8 max-w-sm w-full text-center shadow-2xl border-4"
+                style={{ borderColor: accent.primary }}
+              >
+                <div className="flex flex-col items-center justify-center gap-2 mb-6">
+                  <div className="flex items-center justify-center gap-2">
+                    <Mic className="w-6 h-6 text-pink-500 animate-pulse" />
+                    <h3 className="text-2xl font-bold tracking-tight text-pink-500 animate-pulse">
+                      Listening...
+                    </h3>
+                  </div>
+                  <AudioVisualizer isListening={!!evaluatingTargetForMic} isMobile={isMobile} />
+                </div>
+                <p className="text-gray-500 dark:text-gray-400 mb-6 font-medium">Please say the {currentPhase === "words-eval" ? "word" : "sentence"} clearly.</p>
+
+                <div className="bg-gray-50 dark:bg-gray-900 rounded-2xl p-5 min-h-[100px] flex flex-col items-center justify-center border border-gray-100 dark:border-gray-800 shadow-inner">
+                  <span className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Target</span>
+                  <span className="text-4xl font-extrabold mb-4 tracking-wider flex items-baseline justify-center uppercase" style={{ color: accent.primary }}>
+                    {evaluatingTargetForMic}
+                  </span>
+
+                  <div className="w-full h-px bg-gray-200 dark:bg-gray-700 my-2" />
+
+                  <span className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1 mt-2">Heard</span>
+                  <span className="text-lg font-bold text-gray-700 dark:text-gray-200 min-h-[28px]">
+                    {(currentPhase === "words-eval" ? wordTranscriptsMap[evaluatingTargetForMic] : sentenceTranscriptsMap[evaluatingTargetForMic]) || "..."}
+                  </span>
+                </div>
+
+                <div className="mt-6 flex gap-3">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      if (currentPhase === "words-eval") setEvaluatingWordId(null);
+                      if (currentPhase === "sentences") setEvaluatingSentenceId(null);
+                    }}
+                    className="flex-1 rounded-xl font-bold text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 border-2"
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
         </AnimatePresence>
       </div>
     </div>
   );
 }
-
-
-

@@ -39,7 +39,7 @@ export const BLENDS_DATA: BlendCategory[] = [
         "words": [
           { word: "crane", highlights: [0, 1] },
           { word: "crab", highlights: [0, 1] },
-          { word: "crude", highlights: [0, 1] }
+          { word: "cream", highlights: [0, 1] }
         ]
       },
       {
@@ -56,7 +56,7 @@ export const BLENDS_DATA: BlendCategory[] = [
         "pattern": "fl",
         "words": [
           { word: "flame", highlights: [0, 1] },
-          { word: "flute", highlights: [0, 1] },
+          { word: "flip", highlights: [0, 1] },
           { word: "flag", highlights: [0, 1] }
         ]
       },
@@ -100,7 +100,7 @@ export const BLENDS_DATA: BlendCategory[] = [
         "name": "2-Letter Blend",
         "pattern": "pr",
         "words": [
-          { word: "price", highlights: [0, 1] },
+          { word: "prone", highlights: [0, 1] },
           { word: "prize", highlights: [0, 1] },
           { word: "pride", highlights: [0, 1] }
         ]
@@ -138,7 +138,7 @@ export const BLENDS_DATA: BlendCategory[] = [
         "words": [
           { word: "smile", highlights: [0, 1] },
           { word: "smoke", highlights: [0, 1] },
-          { word: "smear", highlights: [0, 1] }
+          { word: "smell", highlights: [0, 1] }
         ]
       },
       {
@@ -155,7 +155,7 @@ export const BLENDS_DATA: BlendCategory[] = [
         "pattern": "sp",
         "words": [
           { word: "spot", highlights: [0, 1] },
-          { word: "space", highlights: [0, 1] },
+          { word: "spin", highlights: [0, 1] },
           { word: "spell", highlights: [0, 1] }
         ]
       },
@@ -173,7 +173,7 @@ export const BLENDS_DATA: BlendCategory[] = [
         "pattern": "sw",
         "words": [
           { word: "sweet", highlights: [0, 1] },
-          { word: "sweat", highlights: [0, 1] },
+          { word: "swim", highlights: [0, 1] },
           { word: "sway", highlights: [0, 1] }
         ]
       },
@@ -190,7 +190,7 @@ export const BLENDS_DATA: BlendCategory[] = [
         "name": "2-Letter Blend",
         "pattern": "tw",
         "words": [
-          { word: "twice", highlights: [0, 1] },
+          { word: "twin", highlights: [0, 1] },
           { word: "twigs", highlights: [0, 1] },
           { word: "tweet", highlights: [0, 1] }
         ]
@@ -232,7 +232,7 @@ export const BLENDS_DATA: BlendCategory[] = [
         "pattern": "th(t)",
         "words": [
           { word: "theme", highlights: [0, 1] },
-          { word: "thief", highlights: [0, 1] },
+          { word: "thin", highlights: [0, 1] },
           { word: "thigh", highlights: [0, 1] }
         ]
       },
@@ -274,14 +274,14 @@ export const BLENDS_DATA: BlendCategory[] = [
         "words": [
           { word: "splat", highlights: [0, 1, 2] },
           { word: "split", highlights: [0, 1, 2] },
-          { word: "splice", highlights: [0, 1, 2] }
+          { word: "splash", highlights: [0, 1, 2] }
         ]
       },
       {
         "name": "Three-Letter Blend",
         "pattern": "spr",
         "words": [
-          { word: "spread", highlights: [0, 1, 2] },
+          { word: "sprint", highlights: [0, 1, 2] },
           { word: "sprout", highlights: [0, 1, 2] },
           { word: "spray", highlights: [0, 1, 2] }
         ]
@@ -387,7 +387,7 @@ export const BLENDS_DATA: BlendCategory[] = [
         "words": [
           { word: "cold", highlights: [2, 3] },
           { word: "gold", highlights: [2, 3] },
-          { word: "wild", highlights: [2, 3] }
+          { word: "grind", highlights: [2, 3] }
         ]
       },
       {

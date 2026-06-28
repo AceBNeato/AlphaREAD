@@ -123,8 +123,29 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
 
   const handleBackClick = () => {
     if (batchIndex > 0) {
-      setBatchIndex(prev => prev - 1);
-      setWordsIndex((batchIndex - 1) * BATCH_SIZE);
+      const prevBatchIndex = batchIndex - 1;
+      const prevBatchWords = words.slice(prevBatchIndex * BATCH_SIZE, (prevBatchIndex + 1) * BATCH_SIZE);
+      
+      setCompletedWords(prev => {
+        const next = new Set(prev);
+        prevBatchWords.forEach(w => next.delete(w));
+        return next;
+      });
+
+      setEvalFeedback(prev => {
+        const next = { ...prev };
+        prevBatchWords.forEach(w => delete next[w]);
+        return next;
+      });
+
+      setTranscripts(prev => {
+        const next = { ...prev };
+        prevBatchWords.forEach(w => delete next[w]);
+        return next;
+      });
+
+      setBatchIndex(prevBatchIndex);
+      setWordsIndex(prevBatchIndex * BATCH_SIZE);
     } else if (onBack) {
       onBack();
     }
@@ -403,7 +424,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
                 <Button
                   size="sm"
                   onClick={handleBackClick}
-                  className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#086ca5] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
+                  className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-black/20 hover:scale-105 active:scale-95 active:translate-y-1 active:border-b-0 px-2 transition-all h-9 py-2"
                   style={{
                     background: "linear-gradient(135deg, #1cb0f6 0%, #0a8ed4 100%)",
                   }}
@@ -415,7 +436,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
               <Button
                 size="sm"
                 onClick={handleShuffle}
-                className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#883fba] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
+                className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-black/20 hover:scale-105 active:scale-95 active:translate-y-1 active:border-b-0 px-2 transition-all h-9 py-2"
                 style={{
                   background: "linear-gradient(135deg, #ce82ff 0%, #a559d6 100%)",
                 }}
@@ -426,7 +447,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
               <Button
                 size="sm"
                 onClick={handleReset}
-                className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#b81d1d] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
+                className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-black/20 hover:scale-105 active:scale-95 active:translate-y-1 active:border-b-0 px-2 transition-all h-9 py-2"
                 style={{
                   background: "linear-gradient(135deg, rgb(255, 75, 75) 0%, rgb(216, 42, 42) 100%)",
                 }}
@@ -437,7 +458,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
               <Button
                 size="sm"
                 onClick={handleSkip}
-                className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#c99c00] hover:scale-105 active:scale-95 px-2 transition-all h-9 py-2"
+                className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-black/20 hover:scale-105 active:scale-95 active:translate-y-1 active:border-b-0 px-2 transition-all h-9 py-2"
                 style={{
                   background: "linear-gradient(135deg, rgb(255, 200, 0) 0%, rgb(255, 150, 0) 100%)",
                 }}
@@ -449,7 +470,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
                 size="sm"
                 onClick={handleNextClick}
                 disabled={!isCurrentBatchDone}
-                className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#3c8c01] hover:scale-105 active:scale-95 px-2 transition-all disabled:opacity-50 disabled:grayscale disabled:pointer-events-none h-9 py-2"
+                className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-black/20 hover:scale-105 active:scale-95 active:translate-y-1 active:border-b-0 px-2 transition-all disabled:opacity-50 disabled:grayscale disabled:pointer-events-none h-9 py-2"
                 style={{
                   background: "linear-gradient(135deg, rgb(88, 204, 2) 0%, rgb(70, 163, 2) 100%)",
                 }}
@@ -483,7 +504,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
                           <div className="relative shrink-0 flex items-center justify-center pt-1 sm:pt-0">
                             <button
                               onClick={() => handlePlayTTS(w)}
-                              className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${isDone ? 'bg-white/50 hover:bg-white dark:bg-black/20 dark:hover:bg-black/40 text-green-700 dark:text-green-400 cursor-pointer shadow-sm active:scale-95' : 'bg-blue-100 hover:bg-blue-200 dark:bg-blue-900/30 dark:hover:bg-blue-800/50 text-blue-600 dark:text-blue-400 cursor-pointer shadow-sm active:scale-95'} ${idx === 0 && !hasClickedTTS && !isDone ? 'ring-2 ring-blue-400 ring-offset-1 animate-pulse' : ''}`}
+                              className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${isDone ? 'bg-white/50 hover:bg-white dark:bg-black/20 dark:hover:bg-black/40 text-green-700 dark:text-green-400 cursor-pointer shadow-sm active:translate-y-1' : 'bg-blue-100 hover:bg-blue-200 dark:bg-blue-900/30 dark:hover:bg-blue-800/50 text-blue-600 dark:text-blue-400 cursor-pointer shadow-sm active:translate-y-1'} ${idx === 0 && !hasClickedTTS && !isDone ? 'ring-2 ring-blue-400 ring-offset-1 animate-pulse' : ''}`}
                             >
                               <Volume2 className="w-4 h-4" />
                             </button>
@@ -531,7 +552,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
                               }
                             }}
                             disabled={(evaluatingWord !== null && !isCurrent) || isDone || isMicResetting}
-                            className={`relative w-12 h-12 rounded-xl flex items-center justify-center transition-all ${isDone ? 'bg-green-500 text-white shadow-none opacity-50 cursor-default' : isCurrent ? 'bg-red-500 text-white shadow-lg' : isMicResetting ? 'bg-gray-300 dark:bg-gray-700 text-gray-400 cursor-not-allowed' : 'bg-gradient-to-br from-pink-500 to-rose-500 text-white shadow-md hover:scale-105 active:scale-95'} ${idx === 0 && !hasClickedMic && !isDone ? 'ring-2 ring-pink-400 ring-offset-2 animate-pulse' : ''}`}
+                            className={`relative w-12 h-12 rounded-xl flex items-center justify-center transition-all ${isDone ? 'bg-green-500 text-white shadow-none opacity-50 cursor-default' : isCurrent ? 'bg-red-500 text-white shadow-lg' : isMicResetting ? 'bg-gray-300 dark:bg-gray-700 text-gray-400 cursor-not-allowed' : 'bg-gradient-to-br from-pink-500 to-rose-500 text-white shadow-md hover:scale-105 active:translate-y-1'} ${idx === 0 && !hasClickedMic && !isDone ? 'ring-2 ring-pink-400 ring-offset-2 animate-pulse' : ''}`}
                           >
                             {isCurrent && (
                               <>

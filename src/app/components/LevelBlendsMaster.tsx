@@ -48,6 +48,7 @@ export function LevelBlendsMaster({ levelId, accent }: LevelBlendsMasterProps) {
         localStorage.setItem("completedLevels", JSON.stringify(completedLevels));
       }
       setIsCompleted(true);
+      setSelectedCategory(null);
     } else {
       // Return to picker to choose another category
       setSelectedCategory(null);
