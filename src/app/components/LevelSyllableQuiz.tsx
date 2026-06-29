@@ -33,8 +33,8 @@ const VOWELS = new Set(['A', 'E', 'I', 'O', 'U']);
 function getAudioPath(syllable: string, pattern: Pattern): string {
   const base = (import.meta as any).env.BASE_URL;
   const lower = syllable.toLowerCase();
-  if (pattern === "CV") return `${base}audio/cv-audio/cv-${lower}.MP3`;
-  return `${base}audio/vc-audio/vc-${lower}.MP3`;
+  if (pattern === "CV") return `${base}audio/cv-audio/cv-${lower}.mp3`;
+  return `${base}audio/vc-audio/vc-${lower}.mp3`;
 }
 
 function playAudio(syllable: string, pattern: Pattern) {

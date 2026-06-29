@@ -151,7 +151,7 @@ export function LevelSyllableBuilder({
 
     // Use local audio files for CV and VC patterns
     if (pattern === "CV") {
-      const audioPath = `${(import.meta as any).env.BASE_URL}audio/cv-audio/cv-${syllableLower}.MP3`;
+      const audioPath = `${(import.meta as any).env.BASE_URL}audio/cv-audio/cv-${syllableLower}.mp3`;
       playExclusiveAudio(audioPath).catch(() => { });
       return;
     }
