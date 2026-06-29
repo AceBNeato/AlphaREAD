@@ -17,6 +17,17 @@ interface LevelLetterNamesProps {
 // Vowels for color logic
 const VOWELS = new Set(['A', 'E', 'I', 'O', 'U']);
 
+type Phase = "review" | "match" | "type";
+
+interface GameStep {
+  type: Phase;
+  start: number;
+  end: number;
+  isFinal: boolean;
+  combo: false | "AL" | "AS";
+  isFullAlphabetPreview?: boolean;
+}
+
 export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
   const navigate = useNavigate();
 
@@ -27,20 +38,37 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
 
   // Randomized alphabet for the final set
   const [finalAlphabet] = useState(() => [...ALPHABET].sort(() => Math.random() - 0.5));
-  // Randomized combined sets
-  const [comboAN] = useState(() => [...ALPHABET.slice(0, 14)].sort(() => Math.random() - 0.5));
+  const [comboAL] = useState(() => [...ALPHABET.slice(0, 12)].sort(() => Math.random() - 0.5));
+  const [comboAS] = useState(() => [...ALPHABET.slice(0, 19)].sort(() => Math.random() - 0.5));
 
-  const STEPS = useMemo(() => [
+  const STEPS: GameStep[] = useMemo(() => [
     { type: "review" as const, start: 0, end: 26, isFinal: false, isFullAlphabetPreview: true, combo: false },
 
-    // ── Group 1: A-N (14 letters, batched internally by 7) ──
-    { type: "match" as const, start: 0, end: 14, isFinal: false, combo: false },
-    { type: "type" as const, start: 0, end: 14, isFinal: false, combo: false },
-    { type: "review" as const, start: 0, end: 14, isFinal: false, combo: "AN" as const },
+    // ── Group 1: A-F (6 letters) ──
+    { type: "review" as const, start: 0, end: 6, isFinal: false, combo: false },
+    { type: "match" as const, start: 0, end: 6, isFinal: false, combo: false },
+    { type: "type" as const, start: 0, end: 6, isFinal: false, combo: false },
 
-    // ── Group 2: M-Z (14 letters, batched internally by 7) ──
-    { type: "match" as const, start: 12, end: 26, isFinal: false, combo: false },
-    { type: "type" as const, start: 12, end: 26, isFinal: false, combo: false },
+    // ── Group 2: G-L (6 letters) ──
+    { type: "review" as const, start: 6, end: 12, isFinal: false, combo: false },
+    { type: "match" as const, start: 6, end: 12, isFinal: false, combo: false },
+    { type: "type" as const, start: 6, end: 12, isFinal: false, combo: false },
+
+    // Cumulative A-L Review & Assessment
+    { type: "review" as const, start: 0, end: 12, isFinal: false, combo: "AL" as const },
+
+    // ── Group 3: M-S (7 letters) ──
+    { type: "review" as const, start: 12, end: 19, isFinal: false, combo: false },
+    { type: "match" as const, start: 12, end: 19, isFinal: false, combo: false },
+    { type: "type" as const, start: 12, end: 19, isFinal: false, combo: false },
+
+    // Cumulative A-S Review & Assessment
+    { type: "review" as const, start: 0, end: 19, isFinal: false, combo: "AS" as const },
+
+    // ── Group 4: T-Z (7 letters) ──
+    { type: "review" as const, start: 19, end: 26, isFinal: false, combo: false },
+    { type: "match" as const, start: 19, end: 26, isFinal: false, combo: false },
+    { type: "type" as const, start: 19, end: 26, isFinal: false, combo: false },
 
     // ── Combined A-Z Review + Eval (all randomized, batched by 6/7) ──
     { type: "review" as const, start: 0, end: 26, isFinal: true, combo: false },
@@ -56,10 +84,11 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
     if (step?.isFullAlphabetPreview) {
       return ALPHABET;
     }
-    if (step?.combo === "AN") return comboAN;
+    if (step?.combo === "AL") return comboAL;
+    if (step?.combo === "AS") return comboAS;
     if (step?.isFinal) return finalAlphabet;
     return ALPHABET.slice(step?.start || 0, step?.end || ALPHABET.length);
-  }, [ALPHABET, finalAlphabet, comboAN, step]);
+  }, [ALPHABET, finalAlphabet, comboAL, comboAS, step]);
 
   const [showConfetti, setShowConfetti] = useState(false);
   const confettiTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -392,8 +421,8 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
           <div className="flex-1 flex flex-col gap-1.5 mt-1">
             <div className="flex justify-between items-center px-1">
               <h2 className="text-sm sm:text-base font-bold tracking-tight" style={{ color: accent.primary }}>
-                {step?.isFinal ? 'Final Review - ' : step?.combo === 'AN' ? 'Combined A-N - ' : 'Letter Names Master - '}
-                {step?.type === 'review' ? 'Review Phase' :
+                {step?.isFinal ? 'Final Review - ' : step?.combo === 'AL' ? 'Combined A-L - ' : step?.combo === 'AS' ? 'Combined A-S - ' : 'Letter Names Master - '}
+                {step?.type === 'review' ? (step?.combo || step?.isFinal ? 'Review Phase' : 'Preview Phase') :
                   step?.type === 'match' ? 'Listen & Match' :
                     'Listen & Type'}
               </h2>
@@ -424,7 +453,7 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
             <motion.div key={`review-${currentStep}`} initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -50 }} className="flex flex-col items-center">
               <div className="text-center mb-8">
                 <p className="text-gray-600 dark:text-gray-300 text-base sm:text-lg font-bold mt-2 block">
-                  {step.isFullAlphabetPreview ? "Review all letters A-Z before we start!" : "Tap the letters to hear their names"}
+                  {step.isFullAlphabetPreview ? "Preview all letters A-Z before we start!" : "Tap the letters to hear their names"}
                 </p>
 
                 {/* Navigation Controls moved to top */}

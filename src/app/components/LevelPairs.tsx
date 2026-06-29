@@ -35,11 +35,12 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
     { type: "review" as const, start: 0, end: 26, isFinal: false, isFullAlphabetPreview: true, combo: false },
 
     // ── Batch 1: A-F ──
+    { type: "review" as const, start: 0, end: 6, isFinal: false, combo: false },
     { type: "match" as const, start: 0, end: 6, isFinal: false, combo: false },
     { type: "type" as const, start: 0, end: 6, isFinal: false, combo: false },
-    { type: "review" as const, start: 0, end: 6, isFinal: false, combo: false }, // Review shows after assessment
 
     // ── Batch 2: G-L ──
+    { type: "review" as const, start: 6, end: 12, isFinal: false, combo: false },
     { type: "match" as const, start: 6, end: 12, isFinal: false, combo: false },
     { type: "type" as const, start: 6, end: 12, isFinal: false, combo: false },
 
@@ -47,6 +48,7 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
     { type: "review" as const, start: 0, end: 12, isFinal: false, combo: "AL" as const },
 
     // ── Batch 3: M-S ──
+    { type: "review" as const, start: 12, end: 19, isFinal: false, combo: false },
     { type: "match" as const, start: 12, end: 19, isFinal: false, combo: false },
     { type: "type" as const, start: 12, end: 19, isFinal: false, combo: false },
 
@@ -54,6 +56,7 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
     { type: "review" as const, start: 0, end: 19, isFinal: false, combo: "AS" as const },
 
     // ── Batch 4: T-Z ──
+    { type: "review" as const, start: 19, end: 26, isFinal: false, combo: false },
     { type: "match" as const, start: 19, end: 26, isFinal: false, combo: false },
     { type: "type" as const, start: 19, end: 26, isFinal: false, combo: false },
 
@@ -403,9 +406,9 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
             <div className="flex justify-between items-center px-1">
               <h2 className="text-sm sm:text-base font-bold tracking-tight" style={{ color: accent.primary }}>
                 {step?.isFinal ? 'Final Review - ' : step?.combo === 'AL' ? 'Combined A-L - ' : step?.combo === 'AS' ? 'Combined A-S - ' : 'Alphabet Master - '}
-                {step?.type === 'review' ? 'Review Phase' :
-                  step?.type === 'match' ? 'Listen & Match' :
-                    'Listen & Type'}
+                {step?.type === 'review' ? (step?.combo || step?.isFinal ? 'Review Phase' : 'Preview Phase') :
+                  step?.type === 'match' ? 'Find the Pairs' :
+                    'Type the Letter'}
               </h2>
             </div>
 
@@ -433,8 +436,8 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
           {step.type === "review" ? (
             <motion.div key={`review-${currentStep}`} initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -50 }} className="flex flex-col items-center">
               <div className="text-center mb-8">
-                <p className="text-white text-base sm:text-lg font-bold mt-2 block">
-                  {step.isFullAlphabetPreview ? "Review all letters A-Z before we start!" : "Tap the letters to hear their sounds"}
+                <p className="text-gray-600 dark:text-gray-300 text-base sm:text-lg font-bold mt-2 block">
+                  {step.isFullAlphabetPreview ? "Preview all letters A-Z before we start!" : "Tap the letters to hear their sounds"}
                 </p>
 
                 {/* Navigation Controls moved to top */}

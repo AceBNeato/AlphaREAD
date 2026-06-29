@@ -1,0 +1,36 @@
+{ type: "review" as const, start: 0, end: 26, isFinal: false, isFullAlphabetPreview: true, combo: false },
+
+    // ── Group 1: A-F (6 letters) ──
+    { type: "review" as const, start: 0, end: 6, isFinal: false, combo: false },
+    { type: "match" as const, start: 0, end: 6, isFinal: false, combo: false },
+    { type: "type" as const, start: 0, end: 6, isFinal: false, combo: false },
+
+    // ── Group 2: G-L (6 letters) ──
+    { type: "review" as const, start: 6, end: 12, isFinal: false, combo: false },
+    { type: "match" as const, start: 6, end: 12, isFinal: false, combo: false },
+    { type: "type" as const, start: 6, end: 12, isFinal: false, combo: false },
+
+    // Cumulative A-L Review & Assessment
+    { type: "review" as const, start: 0, end: 12, isFinal: false, combo: "AL" as const },
+    { type: "match" as const, start: 0, end: 12, isFinal: false, combo: "AL" as const },
+    { type: "type" as const, start: 0, end: 12, isFinal: false, combo: "AL" as const },
+
+    // ── Group 3: M-S (7 letters) ──
+    { type: "review" as const, start: 12, end: 19, isFinal: false, combo: false },
+    { type: "match" as const, start: 12, end: 19, isFinal: false, combo: false },
+    { type: "type" as const, start: 12, end: 19, isFinal: false, combo: false },
+
+    // Cumulative A-S Review & Assessment
+    { type: "review" as const, start: 0, end: 19, isFinal: false, combo: "AS" as const },
+    { type: "match" as const, start: 0, end: 19, isFinal: false, combo: "AS" as const },
+    { type: "type" as const, start: 0, end: 19, isFinal: false, combo: "AS" as const },
+
+    // ── Group 4: T-Z (7 letters) ──
+    { type: "review" as const, start: 19, end: 26, isFinal: false, combo: false },
+    { type: "match" as const, start: 19, end: 26, isFinal: false, combo: false },
+    { type: "type" as const, start: 19, end: 26, isFinal: false, combo: false },
+
+    // ── Combined A-Z Review + Eval (all randomized, batched by 6/7) ──
+    { type: "review" as const, start: 0, end: 26, isFinal: true, combo: false },
+    { type: "match" as const, start: 0, end: 26, isFinal: true, combo: false },
+    { type: "type" as const, start: 0, end: 26, isFinal: true, combo: false },
