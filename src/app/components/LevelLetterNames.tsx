@@ -505,7 +505,7 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
                         onClick={() => {
                           if (!isPreview) handleLetterClick(l);
                         }}
-                        className={`w-full aspect-square rounded-2xl sm:rounded-3xl shadow-lg border-b-[6px] border-b-black/20 flex flex-col items-center justify-center cursor-pointer transition-all active:translate-y-[6px] active:border-b-0 hover:shadow-xl`}
+                        className={`w-full aspect-square rounded-2xl sm:rounded-3xl shadow-lg border-b-[6px] border-b-black/20 flex flex-col items-center justify-center transition-all ${!isPreview ? 'cursor-pointer active:translate-y-[6px] active:border-b-0 hover:shadow-xl' : 'opacity-90'}`}
                         style={{ background: `linear-gradient(135deg, ${bgStart}, ${bgEnd})`, borderColor: borderColor }}
                       >
                         <div className="flex items-center justify-center gap-0.5">

@@ -103,7 +103,7 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
 
   const handleLetterClick = (letter: string) => {
     if (!letter) return;
-    playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/alphabet/alphasounds-${letter.toLowerCase()}.mp3`);
+    playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/alphabet/alphasounds-${letter.toLowerCase()}.mp3`).catch(() => {});
   };
 
   // Helper to partition letters into batches of 6 or 7 to avoid small trailing pages
@@ -212,7 +212,7 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
   const playTypeSound = (letter: string) => {
     setHasClickedTTS(true);
     if (!letter) return;
-    playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/alphabet/alphasounds-${letter.toLowerCase()}.mp3`);
+    playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/alphabet/alphasounds-${letter.toLowerCase()}.mp3`).catch(() => {});
   };
 
   const handleTypeChange = (letter: string, val: string) => {
@@ -333,7 +333,7 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
   const handleSpeakerMatchClick = (letter: string) => {
     setHasClickedTTS(true);
     if (matchedPairs.has(letter) || wrongMatchPair) return;
-    playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/alphabet/alphasounds-${letter.toLowerCase()}.mp3`);
+    playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/alphabet/alphasounds-${letter.toLowerCase()}.mp3`).catch(() => {});
     setSelectedSpeakerMatch(letter);
     if (selectedLetterMatch) checkMatch(letter, selectedLetterMatch);
   };
@@ -489,7 +489,7 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
                         onClick={() => {
                           if (!isPreview) handleLetterClick(l);
                         }}
-                        className={`w-full aspect-square rounded-2xl sm:rounded-3xl shadow-lg border-b-[6px] border-b-black/20 flex flex-col items-center justify-center cursor-pointer transition-all active:translate-y-[6px] active:border-b-0 hover:shadow-xl`}
+                        className={`w-full aspect-square rounded-2xl sm:rounded-3xl shadow-lg border-b-[6px] border-b-black/20 flex flex-col items-center justify-center transition-all ${!isPreview ? 'cursor-pointer active:translate-y-[6px] active:border-b-0 hover:shadow-xl' : 'opacity-90'}`}
                         style={{ background: `linear-gradient(135deg, ${bgStart}, ${bgEnd})`, borderColor: borderColor }}
                       >
                         <div className="flex items-center justify-center gap-0.5">
