@@ -38,10 +38,7 @@ function getAudioPath(syllable: string, pattern: Pattern): string {
 }
 
 function playAudio(syllable: string, pattern: Pattern) {
-  playExclusiveAudio(getAudioPath(syllable, pattern)).catch(() => {
-    // Fallback to browser TTS
-    playTTS(syllable.toLowerCase());
-  });
+  playExclusiveAudio(getAudioPath(syllable, pattern)).catch(() => { });
 }
 
 // Build step array from all syllables

@@ -157,7 +157,7 @@ export function LevelSyllableBuilder({
     }
 
     if (pattern === "VC") {
-      const audioPath = `${(import.meta as any).env.BASE_URL}audio/vc-audio/vc-${syllableLower}.MP3`;
+      const audioPath = `${(import.meta as any).env.BASE_URL}audio/vc-audio/vc-${syllableLower}.mp3`;
       playExclusiveAudio(audioPath).catch(() => { });
       return;
     }
