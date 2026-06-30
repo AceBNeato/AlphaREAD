@@ -247,7 +247,6 @@ function MatchPhase({
 
   const handleRightClick = (syl: string) => {
     if (matchedPairs.has(syl) || wrongPair) return;
-    playAudio(syl, pattern);
     setSelectedRight(syl);
     if (selectedLeft) checkMatch(selectedLeft, syl);
   };
