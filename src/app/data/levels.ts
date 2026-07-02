@@ -269,7 +269,7 @@ const VC_PHONETICS: Record<string, string> = {
   "OS": "oss", "OT": "ott",
 
   // U + consonants (11)
-  "UB": "ubb", "UD": "ud", "UG": "ugh", "UK": "uck", "UL": "ull",
+  "UB": "ubb", "UD": "ud", "UG": "ugh", "UK": "uck", "UL": "uhl",
   "UM": "uhmm", "UN": "uhn", "UP": "up", "UR": "uhrr", "US": "us", "UT": "utt",
 };
 
