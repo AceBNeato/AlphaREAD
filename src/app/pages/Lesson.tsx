@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from "react-router";
 import { Button } from "../components/ui/button";
-import { levels } from "../data/levels";
+import { useCurriculum } from "../hooks/useCurriculum";
 import { LevelPairs } from "../components/LevelPairs";
 import { LevelSyllableBuilder } from "../components/LevelSyllableBuilder";
 import { LevelSyllablesMaster } from "../components/LevelSyllablesMaster";
@@ -8,6 +8,7 @@ import { LevelCVCMaster } from "../components/LevelCVCMaster";
 import { LevelVoiceEvaluation } from "../components/LevelVoiceEvaluation";
 import { LevelLetterNames } from "../components/LevelLetterNames";
 import { LevelLongVowels } from "../components/LevelLongVowels";
+import { LevelCVCSentences } from "../components/LevelCVCSentences";
 import { LevelBlendsMaster } from "../components/LevelBlendsMaster";
 
 const levelAccents = [
@@ -22,6 +23,7 @@ const levelAccents = [
 export default function Lesson() {
   const { levelId } = useParams();
   const navigate = useNavigate();
+  const { levels } = useCurriculum();
 
   const level = levels.find((l) => l.id === Number(levelId));
   const accent = levelAccents[(Number(levelId) - 1) % levelAccents.length];
@@ -59,6 +61,9 @@ export default function Lesson() {
         break;
       case "long-vowels":
         LevelComponent = <LevelLongVowels levelId={level.id} accent={accent} />;
+        break;
+      case "sentences":
+        LevelComponent = <LevelCVCSentences levelId={level.id} accent={accent} />;
         break;
       case "blends":
         LevelComponent = <LevelBlendsMaster levelId={level.id} accent={accent} />;

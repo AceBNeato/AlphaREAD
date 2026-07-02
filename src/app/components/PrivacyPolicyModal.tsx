@@ -19,7 +19,7 @@ export function PrivacyPolicyModal() {
       <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto bg-white dark:bg-[#0d141c]">
         <DialogHeader>
           <DialogTitle className="text-2xl font-black text-[#8b40b8] border-b-2 border-[#ce82ff] pb-2">
-            Privacy Policy for Alphabet GO
+            Privacy Policy for AlphaREAD
           </DialogTitle>
           <DialogDescription className="italic text-gray-500 mt-2">
             Effective Date: June 22, 2026
@@ -28,14 +28,14 @@ export function PrivacyPolicyModal() {
         
         <div className="space-y-6 text-gray-700 dark:text-gray-300 text-sm mt-4 text-left">
           <p>
-            <strong>Alphabet GO</strong> ("we," "our," or "us") is committed to protecting the privacy of our users, especially children. This Privacy Policy explains how we handle information in our mobile application.
+            <strong>AlphaREAD</strong> ("we," "our," or "us") is committed to protecting the privacy of our users, especially children. This Privacy Policy explains how we handle information in our mobile application.
           </p>
 
           <div>
             <h2 className="text-lg font-bold text-[#3c8c01] mb-2">1. Information Collection and Use</h2>
             
             <h3 className="font-semibold mt-4 mb-2">Microphone Access and Voice Data</h3>
-            <p className="mb-2">Alphabet GO includes a "Voice Evaluation" feature designed to help users practice their pronunciation.</p>
+            <p className="mb-2">AlphaREAD includes a "Voice Evaluation" feature designed to help users practice their pronunciation.</p>
             <ul className="list-disc pl-5 space-y-2">
                 <li><strong>Microphone Access:</strong> To use this feature, the app requests permission to access your device's microphone.</li>
                 <li><strong>No Recording or Storage:</strong> We use the device's built-in Speech Recognition API and local processing engines to process voice input in real-time. <strong>We do not record, store, or transmit any audio data to our servers.</strong> The audio is processed entirely locally on your device to determine if the spoken word matches the lesson material. Once the evaluation is complete, the audio data is immediately discarded.</li>
@@ -60,7 +60,7 @@ export function PrivacyPolicyModal() {
           <div>
             <h2 className="text-lg font-bold text-[#3c8c01] mb-2">3. Children's Privacy</h2>
             <p>
-              Alphabet GO is designed for educational use by children. We strictly comply with the Children's Online Privacy Protection Act (COPPA). We do not collect any personal contact information from children. Our microphone usage is strictly for real-time educational feedback and does not involve audio recording or transmission.
+              AlphaREAD is designed for educational use by children. We strictly comply with the Children's Online Privacy Protection Act (COPPA). We do not collect any personal contact information from children. Our microphone usage is strictly for real-time educational feedback and does not involve audio recording or transmission.
             </p>
           </div>
 

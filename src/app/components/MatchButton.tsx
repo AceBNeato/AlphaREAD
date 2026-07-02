@@ -26,32 +26,30 @@ export function MatchButton({
 }: MatchButtonProps) {
   const hasHeight = className.includes("h-") || className.includes("aspect-");
   const heightClass = hasHeight ? "" : "h-14 sm:h-16";
-  const base = `p-1 sm:p-2 ${heightClass} rounded-lg sm:rounded-2xl flex items-center justify-center transition-all shadow-sm border-2 border-b-[4px] ${className}`;
+  const base = `p-1 sm:p-2 ${heightClass} rounded-lg sm:rounded-2xl flex items-center justify-center transition-all btn-3d-effect ${className}`;
 
   // Clean, premium 3D design mapping
   const finalClass = isMatched
-    ? "opacity-50 grayscale cursor-default bg-gray-100 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700/50 text-gray-400 dark:text-gray-500 translate-y-[4px] border-b-2"
+    ? "opacity-50 grayscale cursor-default bg-gray-100 dark:bg-gray-800/50 translate-y-[4px] shadow-none"
     : isWrong
-      ? "animate-shake bg-red-500 text-white border-red-700"
+      ? "animate-shake bg-red-500 text-white"
       : isSelected
-        ? "bg-blue-50 border-blue-500 text-blue-600 shadow-md translate-y-[4px] border-b-2"
-        : "bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-lg cursor-pointer active:border-b-2 active:translate-y-[4px]";
+        ? "bg-blue-50 text-blue-600 translate-y-[4px] shadow-[0_0_0_0]"
+        : "bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 cursor-pointer";
 
   const style = {
     background: isWrong || isSelected || isMatched
       ? undefined
       : gradientStart && gradientEnd
+      ? undefined
+      : gradientStart && gradientEnd
         ? `linear-gradient(135deg, ${gradientStart}, ${gradientEnd})`
         : undefined,
-    borderColor: isWrong || isSelected || isMatched
-      ? undefined
-      : gradientEnd || undefined,
   };
 
   return (
     <motion.button
       whileHover={{ scale: isMatched ? 1 : 1.02 }}
-      whileTap={{ scale: isMatched ? 1 : 0.98 }}
       onClick={onClick}
       disabled={isMatched}
       aria-disabled={disabled}

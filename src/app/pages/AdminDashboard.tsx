@@ -128,7 +128,7 @@ export default function AdminDashboard() {
                 <Database className="w-7 h-7 text-blue-500" />
                 Admin Dashboard
               </h1>
-              <p className="text-gray-400 text-xs mt-0.5">AlphabetGO Master Control Center</p>
+              <p className="text-gray-400 text-xs mt-0.5">AlphaREAD Master Control Center</p>
             </div>
           </div>
           <div className="flex gap-2">

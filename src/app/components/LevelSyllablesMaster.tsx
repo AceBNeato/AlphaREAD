@@ -115,8 +115,8 @@ export function LevelSyllablesMaster({ levelId, accent }: LevelSyllablesMasterPr
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-purple-50 dark:bg-none dark:bg-[#0d141c] flex flex-col overflow-x-hidden">
       <div className="sticky top-0 z-10 bg-white/80 dark:bg-[#0d141c]/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 px-4 py-3">
         <div className="max-w-md mx-auto flex items-center gap-3 w-full">
-          <Button variant="ghost" size="sm" onClick={() => navigate("/levels")} className="rounded-full flex items-center gap-1">
-            <ArrowLeft className="w-5 h-5" /> Exit
+          <Button variant="ghost" size="sm" onClick={() => navigate("/levels")} className="rounded-full p-2 h-auto text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 flex items-center gap-1">
+            <ArrowLeft className="w-7 h-7 sm:w-8 sm:h-8 stroke-[3]" /> <span className="hidden sm:inline font-bold uppercase tracking-wider text-sm">EXIT</span>
           </Button>
           <div className="flex-1 text-center pr-8">
             <h2 className="text-lg font-bold tracking-tight" style={{ color: accent.primary }}>
@@ -132,7 +132,7 @@ export function LevelSyllablesMaster({ levelId, accent }: LevelSyllablesMasterPr
             <h1 className="text-3xl font-black mb-2" style={{ color: accent.primary }}>
               Choose a Group
             </h1>
-            <p className="text-gray-600 dark:text-gray-300 text-base sm:text-lg font-bold mt-2 block">
+            <p className="text-gray-600 dark:text-gray-300 text-base sm:text-lg font-bold mt-6 block">
               Build syllables, then listen and match by sound. Complete both to finish Level 2!
             </p>
           </div>

@@ -6,11 +6,12 @@ import { Button } from "./ui/button";
 import { motion, AnimatePresence } from "motion/react";
 import { supabase } from "../../lib/supabase";
 import { Confetti } from "./ui/Confetti";
-import { CVC_SENTENCES } from "../data/levels";
+import { useCurriculum } from "../hooks/useCurriculum";
 import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
 import { playSound } from "../utils/soundEffects";
 import { playTTS as playTTSUtil } from "../utils/tts";
 import { AudioVisualizer } from "./AudioVisualizer";
+import { SHARED_ACTION_BUTTON_CLASSES } from "../utils/buttonStyles";
 
 interface LevelCVCSentencesProps {
   levelId: number;
@@ -21,10 +22,11 @@ interface LevelCVCSentencesProps {
 }
 
 const SENTENCES_PER_SET = 10;
-const totalSets = Math.ceil(CVC_SENTENCES.length / SENTENCES_PER_SET);
 
 export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onBack }: LevelCVCSentencesProps) {
   const navigate = useNavigate();
+  const { sentences } = useCurriculum();
+  const totalSets = Math.ceil(sentences.length / SENTENCES_PER_SET);
 
   const [currentSetIndex, setCurrentSetIndex] = useState(0);
   const [activeSentences, setActiveSentences] = useState<string[]>([]);
@@ -54,7 +56,7 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
 
   // Load sentences for current set
   useEffect(() => {
-    setActiveSentences(CVC_SENTENCES.slice(currentSetIndex * SENTENCES_PER_SET, (currentSetIndex + 1) * SENTENCES_PER_SET));
+    setActiveSentences(sentences.slice(currentSetIndex * SENTENCES_PER_SET, (currentSetIndex + 1) * SENTENCES_PER_SET));
     setCompletedSentences(new Set());
     setSentenceFeedbackMap({});
     setSentenceTranscriptsMap({});
@@ -135,7 +137,7 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
     playSound("click", 0.2);
     clearEvalTimeout();
     setEvaluatingSentenceId(null);
-    setActiveSentences(CVC_SENTENCES.slice(currentSetIndex * SENTENCES_PER_SET, (currentSetIndex + 1) * SENTENCES_PER_SET));
+    setActiveSentences(sentences.slice(currentSetIndex * SENTENCES_PER_SET, (currentSetIndex + 1) * SENTENCES_PER_SET));
     setCompletedSentences(new Set());
     setSentenceFeedbackMap({});
     setSentenceTranscriptsMap({});
@@ -243,8 +245,8 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
       {!isSubPhase && (
       <div className="sticky top-0 z-10 bg-white/80 dark:bg-[#0d141c]/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 px-4 py-3">
         <div className="max-w-4xl mx-auto flex items-center justify-between gap-3 w-full">
-          <Button variant="ghost" size="sm" onClick={handleGoBack} className="rounded-full flex-shrink-0">
-            <X className="w-5 h-5" /> Exit
+          <Button variant="ghost" size="sm" onClick={handleGoBack} className="rounded-full flex-shrink-0 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+            <X className="w-7 h-7 sm:w-8 sm:h-8 stroke-[3]" /> <span className="hidden sm:inline font-bold uppercase tracking-wider text-sm ml-1">EXIT</span>
           </Button>
           <h2 className="text-lg font-bold tracking-tight text-center flex-1" style={{ color: accent.primary }}>
             {levelId === 3 ? "CVC Master - Read the Sentences" : `Sentences Quiz (Set ${currentSetIndex + 1}/${totalSets}) Read the Sentences`}
@@ -268,11 +270,11 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
               className="flex flex-col items-center"
             >
               <div className="text-center mb-8">
-                <p className="text-white text-base sm:text-lg font-bold mt-2 block">
+                <p className="text-white text-base sm:text-lg font-bold mt-6 block">
                   Read the sentences out loud into the microphone. (Batch {currentSetIndex + 1} of {totalSets})
                 </p>
                 <p className="text-sm font-semibold text-pink-300 dark:text-pink-400 mt-1 block">
-                  Completed {(currentSetIndex * SENTENCES_PER_SET) + completedSentences.size} of {CVC_SENTENCES.length} sentences
+                  Completed {(currentSetIndex * SENTENCES_PER_SET) + completedSentences.size} of {sentences.length} sentences
                 </p>
               </div>
 
@@ -288,7 +290,7 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
                     }
                   }}
                   disabled={currentSetIndex === 0 && !onBack}
-                  className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-black/20 hover:scale-105 active:scale-95 active:translate-y-1 active:border-b-0 px-2 transition-all disabled:opacity-50 disabled:grayscale disabled:pointer-events-none h-9 py-2"
+                  className={SHARED_ACTION_BUTTON_CLASSES}
                   style={{
                     background: "linear-gradient(135deg, #1cb0f6 0%, #0a8ed4 100%)",
                   }}
@@ -299,7 +301,7 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
                 <Button
                   size="sm"
                   onClick={handleShuffle}
-                  className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-black/20 hover:scale-105 active:scale-95 active:translate-y-1 active:border-b-0 px-2 transition-all h-9 py-2"
+                  className={SHARED_ACTION_BUTTON_CLASSES}
                   style={{
                     background: "linear-gradient(135deg, #ce82ff 0%, #a559d6 100%)",
                   }}
@@ -310,7 +312,7 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
                 <Button
                   size="sm"
                   onClick={handleSkip}
-                  className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-black/20 hover:scale-105 active:scale-95 active:translate-y-1 active:border-b-0 px-2 transition-all h-9 py-2"
+                  className={SHARED_ACTION_BUTTON_CLASSES}
                   style={{
                     background: "linear-gradient(135deg, rgb(255, 200, 0) 0%, rgb(255, 150, 0) 100%)",
                   }}
@@ -322,7 +324,7 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
                   size="sm"
                   onClick={handleNextQuiz}
                   disabled={completedSentences.size < activeSentences.length}
-                  className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-black/20 hover:scale-105 active:scale-95 active:translate-y-1 active:border-b-0 px-2 transition-all disabled:opacity-50 disabled:grayscale disabled:pointer-events-none h-9 py-2"
+                  className={SHARED_ACTION_BUTTON_CLASSES}
                   style={{
                     background: "linear-gradient(135deg, rgb(88, 204, 2) 0%, rgb(70, 163, 2) 100%)",
                   }}
@@ -411,7 +413,7 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
                                   ? "bg-red-500 text-white shadow-lg"
                                   : vFeedback === "wrong"
                                     ? "bg-red-400 text-white"
-                                    : "bg-gradient-to-br from-pink-500 to-rose-500 text-white shadow-md hover:scale-105 active:translate-y-1"
+                                    : "bg-gradient-to-br from-pink-500 to-rose-500 text-white btn-3d-effect"
                               }`}
                           >
                             {isEval && (
@@ -458,7 +460,7 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
               </h3>
               <p className="text-gray-600 dark:text-gray-400 mb-8 leading-relaxed">
                 {isFinalSet
-                  ? `You successfully read all ${CVC_SENTENCES.length} sentences out loud! Awesome job!`
+                  ? `You successfully read all ${sentences.length} sentences out loud! Awesome job!`
                   : "You successfully read 6 sentences! Ready for the next set?"}
               </p>
 

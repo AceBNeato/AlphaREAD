@@ -20,8 +20,15 @@ const CATEGORIES: { id: BlendCategoryName; label: string; desc: string; color: s
   { id: "Ending Blends", label: "Ending Blends", desc: "e.g., nd, st, mp", color: "#FF4B8A", darkColor: "#e0336e" }
 ];
 
+import { useCurriculum } from "../hooks/useCurriculum";
+
 export function LevelBlendsMaster({ levelId, accent }: LevelBlendsMasterProps) {
   const navigate = useNavigate();
+  const { BLENDS_DATA } = useCurriculum();
+  
+  const availableCategories = CATEGORIES.filter(c => 
+    BLENDS_DATA.some(d => d.name === c.id)
+  );
 
   const [selectedCategory, setSelectedCategory] = useState<BlendCategoryName | null>(null);
   const [isCompleted, setIsCompleted] = useState(false);
@@ -39,7 +46,7 @@ export function LevelBlendsMaster({ levelId, accent }: LevelBlendsMasterProps) {
       localStorage.setItem("completedSubLevels_Level6", JSON.stringify(newCompleted));
     }
 
-    const allDone = CATEGORIES.every(c => newCompleted.includes(c.id));
+    const allDone = availableCategories.every(c => newCompleted.includes(c.id));
     
     if (allDone) {
       const completedLevels = JSON.parse(localStorage.getItem("completedLevels") || "[]");
@@ -53,6 +60,10 @@ export function LevelBlendsMaster({ levelId, accent }: LevelBlendsMasterProps) {
       // Return to picker to choose another category
       setSelectedCategory(null);
     }
+  };
+
+  const handleGoBack = () => {
+    navigate("/levels");
   };
 
   // ── Phase: Lesson Execution ──────────────────────────────────────────
@@ -119,8 +130,8 @@ export function LevelBlendsMaster({ levelId, accent }: LevelBlendsMasterProps) {
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-purple-50 dark:bg-none dark:bg-[#0d141c] flex flex-col overflow-x-hidden">
       <div className="sticky top-0 z-10 bg-white/80 dark:bg-[#0d141c]/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 px-4 py-3">
         <div className="max-w-md mx-auto flex items-center gap-3 w-full">
-          <Button variant="ghost" size="sm" onClick={() => navigate("/levels")} className="rounded-full flex items-center gap-1">
-            <ArrowLeft className="w-5 h-5" /> Exit
+          <Button variant="ghost" size="sm" onClick={handleGoBack} className="rounded-full p-2 h-auto text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 flex items-center gap-1">
+            <ArrowLeft className="w-7 h-7 sm:w-8 sm:h-8 stroke-[3]" /> <span className="hidden sm:inline font-bold uppercase tracking-wider text-sm">EXIT</span>
           </Button>
           <div className="flex-1 text-center pr-8">
             <h2 className="text-lg font-bold tracking-tight" style={{ color: accent.primary }}>
@@ -136,13 +147,13 @@ export function LevelBlendsMaster({ levelId, accent }: LevelBlendsMasterProps) {
             <h1 className="text-3xl font-black mb-2 text-gray-800 dark:text-gray-100">
               Choose a Group
             </h1>
-            <p className="text-white text-base sm:text-lg font-bold mt-2 block">
+            <p className="text-white text-base sm:text-lg font-bold mt-6 block">
               Which blends would you like to practice?
             </p>
           </div>
 
           <div className="space-y-4">
-            {CATEGORIES.map((cat) => {
+            {availableCategories.map((cat) => {
               return (
                 <button
                   key={cat.id}

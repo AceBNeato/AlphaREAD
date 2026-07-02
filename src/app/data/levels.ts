@@ -11,11 +11,13 @@ export interface Level {
   id: number;
   title: string;
   subtitle: string;
+  description: string;
   type: LevelType;
   patterns?: SyllablePattern[];
   letters: Letter[];
   locked: boolean;
   completed: boolean;
+  isUnderDevelopment?: boolean;
 }
 
 export const allLetters: Letter[] = [
@@ -300,6 +302,7 @@ export const levels: Level[] = [
     id: 1,
     title: "Alphabet Master",
     subtitle: "Alphabet review and sound matching",
+    description: "Learn all 26 letters in shuffled pairs. Review each letter's uppercase and lowercase form, then practice saying them!",
     type: "pairs",
     letters: allLetters,
     locked: false,
@@ -308,7 +311,8 @@ export const levels: Level[] = [
   {
     id: 2,
     title: "Syllable Builder",
-    subtitle: "Build VC & CV syllables (2.1 & 2.2)",
+    subtitle: "Build your first syllables",
+    description: "Build syllables! VC (Vowel + Consonant) like AB, IM, OT. CV (Consonant + Vowel) like BA, MI, TO.",
     type: "syllable-builder",
     patterns: ["VC", "CV"],
     letters: allLetters,
@@ -318,7 +322,8 @@ export const levels: Level[] = [
   {
     id: 3,
     title: "CVC Master",
-    subtitle: "Build & Pronounce CVC words",
+    subtitle: "Read 3-letter words",
+    description: "The ultimate challenge! Build CVC words (like BAT, SUN, DOG) and then use the AI to practice your pronunciation.",
     type: "combined-cvc",
     patterns: ["CVC"],
     letters: allLetters,
@@ -329,6 +334,7 @@ export const levels: Level[] = [
     id: 4,
     title: "Letter Names",
     subtitle: "Say the letter names!",
+    description: "Transition from letter sounds to letter names! Match the spoken name of a letter (like 'Ay', 'Bee', 'Cee') to its written form.",
     type: "letter-names",
     letters: allLetters,
     locked: true,
@@ -338,6 +344,7 @@ export const levels: Level[] = [
     id: 5,
     title: "Long Vowels",
     subtitle: "Say Your Name Vowels",
+    description: "Vowels say their names! Learn the key spelling patterns for long vowels: Magic E (a_e) and Vowel Teams (ai).",
     type: "long-vowels",
     letters: allLetters,
     locked: true,
@@ -347,11 +354,12 @@ export const levels: Level[] = [
     id: 6,
     title: "Consonant Blends",
     subtitle: "Blends and Digraphs",
+    description: "Master consonant combinations! Practice 2-Letter Blends, 3-Letter Blends, and Ending Blends to improve your reading fluency.",
     type: "blends",
     letters: allLetters,
     locked: true,
     completed: false,
-  },
+  }
 ];
 
 // Helper to shuffle an array

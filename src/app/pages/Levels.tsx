@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Link } from "react-router";
 import {
   LayoutDashboard,
@@ -9,8 +9,10 @@ import {
   BookOpen,
 } from "lucide-react";
 import { Button } from "../components/ui/button";
-import { levels } from "../data/levels";
+import { useCurriculum } from "../hooks/useCurriculum";
 import { ThemeToggle } from "../components/ThemeToggle";
+import { LanguageToggle } from "../components/LanguageToggle";
+import { showAlert } from "../utils/alerts";
 
 const levelColors = [
   {
@@ -59,17 +61,9 @@ const levelColors = [
 
 const levelIcons = [Layers, Puzzle, Brain, Sparkles, BookOpen];
 
-const levelDescriptions = [
-  "Learn all 26 letters in shuffled pairs. Review each letter's uppercase and lowercase form, then practice saying them!",
-  "Build syllables! VC (Vowel + Consonant) like AB, IM, OT. CV (Consonant + Vowel) like BA, MI, TO.",
-  "The ultimate challenge! Build CVC words (like BAT, SUN, DOG) and then use the AI to practice your pronunciation.",
-  "Transition from letter sounds to letter names! Match the spoken name of a letter (like 'Ay', 'Bee', 'Cee') to its written form.",
-  "Vowels say their names! Learn the key spelling patterns for long vowels: Magic E (a_e) and Vowel Teams (ai).",
-  "Master consonant combinations! Practice 2-Letter Blends, 3-Letter Blends, and Ending Blends to improve your reading fluency."
-];
-
 export default function Levels() {
-  const [userLevels] = useState(() => {
+  const { levels } = useCurriculum();
+  const userLevels = useMemo(() => {
     const completedLevels = JSON.parse(
       localStorage.getItem("completedLevels") || "[]"
     );
@@ -78,13 +72,13 @@ export default function Levels() {
       completed: completedLevels.includes(level.id),
       locked: false, // All levels are now unlocked
     }));
-  });
+  }, [levels]);
 
 
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#e8f9f0] to-[#f0fdf4] dark:bg-none dark:bg-[#0d141c] overflow-x-hidden">
-      <div className="max-w-5xl mx-auto px-4 py-8 w-full">
+      <div className="max-w-2xl mx-auto px-4 py-8 w-full">
         {/* Top Bar */}
         <div className="flex items-center justify-between mb-8">
           <Link
@@ -94,21 +88,24 @@ export default function Levels() {
             <LayoutDashboard className="w-5 h-5" />
             <span className="text-gray-700 dark:text-gray-300">Dashboard</span>
           </Link>
-          <ThemeToggle />
+          <div className="flex items-center gap-2">
+            <LanguageToggle />
+            <ThemeToggle />
+          </div>
         </div>
 
         {/* Header */}
         <header className="text-center mb-8">
-          <div className="flex items-center justify-center gap-3 mb-2">
-            <div className="p-3 rounded-2xl shadow-lg bg-gradient-to-br from-[#58CC02] to-[#46a302]">
-              <Sparkles className="w-8 h-8 text-white" fill="white" />
+          <div className="flex items-center justify-center gap-4 mb-4">
+            <div className="p-4 rounded-3xl shadow-xl bg-gradient-to-br from-[#58CC02] to-[#46a302] transform -rotate-3 hover:rotate-3 transition-transform">
+              <Sparkles className="w-10 h-10 text-white" fill="white" />
             </div>
-            <h1 className="text-4xl">
-              <span className="text-[#58CC02]">Alphabet</span>{" "}
-              <span className="text-[#1CB0F6]">GO!</span>
+            <h1 className="text-5xl sm:text-6xl font-black tracking-tighter drop-shadow-sm">
+              <span className="text-[#58CC02]">Alpha</span>
+              <span className="text-[#1CB0F6]">READ!</span>
             </h1>
           </div>
-          <p className="text-gray-600 dark:text-gray-400">
+          <p className="text-gray-600 dark:text-gray-400 text-lg sm:text-xl font-bold tracking-tight">
             Master the alphabet through {levels.length} fun, progressive levels!
           </p>
         </header>
@@ -132,8 +129,13 @@ export default function Levels() {
                       <Icon className="w-8 h-8" />
                     </div>
                     <div className="flex-1">
-                      <h3 className="text-xl text-gray-800 dark:text-gray-100 mb-1">
+                      <h3 className="text-xl text-gray-800 dark:text-gray-100 mb-1 flex items-center gap-2 flex-wrap">
                         Level {level.id}: {level.title}
+                        {level.isUnderDevelopment && (
+                          <span className="text-[10px] uppercase font-bold tracking-widest text-white bg-amber-500 px-2.5 py-0.5 rounded-full shadow-sm">
+                            Under Development
+                          </span>
+                        )}
                       </h3>
                       <p className="text-sm text-gray-500 dark:text-gray-400">
                         {level.subtitle}
@@ -143,17 +145,26 @@ export default function Levels() {
 
                   {/* Description */}
                   <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 leading-relaxed">
-                    {levelDescriptions[index]}
+                    {level.description}
                   </p>
 
                   {/* Action Button */}
-                  <Link to={`/lesson/${level.id}`}>
+                  {level.isUnderDevelopment ? (
                     <Button
-                      className={`w-full py-6 text-lg rounded-2xl font-bold text-white shadow-md border-b-4 ${colors.borderDark} hover:brightness-110 hover:-translate-y-1 active:translate-y-0 active:scale-95 transition-all bg-gradient-to-r ${colors.bg}`}
+                      onClick={() => showAlert("Under Development 🚧", "This level is currently being customized for the new Tagalog curriculum.<br><br>Please check back later!", "info")}
+                      className={`w-full py-6 text-lg rounded-2xl font-bold text-white shadow-md border-b-4 ${colors.borderDark} active:scale-95 transition-all bg-gradient-to-r ${colors.bg}`}
                     >
                       Start Learning
                     </Button>
-                  </Link>
+                  ) : (
+                    <Link to={`/lesson/${level.id}`}>
+                      <Button
+                        className={`w-full py-6 text-lg rounded-2xl font-bold text-white shadow-md border-b-4 ${colors.borderDark} active:scale-95 transition-all bg-gradient-to-r ${colors.bg}`}
+                      >
+                        Start Learning
+                      </Button>
+                    </Link>
+                  )}
                 </div>
               </div>
             );

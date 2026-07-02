@@ -3,7 +3,8 @@ import { Link, useNavigate } from "react-router";
 import { Button } from "../components/ui/button";
 import { Sparkles, Trophy, Power } from "lucide-react";
 import { ThemeToggle } from "../components/ThemeToggle";
-import { levels } from "../data/levels";
+import { LanguageToggle } from "../components/LanguageToggle";
+import { useCurriculum } from "../hooks/useCurriculum";
 import { PrivacyPolicyModal } from "../components/PrivacyPolicyModal";
 import { App } from '@capacitor/app';
 import { supabase } from "../../lib/supabase";
@@ -19,6 +20,7 @@ interface UserProfile {
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const { levels } = useCurriculum();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [completedLevels, setCompletedLevels] = useState<number[]>([]);
 
@@ -113,15 +115,18 @@ export default function Dashboard() {
             </div>
             <div>
               <h1 className="text-3xl font-black tracking-tight">
-                <span className="text-[#58CC02]">Alphabet</span>
-                <span className="text-[#1CB0F6]">GO!</span>
+                <span className="text-[#58CC02]">Alpha</span>
+                <span className="text-[#1CB0F6]">READ!</span>
               </h1>
               <p className="text-gray-500 dark:text-[#849baf] font-medium text-sm mt-0.5">
                 {profile.id === "teacher-preview" ? "Previewing Student App" : `Ready to learn, ${profile.name}?`}
               </p>
             </div>
           </div>
-          <ThemeToggle />
+          <div className="flex items-center gap-2">
+            <LanguageToggle />
+            <ThemeToggle />
+          </div>
         </header>
 
         {/* Welcome Profile Card */}

@@ -4,7 +4,8 @@ import { LevelVoiceEvaluation } from "./LevelVoiceEvaluation";
 import { LevelCVCSentences } from "./LevelCVCSentences";
 import { supabase } from "../../lib/supabase";
 import { useNavigate } from "react-router";
-import { SyllableTarget, CVC_WORDS, shuffle } from "../data/levels";
+import { SyllableTarget } from "../data/levels";
+import { useCurriculum } from "../hooks/useCurriculum";
 import { X, ArrowLeft, Shuffle, ChevronRight, ArrowRight } from "lucide-react";
 import { Button } from "./ui/button";
 import { confirmAction } from "../utils/alerts";
@@ -12,6 +13,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { Confetti } from "./ui/Confetti";
 import { playExclusiveAudio } from "../utils/soundEffects";
 import { playTTS } from "../utils/tts";
+import { SHARED_ACTION_BUTTON_CLASSES } from "../utils/buttonStyles";
 
 interface LevelCVCMasterProps {
   levelId: number;
@@ -61,7 +63,7 @@ function LevelCVCPreview({
       className="flex flex-col items-center w-full max-w-4xl mx-auto px-4 py-8"
     >
       <div className="text-center mb-8">
-        <p className="text-gray-600 dark:text-gray-300 text-base sm:text-lg font-bold mt-2 block">
+        <p className="text-gray-600 dark:text-gray-300 text-base sm:text-lg font-bold mt-6 block">
           {isReview 
             ? `🎉 Great work! Review CVC words! ${batchNumber && totalBatches ? "(Batch " + batchNumber + " of " + totalBatches + ")" : ""}`
             : `Review CVC words before we start! ${batchNumber && totalBatches ? "(Batch " + batchNumber + " of " + totalBatches + ")" : ""}`
@@ -72,21 +74,21 @@ function LevelCVCPreview({
           <Button
             onClick={onBack}
             disabled={!canBack}
-            className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#086ca5] hover:scale-105 active:translate-y-1 active:border-b-0 disabled:opacity-50 disabled:grayscale disabled:pointer-events-none px-2"
+            className={SHARED_ACTION_BUTTON_CLASSES}
             style={{ background: 'linear-gradient(135deg, #1cb0f6 0%, #0a8ed4 100%)' }}
           >
             <ArrowLeft className="w-4 h-4 mr-1" /> Back
           </Button>
           <Button
             onClick={handleShuffle}
-            className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#8b40b8] hover:scale-105 active:translate-y-1 active:border-b-0 px-2"
+            className={SHARED_ACTION_BUTTON_CLASSES}
             style={{ background: 'linear-gradient(135deg, #ce82ff 0%, #a559d6 100%)' }}
           >
             <Shuffle className="w-4 h-4 mr-1" /> Shuffle
           </Button>
           <Button
             onClick={onComplete}
-            className="flex-1 rounded-xl font-bold text-white shadow-md border-b-[4px] border-[#3c8c01] hover:scale-105 active:translate-y-1 active:border-b-0 px-2"
+            className={SHARED_ACTION_BUTTON_CLASSES}
             style={{ background: 'linear-gradient(135deg, #58cc02 0%, #46a302 100%)' }}
           >
             Proceed <ChevronRight className="w-4 h-4 ml-1" />
@@ -113,7 +115,7 @@ function LevelCVCPreview({
                     });
                   }
                 }}
-                className={`w-full aspect-square rounded-xl sm:rounded-2xl shadow-md flex items-center justify-center border-b-[4px] border-[#c2410c] select-none transition-all ${isReview ? 'cursor-pointer hover:brightness-110 active:translate-y-1 active:border-b-0' : 'cursor-default'}`}
+                className={`w-full aspect-square rounded-xl sm:rounded-2xl flex items-center justify-center select-none ${isReview ? 'cursor-pointer btn-3d-effect' : 'cursor-default opacity-80'}`}
                 style={{
                   background: 'linear-gradient(135deg, #FF9600 0%, #e08000 100%)',
                 }}
@@ -132,32 +134,56 @@ function LevelCVCPreview({
 
 export function LevelCVCMaster({ levelId, accent }: LevelCVCMasterProps) {
   const navigate = useNavigate();
+  const { CVC_WORDS } = useCurriculum();
+  // We need to bring our own shuffle here or export it
+  const shuffleArray = <T,>(arr: T[]): T[] => {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  };
 
   // Dynamically generate a pool of all 85 CVC words each time the level starts!
   const STEPS: GameStep[] = useMemo(() => {
-    const randomWords = shuffle([...CVC_WORDS]);
+    const randomWords = shuffleArray([...CVC_WORDS]);
 
-    return [
-      // Previews are batched manually to fit nicely on screen
-      { phase: "preview", words: randomWords.slice(0, 30), batchNumber: 1, totalBatches: 3 },
-      { phase: "preview", words: randomWords.slice(30, 60), batchNumber: 2, totalBatches: 3 },
-      { phase: "preview", words: randomWords.slice(60, 85), batchNumber: 3, totalBatches: 3 },
-      
-      // Word Builder - all 85 syllables in one run (showing 1 of 85, etc.)
-      { phase: "build", words: randomWords },
-      
-      // Voice Evaluation - all 85 syllables in one run (batched internally by 15)
-      { phase: "eval", words: randomWords },
+    const steps: GameStep[] = [];
+    const PREVIEW_BATCH_SIZE = 30;
+    const previewBatches = Math.ceil(randomWords.length / PREVIEW_BATCH_SIZE);
 
-      // Clickable Review Phase - batched manually to fit on screen
-      { phase: "review", words: randomWords.slice(0, 30), batchNumber: 1, totalBatches: 3 },
-      { phase: "review", words: randomWords.slice(30, 60), batchNumber: 2, totalBatches: 3 },
-      { phase: "review", words: randomWords.slice(60, 85), batchNumber: 3, totalBatches: 3 },
+    // 1. Previews
+    for (let i = 0; i < previewBatches; i++) {
+      steps.push({
+        phase: "preview",
+        words: randomWords.slice(i * PREVIEW_BATCH_SIZE, (i + 1) * PREVIEW_BATCH_SIZE),
+        batchNumber: i + 1,
+        totalBatches: previewBatches
+      });
+    }
 
-      // Final sentences quiz
-      { phase: "sentences", words: [] }
-    ];
-  }, []);
+    // 2. Word Builder
+    steps.push({ phase: "build", words: randomWords });
+
+    // 3. Clickable Review Phase
+    for (let i = 0; i < previewBatches; i++) {
+      steps.push({
+        phase: "review",
+        words: randomWords.slice(i * PREVIEW_BATCH_SIZE, (i + 1) * PREVIEW_BATCH_SIZE),
+        batchNumber: i + 1,
+        totalBatches: previewBatches
+      });
+    }
+
+    // 4. Voice Evaluation
+    steps.push({ phase: "eval", words: randomWords });
+
+    // 5. Final sentences quiz
+    steps.push({ phase: "sentences", words: [] });
+
+    return steps;
+  }, [CVC_WORDS]);
 
   const [currentStep, setCurrentStep] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
@@ -315,8 +341,8 @@ export function LevelCVCMaster({ levelId, accent }: LevelCVCMasterProps) {
       <div className="sticky top-0 z-50 bg-white/80 dark:bg-[#0d141c]/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 px-4 py-3 shadow-sm">
         <div className="max-w-4xl mx-auto flex items-center gap-3 sm:gap-5 w-full">
           <Button variant="ghost" size="sm" onClick={handleGoBack} className="rounded-full p-2 h-auto text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 flex items-center gap-1">
-            <ArrowLeft className="w-6 h-6 sm:w-7 sm:h-7" />
-            <span className="hidden sm:inline font-bold">Exit</span>
+            <ArrowLeft className="w-7 h-7 sm:w-8 sm:h-8 stroke-[3]" />
+            <span className="hidden sm:inline font-bold uppercase tracking-wider text-sm">EXIT</span>
           </Button>
           
           <div className="flex-1 flex flex-col gap-1.5 mt-1">
