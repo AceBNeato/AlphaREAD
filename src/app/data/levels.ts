@@ -4,7 +4,7 @@ export interface Letter {
   image: string;
 }
 
-export type LevelType = "pairs" | "sounds" | "syllable-builder" | "voice-evaluation" | "combined-cvc" | "letter-names" | "long-vowels" | "blends";
+export type LevelType = "pairs" | "sounds" | "syllable-builder" | "voice-evaluation" | "combined-cvc" | "letter-names" | "long-vowels" | "blends" | "sentences";
 export type SyllablePattern = "CV" | "VC" | "CVC";
 
 export interface Level {

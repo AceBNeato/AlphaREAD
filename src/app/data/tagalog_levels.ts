@@ -121,6 +121,7 @@ export const tagalogLevels: Level[] = [
     letters: allTagalogLetters,
     locked: true,
     completed: false,
+    isUnderDevelopment: true,
   },
   {
     id: 3,
