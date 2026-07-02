@@ -116,7 +116,7 @@ export function MatchPhase({
       initial={{ opacity: 0, x: 50 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: -50 }}
-      className="w-full max-w-4xl mx-auto flex flex-col items-center"
+      className="w-full max-w-2xl mx-auto flex flex-col items-center"
     >
       <Confetti active={showConfetti} />
 
@@ -196,7 +196,7 @@ export function MatchPhase({
           })}
         </div>
       </div>
-      
+
       {wrongPair && (
         <motion.p initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="text-red-500 font-bold text-lg mb-4 text-center">
           Not quite, try again!

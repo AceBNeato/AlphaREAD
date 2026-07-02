@@ -8,6 +8,7 @@ import { useCurriculum } from "../hooks/useCurriculum";
 import { PrivacyPolicyModal } from "../components/PrivacyPolicyModal";
 import { App } from '@capacitor/app';
 import { supabase } from "../../lib/supabase";
+import { motion, AnimatePresence } from "motion/react";
 
 interface UserProfile {
   id: string;
@@ -23,6 +24,22 @@ export default function Dashboard() {
   const { levels } = useCurriculum();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [completedLevels, setCompletedLevels] = useState<number[]>([]);
+  const [isExpanding, setIsExpanding] = useState(false);
+  const [expandOrigin, setExpandOrigin] = useState({ x: 0, y: 0 });
+
+  const handleAllLevelsClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    const rect = e.currentTarget.getBoundingClientRect();
+    setExpandOrigin({
+      x: rect.left + rect.width / 2,
+      y: rect.top + rect.height / 2
+    });
+    setIsExpanding(true);
+
+    setTimeout(() => {
+      navigate("/levels");
+    }, 600); // Wait for the 0.6s animation
+  };
 
   useEffect(() => {
     const storedProfile = localStorage.getItem("userProfile");
@@ -151,23 +168,40 @@ export default function Dashboard() {
         <div className="flex-1 flex flex-col gap-5 justify-center pb-12">
 
           {/* All Levels Button */}
-          <Link to="/levels" className="block outline-none">
-            <button className="w-full bg-gradient-to-br from-[#58CC02] to-[#46a302] rounded-3xl p-6 shadow-[0_8px_0_#3d8c02] hover:shadow-[0_6px_0_#3d8c02] hover:translate-y-[2px] active:shadow-none active:translate-y-[8px] transition-all flex items-center justify-between group cursor-pointer">
-              <div className="flex items-center gap-5">
-                <div className="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-md transition-transform group-hover:scale-110">
-                  <Trophy className="w-8 h-8 text-white" fill="white" />
-                </div>
-                <div className="text-left">
-                  <h3 className="text-2xl font-black text-white tracking-wide">
-                    All Levels
-                  </h3>
-                  <p className="text-white/80 font-medium">
-                    {levels.length} levels to master
-                  </p>
-                </div>
+          <button 
+            onClick={handleAllLevelsClick}
+            className="w-full bg-gradient-to-br from-[#58CC02] to-[#46a302] rounded-3xl p-6 shadow-[0_8px_0_#3d8c02] hover:shadow-[0_6px_0_#3d8c02] hover:translate-y-[2px] active:shadow-none active:translate-y-[8px] transition-all flex items-center justify-between group cursor-pointer outline-none"
+          >
+            <div className="flex items-center gap-5">
+              <div className="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-md transition-transform group-hover:scale-110">
+                <Trophy className="w-8 h-8 text-white" fill="white" />
               </div>
-            </button>
-          </Link>
+              <div className="text-left">
+                <h3 className="text-2xl font-black text-white tracking-wide">
+                  All Levels
+                </h3>
+                <p className="text-white/80 font-medium">
+                  {levels.length} levels to master
+                </p>
+              </div>
+            </div>
+          </button>
+
+          {/* Expand Animation Overlay */}
+          <AnimatePresence>
+            {isExpanding && (
+              <motion.div
+                initial={{ 
+                  clipPath: `circle(0px at ${expandOrigin.x}px ${expandOrigin.y}px)`
+                }}
+                animate={{ 
+                  clipPath: `circle(150vw at ${expandOrigin.x}px ${expandOrigin.y}px)`
+                }}
+                transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+                className="fixed inset-0 z-[9999] bg-gradient-to-br from-[#58CC02] to-[#46a302] pointer-events-none"
+              />
+            )}
+          </AnimatePresence>
 
           {/* Exit / Back to Teacher Dashboard Button */}
           <button

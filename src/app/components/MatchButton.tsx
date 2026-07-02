@@ -34,17 +34,17 @@ export function MatchButton({
     : isWrong
       ? "animate-shake bg-red-500 text-white"
       : isSelected
-        ? "bg-blue-50 text-blue-600 translate-y-[4px] shadow-[0_0_0_0]"
+        ? "bg-match-selected text-white translate-y-[4px] shadow-[0_0_0_0]"
         : "bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 cursor-pointer";
 
   const style = {
     background: isWrong || isSelected || isMatched
       ? undefined
       : gradientStart && gradientEnd
-      ? undefined
-      : gradientStart && gradientEnd
-        ? `linear-gradient(135deg, ${gradientStart}, ${gradientEnd})`
-        : undefined,
+        ? undefined
+        : gradientStart && gradientEnd
+          ? `linear-gradient(135deg, ${gradientStart}, ${gradientEnd})`
+          : undefined,
   };
 
   return (
