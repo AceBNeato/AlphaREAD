@@ -1,4 +1,4 @@
-import { motion } from "motion/react";
+import { cn } from "./ui/utils";
 import type { ReactNode } from "react";
 
 interface MatchButtonProps {
@@ -26,37 +26,57 @@ export function MatchButton({
 }: MatchButtonProps) {
   const hasHeight = className.includes("h-") || className.includes("aspect-");
   const heightClass = hasHeight ? "" : "h-14 sm:h-16";
-  const base = `p-1 sm:p-2 ${heightClass} rounded-lg sm:rounded-2xl flex items-center justify-center transition-all btn-3d-effect ${className}`;
 
-  // Clean, premium 3D design mapping
-  const finalClass = isMatched
-    ? "opacity-50 grayscale cursor-default bg-gray-100 dark:bg-gray-800/50 translate-y-[4px] shadow-none"
+  // Front classes
+  const frontClass = isMatched
+    ? "bg-gray-150 dark:bg-gray-800/50 text-gray-400 dark:text-gray-500"
     : isWrong
-      ? "animate-shake bg-red-500 text-white"
+      ? "bg-red-500 text-white animate-shake"
       : isSelected
-        ? "bg-match-selected text-white translate-y-[4px] shadow-[0_0_0_0]"
+        ? "bg-match-selected text-white"
         : "bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 cursor-pointer";
 
-  const style = {
-    background: isWrong || isSelected || isMatched
-      ? undefined
-      : gradientStart && gradientEnd
-        ? undefined
-        : gradientStart && gradientEnd
-          ? `linear-gradient(135deg, ${gradientStart}, ${gradientEnd})`
-          : undefined,
-  };
+  // Edge classes
+  const edgeClass = isMatched
+    ? "bg-gray-300 dark:bg-gray-900"
+    : isWrong
+      ? "bg-red-700"
+      : isSelected
+        ? "bg-match-selected brightness-75"
+        : "bg-gray-200 dark:bg-gray-950";
+
+  // Styles for dynamic gradients
+  const useGradient = !isWrong && !isSelected && !isMatched && gradientStart && gradientEnd;
+  
+  const frontStyle = useGradient
+    ? { background: `linear-gradient(135deg, ${gradientStart}, ${gradientEnd})` }
+    : undefined;
+    
+  const edgeStyle = useGradient
+    ? { background: gradientEnd }
+    : undefined;
 
   return (
-    <motion.button
-      whileHover={{ scale: isMatched ? 1 : 1.02 }}
+    <button
       onClick={onClick}
-      disabled={isMatched}
-      aria-disabled={disabled}
-      className={`${base} ${finalClass}`}
-      style={style as any}
+      disabled={isMatched || disabled}
+      className={cn(
+        "pushable",
+        hasHeight && "tile",
+        heightClass,
+        isSelected && "selected",
+        isMatched && "opacity-50 grayscale pointer-events-none",
+        className
+      )}
     >
-      {children}
-    </motion.button>
+      <span className="shadow-layer" />
+      <span className={cn("edge-layer", edgeClass)} style={edgeStyle} />
+      <span 
+        className={cn("front-layer text-lg font-bold select-none", frontClass)} 
+        style={frontStyle}
+      >
+        {children}
+      </span>
+    </button>
   );
 }

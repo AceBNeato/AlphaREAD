@@ -38,7 +38,7 @@ export default function Dashboard() {
 
     setTimeout(() => {
       navigate("/levels");
-    }, 600); // Wait for the 0.6s animation
+    }, 700); // Wait for the 0.7s animation
   };
 
   useEffect(() => {
@@ -197,7 +197,7 @@ export default function Dashboard() {
                 animate={{ 
                   clipPath: `circle(150vw at ${expandOrigin.x}px ${expandOrigin.y}px)`
                 }}
-                transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+                transition={{ duration: 0.7, ease: [0.4, 0, 0.2, 1] }}
                 className="fixed inset-0 z-[9999] bg-gradient-to-br from-[#58CC02] to-[#46a302] pointer-events-none"
               />
             )}

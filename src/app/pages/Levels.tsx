@@ -13,6 +13,8 @@ import { useCurriculum } from "../hooks/useCurriculum";
 import { ThemeToggle } from "../components/ThemeToggle";
 import { LanguageToggle } from "../components/LanguageToggle";
 import { showAlert } from "../utils/alerts";
+import { motion } from "motion/react";
+import { PushableButton } from "../components/ui/PushableButton";
 
 const levelColors = [
   {
@@ -77,8 +79,17 @@ export default function Levels() {
 
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#e8f9f0] to-[#f0fdf4] dark:bg-none dark:bg-[#0d141c] overflow-x-hidden">
-      <div className="max-w-2xl mx-auto px-4 py-8 w-full">
+    <>
+      {/* Entry Transition Overlay */}
+      <motion.div
+        initial={{ opacity: 1 }}
+        animate={{ opacity: 0 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
+        className="fixed inset-0 z-[9999] bg-gradient-to-br from-[#58CC02] to-[#46a302] pointer-events-none"
+      />
+      
+      <div className="min-h-screen bg-gradient-to-b from-[#e8f9f0] to-[#f0fdf4] dark:bg-none dark:bg-[#0d141c] overflow-x-hidden">
+        <div className="max-w-2xl mx-auto px-4 py-8 w-full">
         {/* Top Bar */}
         <div className="flex items-center justify-between mb-8">
           <Link
@@ -150,19 +161,24 @@ export default function Levels() {
 
                   {/* Action Button */}
                   {level.isUnderDevelopment ? (
-                    <Button
+                    <PushableButton
                       onClick={() => showAlert("Under Development 🚧", "This level is currently being customized for the new Tagalog curriculum.<br><br>Please check back later!", "info")}
-                      className={`w-full py-6 text-lg rounded-2xl font-bold text-white shadow-md border-b-4 ${colors.borderDark} active:scale-95 transition-all bg-gradient-to-r ${colors.bg}`}
+                      className="w-full"
+                      frontClassName={`bg-gradient-to-r ${colors.bg} text-white font-bold py-4`}
+                      edgeClassName={colors.borderDark.replace('border-', 'bg-')}
                     >
                       Start Learning
-                    </Button>
+                    </PushableButton>
                   ) : (
-                    <Link to={`/lesson/${level.id}`}>
-                      <Button
-                        className={`w-full py-6 text-lg rounded-2xl font-bold text-white shadow-md border-b-4 ${colors.borderDark} active:scale-95 transition-all bg-gradient-to-r ${colors.bg}`}
+                    <Link to={`/lesson/${level.id}`} className="block w-full">
+                      <PushableButton
+                        as="div"
+                        className="w-full"
+                        frontClassName={`bg-gradient-to-r ${colors.bg} text-white font-bold py-4`}
+                        edgeClassName={colors.borderDark.replace('border-', 'bg-')}
                       >
                         Start Learning
-                      </Button>
+                      </PushableButton>
                     </Link>
                   )}
                 </div>
@@ -172,5 +188,6 @@ export default function Levels() {
         </div>
       </div>
     </div>
+    </>
   );
 }

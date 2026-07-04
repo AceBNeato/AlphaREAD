@@ -112,8 +112,8 @@ export function LevelSyllablesMaster({ levelId, accent }: LevelSyllablesMasterPr
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-purple-50 dark:bg-none dark:bg-[#0d141c] flex flex-col overflow-x-hidden">
-      <div className="sticky top-0 z-10 bg-white/80 dark:bg-[#0d141c]/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 px-4 py-3">
+    <div className="h-screen bg-gradient-to-br from-green-50 via-blue-50 to-purple-50 dark:bg-none dark:bg-[#0d141c] flex flex-col overflow-hidden">
+      <div className="shrink-0 z-10 bg-white/80 dark:bg-[#0d141c]/80 backdrop-blur-md px-4 py-3">
         <div className="max-w-md mx-auto flex items-center gap-3 w-full">
           <Button variant="ghost" size="sm" onClick={() => navigate("/levels")} className="rounded-full p-2 h-auto text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 flex items-center gap-1">
             <ArrowLeft className="w-7 h-7 sm:w-8 sm:h-8 stroke-[3]" /> <span className="hidden sm:inline font-bold uppercase tracking-wider text-sm">EXIT</span>
@@ -126,7 +126,7 @@ export function LevelSyllablesMaster({ levelId, accent }: LevelSyllablesMasterPr
         </div>
       </div>
 
-      <div className="flex-1 flex flex-col items-center justify-center p-4">
+      <div className="flex-1 min-h-0 overflow-y-auto flex flex-col items-center justify-center p-4">
         <div className="w-full max-w-md space-y-6">
           <div className="text-center mb-12 sm:mb-16">
             <h1 className="text-3xl font-black mb-2" style={{ color: accent.primary }}>

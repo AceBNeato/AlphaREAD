@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "motion/react";
 import { ActionToolbar } from "../ui/ActionToolbar";
+import { PushableButton } from "../ui/PushableButton";
 
 export interface ReviewPhaseProps {
   items: string[];
@@ -51,67 +52,88 @@ export function ReviewPhase({
   else if (maxLen >= 4) uniformClass = isSmallItems ? "text-lg sm:text-xl" : "text-2xl sm:text-4xl tracking-tight";
   else if (maxLen === 3) uniformClass = isSmallItems ? "text-xl sm:text-2xl" : "text-3xl sm:text-4xl";
 
+  const getGridColsClass = (count: number) => {
+    if (count <= 4) return "grid-cols-2 sm:grid-cols-4";
+    if (count <= 6) return "grid-cols-3 sm:grid-cols-6";
+    if (count <= 12) return "grid-cols-3 sm:grid-cols-6";
+    return "grid-cols-4 sm:grid-cols-7";
+  };
+
   return (
-    <motion.div initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -50 }} className="flex flex-col items-center w-full h-full">
-      <div className="text-center mb-8">
-        <p className="text-gray-600 dark:text-gray-300 text-base sm:text-lg font-bold mt-6 block">
-          {titleOverride || (isFullPreview ? `Review all items! (${items.length} items)` : `Preview items before we start! (${items.length} items)`)}
-        </p>
+    <motion.div
+      initial={{ opacity: 0, x: 50 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: -50 }}
+      className="flex flex-col w-full h-full"
+    >
+      <div className="flex-1 min-h-0 overflow-y-auto w-full">
+        <div className="w-full max-w-4xl mx-auto px-15 py-4 flex flex-col justify-center min-h-full">
+          <div className="text-center mt-2 shrink-0">
+            <p className="text-gray-600 dark:text-gray-300 text-base sm:text-xl font-bold block">
+              {titleOverride || (isFullPreview ? `Review all items! (${items.length} items)` : `Preview items before we start! (${items.length} items)`)}
+            </p>
+          </div>
 
-        <ActionToolbar
-          onBack={onBack}
-          canBack={canBack}
-          onShuffle={handleShuffle}
-          onReset={allowOrganize ? handleOrganize : undefined}
-          resetLabel="Organize"
-          onNext={onNext}
-        />
+          <div className="flex-grow flex items-center justify-center w-full py-4">
+            <div className={`grid ${getGridColsClass(reviewOrder.length)} gap-3 sm:gap-4 max-w-3xl mx-auto w-full justify-center justify-items-center`}>
+              {reviewOrder.map((syl) => {
+                const isSingleLetter = syl.length <= 2;
+                const isVowelStart = isSingleLetter && VOWELS.has(syl[0]?.toUpperCase());
+
+                const bgStart = isSingleLetter ? (isVowelStart ? "#FF6B8A" : "#1CB0F6") : accent.primary;
+                const bgEnd = isSingleLetter ? (isVowelStart ? "#FF4B8A" : "#0a8ed4") : accent.dark;
+
+                let textSizeClass = uniformClass;
+                if (!uniformTextSize) {
+                  textSizeClass = isSmallItems ? "text-2xl sm:text-3xl" : "text-3xl sm:text-5xl";
+                  if (syl.length >= 5) textSizeClass = isSmallItems ? "text-sm sm:text-base tracking-widest" : "text-lg sm:text-xl tracking-widest";
+                  else if (syl.length >= 4) textSizeClass = isSmallItems ? "text-base sm:text-lg tracking-wide" : "text-xl sm:text-2xl tracking-wider";
+                  else if (syl.length === 3) textSizeClass = isSmallItems ? "text-xl sm:text-2xl" : "text-2xl sm:text-3xl tracking-wide";
+                }
+
+                return (
+                  <motion.div key={syl} initial={{ scale: 0 }} animate={{ scale: 1 }} className="w-full flex justify-center max-w-[95px] xs:max-w-[110px] sm:max-w-[130px]">
+                    <PushableButton
+                      as="div"
+                      isTile
+                      onClick={() => !disableAudio && onItemClick(syl)}
+                      className="w-full aspect-square block cursor-pointer"
+                      frontStyle={{ background: `linear-gradient(135deg, ${bgStart}, ${bgEnd})` }}
+                      edgeStyle={{ backgroundColor: bgEnd, filter: 'brightness(0.75)' }}
+                    >
+                      <div className="flex items-center justify-center gap-0.5 px-1 text-center h-full w-full">
+                        <span className={`text-white font-black drop-shadow-sm break-all leading-tight flex items-center justify-center ${textSizeClass}`}>
+                          {wordHighlights && wordHighlights[syl] ? (
+                            syl.split('').map((char, ci) => (
+                              <span key={ci} className={wordHighlights[syl].includes(ci) ? 'text-yellow-300' : ''}>{char}</span>
+                            ))
+                          ) : (
+                            syl
+                          )}
+                        </span>
+                        {syl.length === 1 && (
+                          <span className={`text-white/90 font-bold drop-shadow-sm ${textSizeClass}`}>
+                            {syl.toLowerCase()}
+                          </span>
+                        )}
+                      </div>
+                    </PushableButton>
+                  </motion.div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div className="flex flex-wrap justify-center gap-3 sm:gap-4 max-w-5xl mx-auto mb-12 w-full">
-        {reviewOrder.map((syl) => {
-          const isSingleLetter = syl.length <= 2;
-          const isVowelStart = isSingleLetter && VOWELS.has(syl[0]?.toUpperCase());
-
-          const bgStart = isSingleLetter ? (isVowelStart ? "#FF6B8A" : "#1CB0F6") : accent.primary;
-          const bgEnd = isSingleLetter ? (isVowelStart ? "#FF4B8A" : "#0a8ed4") : accent.dark;
-
-          let textSizeClass = uniformClass;
-          if (!uniformTextSize) {
-            textSizeClass = isSmallItems ? "text-2xl sm:text-3xl" : "text-3xl sm:text-5xl";
-            if (syl.length >= 5) textSizeClass = isSmallItems ? "text-sm sm:text-base tracking-widest" : "text-lg sm:text-xl tracking-widest";
-            else if (syl.length >= 4) textSizeClass = isSmallItems ? "text-base sm:text-lg tracking-wide" : "text-xl sm:text-2xl tracking-wider";
-            else if (syl.length === 3) textSizeClass = isSmallItems ? "text-xl sm:text-2xl" : "text-2xl sm:text-3xl tracking-wide";
-          }
-
-          return (
-            <motion.div key={syl} initial={{ scale: 0 }} animate={{ scale: 1 }} className={`flex flex-col items-center ${isSmallItems ? "w-[65px] sm:w-[85px]" : "w-[90px] sm:w-[120px]"}`}>
-              <div
-                onClick={() => !disableAudio && onItemClick(syl)}
-                className={`w-full aspect-square rounded-xl sm:rounded-2xl flex flex-col items-center justify-center select-none ${disableAudio ? 'cursor-default opacity-80' : 'cursor-pointer btn-3d-effect'}`}
-                style={{ background: `linear-gradient(135deg, ${bgStart}, ${bgEnd})` }}
-              >
-                <div className="flex items-center justify-center gap-0.5 px-1 text-center">
-                  <span className={`text-white font-black drop-shadow-sm break-all leading-tight ${textSizeClass}`}>
-                    {wordHighlights && wordHighlights[syl] ? (
-                      syl.split('').map((char, ci) => (
-                        <span key={ci} className={wordHighlights[syl].includes(ci) ? 'text-yellow-300' : ''}>{char}</span>
-                      ))
-                    ) : (
-                      syl
-                    )}
-                  </span>
-                  {syl.length === 1 && (
-                    <span className={`text-white/90 font-bold drop-shadow-sm ${textSizeClass}`}>
-                      {syl.toLowerCase()}
-                    </span>
-                  )}
-                </div>
-              </div>
-            </motion.div>
-          );
-        })}
-      </div>
+      <ActionToolbar
+        onBack={onBack}
+        canBack={canBack}
+        onShuffle={handleShuffle}
+        onReset={allowOrganize ? handleOrganize : undefined}
+        resetLabel="Organize"
+        onNext={onNext}
+      />
     </motion.div>
   );
 }

@@ -38,7 +38,7 @@ export function LessonShell({
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-purple-50 dark:bg-none dark:bg-[#0d141c] overflow-x-hidden flex flex-col">
+    <div className="h-screen bg-gradient-to-br from-green-50 via-blue-50 to-purple-50 dark:bg-none dark:bg-[#0d141c] overflow-hidden flex flex-col">
       <LessonProgressHeader
         onExit={onExit}
         title={title}
@@ -48,7 +48,7 @@ export function LessonShell({
 
       <Confetti active={showConfetti} />
 
-      <div className="flex-1 flex flex-col w-full">
+      <div className="flex-1 min-h-0 flex flex-col w-full">
         <AnimatePresence mode="wait">
           {children}
         </AnimatePresence>

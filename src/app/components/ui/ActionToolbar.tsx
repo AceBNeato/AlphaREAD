@@ -1,6 +1,5 @@
-import { Button } from "./button";
+import { PushableButton } from "./PushableButton";
 import { ArrowLeft, RotateCcw, Shuffle, FastForward, SkipForward, ChevronRight, ArrowRight } from "lucide-react";
-import { BUTTON_GRADIENTS, SHARED_ACTION_BUTTON_CLASSES } from "../../utils/buttonStyles";
 
 interface ActionToolbarProps {
   onBack?: () => void;
@@ -33,78 +32,72 @@ export function ActionToolbar({
   const isFullToolbar = !!onReset || !!onSkip;
 
   return (
-    <div className={`flex justify-center items-center w-full gap-2 sm:gap-4 ${isFullToolbar ? 'max-w-xl' : 'max-w-md'} mx-auto mt-4 mb-6`}>
-      {onBack && (
-        <Button
-          size="sm"
-          onClick={onBack}
-          disabled={!canBack}
-          className={SHARED_ACTION_BUTTON_CLASSES}
-          style={{ background: BUTTON_GRADIENTS.blue }}
-        >
-          <ArrowLeft className="w-4 h-4 sm:mr-1 mx-auto sm:mx-0" />
-          <span className="hidden sm:inline">Back</span>
-        </Button>
-      )}
-      
-      {onReset && (
-        <Button
-          size="sm"
-          onClick={onReset}
-          className={SHARED_ACTION_BUTTON_CLASSES}
-          style={{ background: BUTTON_GRADIENTS.red }}
-        >
-          <RotateCcw className="w-4 h-4 sm:mr-1 mx-auto sm:mx-0" />
-          <span className="hidden sm:inline">{resetLabel}</span>
-        </Button>
-      )}
+    <div className="w-full shrink-0 bg-white/80 dark:bg-[#0d141c]/80 backdrop-blur-md py-8 px-10 mt-auto">
+      <div className={`flex justify-center items-center w-full gap-2 sm:gap-4 ${isFullToolbar ? 'max-w-xl' : 'max-w-md'} mx-auto`}>
+        {onBack && (
+          <PushableButton
+            onClick={onBack}
+            disabled={!canBack}
+            className="flex-1 h-12"
+            frontClassName="bg-gradient-to-r from-[#1cb0f6] to-[#0a8ed4] text-white py-2 text-xs sm:text-base flex items-center justify-center gap-0 sm:gap-1"
+            edgeClassName="bg-[#0979b5]"
+          >
+            <span className="font-bold font-sans">Back</span>
+          </PushableButton>
+        )}
 
-      {onShuffle && (
-        <Button
-          size="sm"
-          onClick={onShuffle}
-          className={SHARED_ACTION_BUTTON_CLASSES}
-          style={{ background: BUTTON_GRADIENTS.purple }}
-        >
-          <Shuffle className="w-4 h-4 sm:mr-1 mx-auto sm:mx-0" />
-          <span className="hidden sm:inline">Shuffle</span>
-        </Button>
-      )}
+        {onReset && (
+          <PushableButton
+            onClick={onReset}
+            className="w-12 sm:w-auto sm:flex-1 shrink-0 h-12"
+            frontClassName="bg-gradient-to-r from-[rgb(255,75,75)] to-[rgb(216,42,42)] text-white py-2 px-0 sm:px-4 flex items-center justify-center gap-0 sm:gap-1"
+            edgeClassName="bg-[rgb(180,30,30)]"
+          >
+            <RotateCcw className="w-5 h-5 sm:hidden" />
+            <span className="hidden sm:inline font-bold font-sans">{resetLabel}</span>
+          </PushableButton>
+        )}
 
-      {onSkip && (
-        <Button
-          size="sm"
-          onClick={onSkip}
-          className={SHARED_ACTION_BUTTON_CLASSES}
-          style={{ background: BUTTON_GRADIENTS.yellow }}
-        >
-          {nextIcon === "skip" ? (
-             <SkipForward className="w-4 h-4 sm:mr-1 mx-auto sm:mx-0" />
-          ) : (
-             <FastForward className="w-4 h-4 sm:mr-1 mx-auto sm:mx-0" />
-          )}
-          <span className="hidden sm:inline">{skipLabel}</span>
-        </Button>
-      )}
+        {onShuffle && (
+          <PushableButton
+            onClick={onShuffle}
+            className="w-12 sm:w-auto sm:flex-1 shrink-0 h-12"
+            frontClassName="bg-gradient-to-r from-[#ce82ff] to-[#a559d6] text-white py-2 px-0 sm:px-4 flex items-center justify-center gap-0 sm:gap-1"
+            edgeClassName="bg-[#8f3fb8]"
+          >
+            <Shuffle className="w-5 h-5 sm:hidden" />
+            <span className="hidden sm:inline font-bold font-sans">Shuffle</span>
+          </PushableButton>
+        )}
 
-      {onNext && (
-        <Button
-          size="sm"
-          onClick={onNext}
-          disabled={!canNext}
-          className={`${SHARED_ACTION_BUTTON_CLASSES} ${!canNext ? 'disabled:cursor-not-allowed' : ''}`}
-          style={{ background: BUTTON_GRADIENTS.green }}
-        >
-          <span className="hidden sm:inline">{nextLabel}</span>
-          {nextIcon === "chevron" ? (
-             <ChevronRight className="w-4 h-4 sm:ml-1 mx-auto sm:mx-0" />
-          ) : nextIcon === "arrow" ? (
-             <ArrowRight className="w-4 h-4 sm:ml-1 mx-auto sm:mx-0" />
-          ) : (
-             <SkipForward className="w-4 h-4 sm:ml-1 mx-auto sm:mx-0" />
-          )}
-        </Button>
-      )}
+        {onSkip && (
+          <PushableButton
+            onClick={onSkip}
+            className="w-12 sm:w-auto sm:flex-1 shrink-0 h-12"
+            frontClassName="bg-gradient-to-r from-[#ffc800] to-[#ff9600] text-white py-2 px-0 sm:px-4 flex items-center justify-center gap-0 sm:gap-1"
+            edgeClassName="bg-[#d97e00]"
+          >
+            {nextIcon === "skip" ? (
+              <SkipForward className="w-5 h-5 sm:hidden" />
+            ) : (
+              <FastForward className="w-5 h-5 sm:hidden" />
+            )}
+            <span className="hidden sm:inline font-bold font-sans">{skipLabel}</span>
+          </PushableButton>
+        )}
+
+        {onNext && (
+          <PushableButton
+            onClick={onNext}
+            disabled={!canNext}
+            className="flex-1 h-12"
+            frontClassName="bg-gradient-to-r from-[#58cc02] to-[#46a302] text-white py-2 text-xs sm:text-base flex items-center justify-center gap-0 sm:gap-1"
+            edgeClassName="bg-[#3c8c01]"
+          >
+            <span className="font-bold font-sans">{nextLabel}</span>
+          </PushableButton>
+        )}
+      </div>
     </div>
   );
 }

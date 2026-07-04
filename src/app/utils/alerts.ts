@@ -13,10 +13,10 @@ export const confirmAction = async (title: string, text?: string) => {
     background: '#111827', // gray-900
     color: '#ffffff',
     customClass: {
-      popup: '!rounded-3xl !border !border-gray-800 !shadow-2xl',
+      popup: '!rounded-3xl !shadow-2xl swal-3d-popup',
       title: '!text-xl !font-bold',
-      confirmButton: '!rounded-xl !font-bold !px-6 !py-3',
-      cancelButton: '!rounded-xl !font-bold !px-6 !py-3 !text-gray-300 hover:!bg-gray-600',
+      confirmButton: '!rounded-xl !font-bold !px-6 !py-3 swal-btn-3d',
+      cancelButton: '!rounded-xl !font-bold !px-6 !py-3 !text-gray-300 hover:!bg-gray-600 swal-btn-3d',
     }
   });
 

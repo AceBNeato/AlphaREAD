@@ -131,13 +131,19 @@
     @apply bg-background text-foreground;
     font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   }
-  
+
   /* Apply glassmorphism blur to standard card classes */
-  .bg-card, .bg-popover, .bg-white\/80 {
+  .bg-card,
+  .bg-popover,
+  .bg-white\/80 {
     backdrop-filter: blur(12px);
     border: 1px solid rgba(255, 255, 255, 0.2);
   }
-  .dark .bg-card, .dark .bg-popover, .dark .bg-gray-800\/80, .dark .bg-\[\#0d141c\]\/80 {
+
+  .dark .bg-card,
+  .dark .bg-popover,
+  .dark .bg-gray-800\/80,
+  .dark .bg-\[\#0d141c\]\/80 {
     border-color: rgba(255, 255, 255, 0.05);
   }
 
@@ -213,7 +219,120 @@
   border-bottom: 4px solid rgba(0, 0, 0, 0.25);
   transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1);
 }
+
 .btn-3d-effect:active {
   border-bottom-width: 0px;
   transform: scale(0.95) translateY(4px);
+}
+
+/* Josh W Comeau 3D Button Style */
+.pushable {
+  position: relative;
+  background: transparent;
+  padding: 0;
+  border: none;
+  cursor: pointer;
+  outline-offset: 4px;
+  transition: filter 250ms;
+  display: inline-block;
+}
+
+.pushable .shadow-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 16px;
+  background: hsl(0deg 0% 0% / 0.25);
+  will-change: transform;
+  transform: translateY(4px);
+  filter: blur(2px);
+  transition: transform 600ms cubic-bezier(0.3, 0.7, 0.4, 1);
+}
+
+.pushable .edge-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 16px;
+}
+
+.pushable .front-layer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  width: 100%;
+  height: 100%;
+  padding-top: 12px;
+  padding-bottom: 12px;
+  border-radius: 16px;
+  color: white;
+  will-change: transform;
+  transform: translateY(-4px);
+  transition: transform 600ms cubic-bezier(0.3, 0.7, 0.4, 1);
+}
+
+.pushable.tile {
+  /* No forced dimensions here to avoid overriding Tailwind classes */
+}
+
+.pushable.tile .front-layer {
+  padding: 0;
+}
+
+.pushable:hover {
+  filter: brightness(110%);
+}
+
+.pushable:hover .front-layer {
+  transform: translateY(-6px);
+  transition: transform 250ms cubic-bezier(0.3, 0.7, 0.4, 1.5);
+}
+
+.pushable:active .front-layer {
+  transform: translateY(-2px);
+  transition: transform 34ms;
+}
+
+.pushable:hover .shadow-layer {
+  transform: translateY(4px);
+  transition: transform 250ms cubic-bezier(0.3, 0.7, 0.4, 1.5);
+}
+
+.pushable:active .shadow-layer,
+.pushable.selected .shadow-layer {
+  transform: translateY(1px);
+  transition: transform 34ms;
+}
+
+.pushable:active .front-layer,
+.pushable.selected .front-layer {
+  transform: translateY(-2px);
+  transition: transform 34ms;
+}
+
+.pushable:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* SweetAlert2 3D Overrides */
+.swal-3d-popup {
+  border: 2px solid #374151 !important;
+  border-bottom: 8px solid #1f2937 !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5) !important;
+  transform: translateY(-4px) !important;
+}
+
+.swal-btn-3d {
+  border-bottom: 4px solid rgba(0,0,0,0.3) !important;
+  transition: all 0.1s !important;
+}
+
+.swal-btn-3d:active {
+  border-bottom-width: 0px !important;
+  transform: translateY(4px) !important;
 }

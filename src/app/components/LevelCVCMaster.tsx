@@ -13,7 +13,8 @@ import { motion, AnimatePresence } from "motion/react";
 import { Confetti } from "./ui/Confetti";
 import { playExclusiveAudio } from "../utils/soundEffects";
 import { playTTS } from "../utils/tts";
-import { SHARED_ACTION_BUTTON_CLASSES } from "../utils/buttonStyles";
+import { PushableButton } from "./ui/PushableButton";
+import { ActionToolbar } from "./ui/ActionToolbar";
 
 interface LevelCVCMasterProps {
   levelId: number;
@@ -60,74 +61,64 @@ function LevelCVCPreview({
       initial={{ opacity: 0, x: 50 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: -50 }}
-      className="flex flex-col items-center w-full max-w-4xl mx-auto px-4 py-8"
+      className="flex flex-col w-full h-full"
     >
-      <div className="text-center mb-8">
-        <p className="text-gray-600 dark:text-gray-300 text-base sm:text-lg font-bold mt-6 block">
-          {isReview 
-            ? `🎉 Great work! Review CVC words! ${batchNumber && totalBatches ? "(Batch " + batchNumber + " of " + totalBatches + ")" : ""}`
-            : `Review CVC words before we start! ${batchNumber && totalBatches ? "(Batch " + batchNumber + " of " + totalBatches + ")" : ""}`
-          }
-        </p>
+      <div className="flex-1 min-h-0 overflow-y-auto w-full flex flex-col items-center">
+        <div className="w-full max-w-4xl mx-auto px-15 py-4 text-center flex-1">
+          <p className="text-gray-600 dark:text-gray-300 text-base sm:text-lg font-bold mt-2 mb-8 block">
+            {isReview
+              ? `🎉 Great work! Review CVC words! ${batchNumber && totalBatches ? "(Batch " + batchNumber + " of " + totalBatches + ")" : ""}`
+              : `Review CVC words before we start! ${batchNumber && totalBatches ? "(Batch " + batchNumber + " of " + totalBatches + ")" : ""}`
+            }
+          </p>
 
-        <div className="flex justify-center items-center w-full gap-3 sm:gap-4 max-w-md mx-auto mt-6">
-          <Button
-            onClick={onBack}
-            disabled={!canBack}
-            className={SHARED_ACTION_BUTTON_CLASSES}
-            style={{ background: 'linear-gradient(135deg, #1cb0f6 0%, #0a8ed4 100%)' }}
-          >
-            <ArrowLeft className="w-4 h-4 mr-1" /> Back
-          </Button>
-          <Button
-            onClick={handleShuffle}
-            className={SHARED_ACTION_BUTTON_CLASSES}
-            style={{ background: 'linear-gradient(135deg, #ce82ff 0%, #a559d6 100%)' }}
-          >
-            <Shuffle className="w-4 h-4 mr-1" /> Shuffle
-          </Button>
-          <Button
-            onClick={onComplete}
-            className={SHARED_ACTION_BUTTON_CLASSES}
-            style={{ background: 'linear-gradient(135deg, #58cc02 0%, #46a302 100%)' }}
-          >
-            Proceed <ChevronRight className="w-4 h-4 ml-1" />
-          </Button>
+          <div className="flex flex-wrap justify-center gap-2 sm:gap-3 mb-12 w-full max-w-4xl mx-auto">
+            {order.map((word) => {
+              return (
+                <motion.div
+                  key={word}
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  className="flex flex-col items-center w-[70px] sm:w-[90px]"
+                >
+                  <PushableButton
+                    as="div"
+                    isTile
+                    disabled={!isReview}
+                    onClick={() => {
+                      if (isReview) {
+                        const audioPath = `${(import.meta as any).env.BASE_URL}audio/cvc-audio/cvc-${word.toLowerCase()}.mp3`;
+                        playExclusiveAudio(audioPath).catch((err: any) => {
+                          console.warn(`[AlphabetGO] Local CVC audio not found: ${audioPath}, falling back to TTS`, err);
+                          playTTS(word.toLowerCase());
+                        });
+                      }
+                    }}
+                    className="w-full aspect-square flex items-center justify-center"
+                    frontStyle={{
+                      background: 'linear-gradient(135deg, #FF9600 0%, #e08000 100%)',
+                    }}
+                    edgeStyle={{
+                      backgroundColor: '#b06000',
+                    }}
+                  >
+                    <span className="text-white text-lg sm:text-xl font-black drop-shadow-sm">
+                      {word.toLowerCase()}
+                    </span>
+                  </PushableButton>
+                </motion.div>
+              );
+            })}
+          </div>
         </div>
       </div>
 
-      <div className="flex flex-wrap justify-center gap-2 sm:gap-3 mb-12 w-full max-w-4xl mx-auto">
-        {order.map((word) => {
-          return (
-            <motion.div
-              key={word}
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              className="flex flex-col items-center w-[70px] sm:w-[90px]"
-            >
-              <div
-                onClick={() => {
-                  if (isReview) {
-                    const audioPath = `${(import.meta as any).env.BASE_URL}audio/cvc-audio/cvc-${word.toLowerCase()}.mp3`;
-                    playExclusiveAudio(audioPath).catch((err: any) => {
-                      console.warn(`[AlphabetGO] Local CVC audio not found: ${audioPath}, falling back to TTS`, err);
-                      playTTS(word.toLowerCase());
-                    });
-                  }
-                }}
-                className={`w-full aspect-square rounded-xl sm:rounded-2xl flex items-center justify-center select-none ${isReview ? 'cursor-pointer btn-3d-effect' : 'cursor-default opacity-80'}`}
-                style={{
-                  background: 'linear-gradient(135deg, #FF9600 0%, #e08000 100%)',
-                }}
-              >
-                <span className="text-white text-lg sm:text-xl font-black drop-shadow-sm">
-                  {word.toLowerCase()}
-                </span>
-              </div>
-            </motion.div>
-          );
-        })}
-      </div>
+      <ActionToolbar
+        onBack={onBack}
+        canBack={canBack}
+        onShuffle={handleShuffle}
+        onNext={onComplete}
+      />
     </motion.div>
   );
 }
@@ -337,28 +328,28 @@ export function LevelCVCMaster({ levelId, accent }: LevelCVCMasterProps) {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-green-50 via-blue-50 to-purple-50 dark:bg-none dark:bg-[#0d141c] overflow-x-hidden">
-      <div className="sticky top-0 z-50 bg-white/80 dark:bg-[#0d141c]/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 px-4 py-3 shadow-sm">
+    <div className="h-screen overflow-hidden flex flex-col bg-gradient-to-br from-green-50 via-blue-50 to-purple-50 dark:bg-none dark:bg-[#0d141c]">
+      <div className="shrink-0 z-50 bg-white/80 dark:bg-[#0d141c]/80 backdrop-blur-md px-4 py-3 shadow-sm">
         <div className="max-w-4xl mx-auto flex items-center gap-3 sm:gap-5 w-full">
           <Button variant="ghost" size="sm" onClick={handleGoBack} className="rounded-full p-2 h-auto text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 flex items-center gap-1">
             <ArrowLeft className="w-7 h-7 sm:w-8 sm:h-8 stroke-[3]" />
             <span className="hidden sm:inline font-bold uppercase tracking-wider text-sm">EXIT</span>
           </Button>
-          
+
           <div className="flex-1 flex flex-col gap-1.5 mt-1">
             <div className="flex justify-between items-center px-1">
               <h2 className="text-sm sm:text-base font-bold tracking-tight" style={{ color: accent.primary }}>
                 {getPhaseTitle()}
               </h2>
             </div>
-            
+
             {/* Duolingo-style Progress Bar */}
             <div className="w-full bg-gray-200 dark:bg-gray-800 rounded-full h-4 sm:h-5 overflow-hidden relative shadow-inner">
-              <div 
+              <div
                 className="absolute top-0 left-0 h-full rounded-full transition-all duration-700 ease-out flex flex-col justify-start"
-                style={{ 
-                  width: `${Math.max(5, (currentStep / STEPS.length) * 100)}%`, 
-                  backgroundColor: accent.primary 
+                style={{
+                  width: `${Math.max(5, (currentStep / STEPS.length) * 100)}%`,
+                  backgroundColor: accent.primary
                 }}
               >
                 {/* Glossy reflection highlight */}
@@ -368,7 +359,7 @@ export function LevelCVCMaster({ levelId, accent }: LevelCVCMasterProps) {
           </div>
         </div>
       </div>
-      <div className="flex-1 w-full">
+      <div className="flex-1 min-h-0 overflow-y-auto w-full flex flex-col">
         {content}
       </div>
     </div>

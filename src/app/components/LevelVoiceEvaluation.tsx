@@ -296,149 +296,154 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
         </div>
       )}
 
-      {/* Content */}
-      <div className={`w-full ${isSubPhase ? 'max-w-5xl py-2' : 'max-w-2xl py-6'} mx-auto px-4`}>
+      <div className="flex-grow w-full flex flex-col min-h-0">
+        <div className="flex-1 min-h-0 overflow-y-auto w-full">
+          <div className={`w-full flex flex-col justify-center min-h-full ${isSubPhase ? 'max-w-5xl' : 'max-w-2xl'} mx-auto px-4 py-4`}>
 
-        {!(window as any).SpeechRecognition && !(window as any).webkitSpeechRecognition && (
-          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 text-amber-800 text-sm flex items-center gap-3">
-            <AlertCircle className="w-5 h-5 flex-shrink-0" />
-            <p>Your browser doesn't support the Voice Recognition API. Please use Chrome or a modern mobile browser.</p>
-          </div>
-        )}
+          {!(window as any).SpeechRecognition && !(window as any).webkitSpeechRecognition && (
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 text-amber-800 text-sm flex items-center gap-3 shrink-0">
+              <AlertCircle className="w-5 h-5 flex-shrink-0" />
+              <p>Your browser doesn't support the Voice Recognition API. Please use Chrome or a modern mobile browser.</p>
+            </div>
+          )}
 
-        <>
-
-            <div className="text-center">
-              <p className="text-white text-base sm:text-lg font-bold mt-6 block">
+          <>
+            {/* Top Section: Instructions */}
+            <div className="text-center shrink-0">
+              <p className="text-gray-800 dark:text-gray-200 text-base sm:text-xl font-bold mt-4 block">
                 Say each word out loud into the microphone. (Batch {batched.batchIndex + 1} of {batched.totalBatches})
               </p>
-              <p className="text-sm font-semibold text-pink-300 dark:text-pink-400 mt-1 block">
+              <p className="text-sm font-semibold text-pink-600 dark:text-pink-400 mt-1 block">
                 Completed {wordsEval.completedWords.size} of {words.length} {levelId === 3 ? "CVC words" : levelId === 5 ? "Long Vowel words" : levelId === 6 ? "Blends" : "words"}
               </p>
             </div>
 
-            {/* Teacher Controls Row */}
-            <ActionToolbar
-              onBack={handleBackClick}
-              canBack={!!(onBack || batched.batchIndex > 0)}
-              onShuffle={handleShuffle}
-              onReset={handleReset}
-              onSkip={handleSkip}
-              onNext={handleNextClick}
-              canNext={isCurrentBatchDone}
-            />
+            {/* Middle Section: Centered Interactive Grid */}
+            <div className="flex-1 flex flex-col justify-center w-full py-4 shrink-0">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key="list-phase"
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.3 }}
+                  className="text-center w-full"
+                >
+                  <div className={`${batchWords.length > 5 ? `grid grid-cols-1 ${gridColumns === 2 ? 'sm:grid-cols-2' : 'sm:grid-cols-3'} gap-3` : 'space-y-3'} bg-white/50 dark:bg-gray-800/50 p-4 rounded-3xl backdrop-blur-sm border-2 border-dashed border-gray-200 dark:border-gray-700 w-full`}>
+                    {batchWords.map((w, idx) => {
+                      const isDone = wordsEval.completedWords.has(w);
+                      const isCurrent = wordsEval.evaluatingWord === w;
+                      const feedback = wordsEval.evalFeedback[w];
+                      const transcript = wordsEval.transcripts[w];
 
-            <AnimatePresence mode="wait">
-              <motion.div
-                key="list-phase"
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                transition={{ duration: 0.3 }}
-                className="text-center mb-8"
-              >
-                <div className={`${batchWords.length > 5 ? `grid grid-cols-1 ${gridColumns === 2 ? 'sm:grid-cols-2' : 'sm:grid-cols-3'} gap-3` : 'space-y-3'} bg-white/50 dark:bg-gray-800/50 p-4 rounded-3xl backdrop-blur-sm border-2 border-dashed border-gray-200 dark:border-gray-700`}>
-                  {batchWords.map((w, idx) => {
-                    const isDone = wordsEval.completedWords.has(w);
-                    const isCurrent = wordsEval.evaluatingWord === w;
-                    const feedback = wordsEval.evalFeedback[w];
-                    const transcript = wordsEval.transcripts[w];
-
-                    return (
-                      <div key={w} className={`flex items-center justify-between ${batchWords.length >= 10 ? 'p-2 sm:p-3' : 'p-4'} rounded-2xl transition-all ${isDone ? 'bg-green-50 dark:bg-green-900/20' : 'bg-white dark:bg-gray-800'} shadow-sm border-2 ${isCurrent ? 'border-pink-400 shadow-md' : isDone ? 'border-green-200' : 'border-transparent'}`}>
-                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-3 min-w-0 flex-1">
-                          <div className="relative shrink-0 flex items-center justify-center pt-1 sm:pt-0">
-                            <button
-                              onClick={() => handlePlayTTS(w)}
-                              className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${isDone ? 'bg-white/50 hover:bg-white dark:bg-black/20 dark:hover:bg-black/40 text-green-700 dark:text-green-400 cursor-pointer shadow-sm active:translate-y-1' : 'bg-blue-100 hover:bg-blue-200 dark:bg-blue-900/30 dark:hover:bg-blue-800/50 text-blue-600 dark:text-blue-400 cursor-pointer shadow-sm active:translate-y-1'} ${idx === 0 && !hasClickedTTS && !isDone ? 'ring-2 ring-blue-400 ring-offset-1 animate-pulse' : ''}`}
-                            >
-                              <Volume2 className="w-4 h-4" />
-                            </button>
-                            {idx === 0 && !hasClickedTTS && !isDone && (
-                              <motion.div
-                                initial={{ opacity: 0, y: 10, scale: 0.8 }}
-                                animate={{ opacity: 1, y: 0, scale: 1 }}
-                                transition={{ repeat: Infinity, repeatType: "reverse", duration: 1.5 }}
-                                className="absolute -top-10 left-1/2 -translate-x-1/2 bg-blue-500 text-white text-[10px] font-bold py-1 px-3 rounded-full shadow-lg whitespace-nowrap pointer-events-none z-10"
+                      return (
+                        <div key={w} className={`flex items-center justify-between ${batchWords.length >= 10 ? 'p-2 sm:p-3' : 'p-4'} rounded-2xl transition-all ${isDone ? 'bg-green-50 dark:bg-green-900/20' : 'bg-white dark:bg-gray-800'} shadow-sm border-2 ${isCurrent ? 'border-pink-400 shadow-md' : isDone ? 'border-green-200' : 'border-transparent'}`}>
+                          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-3 min-w-0 flex-1">
+                            <div className="relative shrink-0 flex items-center justify-center pt-1 sm:pt-0">
+                              <button
+                                onClick={() => handlePlayTTS(w)}
+                                className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${isDone ? 'bg-white/50 hover:bg-white dark:bg-black/20 dark:hover:bg-black/40 text-green-700 dark:text-green-400 cursor-pointer shadow-sm active:translate-y-1' : 'bg-blue-100 hover:bg-blue-200 dark:bg-blue-900/30 dark:hover:bg-blue-800/50 text-blue-600 dark:text-blue-400 cursor-pointer shadow-sm active:translate-y-1'} ${idx === 0 && !hasClickedTTS && !isDone ? 'ring-2 ring-blue-400 ring-offset-1 animate-pulse' : ''}`}
                               >
-                                Tap to listen!
-                                <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-blue-500 rotate-45" />
+                                <Volume2 className="w-4 h-4" />
+                              </button>
+                              {idx === 0 && !hasClickedTTS && !isDone && (
+                                <motion.div
+                                  initial={{ opacity: 0, y: 10, scale: 0.8 }}
+                                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                                  transition={{ repeat: Infinity, repeatType: "reverse", duration: 1.5 }}
+                                  className="absolute -top-10 left-1/2 -translate-x-1/2 bg-blue-500 text-white text-[10px] font-bold py-1 px-3 rounded-full shadow-lg whitespace-nowrap pointer-events-none z-10"
+                                >
+                                  Tap to listen!
+                                  <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-blue-500 rotate-45" />
+                                </motion.div>
+                              )}
+                            </div>
+
+                            {(() => {
+                              const isSentence = w.includes(' ');
+                              const textClass = isSentence
+                                ? 'text-lg sm:text-xl font-semibold text-left flex-1 min-w-0 leading-snug'
+                                : `${batchWords.length >= 10 ? 'text-xl sm:text-2xl' : 'text-2xl sm:text-3xl'} font-bold text-left tracking-wider flex-1 min-w-0`;
+                              return (
+                                <span className={`${textClass} text-gray-800 dark:text-gray-200`} style={{ color: isDone ? '#58CC02' : undefined }}>
+                                  {wordHighlights && wordHighlights[w] ? (
+                                    (w === w.toUpperCase() ? w.toLowerCase() : w).split('').map((char, ci) => (
+                                      <span key={ci} className={wordHighlights[w].includes(ci) ? 'text-rose-400 font-black' : ''}>{char}</span>
+                                    ))
+                                  ) : (
+                                    w === w.toUpperCase() ? w.toLowerCase() : w
+                                  )}
+                                </span>
+                              );
+                            })()}
+                            {feedback === 'correct' && <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="text-green-500 flex items-center gap-1 text-sm font-bold"><CheckCircle2 className="w-4 h-4" /> Correct!</motion.div>}
+                            {feedback === 'close' && <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="text-blue-500 flex items-center gap-1 text-sm font-bold"><Sparkles className="w-4 h-4" /> Close enough!</motion.div>}
+                            {feedback === 'wrong' && (
+                              <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} className={`flex items-center justify-center gap-1 font-bold text-sm text-red-500`}>
+                                <AlertCircle className="w-4 h-4" /> Try again!
                               </motion.div>
                             )}
                           </div>
 
-                          {(() => {
-                            const isSentence = w.includes(' ');
-                            const textClass = isSentence
-                              ? 'text-lg sm:text-xl font-semibold text-left flex-1 min-w-0 leading-snug'
-                              : `${batchWords.length >= 10 ? 'text-xl sm:text-2xl' : 'text-2xl sm:text-3xl'} font-bold text-left tracking-wider flex-1 min-w-0`;
-                            return (
-                              <span className={`${textClass} text-gray-800 dark:text-gray-200`} style={{ color: isDone ? '#58CC02' : undefined }}>
-                                {wordHighlights && wordHighlights[w] ? (
-                                  (w === w.toUpperCase() ? w.toLowerCase() : w).split('').map((char, ci) => (
-                                    <span key={ci} className={wordHighlights[w].includes(ci) ? 'text-rose-400 font-black' : ''}>{char}</span>
-                                  ))
-                                ) : (
-                                  w === w.toUpperCase() ? w.toLowerCase() : w
-                                )}
-                              </span>
-                            );
-                          })()}
-                          {feedback === 'correct' && <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="text-green-500 flex items-center gap-1 text-sm font-bold"><CheckCircle2 className="w-4 h-4" /> Correct!</motion.div>}
-                          {feedback === 'close' && <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="text-blue-500 flex items-center gap-1 text-sm font-bold"><Sparkles className="w-4 h-4" /> Close enough!</motion.div>}
-                          {feedback === 'wrong' && (
-                            <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} className={`flex items-center justify-center gap-1 font-bold text-sm text-red-500`}>
-                              <AlertCircle className="w-4 h-4" /> Try again!
-                            </motion.div>
-                          )}
-                        </div>
-
-                        <div className="flex items-center gap-2 shrink-0 ml-2 relative">
-                          <button
-                            onClick={() => {
-                              setHasClickedMic(true);
-                              if (isCurrent) {
-                                wordsEval.safeSetEvaluatingWordNull();
-                              } else {
-                                wordsEval.startRecording(w);
-                              }
-                            }}
-                            disabled={(wordsEval.evaluatingWord !== null && !isCurrent) || isDone || wordsEval.isMicResetting}
-                            className={`relative w-12 h-12 rounded-xl flex items-center justify-center transition-all ${isDone ? 'bg-green-500 text-white shadow-none opacity-50 cursor-default' : isCurrent ? 'bg-red-500 text-white shadow-lg' : wordsEval.isMicResetting ? 'bg-gray-300 dark:bg-gray-700 text-gray-400 cursor-not-allowed' : 'bg-gradient-to-br from-pink-500 to-rose-500 text-white shadow-md hover:scale-105 active:translate-y-1'} ${idx === 0 && !hasClickedMic && !isDone ? 'ring-2 ring-pink-400 ring-offset-2 animate-pulse' : ''}`}
-                          >
-                            {isCurrent && (
-                              <>
-                                <span className="absolute inset-0 rounded-xl bg-red-500/40 animate-ping" />
-                                <span className="absolute -inset-1 rounded-xl bg-red-500/20 animate-pulse" />
-                              </>
-                            )}
-                            <span className="relative z-10">
-                              {isDone ? <CheckCircle2 className="w-6 h-6" /> : isCurrent ? <MicOff className="w-5 h-5 animate-bounce" /> : <Mic className="w-5 h-5" />}
-                            </span>
-                          </button>
-                          {idx === 0 && !hasClickedMic && !isDone && (
-                            <motion.div
-                              initial={{ opacity: 0, y: 10, scale: 0.8 }}
-                              animate={{ opacity: 1, y: 0, scale: 1 }}
-                              transition={{ repeat: Infinity, repeatType: "reverse", duration: 1.5 }}
-                              className="absolute -top-10 left-1/2 -translate-x-1/2 bg-pink-500 text-white text-[10px] font-bold py-1 px-3 rounded-full shadow-lg whitespace-nowrap pointer-events-none z-10"
+                          <div className="flex items-center gap-2 shrink-0 ml-2 relative">
+                            <button
+                              onClick={() => {
+                                setHasClickedMic(true);
+                                if (isCurrent) {
+                                  wordsEval.safeSetEvaluatingWordNull();
+                                } else {
+                                  wordsEval.startRecording(w);
+                                }
+                              }}
+                              disabled={(wordsEval.evaluatingWord !== null && !isCurrent) || isDone || wordsEval.isMicResetting}
+                              className={`relative w-12 h-12 rounded-xl flex items-center justify-center transition-all ${isDone ? 'bg-green-500 text-white shadow-none opacity-50 cursor-default' : isCurrent ? 'bg-red-500 text-white shadow-lg' : wordsEval.isMicResetting ? 'bg-gray-300 dark:bg-gray-700 text-gray-400 cursor-not-allowed' : 'bg-gradient-to-br from-pink-500 to-rose-500 text-white shadow-md hover:scale-105 active:translate-y-1'} ${idx === 0 && !hasClickedMic && !isDone ? 'ring-2 ring-pink-400 ring-offset-2 animate-pulse' : ''}`}
                             >
-                              Tap to speak!
-                              <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-pink-500 rotate-45" />
-                            </motion.div>
-                          )}
+                              {isCurrent && (
+                                <>
+                                  <span className="absolute inset-0 rounded-xl bg-red-500/40 animate-ping" />
+                                  <span className="absolute -inset-1 rounded-xl bg-red-500/20 animate-pulse" />
+                                </>
+                              )}
+                              <span className="relative z-10">
+                                {isDone ? <CheckCircle2 className="w-6 h-6" /> : isCurrent ? <MicOff className="w-5 h-5 animate-bounce" /> : <Mic className="w-5 h-5" />}
+                              </span>
+                            </button>
+                            {idx === 0 && !hasClickedMic && !isDone && (
+                              <motion.div
+                                initial={{ opacity: 0, y: 10, scale: 0.8 }}
+                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                transition={{ repeat: Infinity, repeatType: "reverse", duration: 1.5 }}
+                                className="absolute -top-10 left-1/2 -translate-x-1/2 bg-pink-500 text-white text-[10px] font-bold py-1 px-3 rounded-full shadow-lg whitespace-nowrap pointer-events-none z-10"
+                              >
+                                Tap to speak!
+                                <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-pink-500 rotate-45" />
+                              </motion.div>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                      );
+                    })}
+                  </div>
 
-                <div className="mt-8 text-center text-sm text-gray-500 dark:text-gray-400 italic">
-                  Click the mic next to each word to practice its pronunciation
-                </div>
-              </motion.div>
-            </AnimatePresence>
+                  <div className="mt-4 text-center text-sm text-gray-500 dark:text-gray-400 italic">
+                    Click the mic next to each word to practice its pronunciation
+                  </div>
+                </motion.div>
+              </AnimatePresence>
+            </div>
           </>
+        </div>
+        </div>
+
+        <ActionToolbar
+          onBack={handleBackClick}
+          canBack={!!(onBack || batched.batchIndex > 0)}
+          onShuffle={handleShuffle}
+          onReset={handleReset}
+          onSkip={handleSkip}
+          onNext={handleNextClick}
+          canNext={isCurrentBatchDone}
+        />
       </div>
 
       {/* Shy Mode Tips Modal Overlay */}

@@ -19,7 +19,7 @@ export function LessonProgressHeader({
   useXIcon = true
 }: LessonProgressHeaderProps) {
   return (
-    <div className="sticky top-0 z-10 bg-white/80 dark:bg-[#0d141c]/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 px-4 py-3">
+    <div className="shrink-0 z-10 bg-white/80 dark:bg-[#0d141c]/80 backdrop-blur-md px-4 py-3">
       <div className="max-w-4xl mx-auto flex items-center justify-between gap-3 sm:gap-5 w-full">
         <Button 
           variant="ghost" 

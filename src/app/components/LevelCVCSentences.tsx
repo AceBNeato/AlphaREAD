@@ -11,7 +11,8 @@ import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
 import { playSound } from "../utils/soundEffects";
 import { playTTS as playTTSUtil } from "../utils/tts";
 import { AudioVisualizer } from "./AudioVisualizer";
-import { SHARED_ACTION_BUTTON_CLASSES } from "../utils/buttonStyles";
+import { PushableButton } from "./ui/PushableButton";
+import { ActionToolbar } from "./ui/ActionToolbar";
 
 interface LevelCVCSentencesProps {
   levelId: number;
@@ -186,7 +187,7 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
   const isFinalSet = currentSetIndex === totalSets - 1;
 
   return (
-    <div className={`flex flex-col overflow-x-hidden ${isSubPhase ? 'flex-1 w-full' : 'min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 dark:bg-none dark:bg-[#0d141c]'}`}>
+    <div className={`flex flex-col overflow-hidden ${isSubPhase ? 'flex-1 w-full' : 'h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 dark:bg-none dark:bg-[#0d141c]'}`}>
       <Confetti active={showConfetti} />
 
       {/* Listening Modal */}
@@ -243,7 +244,7 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
 
       {/* Header */}
       {!isSubPhase && (
-      <div className="sticky top-0 z-10 bg-white/80 dark:bg-[#0d141c]/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 px-4 py-3">
+      <div className="shrink-0 z-10 bg-white/80 dark:bg-[#0d141c]/80 backdrop-blur-md px-4 py-3">
         <div className="max-w-4xl mx-auto flex items-center justify-between gap-3 w-full">
           <Button variant="ghost" size="sm" onClick={handleGoBack} className="rounded-full flex-shrink-0 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
             <X className="w-7 h-7 sm:w-8 sm:h-8 stroke-[3]" /> <span className="hidden sm:inline font-bold uppercase tracking-wider text-sm ml-1">EXIT</span>
@@ -259,7 +260,7 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
       )}
 
       {/* Content */}
-      <div className={`w-full max-w-5xl mx-auto px-4 flex-1 flex flex-col ${isSubPhase ? 'py-2' : 'py-6'}`}>
+      <div className={`w-full max-w-5xl mx-auto px-4 flex-1 min-h-0 overflow-y-auto flex flex-col ${isSubPhase ? 'py-2' : 'py-4'}`}>
         <AnimatePresence mode="wait">
           {!showConfetti ? (
             <motion.div
@@ -267,178 +268,150 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 1.05 }}
-              className="flex flex-col items-center"
+              className="flex flex-col justify-between w-full flex-1"
             >
-              <div className="text-center mb-8">
-                <p className="text-white text-base sm:text-lg font-bold mt-6 block">
+              {/* Top Section: Instructions */}
+              <div className="text-center shrink-0">
+                <p className="text-gray-800 dark:text-gray-200 text-base sm:text-lg font-bold mt-2 block">
                   Read the sentences out loud into the microphone. (Batch {currentSetIndex + 1} of {totalSets})
                 </p>
-                <p className="text-sm font-semibold text-pink-300 dark:text-pink-400 mt-1 block">
+                <p className="text-sm font-semibold text-pink-650 dark:text-pink-400 mt-1 block">
                   Completed {(currentSetIndex * SENTENCES_PER_SET) + completedSentences.size} of {sentences.length} sentences
                 </p>
               </div>
 
-              {/* Controls — identical to Lesson 5 */}
-              <div className="flex justify-center items-center w-full gap-2 sm:gap-3 max-w-lg mx-auto mb-6">
-                <Button
-                  size="sm"
-                  onClick={() => {
-                    if (currentSetIndex > 0) {
-                      setCurrentSetIndex(prev => prev - 1);
-                    } else if (onBack) {
-                      onBack();
-                    }
-                  }}
-                  disabled={currentSetIndex === 0 && !onBack}
-                  className={SHARED_ACTION_BUTTON_CLASSES}
-                  style={{
-                    background: "linear-gradient(135deg, #1cb0f6 0%, #0a8ed4 100%)",
-                  }}
-                >
-                  <ArrowLeft className="w-4 h-4 sm:mr-1" />
-                  <span className="hidden sm:inline">Back</span>
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={handleShuffle}
-                  className={SHARED_ACTION_BUTTON_CLASSES}
-                  style={{
-                    background: "linear-gradient(135deg, #ce82ff 0%, #a559d6 100%)",
-                  }}
-                >
-                  <Shuffle className="w-4 h-4 sm:mr-1" />
-                  <span className="hidden sm:inline">Shuffle</span>
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={handleSkip}
-                  className={SHARED_ACTION_BUTTON_CLASSES}
-                  style={{
-                    background: "linear-gradient(135deg, rgb(255, 200, 0) 0%, rgb(255, 150, 0) 100%)",
-                  }}
-                >
-                  <FastForward className="w-4 h-4 sm:mr-1" />
-                  <span className="hidden sm:inline">Forward</span>
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={handleNextQuiz}
-                  disabled={completedSentences.size < activeSentences.length}
-                  className={SHARED_ACTION_BUTTON_CLASSES}
-                  style={{
-                    background: "linear-gradient(135deg, rgb(88, 204, 2) 0%, rgb(70, 163, 2) 100%)",
-                  }}
-                >
-                  <span className="hidden sm:inline">Proceed</span>
-                  <ArrowRight className="w-4 h-4 sm:ml-1" />
-                </Button>
-              </div>
+              {/* Middle Section: Centered Interactive Area */}
+              <div className="flex-grow flex flex-col justify-center w-full py-4 shrink-0">
+                <div className="w-full text-center">
+                  <div className="w-full bg-white/50 dark:bg-gray-800/50 p-4 rounded-3xl backdrop-blur-sm border-2 border-dashed border-gray-200 dark:border-gray-700 grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {activeSentences.map((s, idx) => {
+                      const isDone = completedSentences.has(s);
+                      const isEval = evaluatingSentenceId === s;
+                      const vFeedback = sentenceFeedbackMap[s];
+                      const vTranscript = sentenceTranscriptsMap[s];
 
-              {/* Sentence List — identical layout to Lesson 5 */}
-              <div className="w-full text-center mb-8">
-                <div className="w-full bg-white/50 dark:bg-gray-800/50 p-4 rounded-3xl backdrop-blur-sm border-2 border-dashed border-gray-200 dark:border-gray-700 grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {activeSentences.map((s, idx) => {
-                    const isDone = completedSentences.has(s);
-                    const isEval = evaluatingSentenceId === s;
-                    const vFeedback = sentenceFeedbackMap[s];
-                    const vTranscript = sentenceTranscriptsMap[s];
-
-                    return (
-                      <div
-                        key={s}
-                        className={`flex items-center justify-between p-4 h-full rounded-2xl transition-all
-                          ${isDone || vFeedback === "correct" ? "bg-green-50 dark:bg-green-900/20" : vFeedback === "wrong" ? "bg-red-50 dark:bg-red-900/10" : "bg-white dark:bg-gray-800"}
-                          shadow-sm border-2
-                          ${isEval ? "border-pink-400 shadow-md" : isDone || vFeedback === "correct" ? "border-green-200" : vFeedback === "wrong" ? "border-red-200" : "border-transparent hover:border-gray-300 dark:hover:border-gray-600"}`}
-                      >
-                        {/* Left: TTS + Sentence text */}
-                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 flex-1 min-w-0 mr-3">
-                          <div className="relative">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => playTTS(s)}
-                              className={`rounded-full w-10 h-10 flex-shrink-0 transition-all ${
-                                idx === 0 && !hasClickedTTS
-                                  ? "bg-indigo-100 hover:bg-indigo-200 text-indigo-600 dark:bg-indigo-900/50 dark:hover:bg-indigo-800 dark:text-indigo-300 ring-2 ring-indigo-400 ring-offset-2 animate-pulse"
-                                  : "bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300"
-                              }`}
-                            >
-                              <Volume2 className="w-4 h-4" />
-                            </Button>
-                            {idx === 0 && !hasClickedTTS && (
-                              <motion.div
-                                initial={{ opacity: 0, y: 10, scale: 0.8 }}
-                                animate={{ opacity: 1, y: 0, scale: 1 }}
-                                transition={{
-                                  repeat: Infinity,
-                                  repeatType: "reverse",
-                                  duration: 1.5,
-                                }}
-                                className="absolute -top-12 left-1/2 -translate-x-1/2 bg-indigo-500 text-white text-[10px] font-bold py-1 px-3 rounded-full shadow-lg whitespace-nowrap pointer-events-none"
+                      return (
+                        <div
+                          key={s}
+                          className={`flex items-center justify-between p-4 h-full rounded-2xl transition-all
+                            ${isDone || vFeedback === "correct" ? "bg-green-50 dark:bg-green-900/20" : vFeedback === "wrong" ? "bg-red-50 dark:bg-red-900/10" : "bg-white dark:bg-gray-800"}
+                            shadow-sm border-2
+                            ${isEval ? "border-pink-400 shadow-md" : isDone || vFeedback === "correct" ? "border-green-200" : vFeedback === "wrong" ? "border-red-200" : "border-transparent hover:border-gray-300 dark:hover:border-gray-600"}`}
+                        >
+                          {/* Left: TTS + Sentence text */}
+                          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 flex-1 min-w-0 mr-3">
+                            <div className="relative">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => playTTS(s)}
+                                className={`rounded-full w-10 h-10 flex-shrink-0 transition-all ${
+                                  idx === 0 && !hasClickedTTS
+                                    ? "bg-indigo-100 hover:bg-indigo-200 text-indigo-600 dark:bg-indigo-900/50 dark:hover:bg-indigo-800 dark:text-indigo-300 ring-2 ring-indigo-400 ring-offset-2 animate-pulse"
+                                    : "bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300"
+                                }`}
                               >
-                                Click to listen!
-                                <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-indigo-500 rotate-45" />
-                              </motion.div>
-                            )}
-                          </div>
-                          <span
-                            className="text-xl font-bold text-left leading-snug"
-                            style={{ color: isDone || vFeedback === "correct" ? "#58CC02" : accent.primary }}
-                          >
-                            {s}
-                          </span>
-                        </div>
-
-                        {/* Right: feedback + mic */}
-                        <div className="flex items-center gap-3 flex-shrink-0">
-
-
-                          {/* Mic button — identical to Lesson 5 */}
-                          <button
-                            onClick={() => {
-                              if (isEval) {
-                                setEvaluatingSentenceId(null);
-                              } else if (!isDone) {
-                                setEvaluatingSentenceId(s);
-                                setSentenceFeedbackMap(prev => ({ ...prev, [s]: null }));
-                                setSentenceTranscriptsMap(prev => ({ ...prev, [s]: "" }));
-                              }
-                            }}
-                            disabled={(evaluatingSentenceId !== null && !isEval) || isDone}
-                            className={`relative w-12 h-12 rounded-xl flex items-center justify-center transition-all flex-shrink-0
-                              ${isDone || vFeedback === "correct"
-                                ? "bg-green-500 text-white shadow-none opacity-50 cursor-default"
-                                : isEval
-                                  ? "bg-red-500 text-white shadow-lg"
-                                  : vFeedback === "wrong"
-                                    ? "bg-red-400 text-white"
-                                    : "bg-gradient-to-br from-pink-500 to-rose-500 text-white btn-3d-effect"
-                              }`}
-                          >
-                            {isEval && (
-                              <>
-                                <span className="absolute inset-0 rounded-xl bg-red-500/40 animate-ping" />
-                                <span className="absolute -inset-1 rounded-xl bg-red-500/20 animate-pulse" />
-                              </>
-                            )}
-                            <span className="relative z-10">
-                              {isDone || vFeedback === "correct"
-                                ? <CheckCircle2 className="w-6 h-6" />
-                                : vFeedback === "wrong"
-                                  ? <XCircle className="w-6 h-6" />
-                                  : isEval
-                                    ? <MicOff className="w-5 h-5 animate-bounce" />
-                                    : <Mic className="w-5 h-5" />
-                              }
+                                <Volume2 className="w-4 h-4" />
+                              </Button>
+                              {idx === 0 && !hasClickedTTS && (
+                                <motion.div
+                                  initial={{ opacity: 0, y: 10, scale: 0.8 }}
+                                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                                  transition={{
+                                    repeat: Infinity,
+                                    repeatType: "reverse",
+                                    duration: 1.5,
+                                  }}
+                                  className="absolute -top-12 left-1/2 -translate-x-1/2 bg-indigo-500 text-white text-[10px] font-bold py-1 px-3 rounded-full shadow-lg whitespace-nowrap pointer-events-none z-10"
+                                >
+                                  Click to listen!
+                                  <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-indigo-500 rotate-45" />
+                                </motion.div>
+                              )}
+                            </div>
+                            <span
+                              className="text-xl font-bold text-left leading-snug"
+                              style={{ color: isDone || vFeedback === "correct" ? "#58CC02" : accent.primary }}
+                            >
+                              {s}
                             </span>
-                          </button>
+                          </div>
+
+                          {/* Right: feedback + mic */}
+                          <div className="flex items-center gap-3 flex-shrink-0">
+                            {/* Mic button — identical to Lesson 5 */}
+                            <PushableButton
+                              as="button"
+                              isTile
+                              onClick={() => {
+                                if (isEval) {
+                                  setEvaluatingSentenceId(null);
+                                } else if (!isDone) {
+                                  setEvaluatingSentenceId(s);
+                                  setSentenceFeedbackMap(prev => ({ ...prev, [s]: null }));
+                                  setSentenceTranscriptsMap(prev => ({ ...prev, [s]: "" }));
+                                }
+                              }}
+                              disabled={(evaluatingSentenceId !== null && !isEval) || isDone}
+                              className="relative w-12 h-12 flex-shrink-0"
+                              frontClassName={
+                                isDone || vFeedback === "correct"
+                                  ? "bg-green-500 text-white"
+                                  : isEval
+                                    ? "bg-red-500 text-white shadow-lg"
+                                    : vFeedback === "wrong"
+                                      ? "bg-red-400 text-white"
+                                      : "bg-gradient-to-br from-pink-500 to-rose-500 text-white"
+                              }
+                              edgeClassName={
+                                isDone || vFeedback === "correct"
+                                  ? "bg-green-600"
+                                  : isEval
+                                    ? "bg-red-600"
+                                    : vFeedback === "wrong"
+                                      ? "bg-red-500"
+                                      : "bg-pink-700"
+                              }
+                            >
+                              {isEval && (
+                                <>
+                                  <span className="absolute inset-0 rounded-xl bg-red-500/40 animate-ping" />
+                                  <span className="absolute -inset-1 rounded-xl bg-red-500/20 animate-pulse" />
+                                </>
+                              )}
+                              <span className="relative z-10 flex items-center justify-center h-full w-full">
+                                {isDone || vFeedback === "correct"
+                                  ? <CheckCircle2 className="w-6 h-6" />
+                                  : vFeedback === "wrong"
+                                    ? <XCircle className="w-6 h-6" />
+                                    : isEval
+                                      ? <MicOff className="w-5 h-5 animate-bounce" />
+                                      : <Mic className="w-5 h-5" />
+                                }
+                              </span>
+                            </PushableButton>
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
+
+              <ActionToolbar
+                onBack={() => {
+                  if (currentSetIndex > 0) {
+                    setCurrentSetIndex(prev => prev - 1);
+                  } else if (onBack) {
+                    onBack();
+                  }
+                }}
+                canBack={currentSetIndex > 0 || !!onBack}
+                onShuffle={handleShuffle}
+                onSkip={handleSkip}
+                onNext={handleNextQuiz}
+                canNext={completedSentences.size === activeSentences.length}
+              />
             </motion.div>
           ) : (
             /* Completion screen */
