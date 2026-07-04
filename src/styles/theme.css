@@ -235,6 +235,7 @@
   outline-offset: 4px;
   transition: filter 250ms;
   display: inline-block;
+  border-radius: 16px;
 }
 
 .pushable .shadow-layer {
@@ -270,7 +271,6 @@
   padding-top: 12px;
   padding-bottom: 12px;
   border-radius: 16px;
-  color: white;
   will-change: transform;
   transform: translateY(-4px);
   transition: transform 600ms cubic-bezier(0.3, 0.7, 0.4, 1);

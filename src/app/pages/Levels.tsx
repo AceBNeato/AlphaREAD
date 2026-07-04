@@ -21,6 +21,7 @@ const levelColors = [
     bg: "from-[#58CC02] to-[#46a302]",
     border: "border-[#58CC02]",
     borderDark: "border-[#3c8c01]",
+    bgDark: "bg-[#3c8c01]",
     light: "#e8f9d4",
     text: "#58CC02",
   },
@@ -28,6 +29,7 @@ const levelColors = [
     bg: "from-[#1CB0F6] to-[#0a8ed4]",
     border: "border-[#1CB0F6]",
     borderDark: "border-[#0979b5]",
+    bgDark: "bg-[#0979b5]",
     light: "#d4f1ff",
     text: "#1CB0F6",
   },
@@ -35,6 +37,7 @@ const levelColors = [
     bg: "from-[#FF9600] to-[#e08000]",
     border: "border-[#FF9600]",
     borderDark: "border-[#b86800]",
+    bgDark: "bg-[#b86800]",
     light: "#fff2d4",
     text: "#FF9600",
   },
@@ -42,6 +45,7 @@ const levelColors = [
     bg: "from-[#CE82FF] to-[#a855f7]",
     border: "border-[#CE82FF]",
     borderDark: "border-[#883fba]",
+    bgDark: "bg-[#883fba]",
     light: "#f3e8ff",
     text: "#a855f7",
   },
@@ -49,6 +53,7 @@ const levelColors = [
     bg: "from-[#FF4B8A] to-[#e0336e]",
     border: "border-[#FF4B8A]",
     borderDark: "border-[#b51e4f]",
+    bgDark: "bg-[#b51e4f]",
     light: "#ffe4ef",
     text: "#e0336e",
   },
@@ -56,6 +61,7 @@ const levelColors = [
     bg: "from-[#7C3AED] to-[#6d28d9]",
     border: "border-[#7C3AED]",
     borderDark: "border-[#5b21b6]",
+    bgDark: "bg-[#5b21b6]",
     light: "#f3e8ff",
     text: "#7C3AED",
   },
@@ -161,7 +167,7 @@ export default function Levels() {
                         onClick={() => showAlert("Under Development 🚧", "This level is currently being customized for the new Tagalog curriculum.<br><br>Please check back later!", "info")}
                         className="w-full"
                         frontClassName={`bg-gradient-to-r ${colors.bg} text-white font-bold py-4`}
-                        edgeClassName={colors.borderDark.replace('border-', 'bg-')}
+                        edgeClassName={colors.bgDark}
                       >
                         Start Learning
                       </PushableButton>
@@ -171,7 +177,7 @@ export default function Levels() {
                           as="div"
                           className="w-full"
                           frontClassName={`bg-gradient-to-r ${colors.bg} text-white font-bold py-4`}
-                          edgeClassName={colors.borderDark.replace('border-', 'bg-')}
+                          edgeClassName={colors.bgDark}
                         >
                           Start Learning
                         </PushableButton>

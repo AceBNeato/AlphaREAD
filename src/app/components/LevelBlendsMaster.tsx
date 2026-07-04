@@ -27,7 +27,7 @@ export function LevelBlendsMaster({ levelId, accent }: LevelBlendsMasterProps) {
   const { BLENDS_DATA } = useCurriculum();
   
   const availableCategories = CATEGORIES.filter(c => 
-    BLENDS_DATA.some(d => d.name === c.id)
+    BLENDS_DATA.some((d: any) => d.name === c.id)
   );
 
   const [selectedCategory, setSelectedCategory] = useState<BlendCategoryName | null>(null);

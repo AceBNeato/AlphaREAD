@@ -57,12 +57,7 @@ function LevelCVCPreview({
   const handleShuffle = () => setOrder([...order].sort(() => Math.random() - 0.5));
 
   return (
-    <motion.div
-      initial={{ opacity: 0, x: 50 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: -50 }}
-      className="flex flex-col w-full h-full"
-    >
+    <div className="flex flex-col w-full h-full">
       <div className="flex-1 min-h-0 overflow-y-auto w-full flex flex-col items-center">
         <div className="w-full max-w-4xl mx-auto px-15 py-4 text-center flex-1">
           <p className="text-gray-600 dark:text-gray-300 text-base sm:text-lg font-bold mt-2 mb-8 block">
@@ -84,7 +79,6 @@ function LevelCVCPreview({
                   <PushableButton
                     as="div"
                     isTile
-                    disabled={!isReview}
                     onClick={() => {
                       if (isReview) {
                         const audioPath = `${(import.meta as any).env.BASE_URL}audio/cvc-audio/cvc-${word.toLowerCase()}.mp3`;
@@ -94,7 +88,7 @@ function LevelCVCPreview({
                         });
                       }
                     }}
-                    className="w-full aspect-square flex items-center justify-center"
+                    className={`w-full aspect-square flex items-center justify-center ${!isReview ? 'cursor-pointer' : ''}`}
                     frontStyle={{
                       background: 'linear-gradient(135deg, #FF9600 0%, #e08000 100%)',
                     }}
@@ -119,7 +113,7 @@ function LevelCVCPreview({
         onShuffle={handleShuffle}
         onNext={onComplete}
       />
-    </motion.div>
+    </div>
   );
 }
 
@@ -329,7 +323,7 @@ export function LevelCVCMaster({ levelId, accent }: LevelCVCMasterProps) {
 
   return (
     <div className="h-screen overflow-hidden flex flex-col bg-gradient-to-br from-green-50 via-blue-50 to-purple-50 dark:bg-none dark:bg-[#0d141c]">
-      <div className="shrink-0 z-50 bg-white/80 dark:bg-[#0d141c]/80 backdrop-blur-md px-4 py-3 shadow-sm">
+      <div className="shrink-0 z-50 px-4 py-3 border-b border-gray-200 dark:border-gray-800">
         <div className="max-w-4xl mx-auto flex items-center gap-3 sm:gap-5 w-full">
           <Button variant="ghost" size="sm" onClick={handleGoBack} className="rounded-full p-2 h-auto text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 flex items-center gap-1">
             <ArrowLeft className="w-7 h-7 sm:w-8 sm:h-8 stroke-[3]" />
@@ -359,8 +353,19 @@ export function LevelCVCMaster({ levelId, accent }: LevelCVCMasterProps) {
           </div>
         </div>
       </div>
-      <div className="flex-1 min-h-0 overflow-y-auto w-full flex flex-col">
-        {content}
+      <div className="flex-1 min-h-0 overflow-hidden w-full flex flex-col">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={currentStep}
+            initial={{ opacity: 0, x: 50 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -50 }}
+            transition={{ duration: 0.3 }}
+            className="flex flex-col w-full h-full"
+          >
+            {content}
+          </motion.div>
+        </AnimatePresence>
       </div>
     </div>
   );

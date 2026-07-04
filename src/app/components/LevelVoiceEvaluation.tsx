@@ -3,6 +3,7 @@ import { useNavigate } from "react-router";
 import { Mic, Home, ArrowRight, ArrowLeft, Sparkles, CheckCircle2, XCircle, MicOff, RotateCcw, AlertCircle, Volume2, Shuffle, Loader2, SkipForward, FastForward, X } from "lucide-react";
 import { confirmAction } from "../utils/alerts";
 import { Button } from "./ui/button";
+import { PushableButton } from "./ui/PushableButton";
 import { shuffle } from "../data/levels";
 import { useCurriculum } from "../hooks/useCurriculum";
 import { motion, AnimatePresence } from "motion/react";
@@ -298,7 +299,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
 
       <div className="flex-grow w-full flex flex-col min-h-0">
         <div className="flex-1 min-h-0 overflow-y-auto w-full">
-          <div className={`w-full flex flex-col justify-center min-h-full ${isSubPhase ? 'max-w-5xl' : 'max-w-2xl'} mx-auto px-4 py-4`}>
+          <div className={`w-full flex flex-col justify-center min-h-full ${isSubPhase ? 'max-w-5xl' : 'max-w-2xl'} mx-auto px-15 py-4`}>
 
             {!(window as any).SpeechRecognition && !(window as any).webkitSpeechRecognition && (
               <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 text-amber-800 text-sm flex items-center gap-3 shrink-0">
@@ -338,14 +339,26 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
 
                         return (
                           <div key={w} className={`flex items-center justify-between ${batchWords.length >= 10 ? 'p-2 sm:p-3' : 'p-4'} rounded-2xl transition-all ${isDone ? 'bg-green-50 dark:bg-green-900/20' : 'bg-white dark:bg-gray-800'} shadow-sm border-2 ${isCurrent ? 'border-pink-400 shadow-md' : isDone ? 'border-green-200' : 'border-transparent'}`}>
-                            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-3 min-w-0 flex-1">
+                            <div className="flex flex-row items-center gap-3 min-w-0 flex-1">
                               <div className="relative shrink-0 flex items-center justify-center pt-1 sm:pt-0">
-                                <button
+                                <PushableButton
+                                  as="button"
+                                  isTile
                                   onClick={() => handlePlayTTS(w)}
-                                  className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${isDone ? 'bg-white/50 hover:bg-white dark:bg-black/20 dark:hover:bg-black/40 text-green-700 dark:text-green-400 cursor-pointer shadow-sm active:translate-y-1' : 'bg-blue-100 hover:bg-blue-200 dark:bg-blue-900/30 dark:hover:bg-blue-800/50 text-blue-600 dark:text-blue-400 cursor-pointer shadow-sm active:translate-y-1'} ${idx === 0 && !hasClickedTTS && !isDone ? 'ring-2 ring-blue-400 ring-offset-1 animate-pulse' : ''}`}
+                                  className={`w-12 h-12 flex-shrink-0 transition-all ${idx === 0 && !hasClickedTTS && !isDone ? 'ring-2 ring-blue-400 ring-offset-2 animate-pulse' : ''}`}
+                                  frontClassName={
+                                    isDone
+                                      ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400"
+                                      : "bg-[#1cb0f6] text-white"
+                                  }
+                                  edgeClassName={
+                                    isDone
+                                      ? "bg-green-200 dark:bg-green-900"
+                                      : "bg-[#0979b5]"
+                                  }
                                 >
-                                  <Volume2 className="w-4 h-4" />
-                                </button>
+                                  <Volume2 className="w-5 h-5" />
+                                </PushableButton>
                                 {idx === 0 && !hasClickedTTS && !isDone && (
                                   <motion.div
                                     initial={{ opacity: 0, y: 10, scale: 0.8 }}

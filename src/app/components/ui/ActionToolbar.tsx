@@ -32,7 +32,7 @@ export function ActionToolbar({
   const isFullToolbar = !!onReset || !!onSkip;
 
   return (
-    <div className="w-full shrink-0 bg-white/80 dark:bg-[#0d141c]/80 backdrop-blur-md py-8 px-10 mt-auto">
+    <div className="w-full shrink-0 py-8 px-10 mt-auto border-t border-gray-200 dark:border-gray-800">
       <div className={`flex justify-center items-center w-full gap-2 sm:gap-4 ${isFullToolbar ? 'max-w-xl' : 'max-w-md'} mx-auto`}>
         {onBack && (
           <PushableButton

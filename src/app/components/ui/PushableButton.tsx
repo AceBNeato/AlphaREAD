@@ -38,7 +38,7 @@ export function PushableButton({
     >
       <span className="shadow-layer" />
       <span className={cn("edge-layer", edgeClassName)} style={edgeStyle} />
-      <span className={cn("front-layer text-lg font-bold select-none", frontClassName)} style={frontStyle}>
+      <span className={cn("front-layer text-lg font-bold text-white select-none", frontClassName)} style={frontStyle}>
         {children}
       </span>
     </Component>

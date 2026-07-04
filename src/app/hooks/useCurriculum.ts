@@ -2,8 +2,24 @@ import { useLanguage } from "../context/LanguageContext";
 import * as englishData from "../data/levels";
 import * as tagalogData from "../data/tagalog_levels";
 import { BLENDS_DATA as englishBlendsData, BLENDS_SENTENCES as englishBlendsSentences } from "../data/blends";
+import { Level, Letter, SyllablePattern, SyllableTarget } from "../data/levels";
 
-export function useCurriculum() {
+export interface Curriculum {
+  levels: Level[];
+  allLetters: Letter[];
+  getPhoneticPronunciation: (syllable: string, pattern: SyllablePattern) => string;
+  getLetterPhonetic: (letter: string) => string;
+  generateLetterPairs: () => [string, string][];
+  generateSyllableTargets: (patterns: SyllablePattern[], count?: number) => SyllableTarget[];
+  VOWELS: string[];
+  CONSONANTS: string[];
+  sentences: string[];
+  CVC_WORDS: string[];
+  BLENDS_DATA: any;
+  BLENDS_SENTENCES: string[];
+}
+
+export function useCurriculum(): Curriculum {
   const { language } = useLanguage();
 
   if (language === "tl") {
