@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router";
 import { LevelSyllableQuiz } from "./LevelSyllableQuiz";
 import { supabase } from "../../lib/supabase";
-import {Home, CheckCircle2, X, ArrowLeft, ArrowRight} from "lucide-react";
+import { Home, CheckCircle2, X, ArrowLeft, ArrowRight } from "lucide-react";
 import { Button } from "./ui/button";
 import { motion, AnimatePresence } from "motion/react";
 import { Confetti } from "./ui/Confetti";
@@ -148,9 +148,9 @@ export function LevelSyllablesMaster({ levelId, accent }: LevelSyllablesMasterPr
                   key={cat.id}
                   onClick={() => handleSelect(cat.id as "VC" | "CV")}
                   className="w-full relative overflow-hidden group rounded-3xl p-6 text-left transition-all bg-white dark:bg-gray-800 border-4 border-[color:var(--border-color)] hover:border-[color:var(--hover-color)] shadow-md hover:shadow-xl hover:-translate-y-1"
-                  style={{ 
+                  style={{
                     "--border-color": `${cat.color}40`,
-                    "--hover-color": cat.color 
+                    "--hover-color": cat.color
                   } as React.CSSProperties}
                 >
                   <div className="flex justify-between items-center relative z-10">
@@ -163,7 +163,7 @@ export function LevelSyllablesMaster({ levelId, accent }: LevelSyllablesMasterPr
                       </p>
                     </div>
                   </div>
-                  <div 
+                  <div
                     className="absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity"
                     style={{ background: `linear-gradient(135deg, ${cat.color}, ${cat.darkColor})` }}
                   />

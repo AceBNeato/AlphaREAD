@@ -121,7 +121,7 @@ export function TypePhase({
 
           {/* Middle Section: Centered Interactive Area */}
           <div className="w-full py-4 shrink-0">
-            <div className="flex flex-wrap justify-center gap-2 sm:gap-3 mb-6 max-w-xl mx-auto px-2">
+            <div className="flex flex-wrap justify-center gap-2 sm:gap-3 mb-6 max-w-xl mx-auto px-6">
               {[...typeOrder].sort().map((item) => (
                 <PushableButton
                   as="span"
