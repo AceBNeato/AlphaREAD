@@ -41,6 +41,7 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
   const [showConfetti, setShowConfetti] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [hasClickedTTS, setHasClickedTTS] = useState(false);
+  const [hasClickedMic, setHasClickedMic] = useState(false);
 
   const evaluationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -196,82 +197,91 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
         transition={{ duration: 0.3 }}
         className={`flex flex-col overflow-hidden ${isSubPhase ? 'flex-1 w-full h-full' : 'h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 dark:bg-none dark:bg-[#0d141c]'}`}
       >
-      <Confetti active={showConfetti} />
+        <Confetti active={showConfetti} />
 
-      {/* Listening Modal */}
-      <AnimatePresence>
-        {evaluatingSentenceId && !showConfetti && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4"
-          >
+        {/* Listening Modal */}
+        <AnimatePresence>
+          {evaluatingSentenceId && !showConfetti && (
             <motion.div
-              initial={{ scale: 0.9, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.9, y: 20 }}
-              className="bg-white dark:bg-gray-800 rounded-3xl p-6 sm:p-8 max-w-sm w-full text-center shadow-2xl border-4"
-              style={{ borderColor: accent.primary }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4"
             >
-              <div className="flex flex-col items-center justify-center gap-2 mb-6">
-                <div className="flex items-center justify-center gap-2">
-                  <Mic className="w-6 h-6 text-pink-500 animate-pulse" />
-                  <h3 className="text-2xl font-bold tracking-tight text-pink-500 animate-pulse">Listening...</h3>
+              <motion.div
+                initial={{ scale: 0.9, y: 20 }}
+                animate={{ scale: 1, y: 0 }}
+                exit={{ scale: 0.9, y: 20 }}
+                className="bg-white dark:bg-gray-800 rounded-3xl p-6 sm:p-8 max-w-sm w-full text-center shadow-2xl border-4"
+                style={{ borderColor: accent.primary }}
+              >
+                <div className="flex flex-col items-center justify-center gap-2 mb-6">
+                  <div className="flex items-center justify-center gap-2">
+                    <Mic className="w-6 h-6 text-pink-500 animate-pulse" />
+                    <h3 className="text-2xl font-bold tracking-tight text-pink-500 animate-pulse">Listening...</h3>
+                  </div>
+                  <AudioVisualizer isListening={!!evaluatingSentenceId} isMobile={isMobile} />
                 </div>
-                <AudioVisualizer isListening={!!evaluatingSentenceId} isMobile={isMobile} />
-              </div>
-              <p className="text-gray-500 dark:text-gray-400 mb-6 font-medium">Please read the sentence clearly.</p>
+                <p className="text-gray-500 dark:text-gray-400 mb-6 font-medium">Please read the sentence clearly.</p>
 
-              <div className="bg-gray-50 dark:bg-gray-900 rounded-2xl p-5 min-h-[100px] flex flex-col items-center justify-center border border-gray-100 dark:border-gray-800 shadow-inner">
-                <span className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Target</span>
-                <span className="text-3xl font-extrabold mb-4 tracking-wider leading-snug" style={{ color: accent.primary }}>{evaluatingSentenceId}</span>
+                <div className="bg-gray-50 dark:bg-gray-900 rounded-2xl p-5 min-h-[100px] flex flex-col items-center justify-center border border-gray-100 dark:border-gray-800 shadow-inner">
+                  <span className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Target</span>
+                  <span className="text-2xl sm:text-3xl font-extrabold mb-4 leading-snug" style={{ color: accent.primary }}>{evaluatingSentenceId}</span>
 
-                <div className="w-full h-px bg-gray-200 dark:bg-gray-700 my-2" />
+                  <div className="w-full h-px bg-gray-200 dark:bg-gray-700 my-2" />
 
-                <span className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1 mt-2">Heard</span>
-                <span className="text-3xl font-extrabold tracking-wider leading-snug text-gray-700 dark:text-gray-300 min-h-[30px] flex items-center justify-center w-full break-words">
-                  {sentenceTranscriptsMap[evaluatingSentenceId] ? `"${sentenceTranscriptsMap[evaluatingSentenceId]}"` : <Loader2 className="w-5 h-5 text-gray-400 animate-spin" />}
-                </span>
-              </div>
+                  <span className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1 mt-2">Heard</span>
+                  <span className="text-2xl sm:text-3xl font-extrabold leading-snug text-gray-700 dark:text-gray-300 min-h-[30px] flex items-center justify-center w-full break-words">
+                    {sentenceTranscriptsMap[evaluatingSentenceId] ? `"${sentenceTranscriptsMap[evaluatingSentenceId]}"` : <Loader2 className="w-5 h-5 text-gray-400 animate-spin" />}
+                  </span>
+                </div>
 
-              {sentenceFeedbackMap[evaluatingSentenceId] === 'wrong' && (
-                <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} className="mt-5 text-red-500 font-bold flex items-center justify-center gap-2 bg-red-50 dark:bg-red-900/20 py-2 px-4 rounded-xl">
-                  <AlertCircle className="w-5 h-5" /> Let's try again!
-                </motion.div>
-              )}
-              {sentenceFeedbackMap[evaluatingSentenceId] === 'correct' && (
-                <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} className="mt-5 text-green-500 font-bold flex items-center justify-center gap-2 bg-green-50 dark:bg-green-900/20 py-2 px-4 rounded-xl">
-                  <CheckCircle2 className="w-5 h-5" /> Perfect!
-                </motion.div>
-              )}
+                {sentenceFeedbackMap[evaluatingSentenceId] === 'wrong' && (
+                  <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} className="mt-5 text-red-500 font-bold flex items-center justify-center gap-2 bg-red-50 dark:bg-red-900/20 py-2 px-4 rounded-xl">
+                    <AlertCircle className="w-5 h-5" /> Let's try again!
+                  </motion.div>
+                )}
+                {sentenceFeedbackMap[evaluatingSentenceId] === 'correct' && (
+                  <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} className="mt-5 text-green-500 font-bold flex items-center justify-center gap-2 bg-green-50 dark:bg-green-900/20 py-2 px-4 rounded-xl">
+                    <CheckCircle2 className="w-5 h-5" /> Perfect!
+                  </motion.div>
+                )}
+                <div className="mt-6 flex gap-3">
+                  <Button
+                    variant="outline"
+                    onClick={() => setEvaluatingSentenceId(null)}
+                    className="flex-1 rounded-xl font-bold text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 border-2"
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </motion.div>
             </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          )}
+        </AnimatePresence>
 
-      {/* Header */}
-      {!isSubPhase && (
-        <div className="shrink-0 z-10 px-4 py-3 border-b border-gray-200 dark:border-gray-800">
-          <div className="max-w-4xl mx-auto flex items-center justify-between gap-3 w-full">
-            <Button variant="ghost" size="sm" onClick={handleGoBack} className="rounded-full flex-shrink-0 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
-              <X className="w-7 h-7 sm:w-8 sm:h-8 stroke-[3]" /> <span className="hidden sm:inline font-bold uppercase tracking-wider text-sm ml-1">EXIT</span>
-            </Button>
-            <h2 className="text-lg font-bold tracking-tight text-center flex-1" style={{ color: accent.primary }}>
-              {levelId === 3 ? "CVC Master - Read the Sentences" : `Sentences Quiz (Set ${currentSetIndex + 1}/${totalSets}) Read the Sentences`}
-            </h2>
-            <span className="text-sm font-bold" style={{ color: accent.primary }}>
-              Step {completedSentences.size}/{activeSentences.length}
-            </span>
+        {/* Header */}
+        {!isSubPhase && (
+          <div className="shrink-0 z-10 px-4 py-3 border-b border-gray-200 dark:border-gray-800">
+            <div className="max-w-4xl mx-auto flex items-center justify-between gap-3 w-full">
+              <Button variant="ghost" size="sm" onClick={handleGoBack} className="rounded-full flex-shrink-0 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                <X className="w-7 h-7 sm:w-8 sm:h-8 stroke-[3]" /> <span className="hidden sm:inline font-bold uppercase tracking-wider text-sm ml-1">EXIT</span>
+              </Button>
+              <h2 className="text-lg font-bold tracking-tight text-center flex-1" style={{ color: accent.primary }}>
+                {levelId === 3 ? "CVC Master - Read the Sentences" : `Sentences Quiz (Set ${currentSetIndex + 1}/${totalSets}) Read the Sentences`}
+              </h2>
+              <span className="text-sm font-bold" style={{ color: accent.primary }}>
+                Step {completedSentences.size}/{activeSentences.length}
+              </span>
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Content */}
-      <div className={`w-full max-w-5xl mx-auto px-15 flex-1 min-h-0 overflow-y-auto overflow-x-hidden flex flex-col ${isSubPhase ? 'py-2' : 'py-4'}`}>
-        {!showConfetti ? (
-          <div className="flex flex-col justify-between w-full flex-1">
-            {/* Top Section: Instructions */}
+        {/* Content */}
+        <div className={`w-full max-w-5xl mx-auto px-15 flex-1 min-h-0 overflow-y-auto overflow-x-hidden flex flex-col ${isSubPhase ? 'py-2' : 'py-4'}`}>
+          {!showConfetti ? (
+            <div className="flex flex-col justify-between w-full flex-1">
+              {/* Top Section: Instructions */}
               <div className="text-center shrink-0">
                 <p className="text-gray-800 dark:text-gray-200 text-base sm:text-lg font-bold mt-2 block">
                   Read the sentences out loud into the microphone. (Batch {currentSetIndex + 1} of {totalSets})
@@ -332,7 +342,7 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
                                     repeatType: "reverse",
                                     duration: 1.5,
                                   }}
-                                  className="absolute -top-12 left-1/2 -translate-x-1/2 bg-indigo-500 text-white text-[10px] font-bold py-1 px-3 rounded-full shadow-lg whitespace-nowrap pointer-events-none z-10"
+                                  className="absolute -top-10 left-1/2 -translate-x-1/2 bg-indigo-500 text-white text-[10px] font-bold py-1 px-3 rounded-full shadow-lg whitespace-nowrap pointer-events-none z-10"
                                 >
                                   Click to listen!
                                   <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-indigo-500 rotate-45" />
@@ -340,7 +350,7 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
                               )}
                             </div>
                             <span
-                              className="text-xl font-bold text-left leading-snug"
+                              className="text-sm sm:text-md font-semibold text-left leading-snug"
                               style={{ color: isDone || vFeedback === "correct" ? "#58CC02" : accent.primary }}
                             >
                               {s}
@@ -354,6 +364,7 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
                               as="button"
                               isTile
                               onClick={() => {
+                                setHasClickedMic(true);
                                 if (isEval) {
                                   setEvaluatingSentenceId(null);
                                 } else if (!isDone) {
@@ -368,7 +379,7 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
                                 isDone || vFeedback === "correct"
                                   ? "bg-green-500 text-white"
                                   : isEval
-                                    ? "bg-red-500 text-white shadow-lg"
+                                    ? "bg-red-500 text-white"
                                     : vFeedback === "wrong"
                                       ? "bg-red-400 text-white"
                                       : "bg-gradient-to-br from-pink-500 to-rose-500 text-white"
@@ -390,87 +401,95 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
                                 </>
                               )}
                               <span className="relative z-10 flex items-center justify-center h-full w-full">
-                                {isDone || vFeedback === "correct"
-                                  ? <CheckCircle2 className="w-6 h-6" />
-                                  : vFeedback === "wrong"
-                                    ? <XCircle className="w-6 h-6" />
-                                    : isEval
-                                      ? <MicOff className="w-5 h-5 animate-bounce" />
-                                      : <Mic className="w-5 h-5" />
-                                }
+                                {isDone || vFeedback === "correct" ? <CheckCircle2 className="w-6 h-6" /> : vFeedback === "wrong" ? <XCircle className="w-6 h-6" /> : isEval ? <MicOff className="w-5 h-5 animate-bounce" /> : <Mic className="w-5 h-5" />}
                               </span>
                             </PushableButton>
+                            {idx === 0 && !hasClickedMic && (!isDone || vFeedback !== "correct") && (
+                              <motion.div
+                                initial={{ opacity: 0, y: 10, scale: 0.8 }}
+                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                transition={{
+                                  repeat: Infinity,
+                                  repeatType: "reverse",
+                                  duration: 1.5,
+                                }}
+                                className="absolute -top-12 left-1/2 -translate-x-1/2 bg-pink-500 text-white text-[10px] font-bold py-1 px-3 rounded-full shadow-lg whitespace-nowrap pointer-events-none z-10"
+                              >
+                                Tap to speak!
+                                <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-pink-500 rotate-45" />
+                              </motion.div>
+                            )}
                           </div>
                         </div>
                       );
                     })}
                   </div>
                 </div>            </div>
-          </div>
-        ) : (
-          /* Completion screen */
-          <div className="text-center py-12 max-w-md mx-auto my-auto">
-            <motion.div
-              animate={{ rotate: [0, 10, -10, 0] }}
-              transition={{ repeat: Infinity, duration: 2 }}
-              className="inline-block mb-6"
-            >
-              <Sparkles className="w-20 h-20 text-[#FFC800]" />
-            </motion.div>
-            <h3 className="text-3xl font-black mb-4" style={{ color: accent.primary }}>
-              {isFinalSet ? "Level Mastered! 🎉" : "Set Complete! ⭐"}
-            </h3>
-            <p className="text-gray-600 dark:text-gray-400 mb-8 leading-relaxed">
-              {isFinalSet
-                ? `You successfully read all ${sentences.length} sentences out loud! Awesome job!`
-                : "You successfully read 6 sentences! Ready for the next set?"}
-            </p>
+            </div>
+          ) : (
+            /* Completion screen */
+            <div className="text-center py-12 max-w-md mx-auto my-auto">
+              <motion.div
+                animate={{ rotate: [0, 10, -10, 0] }}
+                transition={{ repeat: Infinity, duration: 2 }}
+                className="inline-block mb-6"
+              >
+                <Sparkles className="w-20 h-20 text-[#FFC800]" />
+              </motion.div>
+              <h3 className="text-3xl font-black mb-4" style={{ color: accent.primary }}>
+                {isFinalSet ? "Level Mastered! 🎉" : "Set Complete! ⭐"}
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-8 leading-relaxed">
+                {isFinalSet
+                  ? `You successfully read all ${sentences.length} sentences out loud! Awesome job!`
+                  : "You successfully read 6 sentences! Ready for the next set?"}
+              </p>
 
-            {isFinalSet ? (
-              <Button
-                disabled={isSaving}
-                onClick={handleFinish}
-                size="lg"
-                className="rounded-2xl px-10 py-6 text-lg text-white font-bold w-full shadow-xl animate-bounce"
-                style={{ background: `linear-gradient(135deg, ${accent.primary} 0%, ${accent.dark} 100%)` }}
-              >
-                {isSaving ? "Saving..." : isSubPhase ? "Finish Level 3 🏆" : "Back to Levels"}
-              </Button>
-            ) : (
-              <Button
-                onClick={() => {
-                  setCurrentSetIndex(prev => prev + 1);
-                  setShowConfetti(false);
-                }}
-                size="lg"
-                className="rounded-2xl px-10 py-6 text-lg text-white font-bold w-full shadow-xl animate-bounce"
-                style={{ background: `linear-gradient(135deg, ${accent.primary} 0%, ${accent.dark} 100%)` }}
-              >
-                Start Next 6 Sentences <ArrowRight className="ml-2 w-5 h-5" />
-              </Button>
-            )}
+              {isFinalSet ? (
+                <Button
+                  disabled={isSaving}
+                  onClick={handleFinish}
+                  size="lg"
+                  className="rounded-2xl px-10 py-6 text-lg text-white font-bold w-full shadow-xl animate-bounce"
+                  style={{ background: `linear-gradient(135deg, ${accent.primary} 0%, ${accent.dark} 100%)` }}
+                >
+                  {isSaving ? "Saving..." : isSubPhase ? "Finish Level 3 🏆" : "Back to Levels"}
+                </Button>
+              ) : (
+                <Button
+                  onClick={() => {
+                    setCurrentSetIndex(prev => prev + 1);
+                    setShowConfetti(false);
+                  }}
+                  size="lg"
+                  className="rounded-2xl px-10 py-6 text-lg text-white font-bold w-full shadow-xl animate-bounce"
+                  style={{ background: `linear-gradient(135deg, ${accent.primary} 0%, ${accent.dark} 100%)` }}
+                >
+                  Start Next 6 Sentences <ArrowRight className="ml-2 w-5 h-5" />
+                </Button>
+              )}
+            </div>
+          )}
+        </div>
+
+        {!showConfetti && (
+          <div className="w-full shrink-0 mt-auto">
+            <ActionToolbar
+              onBack={() => {
+                if (currentSetIndex > 0) {
+                  setCurrentSetIndex(prev => prev - 1);
+                } else if (onBack) {
+                  onBack();
+                }
+              }}
+              canBack={currentSetIndex > 0 || !!onBack}
+              onShuffle={handleShuffle}
+              onSkip={handleSkip}
+              onNext={handleNextQuiz}
+              canNext={completedSentences.size === activeSentences.length}
+            />
           </div>
         )}
-      </div>
-
-      {!showConfetti && (
-        <div className="w-full shrink-0 mt-auto">
-          <ActionToolbar
-            onBack={() => {
-              if (currentSetIndex > 0) {
-                setCurrentSetIndex(prev => prev - 1);
-              } else if (onBack) {
-                onBack();
-              }
-            }}
-            canBack={currentSetIndex > 0 || !!onBack}
-            onShuffle={handleShuffle}
-            onSkip={handleSkip}
-            onNext={handleNextQuiz}
-            canNext={completedSentences.size === activeSentences.length}
-          />
-        </div>
-      )}
       </motion.div>
     </AnimatePresence>
   );

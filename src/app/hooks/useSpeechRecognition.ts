@@ -462,8 +462,14 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, singleSho
         }
       } // End evaluation block
 
+      // Determine if the target is a multi-word phrase
+      const isPhrase = evaluatingWord.toUpperCase().replace(/[.,!?]/g, "").trim().includes(" ");
+
       // If we found a success, trigger immediately and stop the mic!
-      if (foundCorrect || (foundClose && event.results[event.results.length - 1].isFinal)) {
+      // For sentences, we DO NOT exit early on "close" matches, so the user can finish speaking.
+      const shouldEarlyExit = foundCorrect || (!isPhrase && foundClose && event.results[event.results.length - 1].isFinal);
+
+      if (shouldEarlyExit) {
         hasMatched = true; // Block future onresult events
         if (DEBUG) console.log(`[AlphabetGO Debug] ✅ Match successful! Best Status: ${bestStatus}, Best Transcript: "${bestTranscript}"`);
         if (timeoutRef.current) clearTimeout(timeoutRef.current);
