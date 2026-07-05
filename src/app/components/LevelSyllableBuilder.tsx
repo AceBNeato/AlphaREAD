@@ -316,100 +316,100 @@ export function LevelSyllableBuilder({
         <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden w-full">
           <div className={`w-full max-w-2xl mx-auto px-15 flex flex-col justify-center min-h-full ${embedded ? "py-2" : "py-6"}`}>
             <Confetti active={showConfetti} />
-          {/* SUB-LEVEL PICKER — shown when Level 2 has both VC and CV */}
-          {!selectedSubPattern && patterns.length > 1 ? (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-center my-auto w-full"
-            >
-              <h2 className="text-2xl mb-2 font-bold" style={{ color: accent.primary }}>
-                {levelId === 3 ? "CVC Master - Word Builder" : "Syllable Builder"}
-              </h2>
-              <p className="text-gray-800 dark:text-gray-200 text-base sm:text-lg font-bold mt-6 mb-8 block">
-                Choose which pattern to practice!
-              </p>
+            {/* SUB-LEVEL PICKER — shown when Level 2 has both VC and CV */}
+            {!selectedSubPattern && patterns.length > 1 ? (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="text-center my-auto w-full"
+              >
+                <h2 className="text-2xl mb-2 font-bold" style={{ color: accent.primary }}>
+                  {levelId === 3 ? "CVC Master - Word Builder" : "Syllable Builder"}
+                </h2>
+                <p className="text-gray-800 dark:text-gray-200 text-base sm:text-lg font-bold mt-6 mb-8 block">
+                  Choose which pattern to practice!
+                </p>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {patterns.map((p, i) => (
-                  <motion.button
-                    key={p}
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: i * 0.1 }}
-                    onClick={() => {
-                      setSelectedSubPattern(p);
-                      setTargets(generateSyllableTargets([p], 10));
-                      setCurrentIndex(0);
-                      setCompletedTargets(new Set());
-                      setSelectedLetters([]);
-                    }}
-                    className="p-8 rounded-3xl border-3 shadow-lg hover:shadow-xl transition-all hover:scale-[1.03] active:translate-y-1 bg-white dark:bg-gray-800 cursor-pointer"
-                    style={{ borderColor: patternColors[p] }}
-                  >
-                    <div
-                      className="w-16 h-16 rounded-2xl flex items-center justify-center text-white mx-auto mb-4"
-                      style={{ background: `linear-gradient(135deg, ${patternColors[p]}, ${accent.dark})` }}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {patterns.map((p, i) => (
+                    <motion.button
+                      key={p}
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: i * 0.1 }}
+                      onClick={() => {
+                        setSelectedSubPattern(p);
+                        setTargets(generateSyllableTargets([p], 10));
+                        setCurrentIndex(0);
+                        setCompletedTargets(new Set());
+                        setSelectedLetters([]);
+                      }}
+                      className="p-8 rounded-3xl border-3 shadow-lg hover:shadow-xl transition-all hover:scale-[1.03] active:translate-y-1 bg-white dark:bg-gray-800 cursor-pointer"
+                      style={{ borderColor: patternColors[p] }}
                     >
-                      <span className="text-2xl font-bold">2.{i + 1}</span>
-                    </div>
-                    <h3 className="text-xl mb-1 font-bold" style={{ color: patternColors[p] }}>
-                      {patternLabels[p]}
-                    </h3>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                      {p === "VC"
-                        ? "Build syllables like ab, im, ot"
-                        : p === "CV"
-                          ? "Build syllables like ba, mi, to"
-                          : "Build words like bat, mug, tip"}
-                    </p>
-                    <div className="mt-4">
-                      <span
-                        className="text-xs px-4 py-1.5 rounded-full text-white"
-                        style={{ background: patternColors[p] }}
+                      <div
+                        className="w-16 h-16 rounded-2xl flex items-center justify-center text-white mx-auto mb-4"
+                        style={{ background: `linear-gradient(135deg, ${patternColors[p]}, ${accent.dark})` }}
                       >
-                        65 Syllables
-                      </span>
-                    </div>
-                  </motion.button>
-                ))}
-              </div>
-            </motion.div>
-          ) : (
-            <>
-              {patterns.length > 1 && (
-                <div className="text-center mt-2 shrink-0">
-                  <button
-                    onClick={() => {
-                      setSelectedSubPattern(null);
-                      setTargets([]);
-                      setCurrentIndex(0);
-                      setCompletedTargets(new Set());
-                      setSelectedLetters([]);
-                      setFeedback(null);
-                    }}
-                    className="text-xs px-4 py-2 rounded-full border-2 border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all cursor-pointer font-bold shadow-sm active:translate-y-1"
-                  >
-                    ← Switch Pattern (VC / CV)
-                  </button>
+                        <span className="text-2xl font-bold">2.{i + 1}</span>
+                      </div>
+                      <h3 className="text-xl mb-1 font-bold" style={{ color: patternColors[p] }}>
+                        {patternLabels[p]}
+                      </h3>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        {p === "VC"
+                          ? "Build syllables like ab, im, ot"
+                          : p === "CV"
+                            ? "Build syllables like ba, mi, to"
+                            : "Build words like bat, mug, tip"}
+                      </p>
+                      <div className="mt-4">
+                        <span
+                          className="text-xs px-4 py-1.5 rounded-full text-white"
+                          style={{ background: patternColors[p] }}
+                        >
+                          65 Syllables
+                        </span>
+                      </div>
+                    </motion.button>
+                  ))}
                 </div>
-              )}
-
-              {!allDone && (
-                <div className="flex-grow flex flex-col justify-center w-full">
-                  {/* Top Section: Title / Instructions */}
+              </motion.div>
+            ) : (
+              <>
+                {patterns.length > 1 && (
                   <div className="text-center mt-2 shrink-0">
-                    <p className="text-gray-800 dark:text-gray-200 text-base sm:text-lg font-bold block">
-                      Listen to the sound and tap the letters to build it.
-                    </p>
-                    <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                      Syllable {currentIndex + 1} of {targets.length}
-                    </div>
+                    <button
+                      onClick={() => {
+                        setSelectedSubPattern(null);
+                        setTargets([]);
+                        setCurrentIndex(0);
+                        setCompletedTargets(new Set());
+                        setSelectedLetters([]);
+                        setFeedback(null);
+                      }}
+                      className="text-xs px-4 py-2 rounded-full border-2 border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all cursor-pointer font-bold shadow-sm active:translate-y-1"
+                    >
+                      ← Switch Pattern (VC / CV)
+                    </button>
                   </div>
+                )}
 
-                  {/* Middle Section: Centered Interactive builder */}
-                  <div className="w-full py-4 shrink-0 flex flex-col items-center justify-center">
-                    <div className="text-center w-full flex flex-col items-center">
+                {!allDone && (
+                  <div className="flex-grow flex flex-col justify-center w-full">
+                    {/* Top Section: Title / Instructions */}
+                    <div className="text-center mt-2 shrink-0">
+                      <p className="text-gray-800 dark:text-gray-200 text-base sm:text-lg font-bold block">
+                        Listen to the sound and tap the letters to build it.
+                      </p>
+                      <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                        Syllable {currentIndex + 1} of {targets.length}
+                      </div>
+                    </div>
+
+                    {/* Middle Section: Centered Interactive builder */}
+                    <div className="w-full py-4 shrink-0 flex flex-col items-center justify-center">
+                      <div className="text-center w-full flex flex-col items-center">
                         <div
                           className="inline-flex flex-col items-center gap-2 px-6 py-3 rounded-2xl shadow-lg mb-4"
                           style={{
@@ -503,86 +503,86 @@ export function LevelSyllableBuilder({
                             })}
                           </motion.div>
                         </div>
-                    </div>
+                      </div>
 
-                    {/* Letter Pool */}
-                    <div className="grid grid-cols-4 sm:grid-cols-6 gap-3 mb-4 w-full max-w-lg mx-auto">
-                      {letterPool.map((item, i) => {
-                        const timesInTarget = currentTarget.syllable
-                          .toUpperCase()
-                          .split("")
-                          .filter((ch) => ch === item.letter).length;
-                        const timesSelected = selectedLetters.filter(
-                          (l) => l === item.letter
-                        ).length;
+                      {/* Letter Pool */}
+                      <div className="grid grid-cols-4 sm:grid-cols-6 gap-3 mb-4 w-full max-w-lg mx-auto">
+                        {letterPool.map((item, i) => {
+                          const timesInTarget = currentTarget.syllable
+                            .toUpperCase()
+                            .split("")
+                            .filter((ch) => ch === item.letter).length;
+                          const timesSelected = selectedLetters.filter(
+                            (l) => l === item.letter
+                          ).length;
 
-                        const isVisuallySelected = timesInTarget > 0
-                          ? timesSelected >= timesInTarget
-                          : timesSelected > 0;
+                          const isVisuallySelected = timesInTarget > 0
+                            ? timesSelected >= timesInTarget
+                            : timesSelected > 0;
 
-                        const isDisabled =
-                          timesInTarget > 0 &&
-                          timesSelected >= timesInTarget &&
-                          selectedLetters.length < slotCount &&
-                          !feedback;
+                          const isDisabled =
+                            timesInTarget > 0 &&
+                            timesSelected >= timesInTarget &&
+                            selectedLetters.length < slotCount &&
+                            !feedback;
 
-                        return (
-                          <PushableButton
-                            as="button"
-                            isTile
-                            key={item.id}
-                            onClick={() =>
-                              !isDisabled && handleLetterClick(item.letter)
-                            }
-                            disabled={!!feedback || isDisabled}
-                            className={`aspect-square relative select-none w-full ${isVisuallySelected
-                              ? "opacity-30 pointer-events-none"
-                              : ""
-                              }`}
-                            frontStyle={{
-                              background:
-                                playingLetter === item.letter
-                                  ? "linear-gradient(135deg, #FFC800 0%, #FF9600 100%)"
-                                  : item.isVowel
-                                    ? "linear-gradient(135deg, #FF6B8A 0%, #FF4B8A 100%)"
-                                    : "linear-gradient(135deg, #1CB0F6 0%, #0a8ed4 100%)",
-                            }}
-                            edgeStyle={{
-                              backgroundColor:
-                                playingLetter === item.letter
-                                  ? "#d97e00"
-                                  : item.isVowel
-                                    ? "#C82A52"
-                                    : "#086CA5",
-                            }}
-                          >
-                            <span className="text-white text-2xl sm:text-3xl font-black drop-shadow-sm flex items-center justify-center">
-                              {item.letter.toUpperCase()}{item.letter.toLowerCase()}
-                            </span>
-                          </PushableButton>
-                        );
-                      })}
+                          return (
+                            <PushableButton
+                              as="button"
+                              isTile
+                              key={item.id}
+                              onClick={() =>
+                                !isDisabled && handleLetterClick(item.letter)
+                              }
+                              disabled={!!feedback || isDisabled}
+                              className={`aspect-square relative select-none w-full ${isVisuallySelected
+                                ? "opacity-30 pointer-events-none"
+                                : ""
+                                }`}
+                              frontStyle={{
+                                background:
+                                  playingLetter === item.letter
+                                    ? "linear-gradient(135deg, #FFC800 0%, #FF9600 100%)"
+                                    : item.isVowel
+                                      ? "linear-gradient(135deg, #FF6B8A 0%, #FF4B8A 100%)"
+                                      : "linear-gradient(135deg, #1CB0F6 0%, #0a8ed4 100%)",
+                              }}
+                              edgeStyle={{
+                                backgroundColor:
+                                  playingLetter === item.letter
+                                    ? "#d97e00"
+                                    : item.isVowel
+                                      ? "#C82A52"
+                                      : "#086CA5",
+                              }}
+                            >
+                              <span className="text-white text-2xl sm:text-3xl font-black drop-shadow-sm flex items-center justify-center">
+                                {item.letter.toUpperCase()}{item.letter.toLowerCase()}
+                              </span>
+                            </PushableButton>
+                          );
+                        })}
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
-            </>
-          )}
+                )}
+              </>
+            )}
+          </div>
         </div>
-      </div>
 
-      {/* Sticky Bottom Section: Navigation Controls */}
-      {selectedSubPattern && !allDone && (
-        <div className="w-full shrink-0 mt-auto">
-          <ActionToolbar
-            onBack={goPrev}
-            canBack={!(currentIndex === 0 && !onBack)}
-            onSkip={() => onComplete?.()}
-            onNext={goNext}
-            canNext={!(currentIndex === targets.length - 1 && feedback !== "correct")}
-          />
-        </div>
-      )}
+        {/* Sticky Bottom Section: Navigation Controls */}
+        {selectedSubPattern && !allDone && (
+          <div className="w-full shrink-0 mt-auto">
+            <ActionToolbar
+              onBack={goPrev}
+              canBack={!(currentIndex === 0 && !onBack)}
+              onSkip={() => onComplete?.()}
+              onNext={goNext}
+              canNext={!(currentIndex === targets.length - 1 && feedback !== "correct")}
+            />
+          </div>
+        )}
       </motion.div>
     </AnimatePresence>
   );

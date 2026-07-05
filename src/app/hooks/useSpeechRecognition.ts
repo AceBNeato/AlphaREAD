@@ -8,7 +8,8 @@ const DEBUG = typeof process !== 'undefined'
 
 const DIGIT_MAP: Record<string, string> = {
   "0": "ZERO", "1": "ONE", "2": "TWO", "3": "THREE", "4": "FOUR",
-  "5": "FIVE", "6": "SIX", "7": "SEVEN", "8": "EIGHT", "9": "NINE"
+  "5": "FIVE", "6": "SIX", "7": "SEVEN", "8": "EIGHT", "9": "NINE",
+  "10": "TEN"
 };
 
 export function calculateSimilarity(str1: string, str2: string): number {
@@ -75,12 +76,12 @@ export function mergeTranscripts(a: string, b: string): string {
   const bLower = b.toLowerCase().trim();
   if (!aLower) return b.trim();
   if (!bLower) return a.trim();
-  
+
   if (bLower.startsWith(aLower)) return b.trim();
-  
+
   const aWords = a.trim().split(/\s+/);
   const bWords = b.trim().split(/\s+/);
-  
+
   let overlapCount = 0;
   const maxOverlap = Math.min(aWords.length, bWords.length);
   for (let i = 1; i <= maxOverlap; i++) {
@@ -90,7 +91,7 @@ export function mergeTranscripts(a: string, b: string): string {
       overlapCount = i;
     }
   }
-  
+
   if (overlapCount > 0) {
     return [...aWords, ...bWords.slice(overlapCount)].join(" ");
   }
@@ -185,6 +186,7 @@ const HOMOPHONES: Record<string, string[]> = {
   "FROG": ["fog", "frock"],
   "DRESS": ["press", "tress"],
   "PLAY": ["day", "clay"],
+  "WAY": ["weigh", "wait", "weight", "why", "away"],
   "SWIM": ["some", "swam"],
   "CRAB": ["cab", "crap"],
   "SAND": ["send", "sound"],
@@ -225,7 +227,10 @@ const HOMOPHONES: Record<string, string[]> = {
   "BEND": ["band", "bed"],
   "HAND": ["head", "and"],
   "SEND": ["sand", "end"],
+  "TEN": ["tin", "tan", "then"],
   "TENT": ["ten", "send"],
+  "SIGH": ["psy", "psi", "side", "size", "sign"],
+  "HIGH": ["hi", "hai", "hay", "hide"],
   "CAMP": ["cap", "lamp"],
   "WIND": ["win", "went"],
   "BLOW": ["below", "blue"],
@@ -394,7 +399,7 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, singleSho
 
             if (currentStatus === "correct") {
               bestStatus = "correct";
-              matchedTranscript = allTranscripts[i].trim();
+              matchedTranscript = evaluatingWord;
               break;
             } else if (currentStatus === "close") {
               bestStatus = "close";
