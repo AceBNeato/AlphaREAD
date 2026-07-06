@@ -387,7 +387,7 @@ export const BLENDS_DATA: BlendCategory[] = [
         "words": [
           { word: "cold", highlights: [2, 3] },
           { word: "gold", highlights: [2, 3] },
-          { word: "grind", highlights: [2, 3] }
+          { word: "hold", highlights: [2, 3] }
         ]
       },
       {
