@@ -77,11 +77,11 @@ export function ReviewPhase({
           <div className="flex-grow flex items-center justify-center w-full py-4">
             <div className={`grid ${getGridColsClass(reviewOrder.length)} gap-3 sm:gap-4 max-w-3xl mx-auto w-full justify-center justify-items-center`}>
               {reviewOrder.map((syl) => {
-                const isSingleLetter = syl.length <= 2;
-                const isVowelStart = isSingleLetter && VOWELS.has(syl[0]?.toUpperCase());
+                const isSingleComponent = syl.length <= 2 || syl.toLowerCase().endsWith("ng") || syl.toLowerCase().startsWith("ng");
+                const isVowelStart = isSingleComponent && VOWELS.has(syl[0]?.toUpperCase());
 
-                const bgStart = isSingleLetter ? (isVowelStart ? "#FF6B8A" : "#1CB0F6") : accent.primary;
-                const bgEnd = isSingleLetter ? (isVowelStart ? "#FF4B8A" : "#0a8ed4") : accent.dark;
+                const bgStart = isSingleComponent ? (isVowelStart ? "#FF6B8A" : "#1CB0F6") : accent.primary;
+                const bgEnd = isSingleComponent ? (isVowelStart ? "#FF4B8A" : "#0a8ed4") : accent.dark;
 
                 let textSizeClass = uniformClass;
                 if (!uniformTextSize) {

@@ -425,19 +425,19 @@ export function LevelSyllableBuilder({
                               style={{ borderColor: patternColors[currentTarget.pattern] }}
                               title="Click to hear again"
                             >
-                              <div className="font-black text-4xl sm:text-5xl tracking-wide flex">
-                                {currentTarget.syllable.split("").map((ch, i) => (
-                                  <span
-                                    key={i}
-                                    style={{
-                                      color: VOWELS.includes(ch.toUpperCase())
-                                        ? "#FF6B8A"
-                                        : "#1CB0F6",
-                                    }}
-                                  >
-                                    {ch.toLowerCase()}
-                                  </span>
-                                ))}
+                                <div className="font-black text-4xl sm:text-5xl tracking-wide flex gap-0.5">
+                                  {currentTarget.letters.map((ch, i) => (
+                                    <span
+                                      key={i}
+                                      style={{
+                                        color: VOWELS.includes(ch.toUpperCase())
+                                          ? "#FF6B8A"
+                                          : "#1CB0F6",
+                                      }}
+                                    >
+                                      {ch.toLowerCase()}
+                                    </span>
+                                  ))}
                               </div>
                               <Volume2 className="w-6 h-6 opacity-50" style={{ color: patternColors[currentTarget.pattern] }} />
                             </button>

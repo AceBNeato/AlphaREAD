@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
+import { useLanguage } from "../context/LanguageContext";
 import { LevelSyllableBuilder } from "./LevelSyllableBuilder";
 import { LevelVoiceEvaluation } from "./LevelVoiceEvaluation";
 import { LevelCVCSentences } from "./LevelCVCSentences";
@@ -54,6 +55,10 @@ function LevelCVCPreview({
     setOrder(words);
   }, [words]);
 
+  const { language } = useLanguage();
+  const isTagalog = language === "tl";
+  const wordLabel = isTagalog ? "words" : "CVC words";
+
   const handleShuffle = () => setOrder([...order].sort(() => Math.random() - 0.5));
 
   return (
@@ -62,8 +67,8 @@ function LevelCVCPreview({
         <div className="w-full max-w-4xl mx-auto px-15 py-4 text-center flex-1">
           <p className="text-gray-600 dark:text-gray-300 text-base sm:text-lg font-bold mt-2 mb-8 block">
             {isReview
-              ? `🎉 Great work! Review CVC words! ${batchNumber && totalBatches ? "(Batch " + batchNumber + " of " + totalBatches + ")" : ""}`
-              : `Review CVC words before we start! ${batchNumber && totalBatches ? "(Batch " + batchNumber + " of " + totalBatches + ")" : ""}`
+              ? `🎉 Great work! Review ${wordLabel}! ${batchNumber && totalBatches ? "(Batch " + batchNumber + " of " + totalBatches + ")" : ""}`
+              : `Review ${wordLabel} before we start! ${batchNumber && totalBatches ? "(Batch " + batchNumber + " of " + totalBatches + ")" : ""}`
             }
           </p>
 
@@ -120,6 +125,9 @@ function LevelCVCPreview({
 export function LevelCVCMaster({ levelId, accent }: LevelCVCMasterProps) {
   const navigate = useNavigate();
   const { CVC_WORDS } = useCurriculum();
+  const { language } = useLanguage();
+  const isTagalog = language === "tl";
+
   // We need to bring our own shuffle here or export it
   const shuffleArray = <T,>(arr: T[]): T[] => {
     const a = [...arr];
@@ -197,16 +205,17 @@ export function LevelCVCMaster({ levelId, accent }: LevelCVCMasterProps) {
   };
 
   const getPhaseTitle = () => {
+    const title = isTagalog ? "Salita Master" : "CVC Master";
     if (step.phase === "preview") {
-      return `CVC Master - Word Preview ${step.batchNumber && step.totalBatches ? `(${step.batchNumber}/${step.totalBatches})` : ""}`;
+      return `${title} - Word Preview ${step.batchNumber && step.totalBatches ? `(${step.batchNumber}/${step.totalBatches})` : ""}`;
     }
     if (step.phase === "review") {
-      return `CVC Master - Word Review ${step.batchNumber && step.totalBatches ? `(${step.batchNumber}/${step.totalBatches})` : ""}`;
+      return `${title} - Word Review ${step.batchNumber && step.totalBatches ? `(${step.batchNumber}/${step.totalBatches})` : ""}`;
     }
-    if (step.phase === "build") return "CVC Master - Word Builder";
-    if (step.phase === "eval" || step.phase === "milestone") return "CVC Master - Voice Evaluation";
-    if (step.phase === "sentences") return "CVC Master - Read Sentences";
-    return "CVC Master";
+    if (step.phase === "build") return `${title} - Word Builder`;
+    if (step.phase === "eval" || step.phase === "milestone") return `${title} - Voice Evaluation`;
+    if (step.phase === "sentences") return `${title} - Read Sentences`;
+    return title;
   };
 
   let content = null;
@@ -230,7 +239,7 @@ export function LevelCVCMaster({ levelId, accent }: LevelCVCMasterProps) {
   else if (step.phase === "build") {
     const customTargets: SyllableTarget[] = step.words.map(w => ({
       syllable: w,
-      letters: w.split(""),
+      letters: isTagalog ? (w.match(/ng|Ng|NG|[A-Za-z]/g) || w.split("")) : w.split(""),
       pattern: "CVC"
     }));
 
@@ -306,7 +315,7 @@ export function LevelCVCMaster({ levelId, accent }: LevelCVCMasterProps) {
             Level Complete!
           </h1>
           <p className="text-gray-600 dark:text-gray-300 text-lg font-medium leading-relaxed max-w-sm mx-auto mb-8">
-            Amazing job! You have fully mastered CVC words in <span className="font-bold text-blue-500">CVC Master</span>!
+            Amazing job! You have fully mastered {isTagalog ? "words" : "CVC words"} in <span className="font-bold text-blue-500">{isTagalog ? "Salita Master" : "CVC Master"}</span>!
           </p>
 
           <Button

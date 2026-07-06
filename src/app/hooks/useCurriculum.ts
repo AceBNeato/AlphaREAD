@@ -33,7 +33,7 @@ export function useCurriculum(): Curriculum {
       VOWELS: tagalogData.TAGALOG_VOWELS,
       CONSONANTS: tagalogData.TAGALOG_CONSONANTS,
       sentences: tagalogData.TAGALOG_SENTENCES,
-      CVC_WORDS: tagalogData.TAGALOG_3_LETTER_WORDS,
+      CVC_WORDS: tagalogData.TAGALOG_WORDS,
       BLENDS_DATA: tagalogData.TAGALOG_BLENDS_DATA,
       BLENDS_SENTENCES: tagalogData.TAGALOG_BLENDS_SENTENCES,
     };

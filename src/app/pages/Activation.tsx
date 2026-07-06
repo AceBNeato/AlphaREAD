@@ -413,8 +413,8 @@ export default function Activation() {
           </div>
           <div className="text-center w-full">
             <h1 className="text-4xl font-black tracking-tight mb-2">
-              <span className="text-[#58CC02]">Alphabet</span>
-              <span className="text-[#1CB0F6]">GO!</span>
+              <span className="text-[#58CC02]">Alpha</span>
+              <span className="text-[#1CB0F6]">READ</span>
             </h1>
             <p className="text-white/80 font-medium tracking-wider mt-4">
               Empowering Little Voices
@@ -430,8 +430,8 @@ export default function Activation() {
               <span className="text-4.5xl select-none">🦉</span>
             </div>
             <h1 className="text-3xl font-black">
-              <span className="text-[#58CC02]">Alphabet</span>
-              <span className="text-[#1CB0F6]">GO!</span>
+              <span className="text-[#58CC02]">Alpha</span>
+              <span className="text-[#1CB0F6]">READ</span>
             </h1>
             <p className="text-gray-400 text-sm mt-1.5 font-medium">Enter your Student Code or Teacher Email</p>
           </div>

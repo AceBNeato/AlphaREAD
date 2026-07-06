@@ -3,24 +3,32 @@ import { Level, LevelType, SyllablePattern, Letter } from "./levels"; // Re-use 
 export const allTagalogLetters: Letter[] = [
   { letter: "A", example: "Aso", image: "dog" },
   { letter: "B", example: "Bola", image: "ball" },
-  { letter: "K", example: "Kuting", image: "kitten" },
+  { letter: "C", example: "Carrot", image: "carrot" },
   { letter: "D", example: "Daga", image: "mouse" },
   { letter: "E", example: "Eroplano", image: "airplane" },
+  { letter: "F", example: "Folder", image: "folder" },
   { letter: "G", example: "Gatas", image: "milk" },
   { letter: "H", example: "Halaman", image: "plant" },
   { letter: "I", example: "Ibon", image: "bird" },
+  { letter: "J", example: "Jeep", image: "jeepney" },
+  { letter: "K", example: "Kuting", image: "kitten" },
   { letter: "L", example: "Lapis", image: "pencil" },
   { letter: "M", example: "Manok", image: "chicken" },
   { letter: "N", example: "Niyog", image: "coconut" },
+  { letter: "Ñ", example: "Niño", image: "child" },
   { letter: "Ng", example: "Ngipin", image: "teeth" },
   { letter: "O", example: "Orasan", image: "clock" },
   { letter: "P", example: "Pusa", image: "cat" },
+  { letter: "Q", example: "Queso", image: "cheese" },
   { letter: "R", example: "Relos", image: "watch" },
   { letter: "S", example: "Saging", image: "banana" },
   { letter: "T", example: "Tasa", image: "cup" },
   { letter: "U", example: "Ulan", image: "rain" },
+  { letter: "V", example: "Vinta", image: "vinta boat" },
   { letter: "W", example: "Watawat", image: "flag" },
+  { letter: "X", example: "X-ray", image: "x-ray scan" },
   { letter: "Y", example: "Yoyo", image: "yoyo" },
+  { letter: "Z", example: "Zebra", image: "zebra" },
 ];
 
 export const TAGALOG_VOWELS = ["A", "E", "I", "O", "U"];
@@ -35,26 +43,46 @@ for (const c of TAGALOG_CONSONANTS) {
 }
 
 // 3-Letter Tagalog words for Level 3
-export const TAGALOG_3_LETTER_WORDS = [
-  "ASO", "TAO", "BAO", "IBA", "USA", "UBO", "OPO", "ATE", "AMA", "INA",
-  "PAA", "MGA", "AKO", "ITO", "IDO", "UNA", "ULO", "UNO", "UPO", "APO",
-  "DAW", "DIN", "KAY", "MAN", "MAY", "RAW", "RIN",
-  "BAT", "NAY", "SAN", "TAY", "WAG",
-  "BAG", "BAS", "GAS", "MAS", "PAN",
-  "DING", "KONG", "LANG", "MANG"
+export const TAGALOG_VC_SYLLABLES: string[] = [
+  "ab", "eb", "ib", "ob", "ub",
+  "ak", "ek", "ik", "ok", "uk",
+  "ad", "ed", "id", "od", "ud",
+  "ag", "eg", "ig", "og", "ug",
+  "al", "el", "il", "ol", "ul",
+  "am", "em", "im", "om", "um",
+  "an", "en", "in", "on", "un",
+  "ang", "eng", "ing", "ong", "ung",
+  "ap", "ep", "ip", "op", "up",
+  "ar", "er", "ir", "or", "us",
+  "as", "es", "is", "os", "us",
+  "at", "et", "it", "ot", "uy",
+  "aw", "ey", "ow",
+  "ay", "oy"
+].map(s => s.charAt(0).toUpperCase() + s.slice(1)); // Capitalize first letter to match KP format
+
+export const TAGALOG_WORDS = [
+  "AKO", "ISA", "OSO", "ULO", "ATE", "IBA", "OPO", "UBO", "ASO", "IYO", "PALA", "UPO",
+  "APO", "INA", "PUSA", "URI", "ABO", "IPIS", "PUSO", "ULAP", "APA", "IBON", "PUNO", "ULAM",
+  "AMA", "GABI", "PILA", "WALO", "AMIN", "GOMA", "PULA", "KANTA", "ATIN", "GULO", "PERA", "PAPEL",
+  "BASO", "KASO", "SIRA", "DAMIT", "BAGO", "KESO", "SAMA", "HITO", "BATA", "KUYA", "SANA",
+  "BULA", "LAKI", "SAYA", "HIRAP", "BATO", "LARO", "SALO", "LAKAD", "BATOK", "LUMA", "TIRA", "DASAL",
+  "BAKAL", "LUTO", "TABO", "TUNOG", "BALAK", "LOBO", "TAMA", "BULAK", "BALIK", "MATA", "TASA",
+  "BAGAL", "MAPA", "TALO", "LAMAN", "BARKO", "MALI", "HAYOP", "KANTO", "DAGA", "KAHIT", "BAKA", "BAHA",
+  "DAGAT", "KAPIT", "TAHOL", "TAKBO", "GUHIT", "KAHEL", "APAT", "GALIT", "AKIN", "GUSTO",
+  "DAHIL", "MAHAL", "ABOT", "HINDI", "KANIN", "AHAS", "RELO"
 ];
 
 export const TAGALOG_SENTENCES = [
-  "Ang aso ay tumatahol.",
-  "Ang pusa ay natutulog.",
-  "Naglalaro ang mga bata.",
-  "Ang araw ay mainit.",
-  "Kumakain ako ng saging.",
-  "Ang ibon ay lumilipad.",
-  "Ang gatas ay masarap.",
-  "Nagbabasa si ate ng aklat.",
-  "Ang bola ay bilog.",
-  "Kulay pula ang mansanas."
+  "Mabait ang aso at pusa.",
+  "Malaki ang barko sa dagat.",
+  "Kumakain ako ng luto na kanin.",
+  "Bago ang damit ni ate.",
+  "Pula ang kulay ng lobo.",
+  "Natutulog ang pusa sa kanto.",
+  "Malakas ang tunog ng relo.",
+  "Gusto ko ang ibon sa puno.",
+  "Umiiyak ang bata dahil sa ahas.",
+  "Mahal ng ina ang kanyang apo."
 ];
 
 export const TAGALOG_BLENDS_DATA = [
@@ -115,7 +143,7 @@ export const tagalogLevels: Level[] = [
     title: "Pantig Builder",
     subtitle: "Build Tagalog syllables (Ba, Be, Bi...)",
     type: "syllable-builder",
-    patterns: ["CV"],
+    patterns: ["CV", "VC"],
     letters: allTagalogLetters,
     locked: true,
     completed: false,
@@ -124,9 +152,9 @@ export const tagalogLevels: Level[] = [
   {
     id: 3,
     title: "Salita Master",
-    subtitle: "Build 3-letter Tagalog words",
+    subtitle: "Build common Tagalog words",
     type: "combined-cvc",
-    patterns: ["CVC"], // Actually 3-letter words
+    patterns: ["CVC"],
     letters: allTagalogLetters,
     locked: true,
     completed: false,
@@ -171,23 +199,32 @@ export function generateTagalogSyllableTargets(
   count: number = 10
 ) {
   if (patterns.includes("CVC")) {
-    const shuffledWords = shuffleTagalog(TAGALOG_3_LETTER_WORDS);
+    const shuffledWords = shuffleTagalog(TAGALOG_WORDS);
     const selectedWords = shuffledWords.slice(0, count);
     return selectedWords.map(word => ({
       pattern: "CVC" as SyllablePattern,
-      letters: word.match(/Ng|[A-Za-z]/g) || word.split(""),
+      letters: word.match(/ng|Ng|NG|[A-Za-z]/g) || word.split(""),
       syllable: word,
     }));
   }
 
-  const shuffledCV = shuffleTagalog([...TAGALOG_CV_SYLLABLES]);
-  const selected = shuffledCV.slice(0, count);
+  const syllablePool: { pattern: SyllablePattern, syllable: string }[] = [];
 
-  return selected.map(syllable => ({
-    pattern: "CV" as SyllablePattern,
-    // Safely split considering "Ng" as one letter
-    letters: syllable.match(/Ng|[A-Za-z]/g) || syllable.split(""),
-    syllable,
+  if (patterns.includes("CV")) {
+    TAGALOG_CV_SYLLABLES.forEach(s => syllablePool.push({ pattern: "CV", syllable: s }));
+  }
+  if (patterns.includes("VC")) {
+    TAGALOG_VC_SYLLABLES.forEach(s => syllablePool.push({ pattern: "VC", syllable: s }));
+  }
+
+  const shuffledPool = shuffleTagalog(syllablePool);
+  const selected = shuffledPool.slice(0, count);
+
+  return selected.map(item => ({
+    pattern: item.pattern,
+    // Safely split considering "Ng" or "ng" as one letter
+    letters: item.syllable.match(/ng|Ng|NG|[A-Za-z]/g) || item.syllable.split(""),
+    syllable: item.syllable,
   }));
 }
 

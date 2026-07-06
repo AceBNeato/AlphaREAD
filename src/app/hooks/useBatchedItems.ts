@@ -18,8 +18,8 @@ export function useBatchedItems<T>(items: T[], preferredBatchSize: number): UseB
     const len = items.length;
     if (len === 0) return result;
 
-    // Special case for full alphabet (26 items): always split into 4 batches (A-F, G-L, M-S, T-Z) -> 6, 6, 7, 7
-    const numBatches = len === 26 ? 4 : Math.ceil(len / preferredBatchSize);
+    // Special case for full alphabet (26 or 28 items): always split into 4 batches -> 6,6,7,7 (for 26) or 7,7,7,7 (for 28)
+    const numBatches = (len === 26 || len === 28) ? 4 : Math.ceil(len / preferredBatchSize);
     const baseSize = Math.floor(len / numBatches);
     const remainder = len % numBatches;
 
