@@ -29,7 +29,7 @@ export function MatchButton({
 
   // Front classes
   const frontClass = isMatched
-    ? "bg-gray-150 dark:bg-gray-800/50 text-gray-400 dark:text-gray-500"
+    ? "bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400 overflow-hidden animate-shine"
     : isWrong
       ? "bg-red-500 text-white animate-shake"
       : isSelected
@@ -38,7 +38,7 @@ export function MatchButton({
 
   // Edge classes
   const edgeClass = isMatched
-    ? "bg-gray-300 dark:bg-gray-900"
+    ? "bg-green-300 dark:bg-green-950"
     : isWrong
       ? "bg-red-700"
       : isSelected
@@ -65,7 +65,7 @@ export function MatchButton({
         hasHeight && "tile",
         heightClass,
         isSelected && "selected",
-        isMatched && "opacity-50 grayscale pointer-events-none",
+        isMatched && "pointer-events-none animate-match-success",
         className
       )}
     >

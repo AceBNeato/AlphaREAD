@@ -145,7 +145,7 @@ export function MatchPhase({
                       onClick={() => handleLeftClick(syl)}
                       className={`w-full h-full rounded-lg sm:rounded-2xl ${idx === 0 && !hasClickedTTS ? 'ring-4 ring-indigo-400 dark:ring-indigo-500 animate-pulse' : ''}`}
                     >
-                      <Volume2 className={`w-8 h-8 ${isDone ? "opacity-50" : ""}`} />
+                      <Volume2 className={`w-8 h-8`} />
                     </MatchButton>
                     {idx === 0 && !hasClickedTTS && (
                       <motion.div

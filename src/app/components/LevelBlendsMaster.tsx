@@ -12,25 +12,34 @@ interface LevelBlendsMasterProps {
   accent: { primary: string; dark: string; lightBg: string };
 }
 
-type BlendCategoryName = "2-Letter Blends" | "Three-Letter Blends" | "Ending Blends";
-
-const CATEGORIES: { id: BlendCategoryName; label: string; desc: string; color: string; darkColor: string }[] = [
-  { id: "2-Letter Blends", label: "2-Letter Blends & Digraphs", desc: "e.g., bl, st, ch, sh", color: "#1CB0F6", darkColor: "#0a8ed4" },
-  { id: "Three-Letter Blends", label: "3-Letter Blends", desc: "e.g., str, spl, scr", color: "#FF9600", darkColor: "#e08600" },
-  { id: "Ending Blends", label: "Ending Blends", desc: "e.g., nd, st, mp", color: "#FF4B8A", darkColor: "#e0336e" }
-];
-
 import { useCurriculum } from "../hooks/useCurriculum";
+import { useLanguage } from "../context/LanguageContext";
 
 export function LevelBlendsMaster({ levelId, accent }: LevelBlendsMasterProps) {
   const navigate = useNavigate();
   const { BLENDS_DATA } = useCurriculum();
+  const { language } = useLanguage();
+
+  const isTagalog = language === "tl";
+
+  const ENGLISH_CATEGORIES = [
+    { id: "2-Letter Blends", label: "2-Letter Blends & Digraphs", desc: "e.g., bl, st, ch, sh", color: "#1CB0F6", darkColor: "#0a8ed4" },
+    { id: "Three-Letter Blends", label: "3-Letter Blends", desc: "e.g., str, spl, scr", color: "#FF9600", darkColor: "#e08600" },
+    { id: "Ending Blends", label: "Ending Blends", desc: "e.g., nd, st, mp", color: "#FF4B8A", darkColor: "#e0336e" }
+  ];
+
+  const TAGALOG_CATEGORIES = [
+    { id: "Diptonggo", label: "Diptonggo", desc: "e.g., aw, ay, oy", color: "#FF9600", darkColor: "#e08600" },
+    { id: "Kambal Katinig", label: "Kambal Katinig", desc: "e.g., bl, kr, dy", color: "#1CB0F6", darkColor: "#0a8ed4" }
+  ];
+
+  const activeCategories = isTagalog ? TAGALOG_CATEGORIES : ENGLISH_CATEGORIES;
   
-  const availableCategories = CATEGORIES.filter(c => 
+  const availableCategories = activeCategories.filter(c => 
     BLENDS_DATA.some((d: any) => d.name === c.id)
   );
 
-  const [selectedCategory, setSelectedCategory] = useState<BlendCategoryName | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [isCompleted, setIsCompleted] = useState(false);
 
   const [completedCategories, setCompletedCategories] = useState<string[]>(() =>

@@ -87,34 +87,320 @@ export const TAGALOG_SENTENCES = [
 
 export const TAGALOG_BLENDS_DATA = [
   {
-    name: "2-Letter Blends",
+    name: "Diptonggo",
     patterns: [
       {
-        pattern: "Ts",
+        pattern: "Aw",
         words: [
-          { word: "Tsinelas", highlights: [0, 1] },
-          { word: "Tsokolate", highlights: [0, 1] }
+          { word: "Araw", highlights: [2, 3] },
+          { word: "Dalaw", highlights: [3, 4] },
+          { word: "Tanaw", highlights: [3, 4] },
+          { word: "Sawsaw", highlights: [4, 5] },
+          { word: "Sabaw", highlights: [3, 4] },
+          { word: "Ikaw", highlights: [2, 3] }
         ]
       },
       {
-        pattern: "Dy",
+        pattern: "Iw",
         words: [
-          { word: "Dyip", highlights: [0, 1] },
-          { word: "Dyanitor", highlights: [0, 1] }
+          { word: "Aliw", highlights: [2, 3] },
+          { word: "Giliw", highlights: [3, 4] },
+          { word: "Baliw", highlights: [3, 4] }
+        ]
+      },
+      {
+        pattern: "Ay",
+        words: [
+          { word: "Bahay", highlights: [3, 4] },
+          { word: "Kamay", highlights: [3, 4] },
+          { word: "Buhay", highlights: [3, 4] },
+          { word: "Kulay", highlights: [3, 4] },
+          { word: "Tunay", highlights: [3, 4] }
+        ]
+      },
+      {
+        pattern: "Ey",
+        words: [
+          { word: "Keyk", highlights: [1, 2] },
+          { word: "Reyna", highlights: [1, 2] },
+          { word: "Beybi", highlights: [1, 2] }
+        ]
+      },
+      {
+        pattern: "Oy",
+        words: [
+          { word: "Baboy", highlights: [3, 4] },
+          { word: "Kahoy", highlights: [3, 4] },
+          { word: "Amoy", highlights: [2, 3] }
+        ]
+      }
+    ]
+  },
+  {
+    name: "Kambal Katinig",
+    patterns: [
+      {
+        pattern: "Bl",
+        words: [
+          { word: "Bleyd", highlights: [0, 1] },
+          { word: "Blusa", highlights: [0, 1] },
+          { word: "Bloke", highlights: [0, 1] }
+        ],
+        unahan: [
+          { word: "Bleyd", highlights: [0, 1] },
+          { word: "Blusa", highlights: [0, 1] },
+          { word: "Bloke", highlights: [0, 1] }
+        ]
+      },
+      {
+        pattern: "Gl",
+        words: [
+          { word: "Globo", highlights: [0, 1] },
+          { word: "Glosa", highlights: [0, 1] },
+          { word: "Gluta", highlights: [0, 1] }
+        ],
+        unahan: [
+          { word: "Globo", highlights: [0, 1] },
+          { word: "Glosa", highlights: [0, 1] },
+          { word: "Gluta", highlights: [0, 1] }
+        ]
+      },
+      {
+        pattern: "Kl",
+        words: [
+          { word: "Klase", highlights: [0, 1] },
+          { word: "Klaro", highlights: [0, 1] },
+          { word: "Klima", highlights: [0, 1] }
+        ],
+        unahan: [
+          { word: "Klase", highlights: [0, 1] },
+          { word: "Klaro", highlights: [0, 1] },
+          { word: "Klima", highlights: [0, 1] }
         ]
       },
       {
         pattern: "Pl",
         words: [
           { word: "Plato", highlights: [0, 1] },
-          { word: "Plantsa", highlights: [0, 1] }
+          { word: "Plaka", highlights: [0, 1] },
+          { word: "Plema", highlights: [0, 1] }
+        ],
+        unahan: [
+          { word: "Plato", highlights: [0, 1] },
+          { word: "Plaka", highlights: [0, 1] },
+          { word: "Plema", highlights: [0, 1] }
+        ]
+      },
+      {
+        pattern: "Br",
+        words: [
+          { word: "Braso", highlights: [0, 1] },
+          { word: "Bruha", highlights: [0, 1] },
+          { word: "Brusko", highlights: [0, 1] },
+          { word: "Abril", highlights: [1, 2] },
+          { word: "Sombrero", highlights: [3, 4] },
+          { word: "Sobra", highlights: [2, 3] },
+          { word: "Timbre", highlights: [3, 4] }
+        ],
+        unahan: [
+          { word: "Braso", highlights: [0, 1] },
+          { word: "Bruha", highlights: [0, 1] },
+          { word: "Brusko", highlights: [0, 1] }
+        ],
+        gitna: [
+          { word: "Abril", highlights: [1, 2] },
+          { word: "Sombrero", highlights: [3, 4] }
+        ],
+        hulihan: [
+          { word: "Sobra", highlights: [2, 3] },
+          { word: "Timbre", highlights: [3, 4] }
+        ]
+      },
+      {
+        pattern: "Dr",
+        words: [
+          { word: "Dragon", highlights: [0, 1] },
+          { word: "Drama", highlights: [0, 1] },
+          { word: "Droga", highlights: [0, 1] }
+        ],
+        unahan: [
+          { word: "Dragon", highlights: [0, 1] },
+          { word: "Drama", highlights: [0, 1] },
+          { word: "Droga", highlights: [0, 1] }
+        ]
+      },
+      {
+        pattern: "Gr",
+        words: [
+          { word: "Grupo", highlights: [0, 1] },
+          { word: "Gripo", highlights: [0, 1] },
+          { word: "Grado", highlights: [0, 1] }
+        ],
+        unahan: [
+          { word: "Grupo", highlights: [0, 1] },
+          { word: "Gripo", highlights: [0, 1] },
+          { word: "Grado", highlights: [0, 1] }
+        ]
+      },
+      {
+        pattern: "Kr",
+        words: [
+          { word: "Krus", highlights: [0, 1] },
+          { word: "Krema", highlights: [0, 1] },
+          { word: "Krimen", highlights: [0, 1] }
+        ],
+        unahan: [
+          { word: "Krus", highlights: [0, 1] },
+          { word: "Krema", highlights: [0, 1] },
+          { word: "Krimen", highlights: [0, 1] }
+        ]
+      },
+      {
+        pattern: "Pr",
+        words: [
+          { word: "Prutas", highlights: [0, 1] },
+          { word: "Preno", highlights: [0, 1] },
+          { word: "Premyo", highlights: [0, 1] }
+        ],
+        unahan: [
+          { word: "Prutas", highlights: [0, 1] },
+          { word: "Preno", highlights: [0, 1] },
+          { word: "Premyo", highlights: [0, 1] }
         ]
       },
       {
         pattern: "Tr",
         words: [
-          { word: "Trak", highlights: [0, 1] },
-          { word: "Trompo", highlights: [0, 1] }
+          { word: "Tren", highlights: [0, 1] },
+          { word: "Tribo", highlights: [0, 1] },
+          { word: "Tropa", highlights: [0, 1] },
+          { word: "Letra", highlights: [2, 3] },
+          { word: "Metro", highlights: [2, 3] }
+        ],
+        unahan: [
+          { word: "Tren", highlights: [0, 1] },
+          { word: "Tribo", highlights: [0, 1] },
+          { word: "Tropa", highlights: [0, 1] }
+        ],
+        gitna: [
+          { word: "Letra", highlights: [2, 3] }
+        ],
+        hulihan: [
+          { word: "Metro", highlights: [2, 3] }
+        ]
+      },
+      {
+        pattern: "Dy",
+        words: [
+          { word: "Dyip", highlights: [0, 1] },
+          { word: "Dyaket", highlights: [0, 1] },
+          { word: "Dyaryo", highlights: [0, 1] },
+          { word: "Badyet", highlights: [2, 3] },
+          { word: "Medyas", highlights: [2, 3] },
+          { word: "Medya", highlights: [2, 3] },
+          { word: "Radyo", highlights: [2, 3] }
+        ],
+        unahan: [
+          { word: "Dyip", highlights: [0, 1] },
+          { word: "Dyaket", highlights: [0, 1] },
+          { word: "Dyaryo", highlights: [0, 1] }
+        ],
+        gitna: [
+          { word: "Badyet", highlights: [2, 3] },
+          { word: "Medyas", highlights: [2, 3] },
+          { word: "Medya", highlights: [2, 3] }
+        ],
+        hulihan: [
+          { word: "Radyo", highlights: [2, 3] }
+        ]
+      },
+      {
+        pattern: "Ts",
+        words: [
+          { word: "Tsaa", highlights: [0, 1] },
+          { word: "Tsinelas", highlights: [0, 1] },
+          { word: "Tsuper", highlights: [0, 1] },
+          { word: "Kutsara", highlights: [2, 3] },
+          { word: "Pitsel", highlights: [2, 3] },
+          { word: "Litson", highlights: [2, 3] }
+        ],
+        unahan: [
+          { word: "Tsaa", highlights: [0, 1] },
+          { word: "Tsinelas", highlights: [0, 1] },
+          { word: "Tsuper", highlights: [0, 1] }
+        ],
+        gitna: [
+          { word: "Kutsara", highlights: [2, 3] },
+          { word: "Pitsel", highlights: [2, 3] },
+          { word: "Litson", highlights: [2, 3] }
+        ]
+      },
+      {
+        pattern: "Ng",
+        words: [
+          { word: "Ngayon", highlights: [0, 1] },
+          { word: "Ngipin", highlights: [0, 1] },
+          { word: "Ngiti", highlights: [0, 1] },
+          { word: "Sangay", highlights: [2, 3] },
+          { word: "Langit", highlights: [2, 3] },
+          { word: "Tanggap", highlights: [2, 3] },
+          { word: "Ang", highlights: [1, 2] }
+        ],
+        unahan: [
+          { word: "Ngayon", highlights: [0, 1] },
+          { word: "Ngipin", highlights: [0, 1] },
+          { word: "Ngiti", highlights: [0, 1] }
+        ],
+        gitna: [
+          { word: "Sangay", highlights: [2, 3] },
+          { word: "Langit", highlights: [2, 3] },
+          { word: "Tanggap", highlights: [2, 3] }
+        ],
+        hulihan: [
+          { word: "Ang", highlights: [1, 2] }
+        ]
+      },
+      {
+        pattern: "Kw",
+        words: [
+          { word: "Kwento", highlights: [0, 1] },
+          { word: "Kwintas", highlights: [0, 1] },
+          { word: "Kwaderno", highlights: [0, 1] }
+        ],
+        unahan: [
+          { word: "Kwento", highlights: [0, 1] },
+          { word: "Kwintas", highlights: [0, 1] },
+          { word: "Kwaderno", highlights: [0, 1] }
+        ]
+      },
+      {
+        pattern: "Pw",
+        words: [
+          { word: "Pwesto", highlights: [0, 1] },
+          { word: "Pwede", highlights: [0, 1] },
+          { word: "Pwersa", highlights: [0, 1] },
+          { word: "Kapwa", highlights: [2, 3] }
+        ],
+        unahan: [
+          { word: "Pwesto", highlights: [0, 1] },
+          { word: "Pwede", highlights: [0, 1] },
+          { word: "Pwersa", highlights: [0, 1] }
+        ],
+        hulihan: [
+          { word: "Kapwa", highlights: [2, 3] }
+        ]
+      },
+      {
+        pattern: "Sy",
+        words: [
+          { word: "Misyon", highlights: [2, 3] },
+          { word: "Disyerto", highlights: [2, 3] },
+          { word: "Pasyente", highlights: [2, 3] }
+        ],
+        gitna: [
+          { word: "Misyon", highlights: [2, 3] },
+          { word: "Disyerto", highlights: [2, 3] },
+          { word: "Pasyente", highlights: [2, 3] }
         ]
       }
     ]
@@ -122,10 +408,11 @@ export const TAGALOG_BLENDS_DATA = [
 ];
 
 export const TAGALOG_BLENDS_SENTENCES = [
-  "Ang tsinelas ay bago.",
-  "Sumakay ako sa dyip.",
-  "Nabasag ang plato.",
-  "Malaki ang trak."
+  "Sobra ang baboy sa plato.",
+  "Malaki ang tsinelas ni kuya.",
+  "Umakyat sa langit ang globo.",
+  "Maganda ang kwento ng reyna.",
+  "Mainit ang araw sa disyerto."
 ];
 
 export const tagalogLevels: Level[] = [
@@ -147,7 +434,7 @@ export const tagalogLevels: Level[] = [
     letters: allTagalogLetters,
     locked: true,
     completed: false,
-    isUnderDevelopment: true,
+    isUnderDevelopment: false,
   },
   {
     id: 3,

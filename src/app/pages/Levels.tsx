@@ -166,7 +166,7 @@ export default function Levels() {
                       <PushableButton
                         onClick={() => showAlert("Under Development 🚧", "This level is currently being customized for the new Tagalog curriculum.<br><br>Please check back later!", "info")}
                         className="w-full"
-                        frontClassName={`bg-gradient-to-r ${colors.bg} text-white font-bold py-4`}
+                        frontClassName={`bg-gradient-to-r ${colors.bg} text-white font-bold py-4 hover-shine overflow-hidden`}
                         edgeClassName={colors.bgDark}
                       >
                         Start Learning
@@ -176,7 +176,7 @@ export default function Levels() {
                         <PushableButton
                           as="div"
                           className="w-full"
-                          frontClassName={`bg-gradient-to-r ${colors.bg} text-white font-bold py-4`}
+                          frontClassName={`bg-gradient-to-r ${colors.bg} text-white font-bold py-4 hover-shine overflow-hidden`}
                           edgeClassName={colors.bgDark}
                         >
                           Start Learning

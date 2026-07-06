@@ -1,11 +1,11 @@
 import React, { useState } from "react";
 import { motion } from "motion/react";
 import { ActionToolbar } from "../ui/ActionToolbar";
-import { LongVowelPattern } from "../../data/levels";
 import { PushableButton } from "../ui/PushableButton";
+import { KambalKatinigPreview } from "../KambalKatinigPreview";
 
 export interface GroupedReviewPhaseProps {
-  groups: LongVowelPattern[];
+  groups: any[];
   accent: { primary: string; dark: string };
   onNext: () => void;
   onBack?: () => void;
@@ -50,6 +50,14 @@ export function GroupedReviewPhase({
           <div className="flex-grow flex items-center justify-center w-full py-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 w-full max-w-6xl mx-auto px-2">
               {groups.map((group, gi) => {
+                if (group.unahan || group.gitna || group.hulihan) {
+                  return (
+                    <div key={group.pattern} className="col-span-1 sm:col-span-2 lg:col-span-3">
+                      <KambalKatinigPreview group={group} />
+                    </div>
+                  );
+                }
+
                 return (
                   <motion.div
                     key={group.pattern}
@@ -71,19 +79,19 @@ export function GroupedReviewPhase({
                     </PushableButton>
 
                     {/* Words Container */}
-                    <div className="w-full flex justify-center gap-2 items-center mt-1">
-                      {group.words.map((w) => (
+                    <div className="w-full flex flex-wrap justify-center gap-2 items-center mt-1">
+                      {group.words.map((w: any) => (
                         <PushableButton
                           as="div"
                           isTile
                           key={w.word}
                           onClick={() => handleItemClick(w.word)}
-                          className="flex-1 aspect-[4/3] cursor-pointer hover:brightness-105"
+                          className="flex-1 min-w-[75px] sm:min-w-[90px] max-w-[120px] aspect-[4/3] cursor-pointer hover:brightness-105"
                           frontClassName="bg-white dark:bg-gray-800"
                           edgeClassName="bg-gray-200 dark:bg-gray-900"
                         >
                           <span className="text-gray-800 dark:text-gray-100 font-extrabold text-sm sm:text-lg lg:text-xl tracking-tight flex items-center justify-center h-full w-full">
-                            {w.word.split("").map((char, index) => {
+                            {w.word.split("").map((char: string, index: number) => {
                               const isHighlighted = w.highlights.includes(index);
                               return (
                                 <span key={index} className={isHighlighted ? "text-[#8b40b8] dark:text-[#c084fc] font-black" : ""}>

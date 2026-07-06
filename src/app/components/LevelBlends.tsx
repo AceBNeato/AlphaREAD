@@ -91,7 +91,7 @@ export function LevelBlends({ levelId, accent, categoryFilter, onComplete }: Lev
     }
 
     // Phase 2: Patterns Review - all patterns as clickable buttons
-    const PATTERN_REVIEW_BATCH = 14;
+    const PATTERN_REVIEW_BATCH = 20;
     const patternBatches = Math.ceil(allPatternsRaw.length / PATTERN_REVIEW_BATCH);
     for (let i = 0; i < patternBatches; i++) {
       steps.push({
@@ -151,7 +151,9 @@ export function LevelBlends({ levelId, accent, categoryFilter, onComplete }: Lev
       const isThreeLetter = BLENDS_DATA.find((d: any) => d.name === "Three-Letter Blends")?.patterns.some((p: any) => p.pattern === item);
       if (isThreeLetter) folder = "3letterblend";
 
-      playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/${folder}/${folder}-${item.toLowerCase()}.mp3`).catch(() => {});
+      playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/${folder}/${folder}-${item.toLowerCase()}.mp3`).catch(() => {
+        playTTSUtil(item.toLowerCase());
+      });
     } else {
       playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/blends-audio/${item.toLowerCase()}.mp3`).catch(() => {
         playTTSUtil(item.toLowerCase());

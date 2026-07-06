@@ -130,7 +130,7 @@ export function TypePhase({
                   frontClassName="px-3.5 py-1.5 sm:px-5 sm:py-2 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 text-base sm:text-lg"
                   edgeClassName="bg-gray-300 dark:bg-gray-700"
                 >
-                  {item === item.toUpperCase() ? item : item.toLowerCase()}
+                  {item.length === 1 ? `${item.toUpperCase()}${item.toLowerCase()}` : item.toLowerCase()}
                 </PushableButton>
               ))}
             </div>
@@ -150,7 +150,7 @@ export function TypePhase({
                         onClick={() => playTypeSound(item)}
                         className={`w-full h-full ${idx === 0 && !hasClickedTTS ? 'ring-2 ring-indigo-400 ring-offset-2 animate-pulse' : ''}`}
                       >
-                        <Volume2 className={`w-6 h-6 sm:w-8 sm:h-8 ${isCorrect ? "opacity-50" : ""}`} />
+                        <Volume2 className={`w-6 h-6 sm:w-8 sm:h-8`} />
                       </MatchButton>
                       {idx === 0 && !hasClickedTTS && (
                         <motion.div
@@ -175,14 +175,14 @@ export function TypePhase({
                   const value = typeInputs[item] || "";
 
                   return (
-                    <div key={`input-${item}`} className="relative w-full h-12 sm:h-14">
+                    <div key={`input-${item}`} className={`relative w-full h-12 sm:h-14 rounded-xl ${isCorrect ? 'overflow-hidden animate-shine animate-match-success' : ''}`}>
                       <input
                         type="text"
                         value={value}
                         onChange={(e) => handleTypeChange(item, e.target.value)}
                         disabled={isCorrect}
                         className={`w-full h-full text-center font-black text-xl sm:text-2xl tracking-widest rounded-xl border-[3px] outline-none transition-all shadow-sm ${isCorrect
-                          ? "bg-green-100 border-green-400 text-green-700 opacity-60"
+                          ? "bg-green-100 border-green-400 text-green-700"
                           : isWrong
                             ? "bg-red-50 border-red-400 text-red-600 animate-shake"
                             : "bg-white border-gray-300 focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 dark:bg-gray-800 dark:border-gray-600 dark:text-white"

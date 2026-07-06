@@ -402,7 +402,7 @@ export function LevelSyllableBuilder({
                       <p className="text-gray-800 dark:text-gray-200 text-base sm:text-lg font-bold block">
                         Listen to the sound and tap the letters to build it.
                       </p>
-                      <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                      <div className="mt-1 text-lg text-rose-500 dark:text-rose-400">
                         Syllable {currentIndex + 1} of {targets.length}
                       </div>
                     </div>
@@ -410,37 +410,33 @@ export function LevelSyllableBuilder({
                     {/* Middle Section: Centered Interactive builder */}
                     <div className="w-full py-4 shrink-0 flex flex-col items-center justify-center">
                       <div className="text-center w-full flex flex-col items-center">
-                        <div
-                          className="inline-flex flex-col items-center gap-2 px-6 py-3 rounded-2xl shadow-lg mb-4"
-                          style={{
-                            background: `linear-gradient(135deg, ${patternColors[currentTarget.pattern]}20, ${patternColors[currentTarget.pattern]}10)`,
-                            border: `2px solid ${patternColors[currentTarget.pattern]}`,
-                          }}
-                        >
+                        <div className="inline-flex flex-col items-center gap-2 px-6 py-3 rounded-2xl mb-4">
                           {/* Show the actual target syllable */}
                           <div className="flex items-center gap-2 relative">
-                            <button
+                            <PushableButton
+                              as="button"
                               onClick={() => playTTS(currentTarget.syllable, currentTarget.pattern)}
-                              className={`flex items-center justify-center gap-3 px-6 py-3 bg-white dark:bg-gray-800 rounded-2xl shadow-md border-b-[4px] hover:scale-105 active:scale-95 transition-all ${!hasClickedTTS && currentIndex === 0 ? 'ring-2 ring-indigo-400 ring-offset-2 animate-pulse' : ''}`}
-                              style={{ borderColor: patternColors[currentTarget.pattern] }}
+                              className={`transition-all ${!hasClickedTTS && currentIndex === 0 ? 'ring-2 ring-indigo-400 ring-offset-2 animate-pulse' : ''}`}
+                              frontClassName="flex items-center justify-center gap-3 px-6 py-3 bg-white dark:bg-gray-800"
+                              edgeStyle={{ backgroundColor: patternColors[currentTarget.pattern] }}
                               title="Click to hear again"
                             >
-                                <div className="font-black text-4xl sm:text-5xl tracking-wide flex gap-0.5">
-                                  {currentTarget.letters.map((ch, i) => (
-                                    <span
-                                      key={i}
-                                      style={{
-                                        color: VOWELS.includes(ch.toUpperCase())
-                                          ? "#FF6B8A"
-                                          : "#1CB0F6",
-                                      }}
-                                    >
-                                      {ch.toLowerCase()}
-                                    </span>
-                                  ))}
+                              <div className="font-black text-4xl sm:text-5xl tracking-wide flex gap-0.5">
+                                {currentTarget.letters.map((ch, i) => (
+                                  <span
+                                    key={i}
+                                    style={{
+                                      color: VOWELS.includes(ch.toUpperCase())
+                                        ? "#FF6B8A"
+                                        : "#1CB0F6",
+                                    }}
+                                  >
+                                    {ch.toLowerCase()}
+                                  </span>
+                                ))}
                               </div>
                               <Volume2 className="w-6 h-6 opacity-50" style={{ color: patternColors[currentTarget.pattern] }} />
-                            </button>
+                            </PushableButton>
                             {!hasClickedTTS && currentIndex === 0 && (
                               <motion.div
                                 initial={{ opacity: 0, y: 10, scale: 0.8 }}
@@ -479,7 +475,7 @@ export function LevelSyllableBuilder({
                                       initial={{ opacity: 0, y: 40 }}
                                       animate={{ opacity: 1, y: 0 }}
                                       transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                                      className={`w-full h-full rounded-2xl flex flex-col items-center justify-center border-b-[4px] select-none shadow-md ${feedback === "correct" ? "bg-green-100 border-green-400 text-green-700" :
+                                      className={`w-full h-full rounded-2xl flex flex-col items-center justify-center border-b-[4px] select-none shadow-md ${feedback === "correct" ? "bg-green-100 border-green-400 text-green-700 animate-shine animate-match-success overflow-hidden" :
                                         feedback === "wrong" ? "bg-red-50 border-red-400 text-red-600" : ""
                                         }`}
                                       style={{

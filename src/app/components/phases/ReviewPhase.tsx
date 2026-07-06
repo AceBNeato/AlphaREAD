@@ -59,6 +59,15 @@ export function ReviewPhase({
     return "grid-cols-4 sm:grid-cols-7";
   };
 
+  let buttonWidthClass = "w-[95px] xs:w-[110px] sm:w-[130px]";
+  if (items.length > 20) {
+    buttonWidthClass = "w-[65px] xs:w-[75px] sm:w-[90px]";
+    if (maxLen <= 2) uniformClass = "text-2xl sm:text-3xl";
+  } else if (items.length > 12) {
+    buttonWidthClass = "w-[80px] xs:w-[95px] sm:w-[110px]";
+    if (maxLen <= 2) uniformClass = "text-3xl sm:text-4xl";
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, x: 50 }}
@@ -75,7 +84,7 @@ export function ReviewPhase({
           </div>
 
           <div className="flex-grow flex items-center justify-center w-full py-4">
-            <div className={`grid ${getGridColsClass(reviewOrder.length)} gap-3 sm:gap-4 max-w-3xl mx-auto w-full justify-center justify-items-center`}>
+            <div className="flex flex-wrap justify-center gap-3 sm:gap-4 max-w-4xl mx-auto w-full px-2">
               {reviewOrder.map((syl) => {
                 const isSingleComponent = syl.length <= 2 || (syl.length <= 3 && (syl.toLowerCase().endsWith("ng") || syl.toLowerCase().startsWith("ng"))) || syl.endsWith(")");
                 const isVowelStart = isSingleComponent && VOWELS.has(syl[0]?.toUpperCase());
@@ -92,7 +101,7 @@ export function ReviewPhase({
                 }
 
                 return (
-                  <motion.div key={syl} initial={{ scale: 0 }} animate={{ scale: 1 }} className="w-full flex justify-center max-w-[95px] xs:max-w-[110px] sm:max-w-[130px]">
+                  <motion.div key={syl} initial={{ scale: 0 }} animate={{ scale: 1 }} className={`flex justify-center ${buttonWidthClass}`}>
                     <PushableButton
                       as="div"
                       isTile
