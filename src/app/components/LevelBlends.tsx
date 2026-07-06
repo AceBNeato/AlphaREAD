@@ -47,26 +47,26 @@ export function LevelBlends({ levelId, accent, categoryFilter, onComplete }: Lev
   const filteredData = useMemo(() => {
     if (!categoryFilter) return BLENDS_DATA;
     if (categoryFilter === "2-Letter Blends") {
-      return BLENDS_DATA.filter(d => d.name === "2-Letter Blends" || d.name === "Digraphs");
+      return BLENDS_DATA.filter((d: any) => d.name === "2-Letter Blends" || d.name === "Digraphs");
     }
-    return BLENDS_DATA.filter(d => d.name === categoryFilter);
+    return BLENDS_DATA.filter((d: any) => d.name === categoryFilter);
   }, [categoryFilter, BLENDS_DATA]);
 
   const allPatternsRaw = useMemo(() => {
     const list: string[] = [];
-    filteredData.forEach((d) => d.patterns.forEach((p) => list.push(p.pattern)));
+    filteredData.forEach((d: any) => d.patterns.forEach((p: any) => list.push(p.pattern)));
     return list;
   }, [filteredData]);
 
   const allWordsRaw = useMemo(() => {
     const list: string[] = [];
-    filteredData.forEach((d) => d.patterns.forEach((p) => p.words.forEach(w => list.push(w.word))));
+    filteredData.forEach((d: any) => d.patterns.forEach((p: any) => p.words.forEach((w: any) => list.push(w.word))));
     return shuffleArray(list);
   }, [filteredData]);
 
   const wordHighlightsMap = useMemo(() => {
     const map: Record<string, number[]> = {};
-    filteredData.forEach((d) => d.patterns.forEach((p) => p.words.forEach(w => {
+    filteredData.forEach((d: any) => d.patterns.forEach((p: any) => p.words.forEach((w: any) => {
       map[w.word] = w.highlights;
     })));
     return map;
@@ -77,7 +77,7 @@ export function LevelBlends({ levelId, accent, categoryFilter, onComplete }: Lev
 
     // Phase 1: Grouped Preview (Patterns + Words) - glassmorphism cards
     const allPatternsObjects: any[] = [];
-    filteredData.forEach(d => allPatternsObjects.push(...d.patterns));
+    filteredData.forEach((d: any) => allPatternsObjects.push(...d.patterns));
     
     const PATTERNS_PER_BATCH = 6;
     const groupedBatches = Math.ceil(allPatternsObjects.length / PATTERNS_PER_BATCH);
@@ -103,8 +103,9 @@ export function LevelBlends({ levelId, accent, categoryFilter, onComplete }: Lev
       });
     }
 
-    // Phase 3: Words Review - 12 per batch
-    const WORDS_BATCH = 12;
+    // Phase 3: Words Review - Dynamic batch sizing
+    const WORDS_BATCH = categoryFilter === "Ending Blends" ? 15 : 
+                        categoryFilter === "Three-Letter Blends" ? 10 : 12;
     const wordBatches = Math.ceil(allWordsRaw.length / WORDS_BATCH);
     const maxWordLen = Math.max(0, ...allWordsRaw.map(w => w.length));
     
