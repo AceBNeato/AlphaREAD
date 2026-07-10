@@ -9,6 +9,7 @@ import { PrivacyPolicyModal } from "../components/PrivacyPolicyModal";
 import { App } from '@capacitor/app';
 import { supabase } from "../../lib/supabase";
 import { motion, AnimatePresence } from "motion/react";
+import { flushPendingProgress } from "../services/progress";
 
 interface UserProfile {
   id: string;
@@ -55,6 +56,7 @@ export default function Dashboard() {
       localStorage.getItem("completedLevels") || "[]"
     );
     setCompletedLevels(completed);
+    flushPendingProgress();
 
     // Validate device lock to prevent duplicate sessions
     if (parsedProfile.id !== "teacher-preview" && parsedProfile.role !== "student") {

@@ -1,7 +1,12 @@
 import { createClient } from "@supabase/supabase-js";
 
-// Initialize the Supabase client using the keys provided
-const supabaseUrl = "https://fefbwnmotovihugcjskn.supabase.co";
-const supabaseAnonKey = "sb_publishable_cU61mKlrOoRsh4kd7xGhgA_DAhUI1tN";
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error(
+    "Missing Supabase configuration. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your hosting environment."
+  );
+}
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);

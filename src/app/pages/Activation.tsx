@@ -311,6 +311,7 @@ export default function Activation() {
         name: student.first_name,
         avatar: student.avatar || "👦",
         role: "student",
+        deviceId: localDeviceId,
         createdAt: student.created_at
       }));
 

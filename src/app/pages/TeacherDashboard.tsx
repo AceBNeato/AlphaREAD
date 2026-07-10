@@ -97,10 +97,7 @@ export default function TeacherDashboard() {
     const confirm = await confirmAction("Unlock Device?", "Unlock this student's device so they can sign in on a new device?");
     if (!confirm) return;
 
-    const { error } = await supabase
-      .from("profiles")
-      .update({ activated_device_id: null })
-      .eq("id", id);
+    const { error } = await supabase.rpc("admin_unlock_device", { p_profile_id: id });
 
     if (error) {
       console.error(error);
@@ -187,7 +184,11 @@ export default function TeacherDashboard() {
                 
                 if (!newPin) return;
                 
-                const { error } = await supabase.from("profiles").update({ pin_hash: newPin.toUpperCase().trim() }).eq("id", teacherProfile?.id);
+                const { error } = await supabase.rpc("admin_reset_staff_access_code", {
+                  p_profile_id: teacherProfile?.id,
+                  p_access_code: newPin.toUpperCase().trim(),
+                  p_revoke_sessions: false
+                });
                 if (error) {
                   showAlert("Update Failed", "Failed to update access code.", "error");
                 } else {

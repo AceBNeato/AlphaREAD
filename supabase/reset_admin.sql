@@ -3,10 +3,12 @@ TRUNCATE TABLE public.login_attempts;
 
 -- Forcefully reset the Master Admin password back to raw 'ADMIN123'
 UPDATE public.profiles 
-SET pin_hash = 'ADMIN123' 
+SET pin_hash = 'ADMIN123',
+    current_device_id = NULL
 WHERE email = 'admin@school.com';
 
--- Now manually trigger the hash so we know with 100% certainty it hashed correctly
-UPDATE public.profiles 
-SET pin_hash = pin_hash 
-WHERE email = 'admin@school.com' AND pin_hash NOT LIKE '$2%';
+UPDATE public.device_sessions
+SET active = false,
+    revoked_at = now()
+WHERE profile_id = (SELECT id FROM public.profiles WHERE email = 'admin@school.com' LIMIT 1)
+  AND active = true;

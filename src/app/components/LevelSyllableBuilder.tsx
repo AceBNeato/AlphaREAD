@@ -16,6 +16,7 @@ import { playSound, playExclusiveAudio } from "../utils/soundEffects";
 import { playTTS as playTTSUtil } from "../utils/tts";
 import { PushableButton } from "./ui/PushableButton";
 import { ActionToolbar } from "./ui/ActionToolbar";
+import { useLanguage } from "../context/LanguageContext";
 
 interface LevelSyllableBuilderProps {
   levelId: number;
@@ -53,6 +54,8 @@ export function LevelSyllableBuilder({
   const navigate = useNavigate();
 
   const { VOWELS, CONSONANTS, generateSyllableTargets, getPhoneticPronunciation } = useCurriculum();
+  const { language } = useLanguage();
+  const isTagalog = language === "tl";
 
   // Sub-level selection: when Level 2 has both VC and CV, show a picker first
   const [selectedSubPattern, setSelectedSubPattern] = useState<SyllablePattern | null>(
@@ -166,9 +169,11 @@ export function LevelSyllableBuilder({
 
     // Use local audio files for CVC words
     if (pattern === "CVC") {
-      const audioPath = `${(import.meta as any).env.BASE_URL}audio/cvc-audio/cvc-${syllableLower}.mp3`;
+      const audioPath = isTagalog 
+        ? `${(import.meta as any).env.BASE_URL}audio/tagalog-words/${syllableLower}.mp3`
+        : `${(import.meta as any).env.BASE_URL}audio/cvc-audio/cvc-${syllableLower}.mp3`;
       playExclusiveAudio(audioPath).catch((err) => {
-        console.warn(`[AlphabetGO] Local CVC audio not found: ${audioPath}, falling back to TTS`, err);
+        console.warn(`[AlphabetGO] Local audio not found: ${audioPath}, falling back to TTS`, err);
         const phoneticText = getPhoneticText(text, pattern);
         playTTSUtil(phoneticText);
       });

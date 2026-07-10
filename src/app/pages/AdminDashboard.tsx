@@ -156,7 +156,11 @@ export default function AdminDashboard() {
                 
                 if (!newPin) return;
                 
-                const { error } = await supabase.from("profiles").update({ pin_hash: newPin.toUpperCase().trim() }).eq("id", adminProfile?.id);
+                const { error } = await supabase.rpc("admin_reset_staff_access_code", {
+                  p_profile_id: adminProfile?.id,
+                  p_access_code: newPin.toUpperCase().trim(),
+                  p_revoke_sessions: false
+                });
                 if (error) {
                   showAlert("Update Failed", "Failed to update the Admin PIN.", "error");
                 } else {
@@ -171,6 +175,9 @@ export default function AdminDashboard() {
             </Button>
             <Button
               onClick={async () => {
+                if (adminProfile?.id) {
+                  await supabase.from("profiles").update({ current_device_id: null }).eq("id", adminProfile.id);
+                }
                 await supabase.auth.signOut();
                 localStorage.removeItem("userProfile");
                 navigate("/", { replace: true });
