@@ -5,6 +5,7 @@ import { playExclusiveAudio } from "../utils/soundEffects";
 import { LessonShell } from "./LessonShell";
 import { StepRenderer } from "./StepRenderer";
 import { useLessonProgress } from "../hooks/useLessonProgress";
+import { useLanguage } from "../context/LanguageContext";
 
 interface LevelPairsProps {
   levelId: number;
@@ -25,11 +26,12 @@ interface GameStep {
 export function LevelPairs({ levelId, accent }: LevelPairsProps) {
   const navigate = useNavigate();
   const { allLetters } = useCurriculum();
+  const { language } = useLanguage();
 
   const ALPHABET = useMemo(() =>
     [...allLetters].sort((a, b) => a.letter.localeCompare(b.letter)).map(l => l.letter)
-  , [allLetters]);
-  
+    , [allLetters]);
+
   const [finalAlphabet] = useState(() => [...ALPHABET].sort(() => Math.random() - 0.5));
   const [comboAL] = useState(() => [...ALPHABET.slice(0, 12)].sort(() => Math.random() - 0.5));
   const [comboAS] = useState(() => [...ALPHABET.slice(0, 19)].sort(() => Math.random() - 0.5));
@@ -63,7 +65,7 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
   ], []);
 
   const [showConfetti, setShowConfetti] = useState(false);
-  const confettiTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const confettiTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const triggerConfetti = useCallback(() => {
     setShowConfetti(true);
@@ -94,7 +96,8 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
 
   const playLetterTTS = (letter: string) => {
     if (!letter) return;
-    playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/alphabet/alphasounds-${letter.toLowerCase()}.mp3`).catch(() => {});
+    const prefix = language === "tl" ? "filipino/fil-alphabet/fil-" : "english/eng-alphabet/eng-";
+    playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/${prefix}${letter.toLowerCase()}.mp3`).catch(() => { });
   };
 
   const title = (

@@ -148,7 +148,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
     // Use local audio files for sentences (Level 3, 5, 6)
     if (text.includes(' ')) {
       const slugified = text.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '') + '.mp3';
-      const audioPath = `${(import.meta as any).env.BASE_URL}audio/sentences-audio/${slugified}`;
+      const audioPath = `${(import.meta as any).env.BASE_URL}audio/english/sentences-audio/${slugified}`;
       playExclusiveAudio(audioPath).catch((err) => {
         console.warn(`[AlphabetGO] Local sentence audio not found: ${audioPath}, falling back to TTS`, err);
         playTTS(text);
@@ -159,11 +159,11 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
     // Use local audio files for Words based on level
     let wordAudioPath = null;
     if (levelId === 6) {
-      wordAudioPath = `${(import.meta as any).env.BASE_URL}audio/blends-audio/${text.toLowerCase()}.mp3`;
+      wordAudioPath = `${(import.meta as any).env.BASE_URL}audio/english/blends-audio/${text.toLowerCase()}.mp3`;
     } else if (levelId === 5) {
-      wordAudioPath = `${(import.meta as any).env.BASE_URL}audio/long-vowels-audio/${text.toLowerCase()}.mp3`;
+      wordAudioPath = `${(import.meta as any).env.BASE_URL}audio/english/long-vowels-audio/${text.toLowerCase()}.mp3`;
     } else if (levelId === 3 && CVC_WORDS.includes(upper)) {
-      wordAudioPath = `${(import.meta as any).env.BASE_URL}audio/cvc-audio/cvc-${text.toLowerCase()}.mp3`;
+      wordAudioPath = `${(import.meta as any).env.BASE_URL}audio/english/cvc-audio/cvc-${text.toLowerCase()}.mp3`;
     }
 
     if (wordAudioPath) {

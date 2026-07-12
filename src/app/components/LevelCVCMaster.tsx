@@ -86,7 +86,7 @@ function LevelCVCPreview({
                     isTile
                     onClick={() => {
                       if (isReview) {
-                        const audioPath = `${(import.meta as any).env.BASE_URL}audio/cvc-audio/cvc-${word.toLowerCase()}.mp3`;
+                        const audioPath = `${(import.meta as any).env.BASE_URL}audio/english/cvc-audio/cvc-${word.toLowerCase()}.mp3`;
                         playExclusiveAudio(audioPath).catch((err: any) => {
                           console.warn(`[AlphabetGO] Local CVC audio not found: ${audioPath}, falling back to TTS`, err);
                           playTTS(word.toLowerCase());

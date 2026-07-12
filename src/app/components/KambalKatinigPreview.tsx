@@ -20,7 +20,7 @@ interface KambalKatinigPreviewProps {
 
 export function KambalKatinigPreview({ group }: KambalKatinigPreviewProps) {
   const handlePlayWord = (word: string) => {
-    playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/blends-audio/${word.toLowerCase()}.mp3`).catch(() => {
+    playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/english/blends-audio/${word.toLowerCase()}.mp3`).catch(() => {
       playTTS(word.toLowerCase());
     });
   };

@@ -62,7 +62,7 @@ const routes = [
       },
       // Authenticated Student Routes
       {
-        element: <ProtectedRoute allowedRoles={["student", "teacher-preview"]} redirectPath="/" />,
+        element: <ProtectedRoute allowedRoles={["student", "teacher-preview", "admin"]} redirectPath="/" />,
         children: [
           {
             path: "/profile-setup",

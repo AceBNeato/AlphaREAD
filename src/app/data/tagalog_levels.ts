@@ -69,7 +69,14 @@ export const TAGALOG_WORDS = [
   "BAKAL", "LUTO", "TABO", "TUNOG", "BALAK", "LOBO", "TAMA", "BULAK", "BALIK", "MATA", "TASA",
   "BAGAL", "MAPA", "TALO", "LAMAN", "BARKO", "MALI", "HAYOP", "KANTO", "DAGA", "KAHIT", "BAKA", "BAHA",
   "DAGAT", "KAPIT", "TAHOL", "TAKBO", "GUHIT", "KAHEL", "APAT", "GALIT", "AKIN", "GUSTO",
-  "DAHIL", "MAHAL", "ABOT", "HINDI", "KANIN", "AHAS", "RELO"
+  "DAHIL", "MAHAL", "ABOT", "HINDI", "KANIN", "AHAS", "RELO",
+  // 55 new words added from user's master list
+  "TULA", "ISDA", "PATO", "BIBE", "MANOK", "PATING", "PAGONG", "UNGGOY", "ILONG", "BIBIG", 
+  "LABI", "DILA", "BUHOK", "DALIRI", "SIKO", "TUHOD", "PAA", "TIYAN", "LIKOD", "PISNGI", 
+  "KUKO", "ITLOG", "GATAS", "KARNE", "SOPAS", "KENDI", "SAGING", "PINYA", "UBAS", "PAKWAN", 
+  "MESA", "KAMA", "UNAN", "KUMOT", "TINIDOR", "BOTE", "LAPIS", "GUNTING", "ULAN", "LUPA", 
+  "ILOG", "BUNDOK", "DAMO", "NIYOG", "DAHON", "SANGA", "LOLO", "LOLA", "GURO", "DOKTOR", 
+  "PULIS", "KUSINA", "BANYO", "SILID", "HARDIN"
 ];
 
 export const TAGALOG_SENTENCES = [

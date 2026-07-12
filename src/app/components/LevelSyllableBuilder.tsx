@@ -9,6 +9,7 @@ import {
   type SyllableTarget,
 } from "../data/levels";
 import { useCurriculum } from "../hooks/useCurriculum";
+import { useLanguage } from "../context/LanguageContext";
 import { motion, AnimatePresence } from "motion/react";
 import { supabase } from "../../lib/supabase";
 import { Confetti } from "./ui/Confetti";
@@ -53,6 +54,7 @@ export function LevelSyllableBuilder({
   const navigate = useNavigate();
 
   const { VOWELS, CONSONANTS, generateSyllableTargets, getPhoneticPronunciation } = useCurriculum();
+  const { language } = useLanguage();
 
   // Sub-level selection: when Level 2 has both VC and CV, show a picker first
   const [selectedSubPattern, setSelectedSubPattern] = useState<SyllablePattern | null>(
@@ -109,9 +111,9 @@ export function LevelSyllableBuilder({
   const [isSaving, setIsSaving] = useState(false);
   const [playingLetter, setPlayingLetter] = useState<string | null>(null);
 
-  const ttsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const successTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const wrongTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const ttsTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const successTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const wrongTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     return () => {
@@ -153,20 +155,20 @@ export function LevelSyllableBuilder({
 
     // Use local audio files for CV and VC patterns
     if (pattern === "CV") {
-      const audioPath = `${(import.meta as any).env.BASE_URL}audio/cv-audio/cv-${syllableLower}.mp3`;
+      const audioPath = `${(import.meta as any).env.BASE_URL}audio/english/cv-audio/cv-${syllableLower}.mp3`;
       playExclusiveAudio(audioPath).catch(() => { });
       return;
     }
 
     if (pattern === "VC") {
-      const audioPath = `${(import.meta as any).env.BASE_URL}audio/vc-audio/vc-${syllableLower}.mp3`;
+      const audioPath = `${(import.meta as any).env.BASE_URL}audio/english/vc-audio/vc-${syllableLower}.mp3`;
       playExclusiveAudio(audioPath).catch(() => { });
       return;
     }
 
     // Use local audio files for CVC words
     if (pattern === "CVC") {
-      const audioPath = `${(import.meta as any).env.BASE_URL}audio/cvc-audio/cvc-${syllableLower}.mp3`;
+      const audioPath = `${(import.meta as any).env.BASE_URL}audio/english/cvc-audio/cvc-${syllableLower}.mp3`;
       playExclusiveAudio(audioPath).catch((err) => {
         console.warn(`[AlphabetGO] Local CVC audio not found: ${audioPath}, falling back to TTS`, err);
         const phoneticText = getPhoneticText(text, pattern);
@@ -184,7 +186,8 @@ export function LevelSyllableBuilder({
     if (feedback || allDone || completedTargets.has(currentTarget.syllable)) return;
 
     // Play audio for the letter
-    playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/alphabet/alphasounds-${letter.toLowerCase()}.mp3`);
+    const prefix = language === "tl" ? "filipino/fil-alphabet/fil-" : "english/eng-alphabet/eng-";
+    playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/${prefix}${letter.toLowerCase()}.mp3`);
 
     setSelectedLetters((prev) => {
       const newSelected = [...prev, letter];

@@ -155,7 +155,7 @@ export function LevelBlends({ levelId, accent, categoryFilter, onComplete }: Lev
         playTTSUtil(item.toLowerCase());
       });
     } else {
-      playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/blends-audio/${item.toLowerCase()}.mp3`).catch(() => {
+      playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/english/blends-audio/${item.toLowerCase()}.mp3`).catch(() => {
         playTTSUtil(item.toLowerCase());
       });
     }

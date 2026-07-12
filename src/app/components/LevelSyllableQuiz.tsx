@@ -26,8 +26,8 @@ interface LevelSyllableQuizProps {
 function getAudioPath(syllable: string, pattern: Pattern): string {
   const base = (import.meta as any).env.BASE_URL;
   const lower = syllable.toLowerCase();
-  if (pattern === "CV") return `${base}audio/cv-audio/cv-${lower}.mp3`;
-  return `${base}audio/vc-audio/vc-${lower}.mp3`;
+  if (pattern === "CV") return `${base}audio/english/cv-audio/cv-${lower}.mp3`;
+  return `${base}audio/english/vc-audio/vc-${lower}.mp3`;
 }
 
 function buildSteps(allSyllables: string[]): Step[] {
