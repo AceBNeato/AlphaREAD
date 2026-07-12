@@ -4,6 +4,7 @@ import { Home, Mic, MicOff, CheckCircle2, XCircle, Sparkles, ArrowRight, ArrowLe
 import { confirmAction } from "../utils/alerts";
 import { Button } from "./ui/button";
 import { motion, AnimatePresence } from "motion/react";
+import { supabase } from "../../lib/supabase";
 import { Confetti } from "./ui/Confetti";
 import { useCurriculum } from "../hooks/useCurriculum";
 import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
@@ -12,7 +13,6 @@ import { playTTS as playTTSUtil } from "../utils/tts";
 import { AudioVisualizer } from "./AudioVisualizer";
 import { PushableButton } from "./ui/PushableButton";
 import { ActionToolbar } from "./ui/ActionToolbar";
-import { markLevelComplete } from "../services/progress";
 
 interface LevelCVCSentencesProps {
   levelId: number;
@@ -170,7 +170,12 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
   const handleFinish = async () => {
     setIsSaving(true);
 
-    await markLevelComplete(levelId);
+
+    const completedLevels = JSON.parse(localStorage.getItem("completedLevels") || "[]");
+    if (!completedLevels.includes(levelId)) {
+      completedLevels.push(levelId);
+      localStorage.setItem("completedLevels", JSON.stringify(completedLevels));
+    }
     setIsSaving(false);
 
     if (onComplete) {

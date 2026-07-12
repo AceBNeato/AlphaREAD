@@ -27,7 +27,6 @@ export function StudentManager({ students, teachers, onRefresh }: StudentManager
   const [studentClassCode, setStudentClassCode] = useState("A1");
   const [studentTeacherId, setStudentTeacherId] = useState("");
   const [studentPin, setStudentPin] = useState("");
-  const [createdStudentCredentials, setCreatedStudentCredentials] = useState<{ code: string; pin: string } | null>(null);
 
   const [editingStudentId, setEditingStudentId] = useState<string | null>(null);
   const [editStudentFirstName, setEditStudentFirstName] = useState("");
@@ -64,20 +63,51 @@ export function StudentManager({ students, teachers, onRefresh }: StudentManager
     if (!studentFirstName.trim() || !studentLastName.trim() || !studentClassCode.trim()) return;
 
     try {
-      const { data, error } = await supabase.rpc("admin_create_student", {
-        p_first_name: studentFirstName.trim(),
-        p_last_name: studentLastName.trim(),
-        p_class_code: studentClassCode.trim().toUpperCase(),
-        p_teacher_id: studentTeacherId || null,
-        p_pin: studentPin || null
+      // Generate mnemonic student code: First 3 of First Name + First 1 of Last Name + Global Increment
+      const fNamePart = (studentFirstName.trim().replace(/[^A-Za-z]/g, '') + "XXX").substring(0, 3).toUpperCase();
+      const lNamePart = (studentLastName.trim().replace(/[^A-Za-z]/g, '') + "X").substring(0, 1).toUpperCase();
+      const prefix = `${fNamePart}${lNamePart}`;
+
+      // Query database for all existing student codes to find the highest global number
+      const { data: allCodes } = await supabase
+        .from("profiles")
+        .select("student_code")
+        .not("student_code", "is", null);
+
+      let maxSeq = 0;
+      if (allCodes) {
+        allCodes.forEach(row => {
+          const code = row.student_code;
+          if (code && code.length >= 7) {
+            const numPart = code.substring(4); // Extract everything after the 4-letter prefix
+            const parsed = parseInt(numPart, 10);
+            if (!isNaN(parsed) && parsed > maxSeq) {
+              maxSeq = parsed;
+            }
+          }
+        });
+      }
+
+      const seqNumber = (maxSeq + 1).toString().padStart(3, "0");
+
+      const studentCode = `${prefix}${seqNumber}`;
+      const studentId = crypto.randomUUID();
+
+      const { error } = await supabase.from("profiles").insert({
+        id: studentId,
+        first_name: studentFirstName.trim(),
+        last_name: studentLastName.trim(),
+        role: "student",
+        student_code: studentCode,
+        student_pin: studentPin,
+        avatar: "👦",
+        class_code: studentClassCode.trim().toUpperCase(),
+        teacher_id: studentTeacherId || null
       });
 
       if (error) throw error;
 
-      setCreatedStudentCredentials({
-        code: data?.student_code || "",
-        pin: data?.student_pin || studentPin
-      });
+      setIsCreatingStudent(false);
       setStudentFirstName("");
       setStudentLastName("");
       setStudentClassCode("A1");
@@ -95,19 +125,22 @@ export function StudentManager({ students, teachers, onRefresh }: StudentManager
     setEditStudentLastName(student.last_name || "");
     setEditStudentClassCode(student.class_code || "A1");
     setEditStudentTeacherId(student.teacher_id || "");
-    setEditStudentPin("");
+    setEditStudentPin(student.student_pin || "");
   };
 
   const saveStudentEdit = async (id: string) => {
     if (!editStudentFirstName.trim() || !editStudentLastName.trim() || !editStudentClassCode.trim()) return;
 
-    const { error } = await supabase.rpc("admin_update_student", {
-      p_profile_id: id,
-      p_first_name: editStudentFirstName.trim(),
-      p_last_name: editStudentLastName.trim(),
-      p_class_code: editStudentClassCode.trim().toUpperCase(),
-      p_teacher_id: editStudentTeacherId || null
-    });
+    const { error } = await supabase
+      .from("profiles")
+      .update({
+        first_name: editStudentFirstName.trim(),
+        last_name: editStudentLastName.trim(),
+        class_code: editStudentClassCode.trim().toUpperCase(),
+        student_pin: editStudentPin.trim().toUpperCase(),
+        teacher_id: editStudentTeacherId || null
+      })
+      .eq("id", id);
 
     if (error) {
       showAlert("Error", "Failed to update student profile.");
@@ -121,7 +154,7 @@ export function StudentManager({ students, teachers, onRefresh }: StudentManager
     const confirm = await confirmAction("Delete Student?", "Permanently delete this student from the system?");
     if (!confirm) return;
 
-    const { error } = await supabase.rpc("admin_delete_student", { p_profile_id: id });
+    const { error } = await supabase.from("profiles").delete().eq("id", id);
     if (error) {
       showAlert("Error", "Failed to delete student.");
     } else {
@@ -133,7 +166,10 @@ export function StudentManager({ students, teachers, onRefresh }: StudentManager
     const confirm = await confirmAction("Unlock Device?", "Unlock this student's device binding?");
     if (!confirm) return;
 
-    const { error } = await supabase.rpc("admin_unlock_device", { p_profile_id: id });
+    const { error } = await supabase
+      .from("profiles")
+      .update({ activated_device_id: null })
+      .eq("id", id);
 
     if (error) {
       showAlert("Error", "Failed to unlock device.");
@@ -147,11 +183,14 @@ export function StudentManager({ students, teachers, onRefresh }: StudentManager
     const confirm = await confirmAction("Regenerate PIN?", "Generate a new 6-character PIN for this student? The old one will stop working.");
     if (!confirm) return;
 
-    const { data, error } = await supabase.rpc("admin_reset_student_pin", { p_profile_id: id });
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    const newPin = Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
+
+    const { error } = await supabase.from("profiles").update({ student_pin: newPin }).eq("id", id);
     if (error) {
       showAlert("Error", "Failed to regenerate PIN.");
     } else {
-      showAlert("Success", `New Student PIN: ${data?.student_pin}<br><br>Please share this with the student. This is the only time it will be shown.`, "success");
+      showAlert("Success", `New Student PIN: ${newPin}<br><br>Please share this with the student.`, "success");
       onRefresh();
     }
   };
@@ -256,40 +295,10 @@ export function StudentManager({ students, teachers, onRefresh }: StudentManager
 
       {isCreatingStudent && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          {createdStudentCredentials ? (
-            <div className="bg-gray-900 border border-green-800 rounded-3xl p-6 sm:p-8 max-w-md w-full relative animate-in zoom-in duration-200 shadow-2xl text-center">
-              <h3 className="text-xl font-bold text-white mb-4">Student Registered!</h3>
-              <p className="text-sm text-gray-400 mb-4">Share these credentials now. The PIN will not be shown again.</p>
-              <div className="grid grid-cols-1 gap-3 mb-6">
-                <div className="bg-gray-950 border border-gray-800 rounded-2xl p-4">
-                  <p className="text-xs text-gray-500 mb-1">STUDENT CODE</p>
-                  <p className="text-2xl font-mono font-black tracking-[0.2em] text-white">{createdStudentCredentials.code}</p>
-                </div>
-                <div className="bg-gray-950 border border-gray-800 rounded-2xl p-4">
-                  <p className="text-xs text-gray-500 mb-1">SECRET PIN</p>
-                  <p className="text-2xl font-mono font-black tracking-[0.2em] text-green-400">{createdStudentCredentials.pin}</p>
-                </div>
-              </div>
-              <Button
-                type="button"
-                onClick={() => {
-                  setCreatedStudentCredentials(null);
-                  setIsCreatingStudent(false);
-                  onRefresh();
-                }}
-                className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl py-3"
-              >
-                Done
-              </Button>
-            </div>
-          ) : (
           <form onSubmit={handleCreateStudent} className="bg-gray-900 border border-gray-700 rounded-3xl p-6 sm:p-8 max-w-md w-full relative animate-in zoom-in duration-200 shadow-2xl">
             <button
               type="button"
-              onClick={() => {
-                setCreatedStudentCredentials(null);
-                setIsCreatingStudent(false);
-              }}
+              onClick={() => setIsCreatingStudent(false)}
               className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors"
             >
               <X className="w-6 h-6" />
@@ -365,7 +374,6 @@ export function StudentManager({ students, teachers, onRefresh }: StudentManager
               <Button type="submit" className="bg-blue-600 hover:bg-blue-500 text-white flex-1 py-3">Register Student</Button>
             </div>
           </form>
-          )}
         </div>
       )}
 
@@ -475,9 +483,34 @@ export function StudentManager({ students, teachers, onRefresh }: StudentManager
                           {/* Secret PIN */}
                           <td className="py-4 px-6">
                             <div className="flex items-center gap-2">
-                              <span className="text-xs font-semibold text-gray-400">
-                                Hidden - reset to issue a new PIN
+                              <span className="font-mono text-green-400 font-bold tracking-wider">
+                                {isEditing ? (
+                                  <input
+                                    type="text" maxLength={6} value={editStudentPin}
+                                    onChange={(e) => setEditStudentPin(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6))}
+                                    className="px-2 py-1 bg-gray-950 border border-gray-800 rounded text-white font-mono w-24 text-center tracking-widest"
+                                    placeholder="6 chars"
+                                  />
+                                ) : (
+                                  isCodeVisible ? student.student_pin : "••••••"
+                                )}
                               </span>
+                              {!isEditing && (
+                                <>
+                                  <button onClick={() => toggleVisibility(student.id)} className="text-gray-400 hover:text-white">
+                                    {isCodeVisible ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                  </button>
+                                  {isCodeVisible && student.student_pin && (
+                                    <button
+                                      onClick={() => copyCode(student.student_pin, `${student.id}-pin`)}
+                                      className="text-gray-400 hover:text-white p-1 transition-colors ml-1"
+                                      title="Copy PIN"
+                                    >
+                                      {copiedId === `${student.id}-pin` ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
+                                    </button>
+                                  )}
+                                </>
+                              )}
                             </div>
                           </td>
 

@@ -61,7 +61,15 @@ export const TAGALOG_VC_SYLLABLES: string[] = [
 ].map(s => s.charAt(0).toUpperCase() + s.slice(1)); // Capitalize first letter to match KP format
 
 export const TAGALOG_WORDS = [
-  "AKO","ATE","ASO","APO","ABO","APA","AMA","AMIN","ATIN","BASO","BAGO","BATA","TULA","BATO","BATOK","BAKAL","BALAK","BALIK","BARKO","DAGA","DAGAT","GABI","GUHIT","GALIT","DAHIL","ISA","IBA","IYO","INA","IPIS","IBON","GOMA","GULO","KASO","KESO","LAKI","LARO","LUMA","LUTO","LOBO","MATA","MAPA","MALI","KAHIT","KAPIT","KANIN","KAHEL","MAHAL","OSO","OPO","PALA","PUSA","PUSO","PUNO","PILA","PULA","PERA","SIRA","SAMA","SANA","SALO","TIRA","TABO","TAMA","TASA","TALO","BAKA","TAHOL","AHAS","APAT","AKIN","ABOT","ULO","UBO","UPO","URI","ULAP","ULAM","WALO","KANTA","PAPEL","DAMIT","HITO","HIRAP","LAKAD","DASAL","TUNOG","BULAK","LAMAN","KANTO","BAHA","TAKBO","RELO","GUSTO","HINDI","ISDA","PATO","BIBE","MANOK","PATING","PAGONG","UNGGOY","ILONG","BIBIG","LABI","DILA","BUHOK","DALIRI","SIKO","TUHOD","PAA","TIYAN","LIKOD","PISNGI","KUKO","ITLOG","GATAS","KARNE","SOPAS","KENDI","SAGING","PINYA","UBAS","PAKWAN","MESA","KAMA","UNAN","KUMOT","TINIDOR","BOTE","LAPIS","GUNTING","ULAN","LUPA","ILOG","BUNDOK","DAMO","NIYOG","DAHON","SANGA","LOLO","LOLA","GURO","DOKTOR","PULIS","KUSINA","BANYO","SILID","HARDIN"
+  "AKO", "ISA", "OSO", "ULO", "ATE", "IBA", "OPO", "UBO", "ASO", "IYO", "PALA", "UPO",
+  "APO", "INA", "PUSA", "URI", "ABO", "IPIS", "PUSO", "ULAP", "APA", "IBON", "PUNO", "ULAM",
+  "AMA", "GABI", "PILA", "WALO", "AMIN", "GOMA", "PULA", "KANTA", "ATIN", "GULO", "PERA", "PAPEL",
+  "BASO", "KASO", "SIRA", "DAMIT", "BAGO", "KESO", "SAMA", "HITO", "BATA", "KUYA", "SANA",
+  "BULA", "LAKI", "SAYA", "HIRAP", "BATO", "LARO", "SALO", "LAKAD", "BATOK", "LUMA", "TIRA", "DASAL",
+  "BAKAL", "LUTO", "TABO", "TUNOG", "BALAK", "LOBO", "TAMA", "BULAK", "BALIK", "MATA", "TASA",
+  "BAGAL", "MAPA", "TALO", "LAMAN", "BARKO", "MALI", "HAYOP", "KANTO", "DAGA", "KAHIT", "BAKA", "BAHA",
+  "DAGAT", "KAPIT", "TAHOL", "TAKBO", "GUHIT", "KAHEL", "APAT", "GALIT", "AKIN", "GUSTO",
+  "DAHIL", "MAHAL", "ABOT", "HINDI", "KANIN", "AHAS", "RELO"
 ];
 
 export const TAGALOG_SENTENCES = [
@@ -437,7 +445,7 @@ export const tagalogLevels: Level[] = [
     letters: allTagalogLetters,
     locked: true,
     completed: false,
-    isUnderDevelopment: false,
+    isUnderDevelopment: true,
   },
   // Level 4 is EXCLUDED per requirements
   {

@@ -355,19 +355,10 @@
 }
 
 .hover-shine:hover::after, .animate-shine::after {
-  animation: shine-sweep 0.5s ease-in-out forwards;
-}
-
-.animate-shine:hover::after {
-  animation: shine-sweep-hover 0.5s ease-in-out forwards;
+  animation: shine-sweep 1s ease-in-out forwards;
 }
 
 @keyframes shine-sweep {
-  0% { left: -50%; }
-  100% { left: 150%; }
-}
-
-@keyframes shine-sweep-hover {
   0% { left: -50%; }
   100% { left: 150%; }
 }

@@ -10,7 +10,6 @@ import AdminDashboard from "./pages/AdminDashboard";
 import AdminLogin from "./pages/AdminLogin";
 import TeacherDashboard from "./pages/TeacherDashboard";
 import { BackButtonHandler } from "./components/BackButtonHandler";
-import { ProtectedRoute } from "./components/ProtectedRoute";
 
 function GlobalErrorBoundary() {
   const error = useRouteError();
@@ -62,35 +61,19 @@ const routes = [
       },
       {
         path: "/dashboard",
-        element: (
-          <ProtectedRoute allow={["student", "admin", "teacher-preview"]}>
-            <Dashboard />
-          </ProtectedRoute>
-        ),
+        Component: Dashboard,
       },
       {
         path: "/levels",
-        element: (
-          <ProtectedRoute allow={["student", "admin", "teacher-preview"]}>
-            <Levels />
-          </ProtectedRoute>
-        ),
+        Component: Levels,
       },
       {
         path: "/lesson/:levelId",
-        element: (
-          <ProtectedRoute allow={["student", "admin", "teacher-preview"]}>
-            <Lesson />
-          </ProtectedRoute>
-        ),
+        Component: Lesson,
       },
       {
         path: "/settings",
-        element: (
-          <ProtectedRoute allow={["student"]}>
-            <Settings />
-          </ProtectedRoute>
-        ),
+        Component: Settings,
       },
       {
         path: "/admin-login",
@@ -98,19 +81,11 @@ const routes = [
       },
       {
         path: "/admin",
-        element: (
-          <ProtectedRoute allow={["admin"]} redirectTo="/admin-login">
-            <AdminDashboard />
-          </ProtectedRoute>
-        ),
+        Component: AdminDashboard,
       },
       {
         path: "/teacher-dashboard",
-        element: (
-          <ProtectedRoute allow={["teacher"]}>
-            <TeacherDashboard />
-          </ProtectedRoute>
-        ),
+        Component: TeacherDashboard,
       },
       {
         path: "*",

@@ -57,15 +57,22 @@ export function TeacherManager({ teachers, onRefresh }: TeacherManagerProps) {
 
     try {
       const teacherId = crypto.randomUUID();
-      const { data, error } = await supabase.rpc("admin_create_teacher", {
-        p_first_name: teacherAlias.trim(),
-        p_email: teacherEmail.trim().toLowerCase()
+      const accessCode = generateAccessCode();
+
+      const { error } = await supabase.from("profiles").insert({
+        id: teacherId,
+        first_name: teacherAlias.trim(),
+        last_name: "Teacher",
+        role: "teacher",
+        email: teacherEmail.trim().toLowerCase(),
+        avatar: "👩‍🏫",
+        pin_hash: accessCode
       });
 
       if (error) throw error;
 
       // Show the code to admin before closing
-      setCreatedCode(data?.access_code || "");
+      setCreatedCode(accessCode);
       setTimeout(() => {
         setCreatedCode(null);
         setIsCreatingTeacher(false);
@@ -81,13 +88,12 @@ export function TeacherManager({ teachers, onRefresh }: TeacherManagerProps) {
   const regenerateCode = async (teacherId: string) => {
     const confirm = await confirmAction("Regenerate Code?", "Generate a new access code for this teacher? The old one will stop working.");
     if (!confirm) return;
-    const { data, error } = await supabase.rpc("admin_reset_staff_access_code", {
-      p_profile_id: teacherId
-    });
+    const newCode = generateAccessCode();
+    const { error } = await supabase.from("profiles").update({ pin_hash: newCode }).eq("id", teacherId);
     if (error) {
       showAlert("Error", "Failed to regenerate code.");
     } else {
-      showAlert("Success", `New access code: ${data?.access_code}<br><br>Please share this with the teacher. This is the only time it will be shown.`, "success");
+      showAlert("Success", `New access code: ${newCode}<br><br>Please share this with the teacher.`, "success");
       onRefresh();
     }
   };
@@ -107,11 +113,13 @@ export function TeacherManager({ teachers, onRefresh }: TeacherManagerProps) {
   const saveTeacherEdit = async (id: string) => {
     if (!editTeacherEmail.trim() || !editTeacherAlias.trim()) return;
 
-    const { error } = await supabase.rpc("admin_update_teacher", {
-      p_profile_id: id,
-      p_first_name: editTeacherAlias.trim(),
-      p_email: editTeacherEmail.trim().toLowerCase()
-    });
+    const { error } = await supabase
+      .from("profiles")
+      .update({
+        email: editTeacherEmail.trim().toLowerCase(),
+        first_name: editTeacherAlias.trim()
+      })
+      .eq("id", id);
 
     if (error) {
       showAlert("Error", "Failed to update teacher profile.");
@@ -125,7 +133,9 @@ export function TeacherManager({ teachers, onRefresh }: TeacherManagerProps) {
     const confirm = await confirmAction("Delete Teacher?", "Permanently delete this teacher? All their student links will be reset!");
     if (!confirm) return;
     
-    const { error } = await supabase.rpc("admin_delete_teacher", { p_profile_id: id });
+    // Reset teacher_id for all their students
+    await supabase.from("profiles").update({ teacher_id: null }).eq("teacher_id", id);
+    const { error } = await supabase.from("profiles").delete().eq("id", id);
     
     if (error) {
       showAlert("Error", "Failed to delete teacher.");
@@ -303,9 +313,23 @@ export function TeacherManager({ teachers, onRefresh }: TeacherManagerProps) {
                         )}
                       </td>
                       <td className="py-4 px-6">
-                        <span className="text-xs font-semibold text-gray-400">
-                          Hidden - reset to issue a new code
-                        </span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-mono text-green-400 font-bold tracking-wider">
+                            {isCodeVisible ? (teacher.pin_hash || "—") : "••••••••"}
+                          </span>
+                          <button onClick={() => toggleVisibility(teacher.id)} className="text-gray-400 hover:text-white p-1">
+                            {isCodeVisible ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                          </button>
+                          {isCodeVisible && teacher.pin_hash && (
+                            <button
+                              onClick={() => copyCode(teacher.pin_hash, teacher.id)}
+                              className="text-gray-400 hover:text-white p-1"
+                              title="Copy code"
+                            >
+                              {copiedId === teacher.id ? <Check className="w-3.5 h-3.5 text-green-400" /> : <Copy className="w-3.5 h-3.5" />}
+                            </button>
+                          )}
+                        </div>
                       </td>
                       <td className="py-4 px-6 text-right">
                         <div className="flex items-center justify-end gap-2">
@@ -323,7 +347,7 @@ export function TeacherManager({ teachers, onRefresh }: TeacherManagerProps) {
                                 onClick={async () => {
                                   const confirm = await confirmAction("Force Logout?", "This will kick the teacher out of their current device and allow them to log in on a new one.");
                                   if (!confirm) return;
-                                  const { error } = await supabase.rpc("admin_unlock_device", { p_profile_id: teacher.id });
+                                  const { error } = await supabase.from("profiles").update({ current_device_id: null }).eq("id", teacher.id);
                                   if (error) {
                                     showAlert("Error", "Failed to unlock: " + error.message);
                                   } else {

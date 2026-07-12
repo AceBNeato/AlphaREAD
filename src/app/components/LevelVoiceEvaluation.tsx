@@ -7,6 +7,7 @@ import { PushableButton } from "./ui/PushableButton";
 import { shuffle } from "../data/levels";
 import { useCurriculum } from "../hooks/useCurriculum";
 import { motion, AnimatePresence } from "motion/react";
+import { supabase } from "../../lib/supabase";
 import { Confetti } from "./ui/Confetti";
 import { evaluateSyllable, isSyllableTarget } from "../utils/PhonemeEvaluator";
 import { playSound, playExclusiveAudio } from "../utils/soundEffects";
@@ -17,8 +18,6 @@ import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
 import { playTTS } from "../utils/tts";
 import { useBatchedItems } from "../hooks/useBatchedItems";
 import { useEvaluationFlow } from "../hooks/useEvaluationFlow";
-import { useLanguage } from "../context/LanguageContext";
-import { markLevelComplete } from "../services/progress";
 
 
 interface LevelVoiceEvaluationProps {
@@ -35,8 +34,6 @@ interface LevelVoiceEvaluationProps {
 
 export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase, onComplete, onBack, wordHighlights, gridColumns, overrideBatchSize }: LevelVoiceEvaluationProps) {
   const navigate = useNavigate();
-  const { language } = useLanguage();
-  const isTagalog = language === "tl";
   const { CVC_WORDS, getPhoneticPronunciation } = useCurriculum();
   const [words, setWords] = useState<string[]>(() => customWords ? customWords : shuffle(CVC_WORDS).slice(0, 10));
 
@@ -53,7 +50,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
   const isMobile = useMemo(() => /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent), []);
   const isIOS = useMemo(() => /iPhone|iPad|iPod/i.test(navigator.userAgent), []);
 
-  const handleNext = async () => {
+  const handleNext = () => {
     playSound("complete", 0.5);
     wordsEval.safeSetEvaluatingWordNull();
     if (isSubPhase && onComplete) {
@@ -61,7 +58,11 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
       return;
     }
 
-    await markLevelComplete(levelId);
+    const completedLevels = JSON.parse(localStorage.getItem("completedLevels") || "[]");
+    if (!completedLevels.includes(levelId)) {
+      completedLevels.push(levelId);
+      localStorage.setItem("completedLevels", JSON.stringify(completedLevels));
+    }
 
     if (onComplete) {
       onComplete();
@@ -161,12 +162,8 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
       wordAudioPath = `${(import.meta as any).env.BASE_URL}audio/blends-audio/${text.toLowerCase()}.mp3`;
     } else if (levelId === 5) {
       wordAudioPath = `${(import.meta as any).env.BASE_URL}audio/long-vowels-audio/${text.toLowerCase()}.mp3`;
-    } else if (levelId === 3) {
-      if (isTagalog) {
-        wordAudioPath = `${(import.meta as any).env.BASE_URL}audio/tagalog-words/${text.toLowerCase()}.mp3`;
-      } else if (CVC_WORDS.includes(upper)) {
-        wordAudioPath = `${(import.meta as any).env.BASE_URL}audio/cvc-audio/cvc-${text.toLowerCase()}.mp3`;
-      }
+    } else if (levelId === 3 && CVC_WORDS.includes(upper)) {
+      wordAudioPath = `${(import.meta as any).env.BASE_URL}audio/cvc-audio/cvc-${text.toLowerCase()}.mp3`;
     }
 
     if (wordAudioPath) {

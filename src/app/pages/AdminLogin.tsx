@@ -79,10 +79,6 @@ export default function AdminLogin() {
         throw new Error("Invalid admin email or access code.");
       }
 
-      if (admin.current_device_id) {
-        throw new Error("Device Limit Reached: this admin account is already signed in on another device.");
-      }
-
       // ── Establish Real Supabase Session for RLS ──
       // We sync their custom code as a Supabase Password so RLS works
       let { data: authData, error: authError } = await supabase.auth.signInWithPassword({
@@ -108,23 +104,11 @@ export default function AdminLogin() {
           .eq("id", admin.id);
       }
 
-      const newDeviceId = crypto.randomUUID();
-      const { error: sessionError } = await supabase.rpc("register_device_session", {
-        p_profile_id: admin.id,
-        p_auth_id: authData?.session?.user?.id || admin.auth_id,
-        p_device_id: newDeviceId
-      });
-
-      if (sessionError) {
-        throw new Error("Failed to register admin device session: " + sessionError.message);
-      }
-
       localStorage.setItem("userProfile", JSON.stringify({
         id: admin.id,
         name: admin.first_name || "Admin",
         avatar: "🛡️",
         role: "admin",
-        deviceId: newDeviceId,
         createdAt: admin.created_at
       }));
 

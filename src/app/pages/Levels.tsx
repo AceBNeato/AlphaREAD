@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { Link } from "react-router";
 import {
   LayoutDashboard,
@@ -15,7 +15,6 @@ import { LanguageToggle } from "../components/LanguageToggle";
 import { showAlert } from "../utils/alerts";
 import { motion } from "motion/react";
 import { PushableButton } from "../components/ui/PushableButton";
-import { flushPendingProgress } from "../services/progress";
 
 const levelColors = [
   {
@@ -72,10 +71,6 @@ const levelIcons = [Layers, Puzzle, Brain, Sparkles, BookOpen];
 
 export default function Levels() {
   const { levels } = useCurriculum();
-  useEffect(() => {
-    flushPendingProgress();
-  }, []);
-
   const userLevels = useMemo(() => {
     const completedLevels = JSON.parse(
       localStorage.getItem("completedLevels") || "[]"

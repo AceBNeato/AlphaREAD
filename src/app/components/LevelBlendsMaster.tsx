@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import { LevelBlends } from "./LevelBlends";
+import { supabase } from "../../lib/supabase";
 import { CheckCircle2, X, ArrowLeft, ArrowRight } from "lucide-react";
 import { Button } from "./ui/button";
 import { motion, AnimatePresence } from "motion/react";
@@ -13,7 +14,6 @@ interface LevelBlendsMasterProps {
 
 import { useCurriculum } from "../hooks/useCurriculum";
 import { useLanguage } from "../context/LanguageContext";
-import { markLevelComplete } from "../services/progress";
 
 export function LevelBlendsMaster({ levelId, accent }: LevelBlendsMasterProps) {
   const navigate = useNavigate();
@@ -58,7 +58,11 @@ export function LevelBlendsMaster({ levelId, accent }: LevelBlendsMasterProps) {
     const allDone = availableCategories.every(c => newCompleted.includes(c.id));
     
     if (allDone) {
-      await markLevelComplete(levelId);
+      const completedLevels = JSON.parse(localStorage.getItem("completedLevels") || "[]");
+      if (!completedLevels.includes(levelId)) {
+        completedLevels.push(levelId);
+        localStorage.setItem("completedLevels", JSON.stringify(completedLevels));
+      }
       setIsCompleted(true);
       setSelectedCategory(null);
     } else {

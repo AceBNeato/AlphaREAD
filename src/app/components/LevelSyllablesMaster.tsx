@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import { LevelSyllableQuiz } from "./LevelSyllableQuiz";
+import { supabase } from "../../lib/supabase";
 import { Home, CheckCircle2, X, ArrowLeft, ArrowRight } from "lucide-react";
 import { Button } from "./ui/button";
 import { motion, AnimatePresence } from "motion/react";
 import { Confetti } from "./ui/Confetti";
-import { markLevelComplete } from "../services/progress";
 
 interface LevelSyllablesMasterProps {
   levelId: number;
@@ -33,7 +33,11 @@ export function LevelSyllablesMaster({ levelId, accent }: LevelSyllablesMasterPr
 
     const bothDone = newCompleted.includes("CV") && newCompleted.includes("VC");
     if (bothDone) {
-      await markLevelComplete(levelId);
+      const completedLevels = JSON.parse(localStorage.getItem("completedLevels") || "[]");
+      if (!completedLevels.includes(levelId)) {
+        completedLevels.push(levelId);
+        localStorage.setItem("completedLevels", JSON.stringify(completedLevels));
+      }
       setIsCompleted(true);
     } else {
       // Return to picker to choose the other sub-level

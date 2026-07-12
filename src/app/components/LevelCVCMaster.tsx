@@ -3,6 +3,7 @@ import { useLanguage } from "../context/LanguageContext";
 import { LevelSyllableBuilder } from "./LevelSyllableBuilder";
 import { LevelVoiceEvaluation } from "./LevelVoiceEvaluation";
 import { LevelCVCSentences } from "./LevelCVCSentences";
+import { supabase } from "../../lib/supabase";
 import { useNavigate } from "react-router";
 import { SyllableTarget } from "../data/levels";
 import { useCurriculum } from "../hooks/useCurriculum";
@@ -15,7 +16,6 @@ import { playExclusiveAudio } from "../utils/soundEffects";
 import { playTTS } from "../utils/tts";
 import { PushableButton } from "./ui/PushableButton";
 import { ActionToolbar } from "./ui/ActionToolbar";
-import { markLevelComplete } from "../services/progress";
 
 interface LevelCVCMasterProps {
   levelId: number;
@@ -86,11 +86,9 @@ function LevelCVCPreview({
                     isTile
                     onClick={() => {
                       if (isReview) {
-                        const audioPath = isTagalog 
-                          ? `${(import.meta as any).env.BASE_URL}audio/tagalog-words/${word.toLowerCase()}.mp3`
-                          : `${(import.meta as any).env.BASE_URL}audio/cvc-audio/cvc-${word.toLowerCase()}.mp3`;
+                        const audioPath = `${(import.meta as any).env.BASE_URL}audio/cvc-audio/cvc-${word.toLowerCase()}.mp3`;
                         playExclusiveAudio(audioPath).catch((err: any) => {
-                          console.warn(`[AlphabetGO] Local audio not found: ${audioPath}, falling back to TTS`, err);
+                          console.warn(`[AlphabetGO] Local CVC audio not found: ${audioPath}, falling back to TTS`, err);
                           playTTS(word.toLowerCase());
                         });
                       }
@@ -191,7 +189,11 @@ export function LevelCVCMaster({ levelId, accent }: LevelCVCMasterProps) {
       setCurrentStep(prev => Math.min(prev + 1, STEPS.length - 1));
     } else {
       // Game Over, all completed!
-      await markLevelComplete(levelId);
+      const completedLevels = JSON.parse(localStorage.getItem("completedLevels") || "[]");
+      if (!completedLevels.includes(levelId)) {
+        completedLevels.push(levelId);
+        localStorage.setItem("completedLevels", JSON.stringify(completedLevels));
+      }
       setIsCompleted(true);
     }
   };
