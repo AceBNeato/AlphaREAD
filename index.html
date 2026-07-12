@@ -4,7 +4,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AlphaREAD</title>
+  <title>AlphaREAD - Interactive Reading Curriculum for Kids</title>
+  <meta name="description" content="AlphaREAD by AlphabetGO is an interactive, game-based reading curriculum that helps children master phonics, blending, and reading fluency." />
   <link rel="icon"
     href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🅰️</text></svg>">
   <!-- Prevent aggressive caching of the index so updates push instantly -->
@@ -31,7 +32,21 @@
 </head>
 
 <body>
-  <div id="root"></div>
+  <div id="root">
+    <!-- SEO Fallback Content: This will be replaced immediately by React when JavaScript runs -->
+    <div style="padding: 2rem; max-width: 800px; margin: 0 auto; font-family: system-ui, sans-serif; display: none;">
+      <h1>AlphaREAD Interactive Reading Curriculum</h1>
+      <p>Welcome to AlphaREAD (formerly AlphabetGO)! Our interactive educational platform provides a comprehensive reading curriculum for children. Students learn to read through engaging voice-evaluated lessons, syllable builders, and spelling activities.</p>
+      <p>Core features include:</p>
+      <ul>
+        <li>Interactive phonics and CVC word blending.</li>
+        <li>Voice recognition evaluation for reading accuracy.</li>
+        <li>Comprehensive curriculum from alphabet mastery to sentence reading.</li>
+        <li>Teacher and admin dashboards for tracking student progress.</li>
+      </ul>
+      <p>Please enable JavaScript to access the full interactive application.</p>
+    </div>
+  </div>
   <script type="module" src="/src/main.tsx"></script>
 </body>
 

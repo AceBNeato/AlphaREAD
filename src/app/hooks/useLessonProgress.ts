@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router';
 import { playSound } from '../utils/soundEffects';
 import { confirmAction } from '../utils/alerts';
+import { markLevelComplete } from '../services/progress';
 
 interface UseLessonProgressResult<T> {
   currentStepIdx: number;
@@ -45,11 +46,7 @@ export function useLessonProgress<T>(
     // Handle completion logic if we are currently on the last step
     if (currentStepIdx === steps.length - 1 && !isComplete) {
       playSound("complete", 0.5);
-      const completedLevels = JSON.parse(localStorage.getItem("completedLevels") || "[]");
-      if (!completedLevels.includes(levelId)) {
-        completedLevels.push(levelId);
-        localStorage.setItem("completedLevels", JSON.stringify(completedLevels));
-      }
+      markLevelComplete(levelId);
       setIsComplete(true);
       if (onComplete) {
         onComplete();

@@ -16,7 +16,7 @@ files.forEach(file => {
     if (classString.includes('border-b-[6px]')) {
       newClass = newClass.replace(/active:scale-95/g, 'active:translate-y-[6px] active:border-b-0');
     } else if (classString.includes('border-b-[4px]') || classString.includes('border-b-4')) {
-      newClass = newClass.replace(/active:scale-95/g, 'active:translate-y-1 active:border-b-0');
+      newClass = newClass.replace(/active:scale-95/g, 'active:translate-y-[4px] active:border-b-0');
     } else if (classString.includes('border-b-2') || classString.includes('border-b-[3px]')) {
       newClass = newClass.replace(/active:scale-95/g, 'active:translate-y-[2px] active:border-b-0');
     } else {

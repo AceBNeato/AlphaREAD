@@ -10,6 +10,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import AdminLogin from "./pages/AdminLogin";
 import TeacherDashboard from "./pages/TeacherDashboard";
 import { BackButtonHandler } from "./components/BackButtonHandler";
+import { ProtectedRoute } from "./components/ProtectedRoute";
 
 function GlobalErrorBoundary() {
   const error = useRouteError();
@@ -56,36 +57,54 @@ const routes = [
         Component: Activation,
       },
       {
-        path: "/profile-setup",
-        Component: ProfileSetup,
-      },
-      {
-        path: "/dashboard",
-        Component: Dashboard,
-      },
-      {
-        path: "/levels",
-        Component: Levels,
-      },
-      {
-        path: "/lesson/:levelId",
-        Component: Lesson,
-      },
-      {
-        path: "/settings",
-        Component: Settings,
-      },
-      {
         path: "/admin-login",
         Component: AdminLogin,
       },
+      // Authenticated Student Routes
       {
-        path: "/admin",
-        Component: AdminDashboard,
+        element: <ProtectedRoute allowedRoles={["student", "teacher-preview"]} redirectPath="/" />,
+        children: [
+          {
+            path: "/profile-setup",
+            Component: ProfileSetup,
+          },
+          {
+            path: "/dashboard",
+            Component: Dashboard,
+          },
+          {
+            path: "/levels",
+            Component: Levels,
+          },
+          {
+            path: "/lesson/:levelId",
+            Component: Lesson,
+          },
+          {
+            path: "/settings",
+            Component: Settings,
+          },
+        ]
       },
+      // Authenticated Admin Routes
       {
-        path: "/teacher-dashboard",
-        Component: TeacherDashboard,
+        element: <ProtectedRoute allowedRoles={["admin"]} redirectPath="/admin-login" />,
+        children: [
+          {
+            path: "/admin",
+            Component: AdminDashboard,
+          },
+        ]
+      },
+      // Authenticated Teacher Routes
+      {
+        element: <ProtectedRoute allowedRoles={["teacher", "admin"]} redirectPath="/" />,
+        children: [
+          {
+            path: "/teacher-dashboard",
+            Component: TeacherDashboard,
+          },
+        ]
       },
       {
         path: "*",
