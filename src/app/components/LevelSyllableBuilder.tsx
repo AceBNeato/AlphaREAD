@@ -67,6 +67,7 @@ export function LevelSyllableBuilder({
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const currentTarget = targets[currentIndex];
+  const hasChunks = currentTarget?.letters.some(l => l.length > 1) ?? false;
 
   // Build the letter pool for the CURRENT target to ensure exactly 12 buttons
   const letterPool = useMemo(() => {
@@ -89,15 +90,28 @@ export function LevelSyllableBuilder({
     });
 
     // Add random distractors up to exactly 12 total buttons
-    const allPool = [...CONSONANTS, ...VOWELS].filter((l) => !added.has(l));
+    let allPool = [...CONSONANTS, ...VOWELS];
+    
+    // If target has chunks, inject some random chunk distractors
+    if (hasChunks) {
+      const randomChunks = [];
+      for (let i = 0; i < 6; i++) {
+         const c = CONSONANTS[Math.floor(Math.random() * CONSONANTS.length)];
+         const v = VOWELS[Math.floor(Math.random() * VOWELS.length)];
+         randomChunks.push(Math.random() > 0.5 ? c + v : v + c);
+      }
+      allPool = [...allPool, ...randomChunks];
+    }
+    
+    allPool = allPool.filter((l) => !added.has(l));
     const distractorsNeeded = Math.max(0, 12 - letters.length);
     const extras = shuffle(allPool).slice(0, distractorsNeeded);
 
     extras.forEach((l) => {
       letters.push({
-        id: `x-${l}`,
+        id: `x-${l}-${Math.random()}`,
         letter: l,
-        isVowel: VOWELS.includes(l),
+        isVowel: VOWELS.includes(l[0].toUpperCase()),
       });
     });
 
@@ -155,20 +169,26 @@ export function LevelSyllableBuilder({
 
     // Use local audio files for CV and VC patterns
     if (pattern === "CV") {
-      const audioPath = `${(import.meta as any).env.BASE_URL}audio/english/cv-audio/cv-${syllableLower}.mp3`;
+      const audioPath = language === "tl" 
+        ? `${(import.meta as any).env.BASE_URL}audio/filipino/cv-audio/fil-cv-${syllableLower}.mp3`
+        : `${(import.meta as any).env.BASE_URL}audio/english/cv-audio/eng-cv-${syllableLower}.mp3`;
       playExclusiveAudio(audioPath).catch(() => { });
       return;
     }
 
     if (pattern === "VC") {
-      const audioPath = `${(import.meta as any).env.BASE_URL}audio/english/vc-audio/vc-${syllableLower}.mp3`;
+      const audioPath = language === "tl" 
+        ? `${(import.meta as any).env.BASE_URL}audio/filipino/vc-audio/fil-vc-${syllableLower}.mp3`
+        : `${(import.meta as any).env.BASE_URL}audio/english/vc-audio/eng-vc-${syllableLower}.mp3`;
       playExclusiveAudio(audioPath).catch(() => { });
       return;
     }
 
     // Use local audio files for CVC words
     if (pattern === "CVC") {
-      const audioPath = `${(import.meta as any).env.BASE_URL}audio/english/cvc-audio/cvc-${syllableLower}.mp3`;
+      const audioPath = language === "tl" 
+        ? `${(import.meta as any).env.BASE_URL}audio/filipino/tagalog-words/fil-level3-${syllableLower}.mp3`
+        : `${(import.meta as any).env.BASE_URL}audio/english/cvc-audio/cvc-${syllableLower}.mp3`;
       playExclusiveAudio(audioPath).catch((err) => {
         console.warn(`[AlphabetGO] Local CVC audio not found: ${audioPath}, falling back to TTS`, err);
         const phoneticText = getPhoneticText(text, pattern);
@@ -185,9 +205,22 @@ export function LevelSyllableBuilder({
   const handleLetterClick = (letter: string) => {
     if (feedback || allDone || completedTargets.has(currentTarget.syllable)) return;
 
-    // Play audio for the letter
-    const prefix = language === "tl" ? "filipino/fil-alphabet/fil-" : "english/eng-alphabet/eng-";
-    playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/${prefix}${letter.toLowerCase()}.mp3`);
+    // Play audio for the letter or chunk
+    if (language === "tl") {
+       if (letter.length === 1) {
+         playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/filipino/fil-alphabet/fil-${letter.toLowerCase()}.mp3`).catch(()=>{});
+       } else {
+         const isVowelFirst = VOWELS.includes(letter[0].toUpperCase());
+         if (isVowelFirst) {
+            playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/filipino/vc-audio/fil-vc-${letter.toLowerCase()}.mp3`).catch(()=>{});
+         } else {
+            playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/filipino/cv-audio/fil-cv-${letter.toLowerCase()}.mp3`).catch(()=>{});
+         }
+       }
+    } else {
+       const prefix = "english/eng-alphabet/eng-";
+       playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/${prefix}${letter.toLowerCase()}.mp3`).catch(()=>{});
+    }
 
     setSelectedLetters((prev) => {
       const newSelected = [...prev, letter];
@@ -463,7 +496,7 @@ export function LevelSyllableBuilder({
                             className="flex justify-center gap-2 mt-2 mb-2"
                           >
                             {Array.from({ length: slotCount }).map((_, slot) => {
-                              const isVowel = ["A", "E", "I", "O", "U"].includes(selectedLetters[slot]);
+                              const isVowel = selectedLetters[slot] && VOWELS.includes(selectedLetters[slot][0].toUpperCase());
                               return (
                                 <div
                                   key={slot}
@@ -494,7 +527,7 @@ export function LevelSyllableBuilder({
                                     </motion.div>
                                   ) : (
                                     <span className="text-gray-300 dark:text-gray-600 text-2xl font-bold opacity-50">
-                                      {patternPlaceholder(currentTarget.pattern)[slot]}
+                                      {hasChunks ? "_" : patternPlaceholder(currentTarget.pattern)[slot]}
                                     </span>
                                   )}
                                 </div>
@@ -556,7 +589,11 @@ export function LevelSyllableBuilder({
                               }}
                             >
                               <span className="text-white text-2xl sm:text-3xl font-black drop-shadow-sm flex items-center justify-center">
-                                {item.letter.toUpperCase()}{item.letter.toLowerCase()}
+                                {item.letter.length > 1 ? (
+                                  item.letter.toLowerCase()
+                                ) : (
+                                  <>{item.letter.toUpperCase()}{item.letter.toLowerCase()}</>
+                                )}
                               </span>
                             </PushableButton>
                           );

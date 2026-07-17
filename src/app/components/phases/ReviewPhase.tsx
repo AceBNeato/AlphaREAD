@@ -113,11 +113,11 @@ export function ReviewPhase({
                       <div className="flex items-center justify-center gap-0.5 px-1 text-center h-full w-full">
                         <span className={`text-white font-black drop-shadow-sm break-all leading-tight flex items-center justify-center ${textSizeClass}`}>
                           {wordHighlights && wordHighlights[syl] ? (
-                            syl.split('').map((char, ci) => (
+                            (syl.length > 1 ? syl.toLowerCase() : syl).split('').map((char, ci) => (
                               <span key={ci} className={wordHighlights[syl].includes(ci) ? 'text-yellow-300' : ''}>{char}</span>
                             ))
                           ) : (
-                            syl
+                            syl.length > 1 ? syl.toLowerCase() : syl
                           )}
                         </span>
                         {syl.length === 1 && (

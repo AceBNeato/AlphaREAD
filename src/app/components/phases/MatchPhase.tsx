@@ -38,7 +38,7 @@ export function MatchPhase({
   const [wrongPair, setWrongPair] = useState<[string, string] | null>(null);
   const [showConfetti, setShowConfetti] = useState(false);
   const [hasClickedTTS, setHasClickedTTS] = useState(false);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const reset = useCallback((newItems?: string[]) => {
     const src = newItems ?? batchItems;
@@ -177,7 +177,7 @@ export function MatchPhase({
                     onClick={() => handleRightClick(syl)}
                     className={`font-black tracking-widest flex items-center justify-center text-gray-800 dark:text-gray-200 text-xl sm:text-2xl h-14 sm:h-16`}
                   >
-                    {syl.length === 1 ? `${syl.toUpperCase()}${syl.toLowerCase()}` : (syl === syl.toUpperCase() ? syl : syl.toLowerCase())}
+                    {syl.length === 1 ? `${syl.toUpperCase()}${syl.toLowerCase()}` : syl.toLowerCase()}
                   </MatchButton>
                 );
               })}

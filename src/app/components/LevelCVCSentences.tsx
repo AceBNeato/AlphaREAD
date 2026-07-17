@@ -43,7 +43,7 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
   const [hasClickedTTS, setHasClickedTTS] = useState(false);
   const [hasClickedMic, setHasClickedMic] = useState(false);
 
-  const evaluationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const evaluationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isMobile = useMemo(() => /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent), []);
 

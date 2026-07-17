@@ -6,6 +6,7 @@ import { Button } from "./ui/button";
 import { PushableButton } from "./ui/PushableButton";
 import { shuffle } from "../data/levels";
 import { useCurriculum } from "../hooks/useCurriculum";
+import { useLanguage } from "../context/LanguageContext";
 import { motion, AnimatePresence } from "motion/react";
 import { supabase } from "../../lib/supabase";
 import { Confetti } from "./ui/Confetti";
@@ -35,6 +36,7 @@ interface LevelVoiceEvaluationProps {
 export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase, onComplete, onBack, wordHighlights, gridColumns, overrideBatchSize }: LevelVoiceEvaluationProps) {
   const navigate = useNavigate();
   const { CVC_WORDS, getPhoneticPronunciation } = useCurriculum();
+  const { language } = useLanguage();
   const [words, setWords] = useState<string[]>(() => customWords ? customWords : shuffle(CVC_WORDS).slice(0, 10));
 
   const BATCH_SIZE = overrideBatchSize || 12;
@@ -163,7 +165,9 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
     } else if (levelId === 5) {
       wordAudioPath = `${(import.meta as any).env.BASE_URL}audio/english/long-vowels-audio/${text.toLowerCase()}.mp3`;
     } else if (levelId === 3 && CVC_WORDS.includes(upper)) {
-      wordAudioPath = `${(import.meta as any).env.BASE_URL}audio/english/cvc-audio/cvc-${text.toLowerCase()}.mp3`;
+      wordAudioPath = language === "tl"
+        ? `${(import.meta as any).env.BASE_URL}audio/filipino/tagalog-words/fil-level3-${text.toLowerCase()}.mp3`
+        : `${(import.meta as any).env.BASE_URL}audio/english/cvc-audio/cvc-${text.toLowerCase()}.mp3`;
     }
 
     if (wordAudioPath) {

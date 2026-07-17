@@ -5,6 +5,7 @@ import { playExclusiveAudio } from "../utils/soundEffects";
 import { LessonShell } from "./LessonShell";
 import { StepRenderer } from "./StepRenderer";
 import { useLessonProgress } from "../hooks/useLessonProgress";
+import { useLanguage } from "../context/LanguageContext";
 
 type Pattern = "VC" | "CV";
 
@@ -23,11 +24,17 @@ interface LevelSyllableQuizProps {
   onComplete: () => void;
 }
 
-function getAudioPath(syllable: string, pattern: Pattern): string {
+function getAudioPath(syllable: string, pattern: Pattern, language: string): string {
   const base = (import.meta as any).env.BASE_URL;
   const lower = syllable.toLowerCase();
-  if (pattern === "CV") return `${base}audio/english/cv-audio/cv-${lower}.mp3`;
-  return `${base}audio/english/vc-audio/vc-${lower}.mp3`;
+  
+  if (language === "tl") {
+    if (pattern === "CV") return `${base}audio/filipino/cv-audio/fil-cv-${lower}.mp3`;
+    return `${base}audio/filipino/vc-audio/fil-vc-${lower}.mp3`;
+  }
+  
+  if (pattern === "CV") return `${base}audio/english/cv-audio/eng-cv-${lower}.mp3`;
+  return `${base}audio/english/vc-audio/eng-vc-${lower}.mp3`;
 }
 
 function buildSteps(allSyllables: string[]): Step[] {
@@ -72,9 +79,10 @@ function buildSteps(allSyllables: string[]): Step[] {
   return steps;
 }
 
-export function LevelSyllableQuiz({ pattern, levelId, accent, onComplete }: LevelSyllableQuizProps) {
+export function LevelSyllableQuiz({ levelId, pattern, accent, onComplete }: LevelSyllableQuizProps) {
   const navigate = useNavigate();
   const { generateSyllableTargets } = useCurriculum();
+  const { language } = useLanguage();
   const [allSyllables] = useState<string[]>(() => {
     // Generate 60 syllables of the requested pattern (VC or CV) to provide enough variety
     const targets = generateSyllableTargets([pattern], 60);
@@ -112,7 +120,7 @@ export function LevelSyllableQuiz({ pattern, levelId, accent, onComplete }: Leve
   };
 
   const playSyllableAudio = (syl: string) => {
-    playExclusiveAudio(getAudioPath(syl, pattern)).catch(() => { });
+    playExclusiveAudio(getAudioPath(syl, pattern, language)).catch(() => { });
   };
 
   return (

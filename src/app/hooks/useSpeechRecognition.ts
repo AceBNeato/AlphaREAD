@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { evaluateSyllable, isSyllableTarget, PhonemeResult } from "../utils/PhonemeEvaluator";
 
 // Logs only in development — automatically silent in production builds
+declare const process: any;
 const DEBUG = typeof process !== 'undefined'
   ? process.env.NODE_ENV !== 'production'
   : (import.meta as any).env?.DEV ?? false;
@@ -253,7 +254,7 @@ const HOMOPHONES: Record<string, string[]> = {
 
 export function useSpeechRecognition({ evaluatingWord, enabled = true, singleShot = false, onResult, onSilenceTimeout, onError }: UseSpeechRecognitionProps) {
   const recognitionRef = useRef<any>(null);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const resultReceivedRef = useRef(false);
 
   const onResultRef = useRef(onResult);
@@ -520,7 +521,7 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, singleSho
     // The Web Speech API's audio pipeline needs ~100-200ms to fully initialize.
     // Without this, very short sounds like a single letter name ("A", "B") said
     // immediately after tapping the mic get clipped and are never captured.
-    let startupTimerId: NodeJS.Timeout | null = null;
+    let startupTimerId: ReturnType<typeof setTimeout> | null = null;
 
     const doStart = () => {
       if (!isActive) return;

@@ -6,6 +6,7 @@ import { LevelCVCSentences } from "./LevelCVCSentences";
 import { supabase } from "../../lib/supabase";
 import { useNavigate } from "react-router";
 import { SyllableTarget } from "../data/levels";
+import { TAGALOG_WORD_CHUNKS } from "../data/tagalog_levels";
 import { useCurriculum } from "../hooks/useCurriculum";
 import { X, ArrowLeft, Shuffle, ChevronRight, ArrowRight } from "lucide-react";
 import { Button } from "./ui/button";
@@ -86,7 +87,9 @@ function LevelCVCPreview({
                     isTile
                     onClick={() => {
                       if (isReview) {
-                        const audioPath = `${(import.meta as any).env.BASE_URL}audio/english/cvc-audio/cvc-${word.toLowerCase()}.mp3`;
+                        const audioPath = isTagalog
+                          ? `${(import.meta as any).env.BASE_URL}audio/filipino/tagalog-words/fil-level3-${word.toLowerCase()}.mp3`
+                          : `${(import.meta as any).env.BASE_URL}audio/english/cvc-audio/cvc-${word.toLowerCase()}.mp3`;
                         playExclusiveAudio(audioPath).catch((err: any) => {
                           console.warn(`[AlphabetGO] Local CVC audio not found: ${audioPath}, falling back to TTS`, err);
                           playTTS(word.toLowerCase());
@@ -237,11 +240,22 @@ export function LevelCVCMaster({ levelId, accent }: LevelCVCMasterProps) {
   }
   // Phase: CVC Builder
   else if (step.phase === "build") {
-    const customTargets: SyllableTarget[] = step.words.map(w => ({
-      syllable: w,
-      letters: isTagalog ? (w.match(/ng|Ng|NG|[A-Za-z]/g) || w.split("")) : w.split(""),
-      pattern: "CVC"
-    }));
+    const customTargets: SyllableTarget[] = step.words.map(w => {
+      let chunks = w.split("");
+      if (isTagalog) {
+        const variations = TAGALOG_WORD_CHUNKS[w.toUpperCase()];
+        if (variations && variations.length > 0) {
+          chunks = variations[Math.floor(Math.random() * variations.length)];
+        } else {
+          chunks = w.match(/ng|Ng|NG|[A-Za-z]/g) || w.split("");
+        }
+      }
+      return {
+        syllable: w,
+        letters: chunks,
+        pattern: "CVC"
+      };
+    });
 
     content = (
       <LevelSyllableBuilder
