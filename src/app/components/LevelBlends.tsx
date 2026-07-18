@@ -7,6 +7,7 @@ import { playTTS as playTTSUtil } from "../utils/tts";
 import { LessonShell } from "./LessonShell";
 import { StepRenderer } from "./StepRenderer";
 import { useLessonProgress } from "../hooks/useLessonProgress";
+import { useLanguage } from "../context/LanguageContext";
 
 interface LevelBlendsProps {
   levelId: number;
@@ -34,6 +35,8 @@ interface GameStep {
 export function LevelBlends({ levelId, accent, categoryFilter, onComplete }: LevelBlendsProps) {
   const navigate = useNavigate();
   const { BLENDS_DATA, BLENDS_SENTENCES } = useCurriculum();
+  const { language } = useLanguage();
+  const isTagalog = language === "tl";
   // Helper to shuffle
   const shuffleArray = <T,>(arr: T[]): T[] => {
     const a = [...arr];
@@ -147,15 +150,25 @@ export function LevelBlends({ levelId, accent, categoryFilter, onComplete }: Lev
 
   const handleItemClick = (item: string) => {
     if (allPatternsRaw.includes(item)) {
-      let folder = "2letterblend";
-      const isThreeLetter = BLENDS_DATA.find((d: any) => d.name === "Three-Letter Blends")?.patterns.some((p: any) => p.pattern === item);
-      if (isThreeLetter) folder = "3letterblend";
+      if (isTagalog && categoryFilter === "Kambal Katinig") {
+        playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/filipino/kambalkatinig/fil-katinig-${item.toLowerCase()}.mp3`).catch(() => {
+          playTTSUtil(item.toLowerCase());
+        });
+      } else {
+        let folder = "2letterblend";
+        const isThreeLetter = BLENDS_DATA.find((d: any) => d.name === "Three-Letter Blends")?.patterns.some((p: any) => p.pattern === item);
+        if (isThreeLetter) folder = "3letterblend";
 
-      playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/${folder}/${folder}-${item.toLowerCase()}.mp3`).catch(() => {
-        playTTSUtil(item.toLowerCase());
-      });
+        playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/english/${folder}/${folder}-${item.toLowerCase()}.mp3`).catch(() => {
+          playTTSUtil(item.toLowerCase());
+        });
+      }
     } else {
-      playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/english/blends-audio/${item.toLowerCase()}.mp3`).catch(() => {
+      let audioPath = `${(import.meta as any).env.BASE_URL}audio/english/blends-audio/${item.toLowerCase()}.mp3`;
+      if (isTagalog) {
+        audioPath = `${(import.meta as any).env.BASE_URL}audio/filipino/tagalog-words/fil-level4-${item.toLowerCase()}.mp3`;
+      }
+      playExclusiveAudio(audioPath).catch(() => {
         playTTSUtil(item.toLowerCase());
       });
     }
