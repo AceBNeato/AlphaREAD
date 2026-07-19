@@ -107,7 +107,7 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
   useSpeechRecognition({
     evaluatingWord: evaluatingSentenceId,
     enabled: !!evaluatingSentenceId,
-    singleShot: true,
+    singleShot: false, // Continuous mode: keeps mic alive through pauses for slow readers
     onResult: handleResult,
     onError: () => setEvaluatingSentenceId(null),
     onSilenceTimeout: () => {

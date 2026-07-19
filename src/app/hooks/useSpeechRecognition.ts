@@ -529,7 +529,8 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, singleSho
         recognition.start();
 
         const isPhrase = evaluatingWord.toUpperCase().replace(/[.,!?]/g, "").trim().includes(" ");
-        const timeoutDuration = isPhrase ? 10000 : 5000;
+        // Slow readers need more time for sentences — 25s ceiling, still exits instantly on match
+        const timeoutDuration = isPhrase ? 25000 : 5000;
 
         timeoutRef.current = setTimeout(() => {
           if (!isActive || hasMatched) return;
