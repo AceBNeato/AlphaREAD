@@ -9,6 +9,8 @@ import { PrivacyPolicyModal } from "../components/PrivacyPolicyModal";
 import { App } from '@capacitor/app';
 import { supabase } from "../../lib/supabase";
 import { motion, AnimatePresence } from "motion/react";
+import { useLanguage } from "../context/LanguageContext";
+import { translations } from "../utils/translations";
 
 interface UserProfile {
   id: string;
@@ -22,6 +24,8 @@ interface UserProfile {
 export default function Dashboard() {
   const navigate = useNavigate();
   const { levels } = useCurriculum();
+  const { language } = useLanguage();
+  const t = translations[language].dashboard;
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [completedLevels, setCompletedLevels] = useState<number[]>([]);
   const [isExpanding, setIsExpanding] = useState(false);
@@ -154,7 +158,7 @@ export default function Dashboard() {
             </div>
             <div>
               <span className="text-[10px] uppercase font-bold tracking-widest text-[#1CB0F6] block mb-0.5">
-                {profile.id === "teacher-preview" || (profile as any).role === "teacher-preview" ? "Teacher Mode" : "Student Mode"}
+                {profile.id === "teacher-preview" || (profile as any).role === "teacher-preview" ? t.teacherMode : t.studentMode}
               </span>
               <h2 className="text-xl font-bold text-gray-800 dark:text-white leading-tight">
                 {profile.name}
@@ -178,10 +182,10 @@ export default function Dashboard() {
               </div>
               <div className="text-left">
                 <h3 className="text-2xl font-black text-white tracking-wide">
-                  All Levels
+                  {t.allLevels}
                 </h3>
                 <p className="text-white/80 font-medium">
-                  {levels.length} levels to master
+                  {levels.length} {t.levelsToMaster}
                 </p>
               </div>
             </div>
@@ -244,10 +248,10 @@ export default function Dashboard() {
               </div>
               <div className="text-left">
                 <h3 className="text-2xl font-black text-white tracking-wide">
-                  {profile.id === "teacher-preview" || (profile as any).role === "teacher-preview" || (profile as any).role === "admin" ? "Open Dashboard" : "Exit App"}
+                  {profile.id === "teacher-preview" || (profile as any).role === "teacher-preview" || (profile as any).role === "admin" ? t.openDashboard : t.exitApp}
                 </h3>
                 <p className="text-white/80 font-medium">
-                  {profile.id === "teacher-preview" || (profile as any).role === "teacher-preview" || (profile as any).role === "admin" ? "Back to dashboard" : "See you next time!"}
+                  {profile.id === "teacher-preview" || (profile as any).role === "teacher-preview" || (profile as any).role === "admin" ? t.backToDashboard : t.seeYouNextTime}
                 </p>
               </div>
             </div>

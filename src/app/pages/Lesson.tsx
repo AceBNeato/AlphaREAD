@@ -10,6 +10,8 @@ import { LevelLetterNames } from "../components/LevelLetterNames";
 import { LevelLongVowels } from "../components/LevelLongVowels";
 import { LevelCVCSentences } from "../components/LevelCVCSentences";
 import { LevelBlendsMaster } from "../components/LevelBlendsMaster";
+import { useLanguage } from "../context/LanguageContext";
+import { translations } from "../utils/translations";
 
 const levelAccents = [
   { primary: "#58CC02", dark: "#46a302", lightBg: "#e8f9d4" },
@@ -27,6 +29,8 @@ export default function Lesson() {
 
   const level = levels.find((l) => l.id === Number(levelId));
   const accent = levelAccents[(Number(levelId) - 1) % levelAccents.length];
+  const { language } = useLanguage();
+  const t = translations[language].lesson;
 
   if (!level) {
     return (

@@ -104,7 +104,8 @@ export function LevelSyllableBuilder({
     }
     
     allPool = allPool.filter((l) => !added.has(l));
-    const distractorsNeeded = Math.max(0, 12 - letters.length);
+    const maxPoolSize = (language === "tl" && levelId === 3) ? 8 : 12;
+    const distractorsNeeded = Math.max(0, maxPoolSize - letters.length);
     const extras = shuffle(allPool).slice(0, distractorsNeeded);
 
     extras.forEach((l) => {
@@ -139,7 +140,7 @@ export function LevelSyllableBuilder({
 
   const allDone = completedTargets.size >= targets.length;
   const progress = (completedTargets.size / targets.length) * 100;
-  const slotCount = currentTarget ? currentTarget.letters.length : 2;
+  const slotCount = currentTarget ? (hasChunks ? currentTarget.syllable.length : currentTarget.letters.length) : 2;
 
   useEffect(() => {
     if (allDone && onComplete) {
@@ -224,23 +225,19 @@ export function LevelSyllableBuilder({
 
     setSelectedLetters((prev) => {
       const newSelected = [...prev, letter];
+      const formed = newSelected.join("").toUpperCase();
 
-      // Check if we just filled the last slot
-      if (newSelected.length === slotCount) {
-        const formed = newSelected.join("").toUpperCase();
-
+      // Check if we just filled all required character slots
+      if (formed.length === currentTarget.syllable.length) {
         if (formed === currentTarget.syllable.toUpperCase()) {
           playSound("correct", 0.4);
           setFeedback("correct");
           setShowConfetti(true);
 
-          // Add the 1-second delay for the TTS so the final letter sound finishes first
           if (ttsTimeoutRef.current) clearTimeout(ttsTimeoutRef.current);
           ttsTimeoutRef.current = setTimeout(() => {
             playTTS(currentTarget.syllable, currentTarget.pattern);
           }, 1000);
-
-          // Removed auto-advance. Word stays on screen until user clicks Next.
         } else {
           playSound("wrong", 0.35);
           setFeedback("wrong");
@@ -462,9 +459,9 @@ export function LevelSyllableBuilder({
                                   <span
                                     key={i}
                                     style={{
-                                      color: VOWELS.includes(ch.toUpperCase())
-                                        ? "#FF6B8A"
-                                        : "#1CB0F6",
+                                      color: hasChunks 
+                                        ? (i % 2 === 0 ? "#1CB0F6" : "#FF6B8A")
+                                        : (VOWELS.includes(ch.toUpperCase()) ? "#FF6B8A" : "#1CB0F6"),
                                     }}
                                   >
                                     {ch.toLowerCase()}
@@ -496,17 +493,45 @@ export function LevelSyllableBuilder({
                             className="flex justify-center gap-2 mt-2 mb-2"
                           >
                             {Array.from({ length: slotCount }).map((_, slot) => {
-                              const isVowel = selectedLetters[slot] && VOWELS.includes(selectedLetters[slot][0].toUpperCase());
+                              const joinedSelected = selectedLetters.join("");
+                              const displayedChar = joinedSelected[slot];
+                              
+                              // Map each character back to its source chunk in selectedLetters
+                              const charToSelectedChunk: number[] = [];
+                              selectedLetters.forEach((chunk, idx) => {
+                                for(let i=0; i<chunk.length; i++) charToSelectedChunk.push(idx);
+                              });
+                              const chunkIdxToRemove = charToSelectedChunk[slot];
+
+                              let slotBackground = "";
+                              let slotBorderColor = "";
+                              
+                              if (hasChunks && currentTarget) {
+                                // For chunks, we map color based on the target chunk index to get alternating blue/rose
+                                const slotToTargetChunk: number[] = [];
+                                currentTarget.letters.forEach((chunk, idx) => {
+                                  for(let i=0; i<chunk.length; i++) slotToTargetChunk.push(idx);
+                                });
+                                const targetChunkIdx = slotToTargetChunk[slot] ?? 0;
+                                const isBlue = targetChunkIdx % 2 === 0;
+                                slotBackground = isBlue ? "linear-gradient(135deg, #1CB0F6 0%, #0a8ed4 100%)" : "linear-gradient(135deg, #FF6B8A 0%, #FF4B8A 100%)";
+                                slotBorderColor = isBlue ? "#086CA5" : "#C82A52";
+                              } else {
+                                const isVowel = displayedChar && VOWELS.includes(displayedChar.toUpperCase());
+                                slotBackground = isVowel ? "linear-gradient(135deg, #FF6B8A 0%, #FF4B8A 100%)" : "linear-gradient(135deg, #1CB0F6 0%, #0a8ed4 100%)";
+                                slotBorderColor = isVowel ? "#C82A52" : "#086CA5";
+                              }
+
                               return (
                                 <div
                                   key={slot}
-                                  onClick={() => selectedLetters[slot] ? handleRemoveLetter(slot) : undefined}
-                                  className={`w-16 h-16 sm:w-20 sm:h-20 rounded-2xl flex items-center justify-center transition-all ${!selectedLetters[slot]
+                                  onClick={() => chunkIdxToRemove !== undefined ? handleRemoveLetter(chunkIdxToRemove) : undefined}
+                                  className={`w-16 h-16 sm:w-20 sm:h-20 rounded-2xl flex items-center justify-center transition-all ${!displayedChar
                                     ? "border-4 border-dashed border-gray-300 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-800/30"
                                     : "cursor-pointer hover:scale-95 active:scale-90"
                                     }`}
                                 >
-                                  {selectedLetters[slot] ? (
+                                  {displayedChar ? (
                                     <motion.div
                                       initial={{ opacity: 0, y: 40 }}
                                       animate={{ opacity: 1, y: 0 }}
@@ -515,14 +540,12 @@ export function LevelSyllableBuilder({
                                         feedback === "wrong" ? "bg-red-50 border-red-400 text-red-600" : ""
                                         }`}
                                       style={{
-                                        background: feedback ? undefined :
-                                          isVowel ? "linear-gradient(135deg, #FF6B8A 0%, #FF4B8A 100%)" : "linear-gradient(135deg, #1CB0F6 0%, #0a8ed4 100%)",
-                                        borderColor: feedback ? undefined :
-                                          isVowel ? "#C82A52" : "#086CA5",
+                                        background: feedback ? undefined : slotBackground,
+                                        borderColor: feedback ? undefined : slotBorderColor,
                                       }}
                                     >
                                       <span className={`text-4xl sm:text-5xl font-black drop-shadow-sm ${feedback ? "" : "text-white"}`}>
-                                        {selectedLetters[slot]?.toLowerCase()}
+                                        {displayedChar.toLowerCase()}
                                       </span>
                                     </motion.div>
                                   ) : (
@@ -538,12 +561,10 @@ export function LevelSyllableBuilder({
                       </div>
 
                       {/* Letter Pool */}
-                      <div className="grid grid-cols-4 sm:grid-cols-6 gap-3 mb-4 w-full max-w-lg mx-auto">
+                      <div className={`grid gap-3 mb-4 mx-auto ${(language === "tl" && levelId === 3) ? "grid-cols-4 w-full max-w-[280px] sm:max-w-[340px]" : "grid-cols-4 sm:grid-cols-6 w-full max-w-lg"}`}>
                         {letterPool.map((item, i) => {
-                          const timesInTarget = currentTarget.syllable
-                            .toUpperCase()
-                            .split("")
-                            .filter((ch) => ch === item.letter).length;
+                          const timesInTarget = currentTarget.letters
+                            .filter((chunk) => chunk.toUpperCase() === item.letter.toUpperCase()).length;
                           const timesSelected = selectedLetters.filter(
                             (l) => l === item.letter
                           ).length;
@@ -552,11 +573,29 @@ export function LevelSyllableBuilder({
                             ? timesSelected >= timesInTarget
                             : timesSelected > 0;
 
+                          const currentLength = selectedLetters.join("").length;
                           const isDisabled =
-                            timesInTarget > 0 &&
-                            timesSelected >= timesInTarget &&
-                            selectedLetters.length < slotCount &&
-                            !feedback;
+                            (timesInTarget > 0 && timesSelected >= timesInTarget) ||
+                            (currentLength + item.letter.length > currentTarget.syllable.length) ||
+                            !!feedback;
+
+                          const isOrangeButton = language === "tl" && levelId === 3;
+                          let btnBackground = "";
+                          let btnEdgeColor = "";
+
+                          if (playingLetter === item.letter) {
+                            btnBackground = "linear-gradient(135deg, #FFC800 0%, #FF9600 100%)";
+                            btnEdgeColor = "#d97e00";
+                          } else if (isOrangeButton) {
+                            btnBackground = "linear-gradient(135deg, #FFC800 0%, #FF9600 100%)";
+                            btnEdgeColor = "#d97e00";
+                          } else if (item.isVowel) {
+                            btnBackground = "linear-gradient(135deg, #FF6B8A 0%, #FF4B8A 100%)";
+                            btnEdgeColor = "#C82A52";
+                          } else {
+                            btnBackground = "linear-gradient(135deg, #1CB0F6 0%, #0a8ed4 100%)";
+                            btnEdgeColor = "#086CA5";
+                          }
 
                           return (
                             <PushableButton
@@ -571,22 +610,8 @@ export function LevelSyllableBuilder({
                                 ? "opacity-30 pointer-events-none"
                                 : ""
                                 }`}
-                              frontStyle={{
-                                background:
-                                  playingLetter === item.letter
-                                    ? "linear-gradient(135deg, #FFC800 0%, #FF9600 100%)"
-                                    : item.isVowel
-                                      ? "linear-gradient(135deg, #FF6B8A 0%, #FF4B8A 100%)"
-                                      : "linear-gradient(135deg, #1CB0F6 0%, #0a8ed4 100%)",
-                              }}
-                              edgeStyle={{
-                                backgroundColor:
-                                  playingLetter === item.letter
-                                    ? "#d97e00"
-                                    : item.isVowel
-                                      ? "#C82A52"
-                                      : "#086CA5",
-                              }}
+                              frontStyle={{ background: btnBackground }}
+                              edgeStyle={{ backgroundColor: btnEdgeColor }}
                             >
                               <span className="text-white text-2xl sm:text-3xl font-black drop-shadow-sm flex items-center justify-center">
                                 {item.letter.length > 1 ? (

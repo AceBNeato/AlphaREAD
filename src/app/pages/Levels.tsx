@@ -12,6 +12,8 @@ import { Button } from "../components/ui/button";
 import { useCurriculum } from "../hooks/useCurriculum";
 import { ThemeToggle } from "../components/ThemeToggle";
 import { LanguageToggle } from "../components/LanguageToggle";
+import { useLanguage } from "../context/LanguageContext";
+import { translations } from "../utils/translations";
 import { showAlert } from "../utils/alerts";
 import { motion } from "motion/react";
 import { PushableButton } from "../components/ui/PushableButton";
@@ -71,6 +73,9 @@ const levelIcons = [Layers, Puzzle, Brain, Sparkles, BookOpen];
 
 export default function Levels() {
   const { levels } = useCurriculum();
+  const { language } = useLanguage();
+  const t = translations[language].levels;
+  
   const userLevels = useMemo(() => {
     const completedLevels = JSON.parse(
       localStorage.getItem("completedLevels") || "[]"
@@ -123,7 +128,7 @@ export default function Levels() {
               </h1>
             </div>
             <p className="text-gray-600 dark:text-gray-400 text-lg sm:text-xl font-bold tracking-tight">
-              Master the alphabet through {levels.length} fun, progressive levels!
+              {t.title} - {t.subtitle} ({levels.length})
             </p>
           </header>
 
@@ -150,7 +155,7 @@ export default function Levels() {
                           Level {level.id}: {level.title}
                           {level.isUnderDevelopment && (
                             <span className="text-[10px] uppercase font-bold tracking-widest text-white bg-amber-500 px-2.5 py-0.5 rounded-full shadow-sm">
-                              Under Development
+                              {t.underDevelopment}
                             </span>
                           )}
                         </h3>
@@ -169,7 +174,7 @@ export default function Levels() {
                         frontClassName={`bg-gradient-to-r ${colors.bg} text-white font-bold py-4 hover-shine overflow-hidden`}
                         edgeClassName={colors.bgDark}
                       >
-                        Start Learning
+                        {t.startLearning}
                       </PushableButton>
                     ) : (
                       <Link to={`/lesson/${level.id}`} className="block w-full">
@@ -179,7 +184,7 @@ export default function Levels() {
                           frontClassName={`bg-gradient-to-r ${colors.bg} text-white font-bold py-4 hover-shine overflow-hidden`}
                           edgeClassName={colors.bgDark}
                         >
-                          Start Learning
+                          {t.startLearning}
                         </PushableButton>
                       </Link>
                     )}

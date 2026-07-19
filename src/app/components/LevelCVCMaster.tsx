@@ -243,9 +243,9 @@ export function LevelCVCMaster({ levelId, accent }: LevelCVCMasterProps) {
     const customTargets: SyllableTarget[] = step.words.map(w => {
       let chunks = w.split("");
       if (isTagalog) {
-        const variations = TAGALOG_WORD_CHUNKS[w.toUpperCase()];
-        if (variations && variations.length > 0) {
-          chunks = variations[Math.floor(Math.random() * variations.length)];
+        const standardChunks = TAGALOG_WORD_CHUNKS[w.toUpperCase()];
+        if (standardChunks && standardChunks.length > 0) {
+          chunks = standardChunks;
         } else {
           chunks = w.match(/ng|Ng|NG|[A-Za-z]/g) || w.split("");
         }
