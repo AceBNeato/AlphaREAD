@@ -278,9 +278,16 @@ export function LevelSyllableBuilder({
         return newCompleted;
       });
       if (currentIndex < targets.length - 1) {
-        setCurrentIndex(prev => prev + 1);
-        setSelectedLetters([]);
-        setFeedback(null);
+        const nextIdx = currentIndex + 1;
+        setCurrentIndex(nextIdx);
+        
+        if (completedTargets.has(targets[nextIdx].syllable)) {
+          setSelectedLetters([...targets[nextIdx].letters]);
+          setFeedback("correct");
+        } else {
+          setSelectedLetters([]);
+          setFeedback(null);
+        }
         setShowConfetti(false);
       }
       return;
@@ -295,19 +302,34 @@ export function LevelSyllableBuilder({
           newTargets.push(skipped);
           return newTargets;
         });
+        setSelectedLetters([]);
+        setFeedback(null);
       } else {
-        setCurrentIndex(prev => Math.min(prev + 1, targets.length - 1));
+        const nextIdx = Math.min(currentIndex + 1, targets.length - 1);
+        setCurrentIndex(nextIdx);
+        if (completedTargets.has(targets[nextIdx].syllable)) {
+          setSelectedLetters([...targets[nextIdx].letters]);
+          setFeedback("correct");
+        } else {
+          setSelectedLetters([]);
+          setFeedback(null);
+        }
       }
-      setSelectedLetters([]);
-      setFeedback(null);
     }
   };
 
   const goPrev = () => {
     if (currentIndex > 0) {
-      setCurrentIndex(prev => Math.max(prev - 1, 0));
-      setSelectedLetters([]);
-      setFeedback(null);
+      const prevIdx = Math.max(currentIndex - 1, 0);
+      setCurrentIndex(prevIdx);
+      if (completedTargets.has(targets[prevIdx].syllable)) {
+        setSelectedLetters([...targets[prevIdx].letters]);
+        setFeedback("correct");
+      } else {
+        setSelectedLetters([]);
+        setFeedback(null);
+      }
+      setShowConfetti(false);
     } else if (onBack) {
       onBack();
     }

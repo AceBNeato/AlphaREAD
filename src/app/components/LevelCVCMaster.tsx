@@ -146,7 +146,8 @@ export function LevelCVCMaster({ levelId, accent }: LevelCVCMasterProps) {
     const randomWords = shuffleArray([...CVC_WORDS]);
 
     const steps: GameStep[] = [];
-    const PREVIEW_BATCH_SIZE = 30;
+    const targetBatches = isTagalog ? 5 : Math.ceil(randomWords.length / 30);
+    const PREVIEW_BATCH_SIZE = Math.ceil(randomWords.length / targetBatches);
     const previewBatches = Math.ceil(randomWords.length / PREVIEW_BATCH_SIZE);
 
     // 1. Previews
