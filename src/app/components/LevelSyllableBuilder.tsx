@@ -483,7 +483,9 @@ export function LevelSyllableBuilder({
                                     style={{
                                       color: hasChunks 
                                         ? (i % 2 === 0 ? "#1CB0F6" : "#FF6B8A")
-                                        : (VOWELS.includes(ch.toUpperCase()) ? "#FF6B8A" : "#1CB0F6"),
+                                        : (language === "en" && levelId === 3 
+                                            ? (i < 2 ? "#FF6B8A" : "#1CB0F6") 
+                                            : (VOWELS.includes(ch.toUpperCase()) ? "#FF6B8A" : "#1CB0F6")),
                                     }}
                                   >
                                     {ch.toLowerCase()}
@@ -539,9 +541,14 @@ export function LevelSyllableBuilder({
                                 slotBackground = isBlue ? "linear-gradient(135deg, #1CB0F6 0%, #0a8ed4 100%)" : "linear-gradient(135deg, #FF6B8A 0%, #FF4B8A 100%)";
                                 slotBorderColor = isBlue ? "#086CA5" : "#C82A52";
                               } else {
-                                const isVowel = displayedChar && VOWELS.includes(displayedChar.toUpperCase());
-                                slotBackground = isVowel ? "linear-gradient(135deg, #FF6B8A 0%, #FF4B8A 100%)" : "linear-gradient(135deg, #1CB0F6 0%, #0a8ed4 100%)";
-                                slotBorderColor = isVowel ? "#C82A52" : "#086CA5";
+                                let isRose = false;
+                                if (language === "en" && levelId === 3) {
+                                  isRose = slot < 2;
+                                } else {
+                                  isRose = !!displayedChar && VOWELS.includes(displayedChar.toUpperCase());
+                                }
+                                slotBackground = isRose ? "linear-gradient(135deg, #FF6B8A 0%, #FF4B8A 100%)" : "linear-gradient(135deg, #1CB0F6 0%, #0a8ed4 100%)";
+                                slotBorderColor = isRose ? "#C82A52" : "#086CA5";
                               }
 
                               return (
