@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router';
 import { playSound } from '../utils/soundEffects';
 import { confirmAction } from '../utils/alerts';
@@ -23,6 +23,7 @@ export function useLessonProgress<T>(
   const navigate = useNavigate();
   const [currentStepIdx, setCurrentStepIdx] = useState(0);
   const [isComplete, setIsComplete] = useState(false);
+  const completionFiredRef = useRef(false);
 
   const currentStep = steps[currentStepIdx];
   
@@ -30,44 +31,48 @@ export function useLessonProgress<T>(
   // (so the final evaluation step completes the bar, or close to it)
   const progressPercentage = steps.length > 0 ? (currentStepIdx / steps.length) * 100 : 0;
 
-  const handleNextStep = () => {
+  const handleNextStep = useCallback(() => {
     playSound("click", 0.2);
     
     // Use functional state update to guarantee we never exceed bounds
     // even if clicked multiple times before re-render
     setCurrentStepIdx(prev => {
-      if (prev < steps.length - 1) {
+      const isLastStep = prev >= steps.length - 1;
+
+      if (!isLastStep) {
         window.scrollTo(0, 0);
         return prev + 1;
       }
-      return prev;
-    });
 
-    // Handle completion logic if we are currently on the last step
-    if (currentStepIdx === steps.length - 1 && !isComplete) {
-      playSound("complete", 0.5);
-      markLevelComplete(levelId);
-      setIsComplete(true);
-      if (onComplete) {
-        onComplete();
+      // Handle completion logic — guard against double-firing
+      if (!completionFiredRef.current) {
+        completionFiredRef.current = true;
+        playSound("complete", 0.5);
+        markLevelComplete(levelId);
+        setIsComplete(true);
+        if (onComplete) {
+          onComplete();
+        }
       }
-    }
-  };
 
-  const handleStepBack = () => {
+      return prev; // Stay on last step
+    });
+  }, [steps.length, levelId, onComplete]);
+
+  const handleStepBack = useCallback(() => {
     if (currentStepIdx > 0) {
       setCurrentStepIdx(prev => prev - 1);
     }
-  };
+  }, [currentStepIdx]);
 
-  const handleGoBack = async () => {
+  const handleGoBack = useCallback(async () => {
     playSound("click", 0.2);
     if (!isComplete) {
       const confirmExit = await confirmAction("Are you sure you want to leave?", "Your progress will not be saved.");
       if (!confirmExit) return;
     }
     navigate("/levels", { replace: true });
-  };
+  }, [isComplete, navigate]);
 
   return {
     currentStepIdx,

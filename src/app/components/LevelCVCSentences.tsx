@@ -146,9 +146,12 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
   };
 
   const handleNextQuiz = () => {
-    playSound("complete", 0.5);
+    playSound("click", 0.2);
     if (!isFinalSet) {
       setCurrentSetIndex(prev => prev + 1);
+    } else if (isSubPhase && onComplete) {
+      // Skip internal celebration — parent component shows its own completion screen
+      handleFinish();
     } else {
       setShowConfetti(true);
     }

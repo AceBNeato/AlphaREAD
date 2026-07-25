@@ -169,7 +169,10 @@ export default function Levels() {
                     {/* Action Button */}
                     {level.isUnderDevelopment ? (
                       <PushableButton
-                        onClick={() => showAlert("Under Development 🚧", "This level is currently being customized for the new Tagalog curriculum.<br><br>Please check back later!", "info")}
+                        onClick={() => {
+                          import("../utils/soundEffects").then(m => m.playSound("click", 0.2));
+                          showAlert("Under Development 🚧", "This level is currently being customized for the new Tagalog curriculum.<br><br>Please check back later!", "info");
+                        }}
                         className="w-full"
                         frontClassName={`bg-gradient-to-r ${colors.bg} text-white font-bold py-4 hover-shine overflow-hidden`}
                         edgeClassName={colors.bgDark}
@@ -177,7 +180,7 @@ export default function Levels() {
                         {t.startLearning}
                       </PushableButton>
                     ) : (
-                      <Link to={`/lesson/${level.id}`} className="block w-full">
+                      <Link to={`/lesson/${level.id}`} className="block w-full" onClick={() => import("../utils/soundEffects").then(m => m.playSound("click", 0.2))}>
                         <PushableButton
                           as="div"
                           className="w-full"

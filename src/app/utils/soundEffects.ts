@@ -31,6 +31,11 @@ export function playExclusiveAudio(path: string) {
       currentAudio.play()
         .then(() => resolve())
         .catch((err) => {
+          // If playback was aborted (e.g., by rapid clicking calling pause()), 
+          // resolve instead of reject so we don't trigger the TTS fallback.
+          if (err.name === "AbortError") {
+            return resolve();
+          }
           console.error("Audio playback failed:", err);
           reject(err);
         });

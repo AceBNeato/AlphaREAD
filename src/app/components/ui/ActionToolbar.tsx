@@ -1,5 +1,6 @@
 import { PushableButton } from "./PushableButton";
 import { ArrowLeft, RotateCcw, Shuffle, FastForward, SkipForward, ChevronRight, ArrowRight } from "lucide-react";
+import { playSound } from "../../utils/soundEffects";
 
 interface ActionToolbarProps {
   onBack?: () => void;
@@ -31,12 +32,19 @@ export function ActionToolbar({
   // Determine if we are rendering a full 5-button toolbar or a smaller one
   const isFullToolbar = !!onReset || !!onSkip;
 
+  const handleAction = (action?: () => void) => {
+    if (action) {
+      playSound("click", 0.2);
+      action();
+    }
+  };
+
   return (
     <div className="w-full shrink-0 py-8 px-10 mt-auto border-t border-gray-200 dark:border-gray-800">
       <div className={`flex justify-center items-center w-full gap-2 sm:gap-4 ${isFullToolbar ? 'max-w-xl' : 'max-w-md'} mx-auto`}>
         {onBack && (
           <PushableButton
-            onClick={onBack}
+            onClick={() => handleAction(onBack)}
             disabled={!canBack}
             className="flex-1 h-12"
             frontClassName="bg-gradient-to-r from-[#1cb0f6] to-[#0a8ed4] text-white py-2 text-xs sm:text-base flex items-center justify-center gap-0 sm:gap-1"
@@ -48,7 +56,7 @@ export function ActionToolbar({
 
         {onReset && (
           <PushableButton
-            onClick={onReset}
+            onClick={() => handleAction(onReset)}
             className="w-12 sm:w-auto sm:flex-1 shrink-0 h-12"
             frontClassName="bg-gradient-to-r from-[rgb(255,75,75)] to-[rgb(216,42,42)] text-white py-2 px-0 sm:px-4 flex items-center justify-center gap-0 sm:gap-1"
             edgeClassName="bg-[rgb(180,30,30)]"
@@ -60,7 +68,7 @@ export function ActionToolbar({
 
         {onShuffle && (
           <PushableButton
-            onClick={onShuffle}
+            onClick={() => handleAction(onShuffle)}
             className="w-12 sm:w-auto sm:flex-1 shrink-0 h-12"
             frontClassName="bg-gradient-to-r from-[#ce82ff] to-[#a559d6] text-white py-2 px-0 sm:px-4 flex items-center justify-center gap-0 sm:gap-1"
             edgeClassName="bg-[#8f3fb8]"
@@ -72,7 +80,7 @@ export function ActionToolbar({
 
         {onSkip && (
           <PushableButton
-            onClick={onSkip}
+            onClick={() => handleAction(onSkip)}
             className="w-12 sm:w-auto sm:flex-1 shrink-0 h-12"
             frontClassName="bg-gradient-to-r from-[#ffc800] to-[#ff9600] text-white py-2 px-0 sm:px-4 flex items-center justify-center gap-0 sm:gap-1"
             edgeClassName="bg-[#d97e00]"
@@ -88,7 +96,7 @@ export function ActionToolbar({
 
         {onNext && (
           <PushableButton
-            onClick={onNext}
+            onClick={() => handleAction(onNext)}
             disabled={!canNext}
             className="flex-1 h-12"
             frontClassName="bg-gradient-to-r from-[#58cc02] to-[#46a302] text-white py-2 text-xs sm:text-base flex items-center justify-center gap-0 sm:gap-1"
