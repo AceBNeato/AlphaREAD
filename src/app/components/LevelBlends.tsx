@@ -150,10 +150,18 @@ export function LevelBlends({ levelId, accent, categoryFilter, onComplete }: Lev
 
   const handleItemClick = (item: string) => {
     if (allPatternsRaw.includes(item)) {
-      if (isTagalog && categoryFilter === "Kambal Katinig") {
+      if (isTagalog && categoryFilter === "Diptonggo") {
+        playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/filipino/diptonggo/fil-level4-${item.toLowerCase()}.mp3`).catch(() => {
+          playTTSUtil(item.toLowerCase());
+        });
+      } else if (isTagalog && categoryFilter === "Kambal Katinig") {
         playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/filipino/kambalkatinig/fil-katinig-${item.toLowerCase()}.mp3`).catch(() => {
           playTTSUtil(item.toLowerCase());
         });
+      } else if (isTagalog) {
+        playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/filipino/diptonggo/fil-level4-${item.toLowerCase()}.mp3`)
+          .catch(() => playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/filipino/kambalkatinig/fil-katinig-${item.toLowerCase()}.mp3`))
+          .catch(() => playTTSUtil(item.toLowerCase()));
       } else {
         let folder = "2letterblend";
         const isThreeLetter = BLENDS_DATA.find((d: any) => d.name === "Three-Letter Blends")?.patterns.some((p: any) => p.pattern === item);
@@ -164,10 +172,13 @@ export function LevelBlends({ levelId, accent, categoryFilter, onComplete }: Lev
         });
       }
     } else {
-      let audioPath = `${(import.meta as any).env.BASE_URL}audio/english/blends-audio/${item.toLowerCase()}.mp3`;
       if (isTagalog) {
-        audioPath = `${(import.meta as any).env.BASE_URL}audio/filipino/tagalog-words/fil-level4-${item.toLowerCase()}.mp3`;
+        playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/filipino/diptonggo/fil-level4-${item.toLowerCase()}.mp3`)
+          .catch(() => playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/filipino/tagalog-words/fil-level4-${item.toLowerCase()}.mp3`))
+          .catch(() => playTTSUtil(item.toLowerCase()));
+        return;
       }
+      let audioPath = `${(import.meta as any).env.BASE_URL}audio/english/blends-audio/${item.toLowerCase()}.mp3`;
       playExclusiveAudio(audioPath).catch(() => {
         playTTSUtil(item.toLowerCase());
       });

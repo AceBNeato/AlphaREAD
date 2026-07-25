@@ -160,7 +160,13 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
 
     // Use local audio files for Words based on level
     let wordAudioPath = null;
-    if (levelId === 6) {
+    if (levelId === 6 || levelId === 4) {
+      if (language === "tl") {
+        playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/filipino/diptonggo/fil-level4-${text.toLowerCase()}.mp3`)
+          .catch(() => playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/filipino/tagalog-words/fil-level4-${text.toLowerCase()}.mp3`))
+          .catch(() => playTTS(text.toLowerCase()));
+        return;
+      }
       wordAudioPath = `${(import.meta as any).env.BASE_URL}audio/english/blends-audio/${text.toLowerCase()}.mp3`;
     } else if (levelId === 5) {
       wordAudioPath = `${(import.meta as any).env.BASE_URL}audio/english/long-vowels-audio/${text.toLowerCase()}.mp3`;

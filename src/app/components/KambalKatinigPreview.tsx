@@ -20,9 +20,11 @@ interface KambalKatinigPreviewProps {
 
 export function KambalKatinigPreview({ group }: KambalKatinigPreviewProps) {
   const handlePlayWord = (word: string) => {
-    playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/filipino/tagalog-words/fil-level4-${word.toLowerCase()}.mp3`).catch(() => {
-      playTTS(word.toLowerCase());
-    });
+    playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/filipino/diptonggo/fil-level4-${word.toLowerCase()}.mp3`)
+      .catch(() => playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/filipino/tagalog-words/fil-level4-${word.toLowerCase()}.mp3`))
+      .catch(() => {
+        playTTS(word.toLowerCase());
+      });
   };
 
   const renderSection = (title: string, words: WordItem[]) => {
