@@ -16,17 +16,11 @@ interface KambalKatinigPreviewProps {
     gitna?: WordItem[];
     hulihan?: WordItem[];
   };
+  accent: { primary: string; dark: string };
+  hideHeader?: boolean;
 }
 
-export function KambalKatinigPreview({ group }: KambalKatinigPreviewProps) {
-  const handlePlayWord = (word: string) => {
-    playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/filipino/diptonggo/fil-level4-${word.toLowerCase()}.mp3`)
-      .catch(() => playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/filipino/tagalog-words/fil-level4-${word.toLowerCase()}.mp3`))
-      .catch(() => {
-        playTTS(word.toLowerCase());
-      });
-  };
-
+export function KambalKatinigPreview({ group, accent, hideHeader }: KambalKatinigPreviewProps) {
   const renderSection = (title: string, words: WordItem[]) => {
     if (!words || words.length === 0) return null;
     return (
@@ -44,8 +38,7 @@ export function KambalKatinigPreview({ group }: KambalKatinigPreviewProps) {
               <PushableButton
                 as="div"
                 isTile
-                onClick={() => handlePlayWord(w.word)}
-                className="w-full h-[54px] cursor-pointer hover:brightness-105"
+                className="w-full h-[54px]"
                 frontClassName="bg-white dark:bg-gray-800"
                 edgeClassName="bg-gray-200 dark:bg-gray-900"
               >
@@ -53,7 +46,8 @@ export function KambalKatinigPreview({ group }: KambalKatinigPreviewProps) {
                   {w.word.split('').map((char, i) => (
                     <span 
                       key={i} 
-                      className={w.highlights?.includes(i) ? "text-[#8b40b8] dark:text-[#c084fc] font-black" : ""}
+                      className={w.highlights?.includes(i) ? "font-black" : ""}
+                      style={w.highlights?.includes(i) ? { color: accent.primary } : undefined}
                     >
                       {char}
                     </span>
@@ -69,15 +63,27 @@ export function KambalKatinigPreview({ group }: KambalKatinigPreviewProps) {
 
   return (
     <div className="flex flex-col w-full gap-4 max-w-4xl mx-auto mb-10">
-      <div className="flex justify-center mb-2">
-        <motion.div 
-          initial={{ y: -20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          className="px-8 py-3 bg-[#a048db] rounded-full shadow-lg border-b-4 border-[#7a2cbb]"
-        >
-          <span className="text-white font-black text-3xl">{group.pattern}</span>
-        </motion.div>
-      </div>
+      {!hideHeader && (
+        <div className="flex justify-center mb-4">
+          <motion.div 
+            initial={{ y: -20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+          >
+            <PushableButton
+              as="div"
+              isTile
+              onClick={() => {}} // Clickable but no audio
+              className="w-[70px] h-[70px] sm:w-[84px] sm:h-[84px] cursor-pointer hover:brightness-105"
+              frontStyle={{ background: `linear-gradient(135deg, ${accent.primary}, ${accent.dark})` }}
+              edgeStyle={{ backgroundColor: accent.dark, filter: 'brightness(0.75)' }}
+            >
+              <span className="text-white font-black text-3xl sm:text-4xl flex items-center justify-center h-full w-full drop-shadow-md">
+                {group.pattern}
+              </span>
+            </PushableButton>
+          </motion.div>
+        </div>
+      )}
       
       <div className="flex flex-col md:flex-row gap-4 w-full">
         {renderSection("Unahan", group.unahan || [])}

@@ -22,6 +22,7 @@ interface LevelSyllableQuizProps {
   levelId: number;
   accent: { primary: string; dark: string; lightBg: string };
   onComplete: () => void;
+  onExit?: () => void;
 }
 
 function getAudioPath(syllable: string, pattern: Pattern, language: string): string {
@@ -79,10 +80,11 @@ function buildSteps(allSyllables: string[]): Step[] {
   return steps;
 }
 
-export function LevelSyllableQuiz({ levelId, pattern, accent, onComplete }: LevelSyllableQuizProps) {
+export function LevelSyllableQuiz({ levelId, pattern, accent, onComplete, onExit }: LevelSyllableQuizProps) {
   const navigate = useNavigate();
   const { generateSyllableTargets } = useCurriculum();
   const { language } = useLanguage();
+  const isTagalog = language === "tl";
   const [allSyllables] = useState<string[]>(() => {
     // Generate 60 syllables of the requested pattern (VC or CV) to provide enough variety
     const targets = generateSyllableTargets([pattern], 60);
@@ -99,7 +101,7 @@ export function LevelSyllableQuiz({ levelId, pattern, accent, onComplete }: Leve
     handleNextStep: handleNext,
     handleStepBack,
     handleGoBack
-  } = useLessonProgress(steps, levelId);
+  } = useLessonProgress(steps, levelId, undefined, onExit);
 
   useEffect(() => {
     if (isProgressComplete) {
@@ -128,7 +130,7 @@ export function LevelSyllableQuiz({ levelId, pattern, accent, onComplete }: Leve
       isComplete={isProgressComplete}
       progressPercentage={progressPercentage}
       onExit={handleGoBack}
-      title={`Syllable Master - ${getPhaseTitle()}`}
+      title={isTagalog ? `Antas 2: Pantig Master - ${getPhaseTitle()}` : `Syllable Master - ${getPhaseTitle()}`}
       completeSubtitle={<>You've completed all phases and mastered all {allSyllables.length} {pattern} syllables!</>}
       accentColor={accent.primary}
       showConfetti={isProgressComplete}

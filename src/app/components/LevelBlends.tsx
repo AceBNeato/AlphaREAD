@@ -14,6 +14,7 @@ interface LevelBlendsProps {
   accent: { primary: string; dark: string; lightBg: string };
   categoryFilter?: string;
   onComplete?: () => void;
+  onExit?: () => void;
 }
 
 type Phase = "vowels-review" | "words-preview" | "words-review" | "words-eval" | "sentences";
@@ -32,7 +33,7 @@ interface GameStep {
   uniformMaxLen?: number;
 }
 
-export function LevelBlends({ levelId, accent, categoryFilter, onComplete }: LevelBlendsProps) {
+export function LevelBlends({ levelId, accent, categoryFilter, onComplete, onExit }: LevelBlendsProps) {
   const navigate = useNavigate();
   const { BLENDS_DATA, BLENDS_SENTENCES } = useCurriculum();
   const { language } = useLanguage();
@@ -144,24 +145,30 @@ export function LevelBlends({ levelId, accent, categoryFilter, onComplete }: Lev
     handleNextStep,
     handleStepBack,
     handleGoBack
-  } = useLessonProgress(STEPS, levelId, onComplete);
+  } = useLessonProgress(STEPS, levelId, onComplete, onExit);
 
   const safeStep = step!;
+
+  const effectiveAccent = useMemo(() => {
+    if (isTagalog && categoryFilter === "Diptonggo") {
+      return { primary: "#f97316", dark: "#c2410c", lightBg: "#ffedd5" }; // Orange
+    }
+    if (isTagalog && categoryFilter === "Kambal Katinig") {
+      return { primary: "#3b82f6", dark: "#1d4ed8", lightBg: "#dbeafe" }; // Blue
+    }
+    return accent;
+  }, [isTagalog, categoryFilter, accent]);
 
   const handleItemClick = (item: string) => {
     if (allPatternsRaw.includes(item)) {
       if (isTagalog && categoryFilter === "Diptonggo") {
-        playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/filipino/diptonggo/fil-level4-${item.toLowerCase()}.mp3`).catch(() => {
-          playTTSUtil(item.toLowerCase());
-        });
+        playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/filipino/diptonggo/fil-level4-${item.toLowerCase()}.mp3`).catch(() => {});
       } else if (isTagalog && categoryFilter === "Kambal Katinig") {
-        playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/filipino/kambalkatinig/fil-katinig-${item.toLowerCase()}.mp3`).catch(() => {
-          playTTSUtil(item.toLowerCase());
-        });
+        playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/filipino/kambalkatinig/fil-level4-${item.toLowerCase()}.mp3`).catch(() => {});
       } else if (isTagalog) {
         playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/filipino/diptonggo/fil-level4-${item.toLowerCase()}.mp3`)
-          .catch(() => playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/filipino/kambalkatinig/fil-katinig-${item.toLowerCase()}.mp3`))
-          .catch(() => playTTSUtil(item.toLowerCase()));
+          .catch(() => playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/filipino/kambalkatinig/fil-level4-${item.toLowerCase()}.mp3`))
+          .catch(() => {});
       } else {
         let folder = "2letterblend";
         const isThreeLetter = BLENDS_DATA.find((d: any) => d.name === "Three-Letter Blends")?.patterns.some((p: any) => p.pattern === item);
@@ -174,8 +181,9 @@ export function LevelBlends({ levelId, accent, categoryFilter, onComplete }: Lev
     } else {
       if (isTagalog) {
         playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/filipino/diptonggo/fil-level4-${item.toLowerCase()}.mp3`)
+          .catch(() => playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/filipino/kambalkatinig/fil-level4-${item.toLowerCase()}.mp3`))
           .catch(() => playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/filipino/tagalog-words/fil-level4-${item.toLowerCase()}.mp3`))
-          .catch(() => playTTSUtil(item.toLowerCase()));
+          .catch(() => {});
         return;
       }
       let audioPath = `${(import.meta as any).env.BASE_URL}audio/english/blends-audio/${item.toLowerCase()}.mp3`;
@@ -204,7 +212,7 @@ export function LevelBlends({ levelId, accent, categoryFilter, onComplete }: Lev
       onExit={handleGoBack}
       title={`Blends Master - ${getPhaseTitle()}`}
       completeSubtitle={<>You've completed all phases and mastered {categoryFilter || "Blends"}!</>}
-      accentColor={accent.primary}
+      accentColor={effectiveAccent.primary}
     >
       <StepRenderer
         key={currentStepIdx}
@@ -219,7 +227,7 @@ export function LevelBlends({ levelId, accent, categoryFilter, onComplete }: Lev
                 : undefined
         }}
         levelId={levelId}
-        accent={accent}
+        accent={effectiveAccent}
         onNext={handleNextStep}
         onBack={handleStepBack}
         canBack={currentStepIdx > 0}

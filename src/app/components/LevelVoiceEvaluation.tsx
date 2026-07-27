@@ -163,8 +163,9 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
     if (levelId === 6 || levelId === 4) {
       if (language === "tl") {
         playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/filipino/diptonggo/fil-level4-${text.toLowerCase()}.mp3`)
+          .catch(() => playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/filipino/kambalkatinig/fil-level4-${text.toLowerCase()}.mp3`))
           .catch(() => playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/filipino/tagalog-words/fil-level4-${text.toLowerCase()}.mp3`))
-          .catch(() => playTTS(text.toLowerCase()));
+          .catch(() => playTTS(text.replace(/-HARD|-SOFT/i, "").toLowerCase()));
         return;
       }
       wordAudioPath = `${(import.meta as any).env.BASE_URL}audio/english/blends-audio/${text.toLowerCase()}.mp3`;
@@ -179,7 +180,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
     if (wordAudioPath) {
       playExclusiveAudio(wordAudioPath).catch((err) => {
         console.warn(`[AlphabetGO] Local word audio not found: ${wordAudioPath}, falling back to TTS`, err);
-        playTTS(text.toLowerCase());
+        playTTS(text.replace(/-HARD|-SOFT/i, "").toLowerCase());
       });
       return;
     }
@@ -198,6 +199,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
   };
 
   const handleGoBack = async () => {
+    playSound("click", 0.2);
     if (!showCompletionScreen) {
       const confirmExit = await confirmAction("Are you sure you want to leave?", "Your progress will not be saved.");
       if (!confirmExit) return;
@@ -388,15 +390,19 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
                                   ? 'text-sm sm:text-md font-semibold text-left flex-1 min-w-0 leading-snug'
                                   : `${batchWords.length >= 10 ? 'text-2xl sm:text-3xl' : 'text-2xl sm:text-3xl'} font-bold text-left tracking-wider flex-1 min-w-0`;
                                 return (
-                                  <span className={`${textClass} text-gray-800 dark:text-gray-200`} style={{ color: isDone ? '#58CC02' : undefined }}>
-                                    {wordHighlights && wordHighlights[w] ? (
-                                      (w === w.toUpperCase() ? w.toLowerCase() : w).split('').map((char, ci) => (
-                                        <span key={ci} className={wordHighlights[w].includes(ci) ? 'text-rose-400 font-black' : ''}>{char}</span>
-                                      ))
-                                    ) : (
-                                      w === w.toUpperCase() ? w.toLowerCase() : w
-                                    )}
-                                  </span>
+                                  <div className="flex flex-col">
+                                    <span className={`${textClass} text-gray-800 dark:text-gray-200 flex items-center gap-1`} style={{ color: isDone ? '#58CC02' : undefined }}>
+                                      {wordHighlights && wordHighlights[w] ? (
+                                        w.replace(/-HARD|-SOFT/i, "").toLowerCase().split('').map((char, ci) => (
+                                          <span key={ci} className={wordHighlights[w].includes(ci) ? 'font-black' : ''} style={{ color: wordHighlights[w].includes(ci) ? accent.primary : undefined }}>{char}</span>
+                                        ))
+                                      ) : (
+                                        w.replace(/-HARD|-SOFT/i, "").toLowerCase()
+                                      )}
+                                      {w.toUpperCase().includes('-HARD') && <span className="text-[10px] sm:text-xs text-gray-400 font-bold tracking-wider pt-1">HARD</span>}
+                                      {w.toUpperCase().includes('-SOFT') && <span className="text-[10px] sm:text-xs text-gray-400 font-bold tracking-wider pt-1">SOFT</span>}
+                                    </span>
+                                  </div>
                                 );
                               })()}
                               {feedback === 'correct' && <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="text-green-500 flex items-center gap-1 text-sm font-bold"><CheckCircle2 className="w-4 h-4" /> Correct!</motion.div>}

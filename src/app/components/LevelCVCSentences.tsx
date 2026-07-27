@@ -165,6 +165,7 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
   };
 
   const handleGoBack = async () => {
+    playSound("click", 0.2);
     const confirmExit = await confirmAction("Are you sure you want to leave?", "Your progress will not be saved.");
     if (!confirmExit) return;
     navigate("/levels", { replace: true });

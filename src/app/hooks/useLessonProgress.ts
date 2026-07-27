@@ -18,7 +18,8 @@ interface UseLessonProgressResult<T> {
 export function useLessonProgress<T>(
   steps: T[],
   levelId: number,
-  onComplete?: () => void
+  onComplete?: () => void,
+  onExit?: () => void
 ): UseLessonProgressResult<T> {
   const navigate = useNavigate();
   const [currentStepIdx, setCurrentStepIdx] = useState(0);
@@ -71,8 +72,12 @@ export function useLessonProgress<T>(
       const confirmExit = await confirmAction("Are you sure you want to leave?", "Your progress will not be saved.");
       if (!confirmExit) return;
     }
-    navigate("/levels", { replace: true });
-  }, [isComplete, navigate]);
+    if (onExit) {
+      onExit();
+    } else {
+      navigate("/levels", { replace: true });
+    }
+  }, [isComplete, navigate, onExit]);
 
   return {
     currentStepIdx,

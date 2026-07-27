@@ -416,7 +416,7 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, singleSho
           let wordMatch = "";
           let bestSimilarity = 0;
           let isPerfectMatch = false;
-          const wordUpper = evaluatingWord.toUpperCase();
+          const wordUpper = evaluatingWord.toUpperCase().replace(/-HARD|-SOFT/i, "");
 
           for (let i = 0; i < allTranscripts.length; i++) {
             const normalized = normalizeTranscript(allTranscripts[i]);

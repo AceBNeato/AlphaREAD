@@ -24,6 +24,7 @@ interface LevelSyllableBuilderProps {
   accent: { primary: string; dark: string; lightBg: string };
   onComplete?: () => void;
   onBack?: () => void;
+  onExit?: () => void;
   customTargets?: SyllableTarget[];
   isSubPhase?: boolean;
   embedded?: boolean;
@@ -47,6 +48,7 @@ export function LevelSyllableBuilder({
   accent,
   onComplete,
   onBack,
+  onExit,
   customTargets,
   isSubPhase,
   embedded,
@@ -55,6 +57,7 @@ export function LevelSyllableBuilder({
 
   const { VOWELS, CONSONANTS, generateSyllableTargets, getPhoneticPronunciation } = useCurriculum();
   const { language } = useLanguage();
+  const isTagalog = language === "tl";
 
   // Sub-level selection: when Level 2 has both VC and CV, show a picker first
   const [selectedSubPattern, setSelectedSubPattern] = useState<SyllablePattern | null>(
@@ -91,18 +94,18 @@ export function LevelSyllableBuilder({
 
     // Add random distractors up to exactly 12 total buttons
     let allPool = [...CONSONANTS, ...VOWELS];
-    
+
     // If target has chunks, inject some random chunk distractors
     if (hasChunks) {
       const randomChunks = [];
       for (let i = 0; i < 6; i++) {
-         const c = CONSONANTS[Math.floor(Math.random() * CONSONANTS.length)];
-         const v = VOWELS[Math.floor(Math.random() * VOWELS.length)];
-         randomChunks.push(Math.random() > 0.5 ? c + v : v + c);
+        const c = CONSONANTS[Math.floor(Math.random() * CONSONANTS.length)];
+        const v = VOWELS[Math.floor(Math.random() * VOWELS.length)];
+        randomChunks.push(Math.random() > 0.5 ? c + v : v + c);
       }
       allPool = [...allPool, ...randomChunks];
     }
-    
+
     allPool = allPool.filter((l) => !added.has(l));
     const maxPoolSize = (language === "tl" && levelId === 3) ? 8 : 12;
     const distractorsNeeded = Math.max(0, maxPoolSize - letters.length);
@@ -140,7 +143,7 @@ export function LevelSyllableBuilder({
 
   const allDone = completedTargets.size >= targets.length;
   const progress = (completedTargets.size / targets.length) * 100;
-  const slotCount = currentTarget ? (hasChunks ? currentTarget.syllable.length : currentTarget.letters.length) : 2;
+  const slotCount = currentTarget ? (hasChunks ? currentTarget.letters.join("").length : currentTarget.letters.length) : 2;
 
   useEffect(() => {
     if (allDone && onComplete) {
@@ -170,7 +173,7 @@ export function LevelSyllableBuilder({
 
     // Use local audio files for CV and VC patterns
     if (pattern === "CV") {
-      const audioPath = language === "tl" 
+      const audioPath = language === "tl"
         ? `${(import.meta as any).env.BASE_URL}audio/filipino/cv-audio/fil-cv-${syllableLower}.mp3`
         : `${(import.meta as any).env.BASE_URL}audio/english/cv-audio/eng-cv-${syllableLower}.mp3`;
       playExclusiveAudio(audioPath).catch(() => { });
@@ -178,7 +181,7 @@ export function LevelSyllableBuilder({
     }
 
     if (pattern === "VC") {
-      const audioPath = language === "tl" 
+      const audioPath = language === "tl"
         ? `${(import.meta as any).env.BASE_URL}audio/filipino/vc-audio/fil-vc-${syllableLower}.mp3`
         : `${(import.meta as any).env.BASE_URL}audio/english/vc-audio/eng-vc-${syllableLower}.mp3`;
       playExclusiveAudio(audioPath).catch(() => { });
@@ -187,19 +190,21 @@ export function LevelSyllableBuilder({
 
     // Use local audio files for CVC words
     if (pattern === "CVC") {
-      const audioPath = language === "tl" 
+      const audioPath = language === "tl"
         ? `${(import.meta as any).env.BASE_URL}audio/filipino/tagalog-words/fil-level3-${syllableLower}.mp3`
         : `${(import.meta as any).env.BASE_URL}audio/english/cvc-audio/cvc-${syllableLower}.mp3`;
       playExclusiveAudio(audioPath).catch((err) => {
         console.warn(`[AlphabetGO] Local CVC audio not found: ${audioPath}, falling back to TTS`, err);
-        const phoneticText = getPhoneticText(text, pattern);
+        const cleanText = text.replace(/-HARD|-SOFT/i, "");
+        const phoneticText = getPhoneticText(cleanText, pattern);
         playTTSUtil(phoneticText);
       });
       return;
     }
 
     // Fallback
-    const phoneticText = getPhoneticText(text, pattern);
+    const cleanText = text.replace(/-HARD|-SOFT/i, "");
+    const phoneticText = getPhoneticText(cleanText, pattern);
     playTTSUtil(phoneticText);
   };
 
@@ -208,19 +213,19 @@ export function LevelSyllableBuilder({
 
     // Play audio for the letter or chunk
     if (language === "tl") {
-       if (letter.length === 1) {
-         playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/filipino/fil-alphabet/fil-${letter.toLowerCase()}.mp3`).catch(()=>{});
-       } else {
-         const isVowelFirst = VOWELS.includes(letter[0].toUpperCase());
-         if (isVowelFirst) {
-            playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/filipino/vc-audio/fil-vc-${letter.toLowerCase()}.mp3`).catch(()=>{});
-         } else {
-            playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/filipino/cv-audio/fil-cv-${letter.toLowerCase()}.mp3`).catch(()=>{});
-         }
-       }
+      if (letter.length === 1) {
+        playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/filipino/fil-alphabet/fil-${letter.toLowerCase()}.mp3`).catch(() => { });
+      } else {
+        const isVowelFirst = VOWELS.includes(letter[0].toUpperCase());
+        if (isVowelFirst) {
+          playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/filipino/vc-audio/fil-vc-${letter.toLowerCase()}.mp3`).catch(() => { });
+        } else {
+          playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/filipino/cv-audio/fil-cv-${letter.toLowerCase()}.mp3`).catch(() => { });
+        }
+      }
     } else {
-       const prefix = "english/eng-alphabet/eng-";
-       playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/${prefix}${letter.toLowerCase()}.mp3`).catch(()=>{});
+      const prefix = "english/eng-alphabet/eng-";
+      playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/${prefix}${letter.toLowerCase()}.mp3`).catch(() => { });
     }
 
     setSelectedLetters((prev) => {
@@ -228,8 +233,9 @@ export function LevelSyllableBuilder({
       const formed = newSelected.join("").toUpperCase();
 
       // Check if we just filled all required character slots
-      if (formed.length === currentTarget.syllable.length) {
-        if (formed === currentTarget.syllable.toUpperCase()) {
+      const expectedSyllable = currentTarget.letters.join("").toUpperCase();
+      if (formed.length === expectedSyllable.length) {
+        if (formed === expectedSyllable) {
           playSound("correct", 0.4);
           setFeedback("correct");
           setShowConfetti(true);
@@ -280,7 +286,7 @@ export function LevelSyllableBuilder({
       if (currentIndex < targets.length - 1) {
         const nextIdx = currentIndex + 1;
         setCurrentIndex(nextIdx);
-        
+
         if (completedTargets.has(targets[nextIdx].syllable)) {
           setSelectedLetters([...targets[nextIdx].letters]);
           setFeedback("correct");
@@ -352,11 +358,16 @@ export function LevelSyllableBuilder({
   };
 
   const handleGoBack = async () => {
+    playSound("click", 0.2);
     if (!allDone) {
       const confirmExit = await confirmAction("Are you sure you want to leave?", "Your progress will not be saved.");
       if (!confirmExit) return;
     }
-    navigate("/levels", { replace: true });
+    if (onExit) {
+      onExit();
+    } else {
+      navigate("/levels", { replace: true });
+    }
   };
   const innerContent = (
     <AnimatePresence mode="wait">
@@ -379,10 +390,10 @@ export function LevelSyllableBuilder({
                 className="text-center my-auto w-full"
               >
                 <h2 className="text-2xl mb-2 font-bold" style={{ color: accent.primary }}>
-                  {levelId === 3 ? "CVC Master - Word Builder" : "Syllable Builder"}
+                  {levelId === 3 ? "CVC Master - Word Builder" : (isTagalog ? "Antas 2: Pagbuo ng Pantig" : "Level 2: Syllable Builder")}
                 </h2>
                 <p className="text-gray-800 dark:text-gray-200 text-base sm:text-lg font-bold mt-6 mb-8 block">
-                  Choose which pattern to practice!
+                  {isTagalog ? "Pumili ng pattern na gusto mong pag-aralan!" : "Choose which pattern to practice!"}
                 </p>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -476,23 +487,26 @@ export function LevelSyllableBuilder({
                               edgeStyle={{ backgroundColor: patternColors[currentTarget.pattern] }}
                               title="Click to hear again"
                             >
-                              <div className="font-black text-4xl sm:text-5xl tracking-wide flex gap-0.5">
-                                {currentTarget.letters.map((ch, i) => (
-                                  <span
-                                    key={i}
-                                    style={{
-                                      color: hasChunks 
-                                        ? (i % 2 === 0 ? "#1CB0F6" : "#FF6B8A")
-                                        : (language === "en" && levelId === 3 
-                                            ? (i < 2 ? "#FF6B8A" : "#1CB0F6") 
+                              <div className="flex flex-col items-center justify-center">
+                                <div className="font-black text-4xl sm:text-5xl tracking-wide flex gap-0.5">
+                                  {currentTarget.letters.map((ch, i) => (
+                                    <span
+                                      key={i}
+                                      style={{
+                                        color: hasChunks
+                                          ? (i % 2 === 0 ? "#1CB0F6" : "#FF6B8A")
+                                          : (language === "en" && levelId === 3
+                                            ? (i < 2 ? "#FF6B8A" : "#1CB0F6")
                                             : (VOWELS.includes(ch.toUpperCase()) ? "#FF6B8A" : "#1CB0F6")),
-                                    }}
-                                  >
-                                    {ch.toLowerCase()}
-                                  </span>
-                                ))}
+                                      }}
+                                    >
+                                      {ch.toLowerCase()}
+                                    </span>
+                                  ))}
+                                </div>
+                                {currentTarget.syllable.toUpperCase().includes('-HARD') && <span className="text-[10px] sm:text-xs text-gray-400 font-bold tracking-wider pt-1">HARD</span>}
+                                {currentTarget.syllable.toUpperCase().includes('-SOFT') && <span className="text-[10px] sm:text-xs text-gray-400 font-bold tracking-wider pt-1">SOFT</span>}
                               </div>
-                              <Volume2 className="w-6 h-6 opacity-50" style={{ color: patternColors[currentTarget.pattern] }} />
                             </PushableButton>
                             {!hasClickedTTS && currentIndex === 0 && (
                               <motion.div
@@ -519,22 +533,22 @@ export function LevelSyllableBuilder({
                             {Array.from({ length: slotCount }).map((_, slot) => {
                               const joinedSelected = selectedLetters.join("");
                               const displayedChar = joinedSelected[slot];
-                              
+
                               // Map each character back to its source chunk in selectedLetters
                               const charToSelectedChunk: number[] = [];
                               selectedLetters.forEach((chunk, idx) => {
-                                for(let i=0; i<chunk.length; i++) charToSelectedChunk.push(idx);
+                                for (let i = 0; i < chunk.length; i++) charToSelectedChunk.push(idx);
                               });
                               const chunkIdxToRemove = charToSelectedChunk[slot];
 
                               let slotBackground = "";
                               let slotBorderColor = "";
-                              
+
                               if (hasChunks && currentTarget) {
                                 // For chunks, we map color based on the target chunk index to get alternating blue/rose
                                 const slotToTargetChunk: number[] = [];
                                 currentTarget.letters.forEach((chunk, idx) => {
-                                  for(let i=0; i<chunk.length; i++) slotToTargetChunk.push(idx);
+                                  for (let i = 0; i < chunk.length; i++) slotToTargetChunk.push(idx);
                                 });
                                 const targetChunkIdx = slotToTargetChunk[slot] ?? 0;
                                 const isBlue = targetChunkIdx % 2 === 0;
@@ -688,11 +702,11 @@ export function LevelSyllableBuilder({
       <div className="shrink-0 z-10 px-4 py-3 border-b border-gray-200 dark:border-gray-800">
         <div className="max-w-2xl mx-auto flex items-center gap-3 w-full">
           <Button variant="ghost" size="sm" onClick={handleGoBack} className="rounded-full p-2 h-auto text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 flex items-center gap-1">
-            <ArrowLeft className="w-7 h-7 sm:w-8 sm:h-8 stroke-[3]" /> <span className="hidden sm:inline font-bold uppercase tracking-wider text-sm">EXIT</span>
+            <X className="w-7 h-7 sm:w-8 sm:h-8 stroke-[3]" /> <span className="hidden sm:inline font-bold uppercase tracking-wider text-sm">EXIT</span>
           </Button>
           <div className="flex-1 text-center">
             <h2 className="text-lg font-bold tracking-tight text-center flex-1" style={{ color: accent.primary }}>
-              {levelId === 3 ? "CVC Master - Word Builder" : "Syllable Builder"}
+              {levelId === 3 ? "CVC Master - Word Builder" : (isTagalog ? "Antas 2: Pagbuo ng Pantig" : "Syllable Builder")}
             </h2>
           </div>
           {targets.length > 0 && <span className="text-sm font-bold" style={{ color: accent.primary }}>Step {currentIndex + 1}/{targets.length}</span>}

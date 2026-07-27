@@ -13,7 +13,7 @@ import { Button } from "./ui/button";
 import { confirmAction } from "../utils/alerts";
 import { motion, AnimatePresence } from "motion/react";
 import { Confetti } from "./ui/Confetti";
-import { playExclusiveAudio } from "../utils/soundEffects";
+import { playExclusiveAudio, playSound } from "../utils/soundEffects";
 import { playTTS } from "../utils/tts";
 import { PushableButton } from "./ui/PushableButton";
 import { ActionToolbar } from "./ui/ActionToolbar";
@@ -68,13 +68,23 @@ function LevelCVCPreview({
         <div className="w-full max-w-4xl mx-auto px-15 py-4 text-center flex-1">
           <p className="text-gray-600 dark:text-gray-300 text-base sm:text-lg font-bold mt-2 mb-8 block">
             {isReview
-              ? `🎉 Great work! Review ${wordLabel}! ${batchNumber && totalBatches ? "(Batch " + batchNumber + " of " + totalBatches + ")" : ""}`
+              ? `Great work! Review ${wordLabel}! ${batchNumber && totalBatches ? "(Batch " + batchNumber + " of " + totalBatches + ")" : ""}`
               : `Review ${wordLabel} before we start! ${batchNumber && totalBatches ? "(Batch " + batchNumber + " of " + totalBatches + ")" : ""}`
             }
           </p>
 
           <div className="flex flex-wrap justify-center gap-2 sm:gap-3 mb-12 w-full max-w-4xl mx-auto">
             {order.map((word) => {
+              let chunks: string[] = [];
+              if (isTagalog) {
+                const standardChunks = TAGALOG_WORD_CHUNKS[word.toUpperCase()];
+                if (standardChunks && standardChunks.length > 0) {
+                  chunks = standardChunks;
+                } else {
+                  chunks = word.match(/ng|Ng|NG|[A-Za-z]/g) || word.split("");
+                }
+              }
+
               return (
                 <motion.div
                   key={word}
@@ -92,20 +102,35 @@ function LevelCVCPreview({
                           : `${(import.meta as any).env.BASE_URL}audio/english/cvc-audio/cvc-${word.toLowerCase()}.mp3`;
                         playExclusiveAudio(audioPath).catch((err: any) => {
                           console.warn(`[AlphabetGO] Local CVC audio not found: ${audioPath}, falling back to TTS`, err);
-                          playTTS(word.toLowerCase());
+                          playTTS(word.replace(/-HARD|-SOFT/i, "").toLowerCase());
                         });
                       }
                     }}
                     className={`w-full aspect-square flex items-center justify-center ${!isReview ? 'cursor-pointer' : ''}`}
-                    frontStyle={{
-                      background: 'linear-gradient(135deg, #FF9600 0%, #e08000 100%)',
-                    }}
-                    edgeStyle={{
-                      backgroundColor: '#b06000',
-                    }}
+                    frontClassName="bg-white dark:bg-gray-800"
+                    edgeStyle={{ backgroundColor: '#e5e7eb' }}
                   >
-                    <span className="text-white text-lg sm:text-xl font-black drop-shadow-sm">
-                      {word.toLowerCase()}
+                    <span className="text-lg sm:text-xl font-black drop-shadow-sm flex flex-col items-center justify-center">
+                      <div className="flex">
+                        {!isTagalog && word.length === 3 ? (
+                          <>
+                            <span style={{ color: "#FF6B8A" }}>{word.slice(0, 2).toLowerCase()}</span>
+                            <span style={{ color: "#1CB0F6" }}>{word.slice(2).toLowerCase()}</span>
+                          </>
+                        ) : (
+                          chunks.length > 0 ? (
+                            chunks.map((ch, i) => (
+                              <span key={i} style={{ color: i % 2 === 0 ? "#1CB0F6" : "#FF6B8A" }}>
+                                {ch.toLowerCase()}
+                              </span>
+                            ))
+                          ) : (
+                            <span style={{ color: "#1CB0F6" }}>{word.toLowerCase()}</span>
+                          )
+                        )}
+                      </div>
+                      {word.toUpperCase().includes('-HARD') && <span className="text-[10px] sm:text-xs text-gray-400 font-bold mt-0.5 tracking-wider">HARD</span>}
+                      {word.toUpperCase().includes('-SOFT') && <span className="text-[10px] sm:text-xs text-gray-400 font-bold mt-0.5 tracking-wider">SOFT</span>}
                     </span>
                   </PushableButton>
                 </motion.div>
@@ -203,6 +228,7 @@ export function LevelCVCMaster({ levelId, accent }: LevelCVCMasterProps) {
   };
 
   const handleGoBack = async () => {
+    playSound("click", 0.2);
     const confirmExit = await confirmAction("Are you sure you want to leave?", "Your progress will not be saved.");
     if (!confirmExit) return;
     navigate("/levels", { replace: true });
@@ -350,7 +376,7 @@ export function LevelCVCMaster({ levelId, accent }: LevelCVCMasterProps) {
       <div className="shrink-0 z-50 px-4 py-3 border-b border-gray-200 dark:border-gray-800">
         <div className="max-w-4xl mx-auto flex items-center gap-3 sm:gap-5 w-full">
           <Button variant="ghost" size="sm" onClick={handleGoBack} className="rounded-full p-2 h-auto text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 flex items-center gap-1">
-            <ArrowLeft className="w-7 h-7 sm:w-8 sm:h-8 stroke-[3]" />
+            <X className="w-7 h-7 sm:w-8 sm:h-8 stroke-[3]" />
             <span className="hidden sm:inline font-bold uppercase tracking-wider text-sm">EXIT</span>
           </Button>
 

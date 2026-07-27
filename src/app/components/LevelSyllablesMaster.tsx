@@ -6,6 +6,8 @@ import { Home, CheckCircle2, X, ArrowLeft, ArrowRight } from "lucide-react";
 import { Button } from "./ui/button";
 import { motion, AnimatePresence } from "motion/react";
 import { Confetti } from "./ui/Confetti";
+import { playSound } from "../utils/soundEffects";
+import { useLanguage } from "../context/LanguageContext";
 
 interface LevelSyllablesMasterProps {
   levelId: number;
@@ -14,9 +16,16 @@ interface LevelSyllablesMasterProps {
 
 export function LevelSyllablesMaster({ levelId, accent }: LevelSyllablesMasterProps) {
   const navigate = useNavigate();
+  const { language } = useLanguage();
+  const isTagalog = language === "tl";
 
   const [selectedSubLevel, setSelectedSubLevel] = useState<"CV" | "VC" | null>(null);
   const [isCompleted, setIsCompleted] = useState(false);
+
+  const subLevelAccents = {
+    VC: { primary: "#f43f5e", dark: "#be123c", lightBg: "#ffe4e6" }, // Rose
+    CV: { primary: "#3b82f6", dark: "#1d4ed8", lightBg: "#dbeafe" }  // Blue
+  };
 
   const [completedSubLevels, setCompletedSubLevels] = useState<string[]>(() =>
     JSON.parse(localStorage.getItem("completedSubLevels_Level2") || "[]")
@@ -51,8 +60,9 @@ export function LevelSyllablesMaster({ levelId, accent }: LevelSyllablesMasterPr
       <LevelSyllableQuiz
         pattern={selectedSubLevel}
         levelId={levelId}
-        accent={accent}
+        accent={subLevelAccents[selectedSubLevel]}
         onComplete={handleQuizComplete}
+        onExit={() => setSelectedSubLevel(null)}
       />
     );
   }
@@ -87,10 +97,13 @@ export function LevelSyllablesMaster({ levelId, accent }: LevelSyllablesMasterPr
           </motion.div>
 
           <h1 className="text-3xl sm:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-yellow-500 via-orange-500 to-red-500 drop-shadow-sm mb-4">
-            Level Complete!
+            {isTagalog ? "Kumpleto na ang Antas!" : "Level Complete!"}
           </h1>
           <p className="text-gray-600 dark:text-gray-300 text-lg font-medium leading-relaxed max-w-sm mx-auto mb-8">
-            Amazing job! You have fully mastered syllables in <span className="font-bold text-blue-500">Syllable Master</span>!
+            {isTagalog 
+              ? <>Napakagaling! Ganap mo nang natutunan ang mga pantig sa <span className="font-bold text-blue-500">Syllable Master</span>!</>
+              : <>Amazing job! You have fully mastered syllables in <span className="font-bold text-blue-500">Syllable Master</span>!</>
+            }
           </p>
 
           <Button
@@ -98,7 +111,7 @@ export function LevelSyllablesMaster({ levelId, accent }: LevelSyllablesMasterPr
             className="w-full sm:w-auto px-10 py-6 rounded-2xl font-bold text-white text-lg shadow-lg border-b-[4px] border-[#3c8c01] hover:scale-[1.02] active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
             style={{ background: 'linear-gradient(135deg, #58cc02 0%, #46a302 100%)' }}
           >
-            Keep Going! <ArrowRight className="w-5 h-5" />
+            {isTagalog ? "Ipagpatuloy!" : "Keep Going!"} <ArrowRight className="w-5 h-5" />
           </Button>
         </motion.div>
       </div>
@@ -115,12 +128,12 @@ export function LevelSyllablesMaster({ levelId, accent }: LevelSyllablesMasterPr
     <div className="h-screen bg-gradient-to-br from-green-50 via-blue-50 to-purple-50 dark:bg-none dark:bg-[#0d141c] flex flex-col overflow-hidden">
       <div className="shrink-0 z-10 bg-white/80 dark:bg-[#0d141c]/80 backdrop-blur-md px-4 py-3">
         <div className="max-w-md mx-auto flex items-center gap-3 w-full">
-          <Button variant="ghost" size="sm" onClick={() => navigate("/levels")} className="rounded-full p-2 h-auto text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 flex items-center gap-1">
-            <ArrowLeft className="w-7 h-7 sm:w-8 sm:h-8 stroke-[3]" /> <span className="hidden sm:inline font-bold uppercase tracking-wider text-sm">EXIT</span>
+          <Button variant="ghost" size="sm" onClick={() => { playSound("click", 0.2); navigate("/levels"); }} className="rounded-full p-2 h-auto text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 flex items-center gap-1">
+            <X className="w-7 h-7 sm:w-8 sm:h-8 stroke-[3]" /> <span className="hidden sm:inline font-bold uppercase tracking-wider text-sm">EXIT</span>
           </Button>
           <div className="flex-1 text-center pr-8">
             <h2 className="text-lg font-bold tracking-tight" style={{ color: accent.primary }}>
-              Level 2: Syllable Master
+              {isTagalog ? "Antas 2: Pantig Master" : "Level 2: Syllable Master"}
             </h2>
           </div>
         </div>
@@ -130,17 +143,17 @@ export function LevelSyllablesMaster({ levelId, accent }: LevelSyllablesMasterPr
         <div className="w-full max-w-md space-y-6">
           <div className="text-center mb-12 sm:mb-16">
             <h1 className="text-3xl font-black mb-2" style={{ color: accent.primary }}>
-              Choose a Group
+              {isTagalog ? "Pumili ng Grupo" : "Choose a Group"}
             </h1>
             <p className="text-gray-600 dark:text-gray-300 text-base sm:text-lg font-bold mt-6 block">
-              Build syllables, then listen and match by sound. Complete both to finish Level 2!
+              {isTagalog ? "Bumuo ng mga pantig, tapos pakinggan at itugma ito. Kumpletuhin pareho para matapos ang Antas 2!" : "Build syllables, then listen and match by sound. Complete both to finish Level 2!"}
             </p>
           </div>
 
           <div className="space-y-4">
             {[
-              { id: "VC", label: "Vowel + Consonant (VC)", desc: "Build & pronounce syllables like ab, im, ot", color: "#CE82FF", darkColor: "#a25be0" },
-              { id: "CV", label: "Consonant + Vowel (CV)", desc: "Build & pronounce syllables like ba, mi, to", color: "#FF9600", darkColor: "#d47e02" }
+              { id: "VC", label: isTagalog ? "Patinig + Katinig (VC)" : "Vowel + Consonant (VC)", desc: isTagalog ? "Bumuo ng mga pantig gaya ng ab, im, ot" : "Build & pronounce syllables like ab, im, ot", color: "#f43f5e", darkColor: "#be123c" },
+              { id: "CV", label: isTagalog ? "Katinig + Patinig (CV)" : "Consonant + Vowel (CV)", desc: isTagalog ? "Bumuo ng mga pantig gaya ng ba, mi, to" : "Build & pronounce syllables like ba, mi, to", color: "#3b82f6", darkColor: "#1d4ed8" }
             ].map((cat) => {
               const isDone = completedSubLevels.includes(cat.id);
               return (

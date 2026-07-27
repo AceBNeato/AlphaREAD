@@ -74,6 +74,7 @@ const levelIcons = [Layers, Puzzle, Brain, Sparkles, BookOpen];
 export default function Levels() {
   const { levels } = useCurriculum();
   const { language } = useLanguage();
+  const isTagalog = language === "tl";
   const t = translations[language].levels;
   
   const userLevels = useMemo(() => {
@@ -152,7 +153,7 @@ export default function Levels() {
                       </div>
                       <div className="flex-1">
                         <h3 className="text-xl text-gray-800 dark:text-gray-100 mb-1 flex items-center gap-2 flex-wrap">
-                          Level {level.id}: {level.title}
+                          {isTagalog ? `Antas ${level.id}` : `Level ${level.id}`}: {level.title}
                           {level.isUnderDevelopment && (
                             <span className="text-[10px] uppercase font-bold tracking-widest text-white bg-amber-500 px-2.5 py-0.5 rounded-full shadow-sm">
                               {t.underDevelopment}

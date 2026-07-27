@@ -71,6 +71,7 @@ export function StepRenderer({
           uniformTextSize={step.uniformTextSize}
           uniformMaxLen={step.uniformMaxLen}
           wordHighlights={step.wordHighlights}
+          disableDynamicColors={levelId >= 3}
         />
       );
 

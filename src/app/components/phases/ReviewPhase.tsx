@@ -18,6 +18,7 @@ export interface ReviewPhaseProps {
   uniformTextSize?: boolean;
   uniformMaxLen?: number;
   wordHighlights?: Record<string, number[]>;
+  disableDynamicColors?: boolean;
 }
 
 export function ReviewPhase({
@@ -34,7 +35,8 @@ export function ReviewPhase({
   allowOrganize,
   uniformTextSize,
   uniformMaxLen,
-  wordHighlights
+  wordHighlights,
+  disableDynamicColors
 }: ReviewPhaseProps) {
   const [reviewOrder, setReviewOrder] = useState<string[]>([]);
   useEffect(() => setReviewOrder(items), [items]);
@@ -46,11 +48,11 @@ export function ReviewPhase({
 
   const maxLen = uniformMaxLen !== undefined ? uniformMaxLen : Math.max(0, ...items.map(s => s.length));
   let uniformClass = isSmallItems ? "text-2xl sm:text-3xl" : "text-3xl sm:text-5xl";
-  if (maxLen >= 7) uniformClass = isSmallItems ? "text-sm sm:text-base" : "text-lg sm:text-xl tracking-tight";
-  else if (maxLen >= 6) uniformClass = isSmallItems ? "text-base sm:text-lg tracking-tight" : "text-xl sm:text-2xl tracking-tight";
-  else if (maxLen >= 5) uniformClass = isSmallItems ? "text-base sm:text-lg" : "text-2xl sm:text-3xl tracking-tight";
-  else if (maxLen >= 4) uniformClass = isSmallItems ? "text-lg sm:text-xl" : "text-2xl sm:text-4xl tracking-tight";
-  else if (maxLen === 3) uniformClass = isSmallItems ? "text-xl sm:text-2xl" : "text-3xl sm:text-4xl";
+  if (maxLen >= 7) uniformClass = isSmallItems ? "text-sm sm:text-lg tracking-tight" : "text-xl sm:text-2xl tracking-tight";
+  else if (maxLen >= 6) uniformClass = isSmallItems ? "text-base sm:text-xl tracking-tight" : "text-2xl sm:text-3xl tracking-tight";
+  else if (maxLen >= 5) uniformClass = isSmallItems ? "text-lg sm:text-2xl tracking-tight" : "text-3xl sm:text-4xl tracking-tight";
+  else if (maxLen >= 4) uniformClass = isSmallItems ? "text-xl sm:text-3xl tracking-tight" : "text-4xl sm:text-5xl tracking-tight";
+  else if (maxLen === 3) uniformClass = isSmallItems ? "text-2xl sm:text-4xl tracking-tight" : "text-4xl sm:text-6xl tracking-tight";
 
   const getGridColsClass = (count: number) => {
     if (count <= 4) return "grid-cols-2 sm:grid-cols-4";
@@ -67,6 +69,10 @@ export function ReviewPhase({
     buttonWidthClass = "w-[80px] xs:w-[95px] sm:w-[110px]";
     if (maxLen <= 2) uniformClass = "text-3xl sm:text-4xl";
   }
+
+  const highlightClass = (accent.primary.toLowerCase() === "#f97316" || accent.primary.toLowerCase() === "#ff9600")
+    ? "text-yellow-400"
+    : "text-blue-400";
 
   return (
     <motion.div
@@ -89,15 +95,17 @@ export function ReviewPhase({
                 const isSingleComponent = syl.length <= 2 || (syl.length <= 3 && (syl.toLowerCase().endsWith("ng") || syl.toLowerCase().startsWith("ng"))) || syl.endsWith(")");
                 const isVowelStart = isSingleComponent && VOWELS.has(syl[0]?.toUpperCase());
 
-                const bgStart = isSingleComponent ? (isVowelStart ? "#FF6B8A" : "#1CB0F6") : accent.primary;
-                const bgEnd = isSingleComponent ? (isVowelStart ? "#FF4B8A" : "#0a8ed4") : accent.dark;
+                const bgStart = (!disableDynamicColors && isSingleComponent) ? (isVowelStart ? "#FF6B8A" : "#1CB0F6") : accent.primary;
+                const bgEnd = (!disableDynamicColors && isSingleComponent) ? (isVowelStart ? "#FF4B8A" : "#0a8ed4") : accent.dark;
 
                 let textSizeClass = uniformClass;
                 if (!uniformTextSize) {
                   textSizeClass = isSmallItems ? "text-2xl sm:text-3xl" : "text-3xl sm:text-5xl";
-                  if (syl.length >= 5) textSizeClass = isSmallItems ? "text-sm sm:text-base tracking-widest" : "text-lg sm:text-xl tracking-widest";
-                  else if (syl.length >= 4) textSizeClass = isSmallItems ? "text-base sm:text-lg tracking-wide" : "text-xl sm:text-2xl tracking-wider";
-                  else if (syl.length === 3) textSizeClass = isSmallItems ? "text-xl sm:text-2xl" : "text-2xl sm:text-3xl tracking-wide";
+                  if (syl.length >= 7) textSizeClass = isSmallItems ? "text-sm sm:text-lg tracking-tight" : "text-xl sm:text-2xl tracking-tight";
+                  else if (syl.length >= 6) textSizeClass = isSmallItems ? "text-base sm:text-xl tracking-tight" : "text-2xl sm:text-3xl tracking-tight";
+                  else if (syl.length >= 5) textSizeClass = isSmallItems ? "text-lg sm:text-2xl tracking-widest" : "text-3xl sm:text-4xl tracking-wider";
+                  else if (syl.length >= 4) textSizeClass = isSmallItems ? "text-xl sm:text-3xl tracking-wide" : "text-4xl sm:text-5xl tracking-wide";
+                  else if (syl.length === 3) textSizeClass = isSmallItems ? "text-2xl sm:text-4xl" : "text-4xl sm:text-6xl tracking-wide";
                 }
 
                 return (
@@ -114,7 +122,7 @@ export function ReviewPhase({
                         <span className={`text-white font-black drop-shadow-sm break-all leading-tight flex items-center justify-center ${textSizeClass}`}>
                           {wordHighlights && wordHighlights[syl] ? (
                             (syl.length > 1 ? syl.toLowerCase() : syl).split('').map((char, ci) => (
-                              <span key={ci} className={wordHighlights[syl].includes(ci) ? 'text-yellow-300' : ''}>{char}</span>
+                              <span key={ci} className={wordHighlights[syl].includes(ci) ? highlightClass : ''}>{char}</span>
                             ))
                           ) : (
                             syl.length > 1 ? syl.toLowerCase() : syl

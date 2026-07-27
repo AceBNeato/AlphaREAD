@@ -24,6 +24,7 @@ export function GroupedReviewPhase({
   titleOverride
 }: GroupedReviewPhaseProps) {
   const [clickedItems, setClickedItems] = useState<Set<string>>(new Set());
+  const [activeTab, setActiveTab] = useState<string>(groups[0]?.pattern || "");
 
   const handleItemClick = (item: string) => {
     setClickedItems(prev => new Set(prev).add(item));
@@ -47,65 +48,75 @@ export function GroupedReviewPhase({
           </div>
 
           {/* Middle Section: Centered interactive area */}
-          <div className="flex-grow flex items-center justify-center w-full py-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 w-full max-w-6xl mx-auto px-2">
-              {groups.map((group, gi) => {
-                if (group.unahan || group.gitna || group.hulihan) {
+          <div className="flex-grow flex flex-col items-center justify-start w-full py-4">
+            <div className="w-full max-w-6xl mx-auto flex flex-col gap-8 px-2">
+              {/* Tabs */}
+              <div className="flex flex-wrap justify-center gap-2 sm:gap-3">
+                {groups.map((g) => {
+                  const isActive = activeTab === g.pattern;
                   return (
-                    <div key={group.pattern} className="col-span-1 sm:col-span-2 lg:col-span-3">
-                      <KambalKatinigPreview group={group} />
-                    </div>
-                  );
-                }
-
-                return (
-                  <motion.div
-                    key={group.pattern}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: gi * 0.06 }}
-                    className="backdrop-blur-lg bg-white/40 dark:bg-white/[0.06] rounded-2xl shadow-lg border border-white/50 dark:border-white/10 p-3 sm:p-4 w-full flex flex-col items-center gap-3"
-                  >
-                    {/* Pattern Card Header / Button */}
-                    <PushableButton
-                      as="div"
-                      isTile
-                      onClick={() => handleItemClick(group.pattern)}
-                      className="w-full h-[46px] sm:h-[52px] shrink-0 cursor-pointer block"
-                      frontStyle={{ background: `linear-gradient(135deg, ${accent.primary}, ${accent.dark})` }}
-                      edgeStyle={{ backgroundColor: accent.dark, filter: 'brightness(0.75)' }}
+                    <button
+                      key={g.pattern}
+                      onClick={() => setActiveTab(g.pattern)}
+                      className={`px-5 py-2 sm:px-6 sm:py-3 rounded-2xl font-black text-xl sm:text-2xl transition-all duration-200 border-b-4 ${
+                        isActive 
+                          ? "text-white shadow-lg scale-110" 
+                          : "bg-white/60 dark:bg-gray-800/60 text-gray-500 dark:text-gray-400 hover:bg-white dark:hover:bg-gray-800 hover:scale-105 border-transparent"
+                      }`}
+                      style={isActive ? { backgroundColor: accent.primary, borderColor: accent.dark } : {}}
                     >
-                      <span className="text-white font-black text-2xl sm:text-3xl drop-shadow-sm flex items-center justify-center h-full w-full">{group.pattern}</span>
-                    </PushableButton>
+                      {g.pattern}
+                    </button>
+                  );
+                })}
+              </div>
 
-                    {/* Words Container */}
-                    <div className="w-full flex flex-wrap justify-center gap-2 items-center mt-1">
-                      {group.words.map((w: any) => (
-                        <PushableButton
-                          as="div"
-                          isTile
-                          key={w.word}
-                          onClick={() => handleItemClick(w.word)}
-                          className="flex-1 min-w-[75px] sm:min-w-[90px] max-w-[120px] aspect-[4/3] cursor-pointer hover:brightness-105"
-                          frontClassName="bg-white dark:bg-gray-800"
-                          edgeClassName="bg-gray-200 dark:bg-gray-900"
-                        >
-                          <span className="text-gray-800 dark:text-gray-100 font-extrabold text-sm sm:text-lg lg:text-xl tracking-tight flex items-center justify-center h-full w-full">
-                            {w.word.split("").map((char: string, index: number) => {
-                              const isHighlighted = w.highlights.includes(index);
-                              return (
-                                <span key={index} className={isHighlighted ? "text-[#8b40b8] dark:text-[#c084fc] font-black" : ""}>
-                                  {char}
-                                </span>
-                              );
-                            })}
-                          </span>
-                        </PushableButton>
-                      ))}
-                    </div>
-                  </motion.div>
-                );
-              })}
+              {/* Active Content */}
+              <div className="w-full mt-4 flex justify-center">
+                {groups.map((group) => {
+                  if (group.pattern !== activeTab) return null;
+                  
+                  if (group.unahan || group.gitna || group.hulihan) {
+                    return (
+                      <KambalKatinigPreview key={group.pattern} group={group} accent={accent} hideHeader={true} />
+                    );
+                  }
+
+                  return (
+                    <motion.div
+                      key={group.pattern}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="backdrop-blur-lg bg-white/40 dark:bg-white/[0.06] rounded-2xl shadow-lg border border-white/50 dark:border-white/10 p-5 sm:p-8 w-full max-w-4xl flex flex-col items-center"
+                    >
+                      {/* Words Container */}
+                      <div className="w-full flex flex-wrap justify-center gap-3 sm:gap-5 items-center">
+                        {group.words.map((w: any) => (
+                          <PushableButton
+                            as="div"
+                            isTile
+                            key={w.word}
+                            className="flex-1 min-w-[85px] sm:min-w-[110px] max-w-[140px] aspect-[4/3]"
+                            frontClassName="bg-white dark:bg-gray-800"
+                            edgeClassName="bg-gray-200 dark:bg-gray-900"
+                          >
+                            <span className="text-gray-800 dark:text-gray-100 font-extrabold text-base sm:text-xl lg:text-2xl tracking-tight flex items-center justify-center h-full w-full">
+                              {w.word.split("").map((char: string, index: number) => {
+                                const isHighlighted = w.highlights?.includes(index);
+                                return (
+                                  <span key={index} className={isHighlighted ? "font-black" : ""} style={isHighlighted ? { color: accent.primary } : undefined}>
+                                    {char}
+                                  </span>
+                                );
+                              })}
+                            </span>
+                          </PushableButton>
+                        ))}
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
             </div>
           </div>
         </div>

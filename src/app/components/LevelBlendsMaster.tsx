@@ -6,6 +6,7 @@ import { CheckCircle2, X, ArrowLeft, ArrowRight } from "lucide-react";
 import { Button } from "./ui/button";
 import { motion, AnimatePresence } from "motion/react";
 import { Confetti } from "./ui/Confetti";
+import { playSound } from "../utils/soundEffects";
 
 interface LevelBlendsMasterProps {
   levelId: number;
@@ -23,9 +24,9 @@ export function LevelBlendsMaster({ levelId, accent }: LevelBlendsMasterProps) {
   const isTagalog = language === "tl";
 
   const ENGLISH_CATEGORIES = [
-    { id: "2-Letter Blends", label: "2-Letter Blends & Digraphs", desc: "e.g., bl, st, ch, sh", color: "#1CB0F6", darkColor: "#0a8ed4" },
-    { id: "Three-Letter Blends", label: "3-Letter Blends", desc: "e.g., str, spl, scr", color: "#FF9600", darkColor: "#e08600" },
-    { id: "Ending Blends", label: "Ending Blends", desc: "e.g., nd, st, mp", color: "#FF4B8A", darkColor: "#e0336e" }
+    { id: "2-Letter Blends", label: "2-Letter Blends", desc: "Practicing words like 'blob', 'crab', 'frog'", color: "#3b82f6", darkColor: "#2563eb" },
+    { id: "Three-Letter Blends", label: "3-Letter Blends", desc: "Practicing words like 'straw', 'splash', 'spring'", color: "#f97316", darkColor: "#ea580c" },
+    { id: "Ending Blends", label: "Ending Blends", desc: "Practicing words like 'camp', 'desk', 'fast'", color: "#f43f5e", darkColor: "#e11d48" }
   ];
 
   const TAGALOG_CATEGORIES = [
@@ -72,18 +73,27 @@ export function LevelBlendsMaster({ levelId, accent }: LevelBlendsMasterProps) {
   };
 
   const handleGoBack = () => {
+    playSound("click", 0.2);
     navigate("/levels");
   };
 
   // ── Phase: Lesson Execution ──────────────────────────────────────────
   if (selectedCategory) {
+    const activeCat = availableCategories.find(c => c.id === selectedCategory);
+    const customAccent = activeCat 
+      ? { primary: activeCat.color, dark: activeCat.darkColor, lightBg: activeCat.color + "20" }
+      : accent;
+
     return (
-      <LevelBlends
-        categoryFilter={selectedCategory}
-        levelId={levelId}
-        accent={accent}
-        onComplete={handleQuizComplete}
-      />
+      <div className="h-screen bg-gradient-to-br from-green-50 via-blue-50 to-purple-50 dark:bg-none dark:bg-[#0d141c] overflow-hidden flex flex-col">
+        <LevelBlends
+          categoryFilter={selectedCategory}
+          levelId={levelId}
+          accent={customAccent}
+          onComplete={handleQuizComplete}
+          onExit={() => setSelectedCategory(null)}
+        />
+      </div>
     );
   }
 
@@ -117,10 +127,13 @@ export function LevelBlendsMaster({ levelId, accent }: LevelBlendsMasterProps) {
           </motion.div>
 
           <h1 className="text-3xl sm:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-yellow-500 via-orange-500 to-red-500 drop-shadow-sm mb-4">
-            Level Complete!
+            {isTagalog ? "Kumpleto na ang Antas!" : "Level Complete!"}
           </h1>
           <p className="text-gray-600 dark:text-gray-300 text-lg font-medium leading-relaxed max-w-sm mx-auto mb-8">
-            Amazing job! You have fully mastered consonant blends in <span className="font-bold text-blue-500">Blends Master</span>!
+            {isTagalog 
+              ? <>Napakagaling! Ganap mo nang natutunan ang <span className="font-bold text-blue-500">Kambal Katinig at Diptonggo</span>!</>
+              : <>Amazing job! You have fully mastered consonant blends in <span className="font-bold text-blue-500">Blends Master</span>!</>
+            }
           </p>
 
           <Button
@@ -128,7 +141,7 @@ export function LevelBlendsMaster({ levelId, accent }: LevelBlendsMasterProps) {
             className="w-full sm:w-auto px-10 py-6 rounded-2xl font-bold text-white text-lg shadow-lg border-b-[4px] border-[#3c8c01] hover:scale-[1.02] active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
             style={{ background: 'linear-gradient(135deg, #58cc02 0%, #46a302 100%)' }}
           >
-            Keep Going! <ArrowRight className="w-5 h-5" />
+            {isTagalog ? "Ipagpatuloy!" : "Keep Going!"} <ArrowRight className="w-5 h-5" />
           </Button>
         </motion.div>
       </div>
@@ -140,11 +153,11 @@ export function LevelBlendsMaster({ levelId, accent }: LevelBlendsMasterProps) {
       <div className="shrink-0 z-10 bg-white/80 dark:bg-[#0d141c]/80 backdrop-blur-md px-4 py-3">
         <div className="max-w-md mx-auto flex items-center gap-3 w-full">
           <Button variant="ghost" size="sm" onClick={handleGoBack} className="rounded-full p-2 h-auto text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 flex items-center gap-1">
-            <ArrowLeft className="w-7 h-7 sm:w-8 sm:h-8 stroke-[3]" /> <span className="hidden sm:inline font-bold uppercase tracking-wider text-sm">EXIT</span>
+            <X className="w-7 h-7 sm:w-8 sm:h-8 stroke-[3]" /> <span className="hidden sm:inline font-bold uppercase tracking-wider text-sm">EXIT</span>
           </Button>
           <div className="flex-1 text-center pr-8">
             <h2 className="text-lg font-bold tracking-tight" style={{ color: accent.primary }}>
-              Level 6: Consonant Blends
+              {isTagalog ? "Antas 4: Kambal Katinig at Diptonggo" : "Level 6: Consonant Blends"}
             </h2>
           </div>
         </div>
@@ -154,10 +167,10 @@ export function LevelBlendsMaster({ levelId, accent }: LevelBlendsMasterProps) {
         <div className="w-full max-w-md space-y-6">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-black mb-2 text-gray-800 dark:text-gray-100">
-              Choose a Group
+              {isTagalog ? "Pumili ng Grupo" : "Choose a Group"}
             </h1>
-            <p className="text-white text-base sm:text-lg font-bold mt-6 block">
-              Which blends would you like to practice?
+            <p className="text-gray-600 dark:text-gray-300 text-base sm:text-lg font-bold mt-6 block">
+              {isTagalog ? "Aling grupo ang gusto mong pag-aralan?" : "Which blends would you like to practice?"}
             </p>
           </div>
 
