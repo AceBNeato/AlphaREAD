@@ -27,6 +27,7 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
   const navigate = useNavigate();
   const { allLetters } = useCurriculum();
   const { language } = useLanguage();
+  const isTagalog = language === "tl";
 
   const ALPHABET = useMemo(() =>
     [...allLetters].sort((a, b) => a.letter.localeCompare(b.letter)).map(l => l.letter)
@@ -96,18 +97,21 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
 
   const playLetterTTS = (letter: string) => {
     if (!letter) return;
-    const prefix = language === "tl" ? "filipino/fil-alphabet/fil-" : "english/eng-alphabet/eng-";
+    const prefix = isTagalog ? "filipino/fil-alphabet/fil-" : "english/eng-alphabet/eng-";
     playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/${prefix}${letter.toLowerCase()}.mp3`).catch(() => { });
   };
 
-  const title = (
-    <>
-      {safeStep?.isFinal ? 'Final Review - ' : safeStep?.combo === 'AL' ? 'Combined A-L - ' : safeStep?.combo === 'AS' ? 'Combined A-S - ' : 'Letter Sounds Master - '}
-      {safeStep?.type === 'review' ? (safeStep?.combo || safeStep?.isFinal ? 'Review Phase' : 'Preview Phase') :
-        safeStep?.type === 'match' ? 'Listen & Match' :
-          'Listen & Type'}
-    </>
-  );
+  const titlePrefix = safeStep?.isFinal ? (isTagalog ? 'Huling Pagsusuri - ' : 'Final Review - ')
+    : safeStep?.combo === 'AL' ? (isTagalog ? 'Pinagsamang A-L - ' : 'Combined A-L - ')
+      : safeStep?.combo === 'AS' ? (isTagalog ? 'Pinagsamang A-S - ' : 'Combined A-S - ')
+        : (isTagalog ? 'Abakada Master - ' : 'Letter Sounds Master - ');
+
+  const titleSuffix = safeStep?.type === 'review'
+    ? (safeStep?.combo || safeStep?.isFinal ? (isTagalog ? 'Pagsusuri' : 'Review Phase') : (isTagalog ? 'Panimulang Pagsusuri' : 'Preview Phase'))
+    : safeStep?.type === 'match' ? (isTagalog ? 'Pakinggan at Itugma' : 'Listen & Match')
+      : (isTagalog ? 'Pakinggan at I-type' : 'Listen & Type');
+
+  const title = <>{titlePrefix}{titleSuffix}</>;
 
   return (
     <LessonShell
@@ -115,7 +119,7 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
       progressPercentage={progressPercentage}
       onExit={handleGoBack}
       title={title}
-      completeSubtitle={<>Amazing job! You have fully mastered letter sounds in <span className="font-bold text-blue-500">Letter Sounds Master</span>!</>}
+      completeSubtitle={<>Amazing job! You have fully mastered letter sounds in <span className="font-bold text-blue-500">{isTagalog ? 'Abakada Master' : 'Letter Sounds Master'}</span>!</>}
       accentColor={accent.primary}
       showConfetti={showConfetti}
     >

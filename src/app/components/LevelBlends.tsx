@@ -129,8 +129,8 @@ export function LevelBlends({ levelId, accent, categoryFilter, onComplete, onExi
     steps.push({ phase: "words-eval", items: allWordsRaw, wordHighlights: wordHighlightsMap, overrideBatchSize: 12 });
 
     // Phase 5: Sentences Evaluation
-    // In English, sentences appear after "Ending Blends". In Tagalog, there is only one category, so we append sentences to it.
-    if (categoryFilter === "Ending Blends" || BLENDS_DATA.length === 1) {
+    // In English, sentences appear after "Ending Blends". In Tagalog, we append sentences to all sub-levels (Kambal Katinig & Diptonggo).
+    if (categoryFilter === "Ending Blends" || isTagalog || BLENDS_DATA.length === 1) {
       steps.push({ phase: "sentences", items: BLENDS_SENTENCES });
     }
 
@@ -196,12 +196,12 @@ export function LevelBlends({ levelId, accent, categoryFilter, onComplete, onExi
   const getPhaseTitle = () => {
     if (!safeStep) return "";
     switch (safeStep.phase) {
-      case "words-preview": return "Preview";
-      case "vowels-review": return "Review Patterns";
-      case "words-review": return "Words Review";
-      case "words-eval": return "Say the Words";
-      case "sentences": return "Say the Sentences";
-      default: return "Blends Master";
+      case "words-preview": return isTagalog ? "Panimulang Pagsusuri" : "Preview";
+      case "vowels-review": return isTagalog ? "Pagsusuri ng mga Pattern" : "Review Patterns";
+      case "words-review": return isTagalog ? "Pagsusuri ng mga Salita" : "Words Review";
+      case "words-eval": return isTagalog ? "Basahin ang mga Salita" : "Say the Words";
+      case "sentences": return isTagalog ? "Basahin ang mga Pangungusap" : "Say the Sentences";
+      default: return isTagalog ? "Master" : "Blends Master";
     }
   };
 
@@ -210,8 +210,8 @@ export function LevelBlends({ levelId, accent, categoryFilter, onComplete, onExi
       isComplete={isComplete}
       progressPercentage={progressPercentage}
       onExit={handleGoBack}
-      title={`Blends Master - ${getPhaseTitle()}`}
-      completeSubtitle={<>You've completed all phases and mastered {categoryFilter || "Blends"}!</>}
+      title={`${isTagalog ? (categoryFilter || "Master") : "Blends Master"} - ${getPhaseTitle()}`}
+      completeSubtitle={<>{isTagalog ? "Magaling! Natapos mo na ang" : "You've completed all phases and mastered"} {categoryFilter || "Blends"}!</>}
       accentColor={effectiveAccent.primary}
     >
       <StepRenderer
@@ -219,11 +219,11 @@ export function LevelBlends({ levelId, accent, categoryFilter, onComplete, onExi
         step={{
           ...safeStep,
           titleOverride: safeStep.phase === "words-preview" 
-            ? `Tap any pattern or word to hear it! (Batch ${safeStep.batchNumber} of ${safeStep.totalBatches})`
+            ? (isTagalog ? `Pindutin ang pattern o salita para marinig ito! (Pangkat ${safeStep.batchNumber} ng ${safeStep.totalBatches})` : `Tap any pattern or word to hear it! (Batch ${safeStep.batchNumber} of ${safeStep.totalBatches})`)
             : safeStep.phase === "vowels-review"
-              ? `Review the patterns. Tap any pattern to hear it! (Batch ${safeStep.batchNumber} of ${safeStep.totalBatches})`
+              ? (isTagalog ? `Suriin ang mga pattern. Pindutin ito para marinig! (Pangkat ${safeStep.batchNumber} ng ${safeStep.totalBatches})` : `Review the patterns. Tap any pattern to hear it! (Batch ${safeStep.batchNumber} of ${safeStep.totalBatches})`)
               : safeStep.phase === "words-review"
-                ? `Review words! Tap any word to hear it! (Batch ${safeStep.batchNumber} of ${safeStep.totalBatches})`
+                ? (isTagalog ? `Suriin ang mga salita! Pindutin ito para marinig! (Pangkat ${safeStep.batchNumber} ng ${safeStep.totalBatches})` : `Review words! Tap any word to hear it! (Batch ${safeStep.batchNumber} of ${safeStep.totalBatches})`)
                 : undefined
         }}
         levelId={levelId}

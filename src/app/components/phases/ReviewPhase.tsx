@@ -71,8 +71,8 @@ export function ReviewPhase({
   }
 
   const highlightClass = (accent.primary.toLowerCase() === "#f97316" || accent.primary.toLowerCase() === "#ff9600")
-    ? "text-yellow-400"
-    : "text-blue-400";
+    ? "text-yellow-300"
+    : "text-yellow-300";
 
   return (
     <motion.div
