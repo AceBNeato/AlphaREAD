@@ -22,6 +22,12 @@ if (typeof window !== "undefined") {
   initVoices();
 }
 
+export const stopTTS = () => {
+  if ('speechSynthesis' in window) {
+    window.speechSynthesis.cancel();
+  }
+};
+
 export const playTTS = (text: string, rate: number = 0.9, pitch: number = 1.2) => {
   if (!('speechSynthesis' in window)) return;
 

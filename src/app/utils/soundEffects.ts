@@ -20,6 +20,14 @@ export type SoundType = "click" | "correct" | "wrong" | "complete";
 
 let currentAudio: HTMLAudioElement | null = null;
 
+export function stopExclusiveAudio() {
+  if (currentAudio) {
+    currentAudio.pause();
+    currentAudio.currentTime = 0;
+    currentAudio = null;
+  }
+}
+
 export function playExclusiveAudio(path: string) {
   return new Promise<void>((resolve, reject) => {
     try {
