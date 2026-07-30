@@ -8,11 +8,12 @@ import { supabase } from "../../lib/supabase";
 import { Confetti } from "./ui/Confetti";
 import { useCurriculum } from "../hooks/useCurriculum";
 import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
-import { playSound } from "../utils/soundEffects";
+import { playSound, playExclusiveAudio } from "../utils/soundEffects";
 import { playTTS as playTTSUtil } from "../utils/tts";
 import { AudioVisualizer } from "./AudioVisualizer";
 import { PushableButton } from "./ui/PushableButton";
 import { ActionToolbar } from "./ui/ActionToolbar";
+import { useLanguage } from "../context/LanguageContext";
 
 interface LevelCVCSentencesProps {
   levelId: number;
@@ -27,6 +28,7 @@ const SENTENCES_PER_SET = 10;
 export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onBack }: LevelCVCSentencesProps) {
   const navigate = useNavigate();
   const { sentences } = useCurriculum();
+  const { language } = useLanguage();
   const totalSets = Math.ceil(sentences.length / SENTENCES_PER_SET);
 
   const [currentSetIndex, setCurrentSetIndex] = useState(0);
@@ -67,7 +69,17 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
 
   const playTTS = (text: string) => {
     setHasClickedTTS(true);
-    playTTSUtil(text);
+    const slugified = text.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '') + '.mp3';
+    let audioPath = `${(import.meta as any).env.BASE_URL}audio/english/sentences-audio/${slugified}`;
+    
+    if (language === "tl") {
+      const lvlDir = levelId === 3 ? "level3" : "level4";
+      audioPath = `${(import.meta as any).env.BASE_URL}audio/filipino/sentences-audio/${lvlDir}/${slugified}`;
+    }
+
+    playExclusiveAudio(audioPath).catch((err) => {
+      console.warn(`[AlphabetGO] Local sentence audio not found: ${audioPath}`, err);
+    });
   };
 
   // Voice result handler (matches Lesson 5 pattern)
@@ -354,8 +366,8 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
                               )}
                             </div>
                             <span
-                              className="text-sm sm:text-md font-semibold text-left leading-snug"
-                              style={{ color: isDone || vFeedback === "correct" ? "#58CC02" : accent.primary }}
+                              className={`text-sm sm:text-md font-semibold text-left leading-snug ${!(isDone || vFeedback === "correct") ? "text-gray-800 dark:text-white" : ""}`}
+                              style={{ color: isDone || vFeedback === "correct" ? "#58CC02" : undefined }}
                             >
                               {s}
                             </span>

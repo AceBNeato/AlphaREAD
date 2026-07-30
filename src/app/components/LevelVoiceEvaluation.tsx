@@ -150,10 +150,15 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
     // Use local audio files for sentences (Level 3, 5, 6)
     if (text.includes(' ')) {
       const slugified = text.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '') + '.mp3';
-      const audioPath = `${(import.meta as any).env.BASE_URL}audio/english/sentences-audio/${slugified}`;
+      let audioPath = `${(import.meta as any).env.BASE_URL}audio/english/sentences-audio/${slugified}`;
+
+      if (language === "tl") {
+        const lvlDir = levelId === 3 ? "level3" : "level4";
+        audioPath = `${(import.meta as any).env.BASE_URL}audio/filipino/sentences-audio/${lvlDir}/${slugified}`;
+      }
+
       playExclusiveAudio(audioPath).catch((err) => {
-        console.warn(`[AlphabetGO] Local sentence audio not found: ${audioPath}, falling back to TTS`, err);
-        playTTS(text);
+        console.warn(`[AlphabetGO] Local sentence audio not found: ${audioPath}`, err);
       });
       return;
     }
@@ -165,7 +170,9 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
         playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/filipino/diptonggo/fil-level4-${text.toLowerCase()}.mp3`)
           .catch(() => playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/filipino/kambalkatinig/fil-level4-${text.toLowerCase()}.mp3`))
           .catch(() => playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/filipino/tagalog-words/fil-level4-${text.toLowerCase()}.mp3`))
-          .catch(() => playTTS(text.replace(/-HARD|-SOFT/i, "").toLowerCase()));
+          .catch(() => {
+            console.warn(`[AlphabetGO] Local word audio not found for: ${text}`);
+          });
         return;
       }
       wordAudioPath = `${(import.meta as any).env.BASE_URL}audio/english/blends-audio/${text.toLowerCase()}.mp3`;

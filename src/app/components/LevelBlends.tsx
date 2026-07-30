@@ -129,8 +129,8 @@ export function LevelBlends({ levelId, accent, categoryFilter, onComplete, onExi
     steps.push({ phase: "words-eval", items: allWordsRaw, wordHighlights: wordHighlightsMap, overrideBatchSize: 12 });
 
     // Phase 5: Sentences Evaluation
-    // In English, sentences appear after "Ending Blends". In Tagalog, we append sentences to all sub-levels (Kambal Katinig & Diptonggo).
-    if (categoryFilter === "Ending Blends" || isTagalog || BLENDS_DATA.length === 1) {
+    // In English, sentences appear after "Ending Blends". In Tagalog, we only append them to "Kambal Katinig".
+    if (categoryFilter === "Ending Blends" || categoryFilter === "Kambal Katinig") {
       steps.push({ phase: "sentences", items: BLENDS_SENTENCES });
     }
 
