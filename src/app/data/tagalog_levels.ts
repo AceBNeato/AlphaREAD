@@ -28,8 +28,8 @@ export const allTagalogLetters: Letter[] = [
   { letter: "W", example: "Watawat", image: "flag" },
   { letter: "X", example: "X-ray", image: "x-ray scan" },
   { letter: "Y", example: "Yoyo", image: "yoyo" },
-  { letter: "Z", example: "Zebra", image: "zebra" },
-];
+  { letter: "Z", example: "Zebra", image: "zebra" }
+        ];
 
 export const TAGALOG_VOWELS = ["A", "E", "I", "O", "U"];
 export const TAGALOG_CONSONANTS = ["B", "K", "D", "G", "H", "L", "M", "N", "Ng", "P", "R", "S", "T", "W", "Y"];
@@ -389,7 +389,6 @@ export const TAGALOG_BLENDS_DATA = [
           { word: "Ngiti", highlights: [0, 1] },
           { word: "Sangay", highlights: [2, 3] },
           { word: "Langit", highlights: [2, 3] },
-          { word: "Tanggap", highlights: [2, 3] },
           { word: "Ang", highlights: [1, 2] }
         ],
         unahan: [
@@ -399,8 +398,7 @@ export const TAGALOG_BLENDS_DATA = [
         ],
         gitna: [
           { word: "Sangay", highlights: [2, 3] },
-          { word: "Langit", highlights: [2, 3] },
-          { word: "Tanggap", highlights: [2, 3] }
+          { word: "Langit", highlights: [2, 3] }
         ],
         hulihan: [
           { word: "Ang", highlights: [1, 2] }
@@ -424,8 +422,7 @@ export const TAGALOG_BLENDS_DATA = [
         words: [
           { word: "Pwesto", highlights: [0, 1] },
           { word: "Pwede", highlights: [0, 1] },
-          { word: "Pwersa", highlights: [0, 1] },
-          { word: "Kapwa", highlights: [2, 3] }
+          { word: "Pwersa", highlights: [0, 1] }
         ],
         unahan: [
           { word: "Pwesto", highlights: [0, 1] },
@@ -433,7 +430,6 @@ export const TAGALOG_BLENDS_DATA = [
           { word: "Pwersa", highlights: [0, 1] }
         ],
         hulihan: [
-          { word: "Kapwa", highlights: [2, 3] }
         ]
       },
       {

@@ -331,10 +331,10 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
               {/* Top Section: Instructions */}
               <div className="text-center shrink-0">
                 <p className="text-gray-800 dark:text-gray-200 text-base sm:text-xl font-bold mt-4 block">
-                  Say each word out loud into the microphone. (Batch {batched.batchIndex + 1} of {batched.totalBatches})
+                  Say each {words.some(w => w.includes(' ')) ? 'sentence' : 'word'} out loud into the microphone. (Batch {batched.batchIndex + 1} of {batched.totalBatches})
                 </p>
                 <p className="text-sm font-semibold text-pink-600 dark:text-pink-400 mt-1 block">
-                  Completed {wordsEval.completedWords.size} of {words.length} {levelId === 3 ? "CVC words" : levelId === 5 ? "Long Vowel words" : levelId === 6 ? "Blends" : "words"}
+                  Completed {wordsEval.completedWords.size} of {words.length} {words.some(w => w.includes(' ')) ? 'sentences' : levelId === 3 ? "CVC words" : levelId === 5 ? "Long Vowel words" : levelId === 6 ? "Blends" : "words"}
                 </p>
               </div>
 
@@ -400,11 +400,11 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
                                   <div className="flex flex-col">
                                     <span className={`${textClass} text-gray-800 dark:text-gray-200 flex items-center gap-1`} style={{ color: isDone ? '#58CC02' : undefined }}>
                                       {wordHighlights && wordHighlights[w] ? (
-                                        w.replace(/-HARD|-SOFT/i, "").toLowerCase().split('').map((char, ci) => (
+                                        (isSentence ? w : w.replace(/-HARD|-SOFT/i, "").toLowerCase()).split('').map((char, ci) => (
                                           <span key={ci} className={wordHighlights[w].includes(ci) ? 'font-black' : ''} style={{ color: wordHighlights[w].includes(ci) ? accent.primary : undefined }}>{char}</span>
                                         ))
                                       ) : (
-                                        w.replace(/-HARD|-SOFT/i, "").toLowerCase()
+                                        isSentence ? w : w.replace(/-HARD|-SOFT/i, "").toLowerCase()
                                       )}
                                       {w.toUpperCase().includes('-HARD') && <span className="text-[10px] sm:text-xs text-gray-400 font-bold tracking-wider pt-1">HARD</span>}
                                       {w.toUpperCase().includes('-SOFT') && <span className="text-[10px] sm:text-xs text-gray-400 font-bold tracking-wider pt-1">SOFT</span>}

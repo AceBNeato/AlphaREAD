@@ -274,7 +274,8 @@ export function LevelCVCMaster({ levelId, accent }: LevelCVCMasterProps) {
         if (standardChunks && standardChunks.length > 0) {
           chunks = standardChunks;
         } else {
-          chunks = w.match(/ng|Ng|NG|[A-Za-z]/g) || w.split("");
+          // Chunk into CV combinations or single letters (e.g., 'ilong' -> 'i', 'lo', 'ng')
+          chunks = w.match(/(ng[aeiou]|[b-df-hj-np-tv-z][aeiou]|ng|[a-z])/ig) || w.split("");
         }
       }
       return {

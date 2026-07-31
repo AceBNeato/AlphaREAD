@@ -93,21 +93,33 @@ export function LevelSyllableBuilder({
     });
 
     // Add random distractors up to exactly 12 total buttons
-    let allPool = [...CONSONANTS, ...VOWELS];
+    let allPool: string[] = [];
 
-    // If target has chunks, inject some random chunk distractors
-    if (hasChunks) {
+    if (language === "tl" && levelId === 3) {
+      // For Level 3 Tagalog, use 2-letter combos (CV) as distractors, and some single vowels/ng
       const randomChunks = [];
-      for (let i = 0; i < 6; i++) {
+      for (let i = 0; i < 15; i++) {
         const c = CONSONANTS[Math.floor(Math.random() * CONSONANTS.length)];
         const v = VOWELS[Math.floor(Math.random() * VOWELS.length)];
-        randomChunks.push(Math.random() > 0.5 ? c + v : v + c);
+        randomChunks.push(c + v);
       }
-      allPool = [...allPool, ...randomChunks];
+      allPool = [...randomChunks, ...VOWELS, "NG"];
+    } else {
+      allPool = [...CONSONANTS, ...VOWELS];
+      // If target has chunks, inject some random chunk distractors
+      if (hasChunks) {
+        const randomChunks = [];
+        for (let i = 0; i < 6; i++) {
+          const c = CONSONANTS[Math.floor(Math.random() * CONSONANTS.length)];
+          const v = VOWELS[Math.floor(Math.random() * VOWELS.length)];
+          randomChunks.push(Math.random() > 0.5 ? c + v : v + c);
+        }
+        allPool = [...allPool, ...randomChunks];
+      }
     }
 
     allPool = allPool.filter((l) => !added.has(l));
-    const maxPoolSize = (language === "tl" && levelId === 3) ? 8 : 12;
+    const maxPoolSize = (language === "tl" && levelId === 3) ? 6 : 12;
     const distractorsNeeded = Math.max(0, maxPoolSize - letters.length);
     const extras = shuffle(allPool).slice(0, distractorsNeeded);
 
@@ -604,7 +616,7 @@ export function LevelSyllableBuilder({
                       </div>
 
                       {/* Letter Pool */}
-                      <div className={`grid gap-3 mb-4 mx-auto ${(language === "tl" && levelId === 3) ? "grid-cols-4 w-full max-w-[280px] sm:max-w-[340px]" : "grid-cols-4 sm:grid-cols-6 w-full max-w-lg"}`}>
+                      <div className={`grid gap-3 mb-4 mx-auto ${(language === "tl" && levelId === 3) ? "grid-cols-3 w-full max-w-[280px] sm:max-w-[340px]" : "grid-cols-4 sm:grid-cols-6 w-full max-w-lg"}`}>
                         {letterPool.map((item, i) => {
                           const timesInTarget = currentTarget.letters
                             .filter((chunk) => chunk.toUpperCase() === item.letter.toUpperCase()).length;
