@@ -15,11 +15,13 @@ interface LevelBlendsMasterProps {
 
 import { useCurriculum } from "../hooks/useCurriculum";
 import { useLanguage } from "../context/LanguageContext";
+import { useProgress } from "../hooks/useProgress";
 
 export function LevelBlendsMaster({ levelId, accent }: LevelBlendsMasterProps) {
   const navigate = useNavigate();
   const { BLENDS_DATA } = useCurriculum();
   const { language } = useLanguage();
+  const { markLevelComplete } = useProgress();
 
   const isTagalog = language === "tl";
 
@@ -59,11 +61,7 @@ export function LevelBlendsMaster({ levelId, accent }: LevelBlendsMasterProps) {
     const allDone = availableCategories.every(c => newCompleted.includes(c.id));
     
     if (allDone) {
-      const completedLevels = JSON.parse(localStorage.getItem("completedLevels") || "[]");
-      if (!completedLevels.includes(levelId)) {
-        completedLevels.push(levelId);
-        localStorage.setItem("completedLevels", JSON.stringify(completedLevels));
-      }
+      markLevelComplete(levelId);
       setIsCompleted(true);
       setSelectedCategory(null);
     } else {
@@ -118,7 +116,7 @@ export function LevelBlendsMaster({ levelId, accent }: LevelBlendsMasterProps) {
             {/* Glowing background */}
             <div className="absolute inset-0 bg-yellow-400/20 dark:bg-yellow-400/10 rounded-full blur-xl animate-pulse" />
             <motion.img
-              src={`${(import.meta as any).env.BASE_URL}dragon.png`}
+              src={`${import.meta.env.BASE_URL}dragon.png`}
               alt="Mascot"
               className="w-44 h-44 object-contain relative z-10"
               animate={{ y: [0, -10, 0] }}

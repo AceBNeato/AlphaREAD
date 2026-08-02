@@ -5,12 +5,14 @@ import { useSpeechRecognition } from './useSpeechRecognition';
 export interface UseEvaluationFlowProps {
   words: string[];
   singleShot?: boolean;
+  /** BCP-47 language tag for SpeechRecognition. Defaults to "en-US". */
+  lang?: string;
   onAllCompleted?: () => void;
   onWordCompleted?: (word: string, newCompleted: Set<string>) => void;
   isCorrectOverride?: (word: string, status: "correct" | "close" | "wrong" | null, transcript: string) => boolean;
 }
 
-export function useEvaluationFlow({ words, singleShot, onAllCompleted, onWordCompleted, isCorrectOverride }: UseEvaluationFlowProps) {
+export function useEvaluationFlow({ words, singleShot, lang, onAllCompleted, onWordCompleted, isCorrectOverride }: UseEvaluationFlowProps) {
   const [evaluatingWord, setEvaluatingWord] = useState<string | null>(null);
   const [evalFeedback, setEvalFeedback] = useState<Record<string, "correct" | "close" | "wrong" | null>>({});
   const [transcripts, setTranscripts] = useState<Record<string, string>>({});
@@ -19,7 +21,7 @@ export function useEvaluationFlow({ words, singleShot, onAllCompleted, onWordCom
   const [processingWord, setProcessingWord] = useState<string | null>(null);
   const [showConfetti, setShowConfetti] = useState(false);
 
-  const evaluationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const evaluationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const clearEvalTimeout = useCallback(() => {
     if (evaluationTimeoutRef.current) {
@@ -45,7 +47,7 @@ export function useEvaluationFlow({ words, singleShot, onAllCompleted, onWordCom
     setEvalFeedback(prev => ({ ...prev, [word]: status }));
     clearEvalTimeout();
 
-    const isCorrect = isCorrectOverride 
+    const isCorrect = isCorrectOverride
       ? isCorrectOverride(word, status, transcript)
       : (status === "correct" || status === "close");
 
@@ -98,6 +100,7 @@ export function useEvaluationFlow({ words, singleShot, onAllCompleted, onWordCom
     evaluatingWord,
     enabled: !!evaluatingWord,
     singleShot,
+    lang,
     onResult: handleResult,
     onError: handleError,
     onSilenceTimeout: handleSilence

@@ -162,31 +162,31 @@ export function LevelBlends({ levelId, accent, categoryFilter, onComplete, onExi
   const handleItemClick = (item: string) => {
     if (allPatternsRaw.includes(item)) {
       if (isTagalog && categoryFilter === "Diptonggo") {
-        playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/filipino/diptonggo/fil-level4-${item.toLowerCase()}.mp3`).catch(() => {});
+        playExclusiveAudio(`${import.meta.env.BASE_URL}audio/filipino/diptonggo/fil-level4-${item.toLowerCase()}.mp3`).catch(() => {});
       } else if (isTagalog && categoryFilter === "Kambal Katinig") {
-        playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/filipino/kambalkatinig/fil-level4-${item.toLowerCase()}.mp3`).catch(() => {});
+        playExclusiveAudio(`${import.meta.env.BASE_URL}audio/filipino/kambalkatinig/fil-level4-${item.toLowerCase()}.mp3`).catch(() => {});
       } else if (isTagalog) {
-        playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/filipino/diptonggo/fil-level4-${item.toLowerCase()}.mp3`)
-          .catch(() => playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/filipino/kambalkatinig/fil-level4-${item.toLowerCase()}.mp3`))
+        playExclusiveAudio(`${import.meta.env.BASE_URL}audio/filipino/diptonggo/fil-level4-${item.toLowerCase()}.mp3`)
+          .catch(() => playExclusiveAudio(`${import.meta.env.BASE_URL}audio/filipino/kambalkatinig/fil-level4-${item.toLowerCase()}.mp3`))
           .catch(() => {});
       } else {
         let folder = "2letterblend";
         const isThreeLetter = BLENDS_DATA.find((d: any) => d.name === "Three-Letter Blends")?.patterns.some((p: any) => p.pattern === item);
         if (isThreeLetter) folder = "3letterblend";
 
-        playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/english/${folder}/${folder}-${item.toLowerCase()}.mp3`).catch(() => {
+        playExclusiveAudio(`${import.meta.env.BASE_URL}audio/english/${folder}/${folder}-${item.toLowerCase()}.mp3`).catch(() => {
           playTTSUtil(item.toLowerCase());
         });
       }
     } else {
       if (isTagalog) {
-        playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/filipino/diptonggo/fil-level4-${item.toLowerCase()}.mp3`)
-          .catch(() => playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/filipino/kambalkatinig/fil-level4-${item.toLowerCase()}.mp3`))
-          .catch(() => playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/filipino/tagalog-words/fil-level4-${item.toLowerCase()}.mp3`))
+        playExclusiveAudio(`${import.meta.env.BASE_URL}audio/filipino/diptonggo/fil-level4-${item.toLowerCase()}.mp3`)
+          .catch(() => playExclusiveAudio(`${import.meta.env.BASE_URL}audio/filipino/kambalkatinig/fil-level4-${item.toLowerCase()}.mp3`))
+          .catch(() => playExclusiveAudio(`${import.meta.env.BASE_URL}audio/filipino/tagalog-words/fil-level4-${item.toLowerCase()}.mp3`))
           .catch(() => {});
         return;
       }
-      let audioPath = `${(import.meta as any).env.BASE_URL}audio/english/blends-audio/${item.toLowerCase()}.mp3`;
+      let audioPath = `${import.meta.env.BASE_URL}audio/english/blends-audio/${item.toLowerCase()}.mp3`;
       playExclusiveAudio(audioPath).catch(() => {
         playTTSUtil(item.toLowerCase());
       });

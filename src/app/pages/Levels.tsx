@@ -13,6 +13,7 @@ import { useCurriculum } from "../hooks/useCurriculum";
 import { ThemeToggle } from "../components/ThemeToggle";
 import { LanguageToggle } from "../components/LanguageToggle";
 import { useLanguage } from "../context/LanguageContext";
+import { useProgress } from "../hooks/useProgress";
 import { translations } from "../utils/translations";
 import { showAlert } from "../utils/alerts";
 import { motion } from "motion/react";
@@ -74,19 +75,17 @@ const levelIcons = [Layers, Puzzle, Brain, Sparkles, BookOpen];
 export default function Levels() {
   const { levels } = useCurriculum();
   const { language } = useLanguage();
+  const { completedLevels } = useProgress();
   const isTagalog = language === "tl";
   const t = translations[language].levels;
   
   const userLevels = useMemo(() => {
-    const completedLevels = JSON.parse(
-      localStorage.getItem("completedLevels") || "[]"
-    );
     return levels.map((level) => ({
       ...level,
       completed: completedLevels.includes(level.id),
       locked: false, // All levels are now unlocked
     }));
-  }, [levels]);
+  }, [levels, completedLevels]);
 
 
 

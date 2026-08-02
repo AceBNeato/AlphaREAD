@@ -17,6 +17,7 @@ import { playExclusiveAudio, playSound } from "../utils/soundEffects";
 import { playTTS } from "../utils/tts";
 import { PushableButton } from "./ui/PushableButton";
 import { ActionToolbar } from "./ui/ActionToolbar";
+import { useProgress } from "../hooks/useProgress";
 
 interface LevelCVCMasterProps {
   levelId: number;
@@ -98,8 +99,8 @@ function LevelCVCPreview({
                     onClick={() => {
                       if (isReview) {
                         const audioPath = isTagalog
-                          ? `${(import.meta as any).env.BASE_URL}audio/filipino/tagalog-words/fil-level3-${word.toLowerCase()}.mp3`
-                          : `${(import.meta as any).env.BASE_URL}audio/english/cvc-audio/cvc-${word.toLowerCase()}.mp3`;
+                          ? `${import.meta.env.BASE_URL}audio/filipino/tagalog-words/fil-level3-${word.toLowerCase()}.mp3`
+                          : `${import.meta.env.BASE_URL}audio/english/cvc-audio/cvc-${word.toLowerCase()}.mp3`;
                         playExclusiveAudio(audioPath).catch((err: any) => {
                           console.warn(`[AlphabetGO] Local CVC audio not found: ${audioPath}, falling back to TTS`, err);
                           playTTS(word.replace(/-HARD|-SOFT/i, "").toLowerCase());
@@ -154,6 +155,7 @@ export function LevelCVCMaster({ levelId, accent }: LevelCVCMasterProps) {
   const navigate = useNavigate();
   const { CVC_WORDS } = useCurriculum();
   const { language } = useLanguage();
+  const { markLevelComplete } = useProgress();
   const isTagalog = language === "tl";
 
   // We need to bring our own shuffle here or export it
@@ -218,11 +220,7 @@ export function LevelCVCMaster({ levelId, accent }: LevelCVCMasterProps) {
       setCurrentStep(prev => Math.min(prev + 1, STEPS.length - 1));
     } else {
       // Game Over, all completed!
-      const completedLevels = JSON.parse(localStorage.getItem("completedLevels") || "[]");
-      if (!completedLevels.includes(levelId)) {
-        completedLevels.push(levelId);
-        localStorage.setItem("completedLevels", JSON.stringify(completedLevels));
-      }
+      markLevelComplete(levelId);
       setIsCompleted(true);
     }
   };
@@ -345,7 +343,7 @@ export function LevelCVCMaster({ levelId, accent }: LevelCVCMasterProps) {
             {/* Glowing background */}
             <div className="absolute inset-0 bg-yellow-400/20 dark:bg-yellow-400/10 rounded-full blur-xl animate-pulse" />
             <motion.img
-              src={`${(import.meta as any).env.BASE_URL}dragon.png`}
+              src={`${import.meta.env.BASE_URL}dragon.png`}
               alt="Mascot"
               className="w-44 h-44 object-contain relative z-10"
               animate={{ y: [0, -10, 0] }}

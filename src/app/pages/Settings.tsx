@@ -3,6 +3,7 @@ import { useNavigate } from "react-router";
 import { ArrowLeft, Volume2 } from "lucide-react";
 import { ThemeToggle } from "../components/ThemeToggle";
 import { levels } from "../data/levels";
+import { useProgress } from "../hooks/useProgress";
 
 const ACCENTS = [
   { code: "US", label: "American English" },
@@ -26,7 +27,7 @@ export default function Settings() {
   const navigate = useNavigate();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [selectedAccent, setSelectedAccent] = useState("US");
-  const [completedLevels, setCompletedLevels] = useState<number[]>([]);
+  const { completedLevels } = useProgress();
 
   useEffect(() => {
     const storedProfile = localStorage.getItem("userProfile");
@@ -37,11 +38,6 @@ export default function Settings() {
     const profileData = JSON.parse(storedProfile);
     setProfile(profileData);
     setSelectedAccent(profileData.accent || "US");
-
-    const completed = JSON.parse(
-      localStorage.getItem("completedLevels") || "[]"
-    );
-    setCompletedLevels(completed);
   }, [navigate]);
 
   const handleAccentChange = (accentCode: string) => {

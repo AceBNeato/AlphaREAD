@@ -115,10 +115,10 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
     if (patternData) {
       // It's a pattern! Play the specific name-{vowel}.mp3 file
       const vowel = patternData.vowel.toLowerCase();
-      playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/english/long-vowels-audio/name-${vowel}.mp3`).catch(() => {});
+      playExclusiveAudio(`${import.meta.env.BASE_URL}audio/english/long-vowels-audio/name-${vowel}.mp3`).catch(() => {});
     } else {
       // It's a word or something else, try specific audio, then fallback to TTS
-      playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/english/long-vowels-audio/${item.toLowerCase()}.mp3`).catch(() => {
+      playExclusiveAudio(`${import.meta.env.BASE_URL}audio/english/long-vowels-audio/${item.toLowerCase()}.mp3`).catch(() => {
         playTTSUtil(item.toLowerCase());
       });
     }

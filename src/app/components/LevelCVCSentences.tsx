@@ -14,6 +14,7 @@ import { AudioVisualizer } from "./AudioVisualizer";
 import { PushableButton } from "./ui/PushableButton";
 import { ActionToolbar } from "./ui/ActionToolbar";
 import { useLanguage } from "../context/LanguageContext";
+import { useProgress } from "../hooks/useProgress";
 
 interface LevelCVCSentencesProps {
   levelId: number;
@@ -29,6 +30,7 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
   const navigate = useNavigate();
   const { sentences } = useCurriculum();
   const { language } = useLanguage();
+  const { markLevelComplete } = useProgress();
   const totalSets = Math.ceil(sentences.length / SENTENCES_PER_SET);
 
   const [currentSetIndex, setCurrentSetIndex] = useState(0);
@@ -70,11 +72,11 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
   const playTTS = (text: string) => {
     setHasClickedTTS(true);
     const slugified = text.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '') + '.mp3';
-    let audioPath = `${(import.meta as any).env.BASE_URL}audio/english/sentences-audio/${slugified}`;
+    let audioPath = `${import.meta.env.BASE_URL}audio/english/sentences-audio/${slugified}`;
     
     if (language === "tl") {
       const lvlDir = levelId === 3 ? "level3" : "level4";
-      audioPath = `${(import.meta as any).env.BASE_URL}audio/filipino/sentences-audio/${lvlDir}/${slugified}`;
+      audioPath = `${import.meta.env.BASE_URL}audio/filipino/sentences-audio/${lvlDir}/${slugified}`;
     }
 
     playExclusiveAudio(audioPath).catch((err) => {
@@ -120,6 +122,7 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
     evaluatingWord: evaluatingSentenceId,
     enabled: !!evaluatingSentenceId,
     singleShot: false, // Continuous mode: keeps mic alive through pauses for slow readers
+    lang: language === "tl" ? "fil" : "en-US",
     onResult: handleResult,
     onError: () => setEvaluatingSentenceId(null),
     onSilenceTimeout: () => {
@@ -185,13 +188,7 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
 
   const handleFinish = async () => {
     setIsSaving(true);
-
-
-    const completedLevels = JSON.parse(localStorage.getItem("completedLevels") || "[]");
-    if (!completedLevels.includes(levelId)) {
-      completedLevels.push(levelId);
-      localStorage.setItem("completedLevels", JSON.stringify(completedLevels));
-    }
+    markLevelComplete(levelId);
     setIsSaving(false);
 
     if (onComplete) {

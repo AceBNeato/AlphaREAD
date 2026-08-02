@@ -5,7 +5,7 @@ import { evaluateSyllable, isSyllableTarget, PhonemeResult } from "../utils/Phon
 declare const process: any;
 const DEBUG = typeof process !== 'undefined'
   ? process.env.NODE_ENV !== 'production'
-  : (import.meta as any).env?.DEV ?? false;
+  : import.meta.env?.DEV ?? false;
 
 const DIGIT_MAP: Record<string, string> = {
   "0": "ZERO", "1": "ONE", "2": "TWO", "3": "THREE", "4": "FOUR",
@@ -107,6 +107,9 @@ interface UseSpeechRecognitionProps {
   /** When true: continuous=false, interimResults=false — browser auto-stops after one phrase.
    *  Best for single letter/word tasks (Lesson 4 Letter Names, Lesson 5 Long Vowels). */
   singleShot?: boolean;
+  /** BCP-47 language tag for SpeechRecognition.
+   *  Defaults to "en-US". Pass "fil" for Filipino curriculum. */
+  lang?: string;
   onResult: (word: string, status: EvaluationFeedback, transcript: string) => void;
   onSilenceTimeout: () => void;
   onError: () => void;
@@ -252,7 +255,7 @@ const HOMOPHONES: Record<string, string[]> = {
   "BOX": ["fox", "rocks"]
 };
 
-export function useSpeechRecognition({ evaluatingWord, enabled = true, singleShot = false, onResult, onSilenceTimeout, onError }: UseSpeechRecognitionProps) {
+export function useSpeechRecognition({ evaluatingWord, enabled = true, singleShot = false, lang = "en-US", onResult, onSilenceTimeout, onError }: UseSpeechRecognitionProps) {
   const recognitionRef = useRef<any>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const resultReceivedRef = useRef(false);
@@ -284,7 +287,7 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, singleSho
 
     if (DEBUG) console.log(`\n[AlphabetGO Debug] 🎤 Starting SpeechRecognition for target: "${evaluatingWord}"`);
 
-    const SpeechRecognitionAPI = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognitionAPI) {
       if (DEBUG) console.warn("[AlphabetGO Debug] ❌ SpeechRecognition API not supported in this browser.");
       cleanup();
@@ -301,7 +304,7 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, singleSho
 
     recognition.continuous = !singleShot;      // singleShot: stops after one phrase
     recognition.interimResults = !singleShot;  // singleShot: only final results
-    recognition.lang = "en-US";
+    recognition.lang = lang;
     recognition.maxAlternatives = 5;
 
     recognition.onresult = (event: any) => {
@@ -565,5 +568,5 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, singleSho
       if (startupTimerId) clearTimeout(startupTimerId);
       cleanup();
     };
-  }, [evaluatingWord, enabled, cleanup]);
+  }, [evaluatingWord, enabled, lang, cleanup]);
 }

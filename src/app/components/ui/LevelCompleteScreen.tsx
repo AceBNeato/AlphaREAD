@@ -44,7 +44,7 @@ export function LevelCompleteScreen({
         >
           <div className="absolute inset-0 bg-yellow-400/20 dark:bg-yellow-400/10 rounded-full blur-xl animate-pulse" />
           <motion.img
-            src={`${(import.meta as any).env.BASE_URL}dragon.png`}
+            src={`${import.meta.env.BASE_URL}dragon.png`}
             alt="Mascot"
             className="w-44 h-44 object-contain relative z-10"
             animate={{ y: [0, -10, 0] }}

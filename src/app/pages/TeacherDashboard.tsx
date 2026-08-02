@@ -69,8 +69,12 @@ export default function TeacherDashboard() {
     };
     verifyAccount();
 
-    // HTMX-style live polling: Continuously check if the admin forcefully logged them out
-    const intervalId = setInterval(verifyAccount, 5000);
+    // Auto-refresh: check session validity every 15 seconds (paused when tab is hidden)
+    const intervalId = setInterval(() => {
+      if (document.visibilityState === "visible") {
+        verifyAccount();
+      }
+    }, 15000);
 
     return () => clearInterval(intervalId);
   }, [navigate]);

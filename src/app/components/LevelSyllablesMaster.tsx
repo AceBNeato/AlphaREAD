@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { Confetti } from "./ui/Confetti";
 import { playSound } from "../utils/soundEffects";
 import { useLanguage } from "../context/LanguageContext";
+import { useProgress } from "../hooks/useProgress";
 
 interface LevelSyllablesMasterProps {
   levelId: number;
@@ -18,6 +19,7 @@ export function LevelSyllablesMaster({ levelId, accent }: LevelSyllablesMasterPr
   const navigate = useNavigate();
   const { language } = useLanguage();
   const isTagalog = language === "tl";
+  const { markLevelComplete } = useProgress();
 
   const [selectedSubLevel, setSelectedSubLevel] = useState<"CV" | "VC" | null>(null);
   const [isCompleted, setIsCompleted] = useState(false);
@@ -42,11 +44,7 @@ export function LevelSyllablesMaster({ levelId, accent }: LevelSyllablesMasterPr
 
     const bothDone = newCompleted.includes("CV") && newCompleted.includes("VC");
     if (bothDone) {
-      const completedLevels = JSON.parse(localStorage.getItem("completedLevels") || "[]");
-      if (!completedLevels.includes(levelId)) {
-        completedLevels.push(levelId);
-        localStorage.setItem("completedLevels", JSON.stringify(completedLevels));
-      }
+      markLevelComplete(levelId);
       setIsCompleted(true);
     } else {
       // Return to picker to choose the other sub-level
@@ -88,7 +86,7 @@ export function LevelSyllablesMaster({ levelId, accent }: LevelSyllablesMasterPr
             {/* Glowing background */}
             <div className="absolute inset-0 bg-yellow-400/20 dark:bg-yellow-400/10 rounded-full blur-xl animate-pulse" />
             <motion.img
-              src={`${(import.meta as any).env.BASE_URL}dragon.png`}
+              src={`${import.meta.env.BASE_URL}dragon.png`}
               alt="Mascot"
               className="w-44 h-44 object-contain relative z-10"
               animate={{ y: [0, -10, 0] }}

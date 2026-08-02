@@ -93,7 +93,7 @@ export function LevelLetterNames({ levelId, accent }: LevelLetterNamesProps) {
 
   const playNameTTS = (letter: string) => {
     if (!letter) return;
-    playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/english/letter-names/name-${letter.toLowerCase()}.mp3`);
+    playExclusiveAudio(`${import.meta.env.BASE_URL}audio/english/letter-names/name-${letter.toLowerCase()}.mp3`);
   };
 
   const title = (

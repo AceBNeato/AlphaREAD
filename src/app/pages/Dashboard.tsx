@@ -10,6 +10,7 @@ import { App } from '@capacitor/app';
 import { supabase } from "../../lib/supabase";
 import { motion, AnimatePresence } from "motion/react";
 import { useLanguage } from "../context/LanguageContext";
+import { useProgress } from "../hooks/useProgress";
 import { translations } from "../utils/translations";
 
 interface UserProfile {
@@ -27,7 +28,7 @@ export default function Dashboard() {
   const { language } = useLanguage();
   const t = translations[language].dashboard;
   const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [completedLevels, setCompletedLevels] = useState<number[]>([]);
+  const { completedLevels } = useProgress();
   const [isExpanding, setIsExpanding] = useState(false);
   const [expandOrigin, setExpandOrigin] = useState({ x: 0, y: 0 });
 
@@ -54,11 +55,6 @@ export default function Dashboard() {
 
     const parsedProfile = JSON.parse(storedProfile);
     setProfile(parsedProfile);
-
-    const completed = JSON.parse(
-      localStorage.getItem("completedLevels") || "[]"
-    );
-    setCompletedLevels(completed);
 
     // Validate device lock to prevent duplicate sessions
     if (parsedProfile.id !== "teacher-preview" && parsedProfile.role !== "student") {

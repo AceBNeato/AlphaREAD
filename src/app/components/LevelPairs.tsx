@@ -98,7 +98,7 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
   const playLetterTTS = (letter: string) => {
     if (!letter) return;
     const prefix = isTagalog ? "filipino/fil-alphabet/fil-" : "english/eng-alphabet/eng-";
-    playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/${prefix}${letter.toLowerCase()}.mp3`).catch(() => { });
+    playExclusiveAudio(`${import.meta.env.BASE_URL}audio/${prefix}${letter.toLowerCase()}.mp3`).catch(() => { });
   };
 
   const titlePrefix = safeStep?.isFinal ? (isTagalog ? 'Huling Pagsusuri - ' : 'Final Review - ')

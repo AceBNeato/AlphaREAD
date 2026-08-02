@@ -53,10 +53,12 @@ export default function AdminDashboard() {
     // Initial fetch
     fetchData();
 
-    // HTMX-style Auto-Refresh every 3 seconds
+    // Auto-refresh every 15 seconds (paused when tab is hidden to save Supabase quota)
     const intervalId = setInterval(() => {
-      fetchData(true);
-    }, 3000);
+      if (document.visibilityState === "visible") {
+        fetchData(true);
+      }
+    }, 15000);
 
     return () => clearInterval(intervalId);
   }, [navigate]);

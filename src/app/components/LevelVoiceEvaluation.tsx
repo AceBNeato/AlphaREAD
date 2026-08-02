@@ -19,6 +19,7 @@ import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
 import { playTTS } from "../utils/tts";
 import { useBatchedItems } from "../hooks/useBatchedItems";
 import { useEvaluationFlow } from "../hooks/useEvaluationFlow";
+import { useProgress } from "../hooks/useProgress";
 
 
 interface LevelVoiceEvaluationProps {
@@ -42,6 +43,8 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
   const BATCH_SIZE = overrideBatchSize || 12;
   const batched = useBatchedItems(words, BATCH_SIZE);
   const batchWords = batched.currentBatch;
+  
+  const { markLevelComplete, completedLevels } = useProgress();
 
   const [hasClickedTTS, setHasClickedTTS] = useState(false);
   const [hasClickedMic, setHasClickedMic] = useState(false);
@@ -60,11 +63,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
       return;
     }
 
-    const completedLevels = JSON.parse(localStorage.getItem("completedLevels") || "[]");
-    if (!completedLevels.includes(levelId)) {
-      completedLevels.push(levelId);
-      localStorage.setItem("completedLevels", JSON.stringify(completedLevels));
-    }
+    markLevelComplete(levelId);
 
     if (onComplete) {
       onComplete();
@@ -73,6 +72,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
 
   const wordsEval = useEvaluationFlow({
     words,
+    lang: language === "tl" ? "fil" : "en-US",
     onAllCompleted: () => setShowCompletionScreen(true),
     onWordCompleted: (word, newCompleted) => {
       // Option: Auto-advance batch if current batch is fully complete?
@@ -150,11 +150,11 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
     // Use local audio files for sentences (Level 3, 5, 6)
     if (text.includes(' ')) {
       const slugified = text.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '') + '.mp3';
-      let audioPath = `${(import.meta as any).env.BASE_URL}audio/english/sentences-audio/${slugified}`;
+      let audioPath = `${import.meta.env.BASE_URL}audio/english/sentences-audio/${slugified}`;
 
       if (language === "tl") {
         const lvlDir = levelId === 3 ? "level3" : "level4";
-        audioPath = `${(import.meta as any).env.BASE_URL}audio/filipino/sentences-audio/${lvlDir}/${slugified}`;
+        audioPath = `${import.meta.env.BASE_URL}audio/filipino/sentences-audio/${lvlDir}/${slugified}`;
       }
 
       playExclusiveAudio(audioPath).catch((err) => {
@@ -167,21 +167,21 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
     let wordAudioPath = null;
     if (levelId === 6 || levelId === 4) {
       if (language === "tl") {
-        playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/filipino/diptonggo/fil-level4-${text.toLowerCase()}.mp3`)
-          .catch(() => playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/filipino/kambalkatinig/fil-level4-${text.toLowerCase()}.mp3`))
-          .catch(() => playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/filipino/tagalog-words/fil-level4-${text.toLowerCase()}.mp3`))
+        playExclusiveAudio(`${import.meta.env.BASE_URL}audio/filipino/diptonggo/fil-level4-${text.toLowerCase()}.mp3`)
+          .catch(() => playExclusiveAudio(`${import.meta.env.BASE_URL}audio/filipino/kambalkatinig/fil-level4-${text.toLowerCase()}.mp3`))
+          .catch(() => playExclusiveAudio(`${import.meta.env.BASE_URL}audio/filipino/tagalog-words/fil-level4-${text.toLowerCase()}.mp3`))
           .catch(() => {
             console.warn(`[AlphabetGO] Local word audio not found for: ${text}`);
           });
         return;
       }
-      wordAudioPath = `${(import.meta as any).env.BASE_URL}audio/english/blends-audio/${text.toLowerCase()}.mp3`;
+      wordAudioPath = `${import.meta.env.BASE_URL}audio/english/blends-audio/${text.toLowerCase()}.mp3`;
     } else if (levelId === 5) {
-      wordAudioPath = `${(import.meta as any).env.BASE_URL}audio/english/long-vowels-audio/${text.toLowerCase()}.mp3`;
+      wordAudioPath = `${import.meta.env.BASE_URL}audio/english/long-vowels-audio/${text.toLowerCase()}.mp3`;
     } else if (levelId === 3 && CVC_WORDS.includes(upper)) {
       wordAudioPath = language === "tl"
-        ? `${(import.meta as any).env.BASE_URL}audio/filipino/tagalog-words/fil-level3-${text.toLowerCase()}.mp3`
-        : `${(import.meta as any).env.BASE_URL}audio/english/cvc-audio/cvc-${text.toLowerCase()}.mp3`;
+        ? `${import.meta.env.BASE_URL}audio/filipino/tagalog-words/fil-level3-${text.toLowerCase()}.mp3`
+        : `${import.meta.env.BASE_URL}audio/english/cvc-audio/cvc-${text.toLowerCase()}.mp3`;
     }
 
     if (wordAudioPath) {
@@ -320,7 +320,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
         <div className="flex-1 min-h-0 overflow-y-auto w-full">
           <div className={`w-full flex flex-col justify-center min-h-full ${isSubPhase ? 'max-w-5xl' : 'max-w-2xl'} mx-auto px-15 py-4`}>
 
-            {!(window as any).SpeechRecognition && !(window as any).webkitSpeechRecognition && (
+            {!window.SpeechRecognition && !window.webkitSpeechRecognition && (
               <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 text-amber-800 text-sm flex items-center gap-3 shrink-0">
                 <AlertCircle className="w-5 h-5 flex-shrink-0" />
                 <p>Your browser doesn't support the Voice Recognition API. Please use Chrome or a modern mobile browser.</p>

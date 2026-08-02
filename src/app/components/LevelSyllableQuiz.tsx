@@ -26,7 +26,7 @@ interface LevelSyllableQuizProps {
 }
 
 function getAudioPath(syllable: string, pattern: Pattern, language: string): string {
-  const base = (import.meta as any).env.BASE_URL;
+  const base = import.meta.env.BASE_URL;
   const lower = syllable.toLowerCase();
   
   if (language === "tl") {

@@ -186,16 +186,16 @@ export function LevelSyllableBuilder({
     // Use local audio files for CV and VC patterns
     if (pattern === "CV") {
       const audioPath = language === "tl"
-        ? `${(import.meta as any).env.BASE_URL}audio/filipino/cv-audio/fil-cv-${syllableLower}.mp3`
-        : `${(import.meta as any).env.BASE_URL}audio/english/cv-audio/eng-cv-${syllableLower}.mp3`;
+        ? `${import.meta.env.BASE_URL}audio/filipino/cv-audio/fil-cv-${syllableLower}.mp3`
+        : `${import.meta.env.BASE_URL}audio/english/cv-audio/eng-cv-${syllableLower}.mp3`;
       playExclusiveAudio(audioPath).catch(() => { });
       return;
     }
 
     if (pattern === "VC") {
       const audioPath = language === "tl"
-        ? `${(import.meta as any).env.BASE_URL}audio/filipino/vc-audio/fil-vc-${syllableLower}.mp3`
-        : `${(import.meta as any).env.BASE_URL}audio/english/vc-audio/eng-vc-${syllableLower}.mp3`;
+        ? `${import.meta.env.BASE_URL}audio/filipino/vc-audio/fil-vc-${syllableLower}.mp3`
+        : `${import.meta.env.BASE_URL}audio/english/vc-audio/eng-vc-${syllableLower}.mp3`;
       playExclusiveAudio(audioPath).catch(() => { });
       return;
     }
@@ -203,8 +203,8 @@ export function LevelSyllableBuilder({
     // Use local audio files for CVC words
     if (pattern === "CVC") {
       const audioPath = language === "tl"
-        ? `${(import.meta as any).env.BASE_URL}audio/filipino/tagalog-words/fil-level3-${syllableLower}.mp3`
-        : `${(import.meta as any).env.BASE_URL}audio/english/cvc-audio/cvc-${syllableLower}.mp3`;
+        ? `${import.meta.env.BASE_URL}audio/filipino/tagalog-words/fil-level3-${syllableLower}.mp3`
+        : `${import.meta.env.BASE_URL}audio/english/cvc-audio/cvc-${syllableLower}.mp3`;
       playExclusiveAudio(audioPath).catch((err) => {
         console.warn(`[AlphabetGO] Local CVC audio not found: ${audioPath}, falling back to TTS`, err);
         const cleanText = text.replace(/-HARD|-SOFT/i, "");
@@ -226,18 +226,18 @@ export function LevelSyllableBuilder({
     // Play audio for the letter or chunk
     if (language === "tl") {
       if (letter.length === 1) {
-        playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/filipino/fil-alphabet/fil-${letter.toLowerCase()}.mp3`).catch(() => { });
+        playExclusiveAudio(`${import.meta.env.BASE_URL}audio/filipino/fil-alphabet/fil-${letter.toLowerCase()}.mp3`).catch(() => { });
       } else {
         const isVowelFirst = VOWELS.includes(letter[0].toUpperCase());
         if (isVowelFirst) {
-          playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/filipino/vc-audio/fil-vc-${letter.toLowerCase()}.mp3`).catch(() => { });
+          playExclusiveAudio(`${import.meta.env.BASE_URL}audio/filipino/vc-audio/fil-vc-${letter.toLowerCase()}.mp3`).catch(() => { });
         } else {
-          playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/filipino/cv-audio/fil-cv-${letter.toLowerCase()}.mp3`).catch(() => { });
+          playExclusiveAudio(`${import.meta.env.BASE_URL}audio/filipino/cv-audio/fil-cv-${letter.toLowerCase()}.mp3`).catch(() => { });
         }
       }
     } else {
       const prefix = "english/eng-alphabet/eng-";
-      playExclusiveAudio(`${(import.meta as any).env.BASE_URL}audio/${prefix}${letter.toLowerCase()}.mp3`).catch(() => { });
+      playExclusiveAudio(`${import.meta.env.BASE_URL}audio/${prefix}${letter.toLowerCase()}.mp3`).catch(() => { });
     }
 
     setSelectedLetters((prev) => {
