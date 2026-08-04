@@ -94,18 +94,7 @@ export function LevelBlends({ levelId, accent, categoryFilter, onComplete, onExi
       });
     }
 
-    // Phase 2: Patterns Review - all patterns as clickable buttons
-    const PATTERN_REVIEW_BATCH = 20;
-    const patternBatches = Math.ceil(allPatternsRaw.length / PATTERN_REVIEW_BATCH);
-    for (let i = 0; i < patternBatches; i++) {
-      steps.push({
-        phase: "vowels-review",
-        items: allPatternsRaw.slice(i * PATTERN_REVIEW_BATCH, (i + 1) * PATTERN_REVIEW_BATCH),
-        batchNumber: i + 1,
-        totalBatches: patternBatches,
-        uniformTextSize: true
-      });
-    }
+
 
     // Phase 3: Words Review - Dynamic batch sizing
     const WORDS_BATCH = categoryFilter === "Ending Blends" ? 15 : 
@@ -183,7 +172,7 @@ export function LevelBlends({ levelId, accent, categoryFilter, onComplete, onExi
         playExclusiveAudio(`${import.meta.env.BASE_URL}audio/filipino/diptonggo/fil-level4-${item.toLowerCase()}.mp3`)
           .catch(() => playExclusiveAudio(`${import.meta.env.BASE_URL}audio/filipino/kambalkatinig/fil-level4-${item.toLowerCase()}.mp3`))
           .catch(() => playExclusiveAudio(`${import.meta.env.BASE_URL}audio/filipino/tagalog-words/fil-level4-${item.toLowerCase()}.mp3`))
-          .catch(() => {});
+          .catch(() => playTTSUtil(item.toLowerCase()));
         return;
       }
       let audioPath = `${import.meta.env.BASE_URL}audio/english/blends-audio/${item.toLowerCase()}.mp3`;

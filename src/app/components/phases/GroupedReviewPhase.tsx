@@ -55,18 +55,26 @@ export function GroupedReviewPhase({
                 {groups.map((g) => {
                   const isActive = activeTab === g.pattern;
                   return (
-                    <button
+                    <PushableButton
+                      as="button"
+                      isTile
                       key={g.pattern}
-                      onClick={() => setActiveTab(g.pattern)}
-                      className={`px-5 py-2 sm:px-6 sm:py-3 rounded-2xl font-black text-xl sm:text-2xl transition-all duration-200 border-b-4 ${
-                        isActive 
-                          ? "text-white shadow-lg scale-110" 
-                          : "bg-white/60 dark:bg-gray-800/60 text-gray-500 dark:text-gray-400 hover:bg-white dark:hover:bg-gray-800 hover:scale-105 border-transparent"
+                      onClick={() => {
+                        setActiveTab(g.pattern);
+                        handleItemClick(g.pattern);
+                      }}
+                      className={`min-w-[70px] sm:min-w-[80px] h-[50px] sm:h-[60px] transition-all duration-200 ${
+                        isActive ? "scale-110 z-10" : "opacity-80 hover:opacity-100 hover:scale-105"
                       }`}
-                      style={isActive ? { backgroundColor: accent.primary, borderColor: accent.dark } : {}}
+                      frontStyle={isActive ? { background: accent.primary } : {}}
+                      edgeStyle={isActive ? { backgroundColor: accent.dark } : {}}
+                      frontClassName={isActive ? "text-white shadow-lg" : "bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300"}
+                      edgeClassName={isActive ? "" : "bg-gray-200 dark:bg-gray-900"}
                     >
-                      {g.pattern}
-                    </button>
+                      <span className="font-black text-xl sm:text-2xl flex items-center justify-center w-full h-full px-4">
+                        {g.pattern}
+                      </span>
+                    </PushableButton>
                   );
                 })}
               </div>
@@ -78,7 +86,7 @@ export function GroupedReviewPhase({
                   
                   if (group.unahan || group.gitna || group.hulihan) {
                     return (
-                      <KambalKatinigPreview key={group.pattern} group={group} accent={accent} hideHeader={true} />
+                      <KambalKatinigPreview key={group.pattern} group={group} accent={accent} hideHeader={true} onItemClick={handleItemClick} />
                     );
                   }
 
@@ -96,11 +104,12 @@ export function GroupedReviewPhase({
                             as="div"
                             isTile
                             key={w.word}
-                            className="flex-1 min-w-[85px] sm:min-w-[110px] max-w-[140px] aspect-[4/3]"
+                            onClick={() => handleItemClick(w.word)}
+                            className="flex-1 min-w-[85px] sm:min-w-[110px] max-w-[140px] h-[64px] sm:h-[72px] cursor-pointer"
                             frontClassName="bg-white dark:bg-gray-800"
                             edgeClassName="bg-gray-200 dark:bg-gray-900"
                           >
-                            <span className="text-gray-800 dark:text-gray-100 font-extrabold text-base sm:text-xl lg:text-2xl tracking-tight flex items-center justify-center h-full w-full">
+                            <span className="text-gray-800 dark:text-gray-100 font-black text-xl sm:text-2xl lg:text-3xl tracking-tight flex items-center justify-center h-full w-full">
                               {w.word.split("").map((char: string, index: number) => {
                                 const isHighlighted = w.highlights?.includes(index);
                                 return (

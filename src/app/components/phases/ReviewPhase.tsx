@@ -62,12 +62,13 @@ export function ReviewPhase({
   };
 
   let buttonWidthClass = "w-[95px] xs:w-[110px] sm:w-[130px]";
-  if (items.length > 20) {
+  if (maxLen <= 3) {
     buttonWidthClass = "w-[65px] xs:w-[75px] sm:w-[90px]";
-    if (maxLen <= 2) uniformClass = "text-2xl sm:text-3xl";
+    uniformClass = "text-xl sm:text-2xl font-bold tracking-tight";
+  } else if (items.length > 20) {
+    buttonWidthClass = "w-[85px] xs:w-[100px] sm:w-[120px]";
   } else if (items.length > 12) {
-    buttonWidthClass = "w-[80px] xs:w-[95px] sm:w-[110px]";
-    if (maxLen <= 2) uniformClass = "text-3xl sm:text-4xl";
+    buttonWidthClass = "w-[90px] xs:w-[105px] sm:w-[125px]";
   }
 
   const highlightClass = (accent.primary.toLowerCase() === "#f97316" || accent.primary.toLowerCase() === "#ff9600")
@@ -82,7 +83,7 @@ export function ReviewPhase({
       className="flex flex-col w-full h-full"
     >
       <div className="flex-1 min-h-0 overflow-y-auto w-full">
-        <div className="w-full max-w-4xl mx-auto px-15 py-4 flex flex-col justify-center min-h-full">
+        <div className="w-full max-w-5xl mx-auto px-4 sm:px-8 py-4 flex flex-col justify-center min-h-full">
           <div className="text-center mt-2 shrink-0">
             <p className="text-gray-600 dark:text-gray-300 text-base sm:text-xl font-bold block">
               {titleOverride || (isFullPreview ? `Review all items! (${items.length} items)` : `Preview items before we start! (${items.length} items)`)}
@@ -90,7 +91,7 @@ export function ReviewPhase({
           </div>
 
           <div className="flex-grow flex items-center justify-center w-full py-4">
-            <div className="flex flex-wrap justify-center gap-3 sm:gap-4 max-w-4xl mx-auto w-full px-2">
+            <div className="flex flex-wrap justify-center gap-3 sm:gap-4 max-w-5xl mx-auto w-full px-2">
               {reviewOrder.map((syl) => {
                 const isSingleComponent = syl.length <= 2 || (syl.length <= 3 && (syl.toLowerCase().endsWith("ng") || syl.toLowerCase().startsWith("ng"))) || syl.endsWith(")");
                 const isVowelStart = isSingleComponent && VOWELS.has(syl[0]?.toUpperCase());
@@ -100,12 +101,12 @@ export function ReviewPhase({
 
                 let textSizeClass = uniformClass;
                 if (!uniformTextSize) {
-                  textSizeClass = isSmallItems ? "text-2xl sm:text-3xl" : "text-3xl sm:text-5xl";
-                  if (syl.length >= 7) textSizeClass = isSmallItems ? "text-sm sm:text-lg tracking-tight" : "text-xl sm:text-2xl tracking-tight";
-                  else if (syl.length >= 6) textSizeClass = isSmallItems ? "text-base sm:text-xl tracking-tight" : "text-2xl sm:text-3xl tracking-tight";
-                  else if (syl.length >= 5) textSizeClass = isSmallItems ? "text-lg sm:text-2xl tracking-widest" : "text-3xl sm:text-4xl tracking-wider";
-                  else if (syl.length >= 4) textSizeClass = isSmallItems ? "text-xl sm:text-3xl tracking-wide" : "text-4xl sm:text-5xl tracking-wide";
-                  else if (syl.length === 3) textSizeClass = isSmallItems ? "text-2xl sm:text-4xl" : "text-4xl sm:text-6xl tracking-wide";
+                  textSizeClass = isSmallItems ? "text-3xl sm:text-4xl" : "text-4xl sm:text-6xl";
+                  if (syl.length >= 7) textSizeClass = isSmallItems ? "text-base sm:text-xl tracking-tight" : "text-2xl sm:text-3xl tracking-tight";
+                  else if (syl.length >= 6) textSizeClass = isSmallItems ? "text-lg sm:text-2xl tracking-tight" : "text-3xl sm:text-4xl tracking-tight";
+                  else if (syl.length >= 5) textSizeClass = isSmallItems ? "text-xl sm:text-3xl tracking-widest" : "text-4xl sm:text-5xl tracking-wider";
+                  else if (syl.length >= 4) textSizeClass = isSmallItems ? "text-2xl sm:text-4xl tracking-wide" : "text-5xl sm:text-6xl tracking-wide";
+                  else if (syl.length === 3) textSizeClass = isSmallItems ? "text-3xl sm:text-4xl" : "text-3xl sm:text-5xl";
                 }
 
                 return (
@@ -119,7 +120,7 @@ export function ReviewPhase({
                       edgeStyle={{ backgroundColor: bgEnd, filter: 'brightness(0.75)' }}
                     >
                       <div className="flex items-center justify-center gap-0.5 px-1 text-center h-full w-full">
-                        <span className={`text-white font-black drop-shadow-sm break-all leading-tight flex items-center justify-center ${textSizeClass}`}>
+                        <span className={`text-white font-black drop-shadow-sm leading-tight flex items-center justify-center ${maxLen <= 3 ? "whitespace-nowrap" : "break-all"} ${textSizeClass}`}>
                           {wordHighlights && wordHighlights[syl] ? (
                             (syl.length > 1 ? syl.toLowerCase() : syl).split('').map((char, ci) => (
                               <span key={ci} className={wordHighlights[syl].includes(ci) ? highlightClass : ''}>{char}</span>

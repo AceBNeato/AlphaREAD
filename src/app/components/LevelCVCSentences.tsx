@@ -329,7 +329,7 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
                                 as="button"
                                 isTile
                                 onClick={() => playTTS(s)}
-                                className={`w-12 h-12 flex-shrink-0 transition-all ${idx === 0 && !hasClickedTTS
+                                className={`w-14 h-14 flex-shrink-0 transition-all ${idx === 0 && !hasClickedTTS
                                   ? "ring-2 ring-indigo-400 ring-offset-2 animate-pulse"
                                   : ""
                                   }`}
@@ -344,7 +344,7 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
                                     : "bg-[#0979b5]"
                                 }
                               >
-                                <Volume2 className="w-5 h-5" />
+                                <Volume2 className="w-6 h-6" />
                               </PushableButton>
                               {idx === 0 && !hasClickedTTS && (
                                 <motion.div
@@ -363,7 +363,7 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
                               )}
                             </div>
                             <span
-                              className={`text-sm sm:text-md font-semibold text-left leading-snug ${!(isDone || vFeedback === "correct") ? "text-gray-800 dark:text-white" : ""}`}
+                              className={`text-base sm:text-xl font-bold text-left leading-snug ${!(isDone || vFeedback === "correct") ? "text-gray-800 dark:text-white" : ""}`}
                               style={{ color: isDone || vFeedback === "correct" ? "#58CC02" : undefined }}
                             >
                               {s}
@@ -387,7 +387,7 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
                                 }
                               }}
                               disabled={(evaluatingSentenceId !== null && !isEval) || isDone}
-                              className="relative w-12 h-12 flex-shrink-0"
+                              className="relative w-14 h-14 flex-shrink-0"
                               frontClassName={
                                 isDone || vFeedback === "correct"
                                   ? "bg-green-500 text-white"

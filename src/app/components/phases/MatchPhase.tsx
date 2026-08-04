@@ -168,6 +168,7 @@ export function MatchPhase({
                 const isDone = matchedPairs.has(syl);
                 const isSelected = selectedRight === syl;
                 const isWrong = isWrongRight(syl);
+                const textSizeClass = syl.length <= 1 ? "text-xl sm:text-2xl" : "text-2xl sm:text-3xl";
                 return (
                   <MatchButton
                     key={`right-${syl}`}
@@ -175,7 +176,7 @@ export function MatchPhase({
                     isSelected={isSelected}
                     isWrong={isWrong}
                     onClick={() => handleRightClick(syl)}
-                    className={`font-black tracking-widest flex items-center justify-center text-gray-800 dark:text-gray-200 text-xl sm:text-2xl h-14 sm:h-16`}
+                    className={`font-black tracking-widest flex items-center justify-center text-gray-800 dark:text-gray-200 ${textSizeClass} h-14 sm:h-16`}
                   >
                     {syl.length === 1 ? `${syl.toUpperCase()}${syl.toLowerCase()}` : syl.toLowerCase()}
                   </MatchButton>

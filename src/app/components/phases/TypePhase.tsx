@@ -122,17 +122,20 @@ export function TypePhase({
           {/* Middle Section: Centered Interactive Area */}
           <div className="w-full py-4 shrink-0">
             <div className="flex flex-wrap justify-center gap-2 sm:gap-3 mb-6 max-w-xl mx-auto px-6">
-              {[...typeOrder].sort().map((item) => (
-                <PushableButton
-                  as="span"
-                  key={`ref-${item}`}
-                  className="min-w-[3rem] sm:min-w-[4rem]"
-                  frontClassName="px-3.5 py-1.5 sm:px-5 sm:py-2 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 text-base sm:text-lg"
-                  edgeClassName="bg-gray-300 dark:bg-gray-700"
-                >
-                  {item.length === 1 ? `${item.toUpperCase()}${item.toLowerCase()}` : item.toLowerCase()}
-                </PushableButton>
-              ))}
+              {[...typeOrder].sort().map((item) => {
+                const btnTextClass = item.length <= 1 ? "text-base sm:text-lg" : "text-lg sm:text-2xl font-bold";
+                return (
+                  <PushableButton
+                    as="span"
+                    key={`ref-${item}`}
+                    className="min-w-[3rem] sm:min-w-[4rem]"
+                    frontClassName={`px-3.5 py-1.5 sm:px-5 sm:py-2 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 ${btnTextClass}`}
+                    edgeClassName="bg-gray-300 dark:bg-gray-700"
+                  >
+                    {item.length === 1 ? `${item.toUpperCase()}${item.toLowerCase()}` : item.toLowerCase()}
+                  </PushableButton>
+                );
+              })}
             </div>
 
             <div className="flex justify-center gap-3 sm:gap-6 w-full max-w-2xl mx-auto px-2 sm:px-4">
@@ -174,6 +177,7 @@ export function TypePhase({
                   const isWrong = typeStatus[item] === false;
                   const value = typeInputs[item] || "";
 
+                  const inputFontSize = item.length <= 1 ? "text-xl sm:text-2xl" : "text-2xl sm:text-3xl";
                   return (
                     <div key={`input-${item}`} className={`relative w-full h-12 sm:h-14 rounded-xl ${isCorrect ? 'overflow-hidden animate-shine animate-match-success' : ''}`}>
                       <input
@@ -181,7 +185,7 @@ export function TypePhase({
                         value={value}
                         onChange={(e) => handleTypeChange(item, e.target.value)}
                         disabled={isCorrect}
-                        className={`w-full h-full text-center font-black text-xl sm:text-2xl tracking-widest rounded-xl border-[3px] outline-none transition-all shadow-sm ${isCorrect
+                        className={`w-full h-full text-center font-black ${inputFontSize} tracking-widest rounded-xl border-[3px] outline-none transition-all shadow-sm ${isCorrect
                           ? "bg-green-100 border-green-400 text-green-700"
                           : isWrong
                             ? "bg-red-50 border-red-400 text-red-600 animate-shake"

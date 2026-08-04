@@ -74,7 +74,7 @@ function LevelCVCPreview({
             }
           </p>
 
-          <div className="flex flex-wrap justify-center gap-2 sm:gap-3 mb-12 w-full max-w-4xl mx-auto">
+          <div className="grid grid-cols-4 sm:grid-cols-7 gap-2 sm:gap-3 mb-12 w-full max-w-5xl mx-auto justify-items-center">
             {order.map((word) => {
               let chunks: string[] = [];
               if (isTagalog) {
@@ -86,12 +86,15 @@ function LevelCVCPreview({
                 }
               }
 
+              const cleanW = word.replace(/-HARD|-SOFT/i, "");
+              const fontSizeClass = cleanW.length >= 6 ? "text-xl sm:text-2xl" : "text-2xl sm:text-3xl";
+
               return (
                 <motion.div
                   key={word}
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
-                  className="flex flex-col items-center w-[70px] sm:w-[90px]"
+                  className="flex flex-col items-center w-full max-w-[110px] sm:max-w-[125px]"
                 >
                   <PushableButton
                     as="div"
@@ -111,7 +114,7 @@ function LevelCVCPreview({
                     frontClassName="bg-white dark:bg-gray-800"
                     edgeStyle={{ backgroundColor: '#e5e7eb' }}
                   >
-                    <span className="text-lg sm:text-xl font-black drop-shadow-sm flex flex-col items-center justify-center">
+                    <span className="text-xl sm:text-3xl font-black drop-shadow-sm flex flex-col items-center justify-center">
                       <div className="flex">
                         {!isTagalog && word.length === 3 ? (
                           <>

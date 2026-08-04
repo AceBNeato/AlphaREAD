@@ -119,7 +119,7 @@ export function LevelSyllableBuilder({
     }
 
     allPool = allPool.filter((l) => !added.has(l));
-    const maxPoolSize = (language === "tl" && levelId === 3) ? 6 : 12;
+    const maxPoolSize = (levelId === 2 || levelId === 3) ? 6 : 12;
     const distractorsNeeded = Math.max(0, maxPoolSize - letters.length);
     const extras = shuffle(allPool).slice(0, distractorsNeeded);
 
@@ -616,7 +616,7 @@ export function LevelSyllableBuilder({
                       </div>
 
                       {/* Letter Pool */}
-                      <div className={`grid gap-3 mb-4 mx-auto ${(language === "tl" && levelId === 3) ? "grid-cols-3 w-full max-w-[280px] sm:max-w-[340px]" : "grid-cols-4 sm:grid-cols-6 w-full max-w-lg"}`}>
+                      <div className={`grid gap-2.5 mb-4 mx-auto ${(levelId === 2 || levelId === 3) ? "grid-cols-3 w-full max-w-[200px] sm:max-w-[240px]" : "grid-cols-4 sm:grid-cols-6 w-full max-w-lg"}`}>
                         {letterPool.map((item, i) => {
                           const timesInTarget = currentTarget.letters
                             .filter((chunk) => chunk.toUpperCase() === item.letter.toUpperCase()).length;
@@ -668,11 +668,13 @@ export function LevelSyllableBuilder({
                               frontStyle={{ background: btnBackground }}
                               edgeStyle={{ backgroundColor: btnEdgeColor }}
                             >
-                              <span className="text-white text-2xl sm:text-3xl font-black drop-shadow-sm flex items-center justify-center">
+                              <span className="text-white text-xl sm:text-2xl font-black drop-shadow-sm flex items-center justify-center">
                                 {item.letter.length > 1 ? (
                                   item.letter.toLowerCase()
                                 ) : (
-                                  <>{item.letter.toUpperCase()}{item.letter.toLowerCase()}</>
+                                  (language === "tl" && levelId === 3)
+                                    ? item.letter.toLowerCase()
+                                    : <>{item.letter.toUpperCase()}{item.letter.toLowerCase()}</>
                                 )}
                               </span>
                             </PushableButton>

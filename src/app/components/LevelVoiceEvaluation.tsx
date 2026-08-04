@@ -364,7 +364,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
                                   as="button"
                                   isTile
                                   onClick={() => handlePlayTTS(w)}
-                                  className={`w-12 h-12 flex-shrink-0 transition-all ${idx === 0 && !hasClickedTTS && !isDone ? 'ring-2 ring-blue-400 ring-offset-2 animate-pulse' : ''}`}
+                                  className={`w-14 h-14 flex-shrink-0 transition-all ${idx === 0 && !hasClickedTTS && !isDone ? 'ring-2 ring-blue-400 ring-offset-2 animate-pulse' : ''}`}
                                   frontClassName={
                                     isDone
                                       ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400"
@@ -376,7 +376,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
                                       : "bg-[#0979b5]"
                                   }
                                 >
-                                  <Volume2 className="w-5 h-5" />
+                                  <Volume2 className="w-6 h-6" />
                                 </PushableButton>
                                 {idx === 0 && !hasClickedTTS && !isDone && (
                                   <motion.div
@@ -393,9 +393,12 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
 
                               {(() => {
                                 const isSentence = w.includes(' ');
+                                const isSingleLetterOrSyllable = w.replace(/-HARD|-SOFT/i, "").length <= 3;
                                 const textClass = isSentence
-                                  ? 'text-sm sm:text-md font-semibold text-left flex-1 min-w-0 leading-snug'
-                                  : `${batchWords.length >= 10 ? 'text-2xl sm:text-3xl' : 'text-2xl sm:text-3xl'} font-bold text-left tracking-wider flex-1 min-w-0`;
+                                  ? 'text-base sm:text-xl font-bold text-left flex-1 min-w-0 leading-snug'
+                                  : isSingleLetterOrSyllable
+                                    ? 'text-xl sm:text-2xl font-bold text-left tracking-wider flex-1 min-w-0'
+                                    : `text-2xl sm:text-4xl font-black text-left tracking-wider flex-1 min-w-0`;
                                 return (
                                   <div className="flex flex-col">
                                     <span className={`${textClass} text-gray-800 dark:text-gray-200 flex items-center gap-1`} style={{ color: isDone ? '#58CC02' : undefined }}>
@@ -430,7 +433,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
                                   }
                                 }}
                                 disabled={(wordsEval.evaluatingWord !== null && !isCurrent) || isDone || wordsEval.isMicResetting}
-                                className="relative w-12 h-12 flex-shrink-0"
+                                className="relative w-14 h-14 flex-shrink-0"
                                 frontClassName={
                                   isDone
                                     ? "bg-green-500 text-white"
