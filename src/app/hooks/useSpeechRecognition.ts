@@ -62,7 +62,7 @@ export function getLCS(targetWords: string[], spokenWords: string[], homophones:
     const allowed = [expected, ...(homophones[expected] || []).map(w => w.toUpperCase())];
     for (let j = 1; j <= n; j++) {
       const spoken = spokenWords[j - 1];
-      if (allowed.includes(spoken)) {
+      if (allowed.includes(spoken) || calculateSimilarity(expected, spoken) >= 0.75) {
         dp[i][j] = dp[i - 1][j - 1] + 1;
       } else {
         dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);

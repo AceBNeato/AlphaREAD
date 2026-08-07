@@ -100,7 +100,7 @@ export function useEvaluationFlow({ words, singleShot, lang, onAllCompleted, onW
     evaluatingWord,
     enabled: !!evaluatingWord,
     singleShot,
-    lang,
+    lang: (lang === "fil" || lang === "tl") ? "fil-PH" : lang,
     onResult: handleResult,
     onError: handleError,
     onSilenceTimeout: handleSilence

@@ -72,7 +72,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
 
   const wordsEval = useEvaluationFlow({
     words,
-    lang: language === "tl" ? "fil" : "en-US",
+    lang: language === "tl" ? "fil-PH" : "en-US",
     onAllCompleted: () => setShowCompletionScreen(true),
     onWordCompleted: (word, newCompleted) => {
       // Option: Auto-advance batch if current batch is fully complete?

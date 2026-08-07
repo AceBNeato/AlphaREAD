@@ -93,7 +93,6 @@ export function LevelSyllableQuiz({ levelId, pattern, accent, onComplete, onExit
   const { generateSyllableTargets } = useCurriculum();
   const { language } = useLanguage();
   const isTagalog = language === "tl";
-  const [isOrganized, setIsOrganized] = useState(false);
 
   const [allSyllables] = useState<string[]>(() => {
     // Generate 60 syllables of the requested pattern (VC or CV) to provide enough variety
@@ -101,7 +100,7 @@ export function LevelSyllableQuiz({ levelId, pattern, accent, onComplete, onExit
     return targets.map(t => t.syllable);
   });
 
-  const steps = buildSteps(allSyllables, isOrganized);
+  const steps = buildSteps(allSyllables);
   
   const {
     currentStepIdx,
@@ -168,8 +167,8 @@ export function LevelSyllableQuiz({ levelId, pattern, accent, onComplete, onExit
         onBack={handleStepBack}
         canBack={currentStepIdx > 0}
         onItemClick={playSyllableAudio}
-        onOrganize={() => setIsOrganized(true)}
-        onShuffle={() => setIsOrganized(false)}
+        onOrganize={undefined}
+        onShuffle={undefined}
         syllablePattern={pattern}
       />
     </LessonShell>

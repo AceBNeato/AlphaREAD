@@ -93,7 +93,7 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
       const targetClean = target.toLowerCase().replace(/[.,!?'"-]/g, "").trim();
       const tNoSpace = tClean.replace(/\s+/g, "");
       const targetNoSpace = targetClean.replace(/\s+/g, "");
-      const isCorrect = status === "correct" || tClean.includes(targetClean) || tNoSpace.includes(targetNoSpace);
+      const isCorrect = status === "correct" || status === "close" || tClean.includes(targetClean) || tNoSpace.includes(targetNoSpace);
 
       if (status === null && !isCorrect) return;
 
@@ -122,7 +122,7 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
     evaluatingWord: evaluatingSentenceId,
     enabled: !!evaluatingSentenceId,
     singleShot: false, // Continuous mode: keeps mic alive through pauses for slow readers
-    lang: language === "tl" ? "fil" : "en-US",
+    lang: language === "tl" ? "fil-PH" : "en-US",
     onResult: handleResult,
     onError: () => setEvaluatingSentenceId(null),
     onSilenceTimeout: () => {

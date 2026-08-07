@@ -174,7 +174,6 @@ export function LevelCVCMaster({ levelId, accent }: LevelCVCMasterProps) {
   const { language } = useLanguage();
   const { markLevelComplete } = useProgress();
   const isTagalog = language === "tl";
-  const [isOrganized, setIsOrganized] = useState(false);
 
   // We need to bring our own shuffle here or export it
   const shuffleArray = <T,>(arr: T[]): T[] => {
@@ -188,11 +187,8 @@ export function LevelCVCMaster({ levelId, accent }: LevelCVCMasterProps) {
 
   const [baseWords] = useState<string[]>(() => shuffleArray([...CVC_WORDS]));
 
-  // Dynamically generate a pool of all CVC words each time the level starts or isOrganized toggles!
   const STEPS: GameStep[] = useMemo(() => {
-    const wordsToUse = isOrganized 
-      ? [...baseWords].sort((a, b) => a.localeCompare(b))
-      : baseWords;
+    const wordsToUse = baseWords;
 
     const steps: GameStep[] = [];
     const targetBatches = isTagalog ? 5 : Math.ceil(wordsToUse.length / 30);
@@ -229,7 +225,7 @@ export function LevelCVCMaster({ levelId, accent }: LevelCVCMasterProps) {
     steps.push({ phase: "sentences", words: [] });
 
     return steps;
-  }, [CVC_WORDS, baseWords, isOrganized, isTagalog]);
+  }, [CVC_WORDS, baseWords, isTagalog]);
 
   const [currentStep, setCurrentStep] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
@@ -282,8 +278,8 @@ export function LevelCVCMaster({ levelId, accent }: LevelCVCMasterProps) {
         batchNumber={step.batchNumber}
         totalBatches={step.totalBatches}
         isReview={step.phase === "review"}
-        onOrganize={() => setIsOrganized(true)}
-        onShuffle={() => setIsOrganized(false)}
+        onOrganize={undefined}
+        onShuffle={undefined}
       />
     );
   }
