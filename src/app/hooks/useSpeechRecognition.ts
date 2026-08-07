@@ -292,13 +292,12 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, singleSho
       if (DEBUG) console.warn("[AlphabetGO Debug] ❌ SpeechRecognition API not supported in this browser.");
       cleanup();
       return;
-    }
-
-    resultReceivedRef.current = false;
+    }    resultReceivedRef.current = false;
     let latestTranscript = ""; // Track the latest thing heard for the timeout fallback
+    let bestRecordedStatus: "correct" | "close" | "wrong" = "wrong";
+    let bestRecordedTranscript = "";
     let hasMatched = false; // Prevent race conditions while stopping
     let isActive = true; // Track if this specific effect is still active
-
     const recognition = new SpeechRecognitionAPI();
     recognitionRef.current = recognition;
 
@@ -466,12 +465,18 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, singleSho
         }
       } // End evaluation block
 
+      // Keep track of the best status heard so far
+      if (bestStatus === "correct" || (bestStatus === "close" && bestRecordedStatus !== "correct")) {
+        bestRecordedStatus = bestStatus;
+        bestRecordedTranscript = bestTranscript;
+      }
+
       // Determine if the target is a multi-word phrase
       const isPhrase = evaluatingWord.toUpperCase().replace(/[.,!?]/g, "").trim().includes(" ");
+      const isFinalResult = event.results[event.results.length - 1]?.isFinal;
 
-      // If we found a success, trigger immediately and stop the mic!
-      // For sentences, we DO NOT exit early on "close" matches, so the user can finish speaking.
-      const shouldEarlyExit = foundCorrect || (!isPhrase && foundClose && event.results[event.results.length - 1].isFinal);
+      // If we found a success, or if final result arrived with a close match, stop the mic and complete!
+      const shouldEarlyExit = foundCorrect || (foundClose && isFinalResult) || (!isPhrase && foundClose);
 
       if (shouldEarlyExit) {
         hasMatched = true; // Block future onresult events
@@ -483,14 +488,13 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, singleSho
         onResultRef.current(evaluatingWord, bestStatus, bestTranscript);
       } else {
         // Emit interim transcript so the UI can display "Heard: ..." or "Listening..."
-        if (DEBUG) console.log(`[AlphabetGO Debug] ⏳ Interim Match failed or waiting for final... Best Status: ${bestStatus}, Primary Transcript: "${latestTranscript}"`);
+        if (DEBUG) console.log(`[AlphabetGO Debug] ⏳ Interim match... Best Status: ${bestStatus}, Primary Transcript: "${latestTranscript}"`);
         onResultRef.current(evaluatingWord, null, latestTranscript);
       }
     };
 
     recognition.onerror = (event: any) => {
-      if (!isActive || hasMatched) return; // Prevent overlapping events while stopping
-      // Ignore no-speech errors during continuous listening
+      if (!isActive || hasMatched) return;
       if (event.error === "no-speech") return;
 
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
@@ -501,20 +505,27 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, singleSho
       }
       if (DEBUG) console.error("[AlphabetGO Debug] ❌ Speech recognition error:", event.error);
       hasMatched = true;
-      onResultRef.current(evaluatingWord, "wrong", latestTranscript);
+
+      // If we recorded a correct/close match earlier, return it instead of wrong!
+      const finalStatus = bestRecordedStatus !== "wrong" ? bestRecordedStatus : "wrong";
+      onResultRef.current(evaluatingWord, finalStatus, bestRecordedTranscript || latestTranscript);
     };
 
     recognition.onend = () => {
-      // In singleShot mode the browser fires onend after the phrase ends.
-      // If we haven't matched yet and the timeout hasn't fired, treat it as silence.
-      if (singleShot && isActive && !hasMatched) {
+      if (isActive && !hasMatched) {
         if (timeoutRef.current) clearTimeout(timeoutRef.current);
         hasMatched = true;
-        if (resultReceivedRef.current && latestTranscript) {
+
+        if (bestRecordedStatus !== "wrong") {
+          if (DEBUG) console.log(`[AlphabetGO Debug] 🏁 onend — awarding recorded status "${bestRecordedStatus}" for: "${bestRecordedTranscript}"`);
+          onResultRef.current(evaluatingWord, bestRecordedStatus, bestRecordedTranscript);
+        } else if (singleShot && resultReceivedRef.current && latestTranscript) {
           if (DEBUG) console.log(`[AlphabetGO Debug] 🏁 singleShot onend — forcing "wrong" with: "${latestTranscript}"`);
           onResultRef.current(evaluatingWord, "wrong", latestTranscript);
+        } else if (!singleShot && resultReceivedRef.current && latestTranscript) {
+          onResultRef.current(evaluatingWord, "wrong", latestTranscript);
         } else {
-          if (DEBUG) console.log(`[AlphabetGO Debug] 🤫 singleShot onend — no speech, silence timeout.`);
+          if (DEBUG) console.log(`[AlphabetGO Debug] 🤫 onend — no speech, silence timeout.`);
           onSilenceTimeoutRef.current();
         }
       }
@@ -542,7 +553,10 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, singleSho
             try { recognitionRef.current.stop(); } catch (e) { }
           }
           hasMatched = true;
-          if (resultReceivedRef.current && latestTranscript) {
+
+          if (bestRecordedStatus !== "wrong") {
+            onResultRef.current(evaluatingWord, bestRecordedStatus, bestRecordedTranscript);
+          } else if (resultReceivedRef.current && latestTranscript) {
             if (DEBUG) console.log(`[AlphabetGO Debug] 👎 Forcing "wrong" feedback with transcript: "${latestTranscript}"`);
             onResultRef.current(evaluatingWord, "wrong", latestTranscript);
           } else {
