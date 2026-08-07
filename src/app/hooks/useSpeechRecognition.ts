@@ -524,6 +524,16 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, singleSho
 
     recognition.onend = () => {
       if (isActive && !hasMatched) {
+        if (!singleShot) {
+          // If the browser stops the engine during a pause in continuous mode, instantly restart it!
+          try {
+            recognition.start();
+            return;
+          } catch (e) {
+            // If it fails to restart, fall through to graceful exit
+          }
+        }
+
         if (timeoutRef.current) clearTimeout(timeoutRef.current);
         hasMatched = true;
 
@@ -533,11 +543,9 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, singleSho
         } else if (singleShot && resultReceivedRef.current && latestTranscript) {
           if (DEBUG) console.log(`[AlphabetGO Debug] 🏁 singleShot onend — forcing "wrong" with: "${latestTranscript}"`);
           onResultRef.current(evaluatingWord, "wrong", latestTranscript, bestRecordedSequentialCount);
-        } else if (!singleShot && resultReceivedRef.current && latestTranscript) {
-          onResultRef.current(evaluatingWord, "wrong", latestTranscript, bestRecordedSequentialCount);
         } else {
-          if (DEBUG) console.log(`[AlphabetGO Debug] 🤫 onend — no speech, silence timeout.`);
-          onSilenceTimeoutRef.current();
+          if (DEBUG) console.log(`[AlphabetGO Debug] 🤫 onend — no speech, emitting null to preserve UI.`);
+          onResultRef.current(evaluatingWord, null, latestTranscript, bestRecordedSequentialCount);
         }
       }
     };
