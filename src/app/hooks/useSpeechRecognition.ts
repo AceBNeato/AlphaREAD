@@ -517,9 +517,13 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, singleSho
       if (DEBUG) console.error("[AlphabetGO Debug] ❌ Speech recognition error:", event.error);
       hasMatched = true;
 
-      // If we recorded a correct/close match earlier, return it instead of wrong!
-      const finalStatus = bestRecordedStatus !== "wrong" ? bestRecordedStatus : "wrong";
-      onResultRef.current(evaluatingWord, finalStatus, bestRecordedTranscript || latestTranscript, bestRecordedSequentialCount);
+      // If we recorded a correct/close match earlier, submit it!
+      if (bestRecordedStatus !== "wrong") {
+        onResultRef.current(evaluatingWord, bestRecordedStatus, bestRecordedTranscript || latestTranscript, bestRecordedSequentialCount);
+      } else {
+        // Otherwise, gracefully exit without penalizing the child for a technical error
+        onErrorRef.current();
+      }
     };
 
     recognition.onend = () => {
