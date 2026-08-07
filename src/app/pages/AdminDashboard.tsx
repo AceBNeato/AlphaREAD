@@ -118,7 +118,7 @@ export default function AdminDashboard() {
 
 
   return (
-    <div className="min-h-screen bg-gray-950 text-gray-100 p-4 sm:p-6">
+    <div className="font-dashboard min-h-screen bg-gray-950 text-gray-100 p-4 sm:p-6">
       <div className="max-w-6xl mx-auto">
 
         {/* Master Header */}

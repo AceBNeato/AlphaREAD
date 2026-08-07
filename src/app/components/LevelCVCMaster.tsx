@@ -42,6 +42,8 @@ function LevelCVCPreview({
   batchNumber,
   totalBatches,
   isReview,
+  onOrganize,
+  onShuffle,
 }: {
   accent: { primary: string; dark: string; lightBg: string };
   words: string[];
@@ -51,6 +53,8 @@ function LevelCVCPreview({
   batchNumber?: number;
   totalBatches?: number;
   isReview?: boolean;
+  onOrganize?: () => void;
+  onShuffle?: () => void;
 }) {
   const [order, setOrder] = useState<string[]>(words);
   useEffect(() => {
@@ -61,7 +65,15 @@ function LevelCVCPreview({
   const isTagalog = language === "tl";
   const wordLabel = isTagalog ? "words" : "CVC words";
 
-  const handleShuffle = () => setOrder([...order].sort(() => Math.random() - 0.5));
+  const handleShuffle = () => {
+    setOrder([...order].sort(() => Math.random() - 0.5));
+    if (onShuffle) onShuffle();
+  };
+
+  const handleOrganize = () => {
+    setOrder([...order].sort((a, b) => a.localeCompare(b)));
+    if (onOrganize) onOrganize();
+  };
 
   return (
     <div className="flex flex-col w-full h-full">
@@ -74,7 +86,7 @@ function LevelCVCPreview({
             }
           </p>
 
-          <div className="grid grid-cols-4 sm:grid-cols-7 gap-2 sm:gap-3 mb-12 w-full max-w-5xl mx-auto justify-items-center">
+          <div className={`grid ${isTagalog ? 'grid-cols-3 sm:grid-cols-5 md:grid-cols-6' : 'grid-cols-4 sm:grid-cols-7'} gap-2 sm:gap-3 mb-12 w-full max-w-5xl mx-auto justify-items-center`}>
             {order.map((word) => {
               let chunks: string[] = [];
               if (isTagalog) {
@@ -94,7 +106,7 @@ function LevelCVCPreview({
                   key={word}
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
-                  className="flex flex-col items-center w-full max-w-[110px] sm:max-w-[125px]"
+                  className={`flex flex-col items-center w-full ${isTagalog ? 'max-w-[135px] sm:max-w-[155px]' : 'max-w-[110px] sm:max-w-[125px]'}`}
                 >
                   <PushableButton
                     as="div"
@@ -110,7 +122,7 @@ function LevelCVCPreview({
                         });
                       }
                     }}
-                    className={`w-full aspect-square flex items-center justify-center ${!isReview ? 'cursor-pointer' : ''}`}
+                    className={`w-full ${isTagalog ? 'aspect-[4/3]' : 'aspect-square'} flex items-center justify-center ${!isReview ? 'cursor-pointer' : ''}`}
                     frontClassName="bg-white dark:bg-gray-800"
                     edgeStyle={{ backgroundColor: '#e5e7eb' }}
                   >
@@ -148,6 +160,8 @@ function LevelCVCPreview({
         onBack={onBack}
         canBack={canBack}
         onShuffle={handleShuffle}
+        onReset={handleOrganize}
+        resetLabel="Organize"
         onNext={onComplete}
       />
     </div>
@@ -160,6 +174,7 @@ export function LevelCVCMaster({ levelId, accent }: LevelCVCMasterProps) {
   const { language } = useLanguage();
   const { markLevelComplete } = useProgress();
   const isTagalog = language === "tl";
+  const [isOrganized, setIsOrganized] = useState(false);
 
   // We need to bring our own shuffle here or export it
   const shuffleArray = <T,>(arr: T[]): T[] => {
@@ -171,46 +186,50 @@ export function LevelCVCMaster({ levelId, accent }: LevelCVCMasterProps) {
     return a;
   };
 
-  // Dynamically generate a pool of all 85 CVC words each time the level starts!
+  const [baseWords] = useState<string[]>(() => shuffleArray([...CVC_WORDS]));
+
+  // Dynamically generate a pool of all CVC words each time the level starts or isOrganized toggles!
   const STEPS: GameStep[] = useMemo(() => {
-    const randomWords = shuffleArray([...CVC_WORDS]);
+    const wordsToUse = isOrganized 
+      ? [...baseWords].sort((a, b) => a.localeCompare(b))
+      : baseWords;
 
     const steps: GameStep[] = [];
-    const targetBatches = isTagalog ? 5 : Math.ceil(randomWords.length / 30);
-    const PREVIEW_BATCH_SIZE = Math.ceil(randomWords.length / targetBatches);
-    const previewBatches = Math.ceil(randomWords.length / PREVIEW_BATCH_SIZE);
+    const targetBatches = isTagalog ? 5 : Math.ceil(wordsToUse.length / 30);
+    const PREVIEW_BATCH_SIZE = Math.ceil(wordsToUse.length / targetBatches);
+    const previewBatches = Math.ceil(wordsToUse.length / PREVIEW_BATCH_SIZE);
 
     // 1. Previews
     for (let i = 0; i < previewBatches; i++) {
       steps.push({
         phase: "preview",
-        words: randomWords.slice(i * PREVIEW_BATCH_SIZE, (i + 1) * PREVIEW_BATCH_SIZE),
+        words: wordsToUse.slice(i * PREVIEW_BATCH_SIZE, (i + 1) * PREVIEW_BATCH_SIZE),
         batchNumber: i + 1,
         totalBatches: previewBatches
       });
     }
 
     // 2. Word Builder
-    steps.push({ phase: "build", words: randomWords });
+    steps.push({ phase: "build", words: wordsToUse });
 
     // 3. Clickable Review Phase
     for (let i = 0; i < previewBatches; i++) {
       steps.push({
         phase: "review",
-        words: randomWords.slice(i * PREVIEW_BATCH_SIZE, (i + 1) * PREVIEW_BATCH_SIZE),
+        words: wordsToUse.slice(i * PREVIEW_BATCH_SIZE, (i + 1) * PREVIEW_BATCH_SIZE),
         batchNumber: i + 1,
         totalBatches: previewBatches
       });
     }
 
     // 4. Voice Evaluation
-    steps.push({ phase: "eval", words: randomWords });
+    steps.push({ phase: "eval", words: wordsToUse });
 
     // 5. Final sentences quiz
     steps.push({ phase: "sentences", words: [] });
 
     return steps;
-  }, [CVC_WORDS]);
+  }, [CVC_WORDS, baseWords, isOrganized, isTagalog]);
 
   const [currentStep, setCurrentStep] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
@@ -263,6 +282,8 @@ export function LevelCVCMaster({ levelId, accent }: LevelCVCMasterProps) {
         batchNumber={step.batchNumber}
         totalBatches={step.totalBatches}
         isReview={step.phase === "review"}
+        onOrganize={() => setIsOrganized(true)}
+        onShuffle={() => setIsOrganized(false)}
       />
     );
   }

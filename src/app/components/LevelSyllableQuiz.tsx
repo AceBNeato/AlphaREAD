@@ -15,6 +15,8 @@ interface Step {
   setLabel: string;
   isFullPreview?: boolean;
   disableAudio?: boolean;
+  batchNumber?: number;
+  totalBatches?: number;
 }
 
 interface LevelSyllableQuizProps {
@@ -38,9 +40,11 @@ function getAudioPath(syllable: string, pattern: Pattern, language: string): str
   return `${base}audio/english/vc-audio/eng-vc-${lower}.mp3`;
 }
 
-function buildSteps(allSyllables: string[]): Step[] {
+function buildSteps(allSyllables: string[], isOrganized: boolean = false): Step[] {
   const steps: Step[] = [];
-  const sessionSyllables = allSyllables;
+  const sessionSyllables = isOrganized 
+    ? [...allSyllables].sort((a, b) => a.localeCompare(b))
+    : allSyllables;
 
   // Phase 1: Preview
   const REVIEW_BATCH_SIZE = 30;
@@ -52,6 +56,8 @@ function buildSteps(allSyllables: string[]): Step[] {
       items: batch,
       setLabel: `Preview ${i + 1}/${totalReviewBatches}`,
       disableAudio: true,
+      batchNumber: i + 1,
+      totalBatches: totalReviewBatches,
     });
   }
 
@@ -70,6 +76,8 @@ function buildSteps(allSyllables: string[]): Step[] {
       items: batch,
       setLabel: `Review ${i + 1}/${totalReviewBatches}`,
       isFullPreview: true,
+      batchNumber: i + 1,
+      totalBatches: totalReviewBatches,
     });
   }
 
@@ -85,13 +93,15 @@ export function LevelSyllableQuiz({ levelId, pattern, accent, onComplete, onExit
   const { generateSyllableTargets } = useCurriculum();
   const { language } = useLanguage();
   const isTagalog = language === "tl";
+  const [isOrganized, setIsOrganized] = useState(false);
+
   const [allSyllables] = useState<string[]>(() => {
     // Generate 60 syllables of the requested pattern (VC or CV) to provide enough variety
     const targets = generateSyllableTargets([pattern], 60);
     return targets.map(t => t.syllable);
   });
 
-  const [steps] = useState<Step[]>(() => buildSteps(allSyllables));
+  const steps = buildSteps(allSyllables, isOrganized);
   
   const {
     currentStepIdx,
@@ -125,6 +135,16 @@ export function LevelSyllableQuiz({ levelId, pattern, accent, onComplete, onExit
     playExclusiveAudio(getAudioPath(syl, pattern, language)).catch(() => { });
   };
 
+  const getTitleOverride = () => {
+    if (!step || step.type !== "review") return undefined;
+    const bNum = step.batchNumber || 1;
+    const tBatches = step.totalBatches || 1;
+    if (step.isFullPreview) {
+      return `Review syllables! (batch ${bNum} of ${tBatches})`;
+    }
+    return `Preview syllables before we start! (batch ${bNum} of ${tBatches})`;
+  };
+
   return (
     <LessonShell
       isComplete={isProgressComplete}
@@ -140,7 +160,7 @@ export function LevelSyllableQuiz({ levelId, pattern, accent, onComplete, onExit
           ...step,
           batchSize: 6,
           isSmallItems: true,
-          titleOverride: step?.type === "review" ? (step.isFullPreview ? `Review all syllables! (${step.items.length} words)` : `Preview syllables before we start! (${step.items.length} words)`) : undefined
+          titleOverride: getTitleOverride()
         }}
         levelId={levelId}
         accent={accent}
@@ -148,6 +168,8 @@ export function LevelSyllableQuiz({ levelId, pattern, accent, onComplete, onExit
         onBack={handleStepBack}
         canBack={currentStepIdx > 0}
         onItemClick={playSyllableAudio}
+        onOrganize={() => setIsOrganized(true)}
+        onShuffle={() => setIsOrganized(false)}
         syllablePattern={pattern}
       />
     </LessonShell>

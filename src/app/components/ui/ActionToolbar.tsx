@@ -1,5 +1,5 @@
 import { PushableButton } from "./PushableButton";
-import { ArrowLeft, RotateCcw, Shuffle, FastForward, SkipForward, ChevronRight, ArrowRight } from "lucide-react";
+import { ArrowLeft, RotateCcw, Shuffle, FastForward, SkipForward, ChevronRight, ArrowRight, ArrowDownAZ } from "lucide-react";
 import { playSound } from "../../utils/soundEffects";
 
 interface ActionToolbarProps {
@@ -61,7 +61,11 @@ export function ActionToolbar({
             frontClassName="bg-gradient-to-r from-[rgb(255,75,75)] to-[rgb(216,42,42)] text-white py-2 px-0 sm:px-4 flex items-center justify-center gap-0 sm:gap-1"
             edgeClassName="bg-[rgb(180,30,30)]"
           >
-            <RotateCcw className="w-5 h-5 sm:hidden" />
+            {resetLabel === "Organize" ? (
+              <ArrowDownAZ className="w-5 h-5 sm:hidden" />
+            ) : (
+              <RotateCcw className="w-5 h-5 sm:hidden" />
+            )}
             <span className="hidden sm:inline font-bold font-sans">{resetLabel}</span>
           </PushableButton>
         )}

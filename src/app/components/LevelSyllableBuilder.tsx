@@ -668,7 +668,7 @@ export function LevelSyllableBuilder({
                               frontStyle={{ background: btnBackground }}
                               edgeStyle={{ backgroundColor: btnEdgeColor }}
                             >
-                              <span className="text-white text-xl sm:text-2xl font-black drop-shadow-sm flex items-center justify-center">
+                              <span className="text-white text-2xl sm:text-3xl font-black drop-shadow-sm flex items-center justify-center">
                                 {item.letter.length > 1 ? (
                                   item.letter.toLowerCase()
                                 ) : (

@@ -15,6 +15,8 @@ export interface ReviewPhaseProps {
   isSmallItems?: boolean;
   disableAudio?: boolean;
   allowOrganize?: boolean;
+  onOrganize?: () => void;
+  onShuffle?: () => void;
   uniformTextSize?: boolean;
   uniformMaxLen?: number;
   wordHighlights?: Record<string, number[]>;
@@ -33,6 +35,8 @@ export function ReviewPhase({
   isSmallItems,
   disableAudio,
   allowOrganize,
+  onOrganize,
+  onShuffle,
   uniformTextSize,
   uniformMaxLen,
   wordHighlights,
@@ -41,8 +45,14 @@ export function ReviewPhase({
   const [reviewOrder, setReviewOrder] = useState<string[]>([]);
   useEffect(() => setReviewOrder(items), [items]);
 
-  const handleShuffle = () => setReviewOrder([...reviewOrder].sort(() => Math.random() - 0.5));
-  const handleOrganize = () => setReviewOrder([...items].sort()); // Ensure alphabetical A-Z order
+  const handleShuffle = () => {
+    setReviewOrder([...reviewOrder].sort(() => Math.random() - 0.5));
+    if (onShuffle) onShuffle();
+  };
+  const handleOrganize = () => {
+    setReviewOrder([...reviewOrder].sort((a, b) => a.localeCompare(b)));
+    if (onOrganize) onOrganize();
+  };
 
   const VOWELS = new Set(["A", "E", "I", "O", "U"]);
 

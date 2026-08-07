@@ -154,7 +154,7 @@ export default function TeacherDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 text-gray-100 p-4 sm:p-6">
+    <div className="font-dashboard min-h-screen bg-gray-900 text-gray-100 p-4 sm:p-6">
       <div className="max-w-5xl mx-auto">
         
         {/* Header */}

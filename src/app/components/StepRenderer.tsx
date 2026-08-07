@@ -14,6 +14,8 @@ export interface StepRendererProps {
   onBack?: () => void;
   canBack?: boolean;
   onItemClick?: (item: string) => void;
+  onOrganize?: () => void;
+  onShuffle?: () => void;
 
   // Specific prop overrides for special phases
   syllablePattern?: string; // for LevelSyllableBuilder
@@ -27,6 +29,8 @@ export function StepRenderer({
   onBack,
   canBack,
   onItemClick = () => { },
+  onOrganize,
+  onShuffle,
   syllablePattern
 }: StepRendererProps) {
   if (!step) return null;
@@ -63,11 +67,13 @@ export function StepRenderer({
           onBack={onBack}
           canBack={canBack}
           onItemClick={onItemClick}
+          onOrganize={onOrganize}
+          onShuffle={onShuffle}
           isFullPreview={step.isFullAlphabetPreview || step.isFullPreview}
           titleOverride={step.titleOverride}
           isSmallItems={!!(step.combo || step.isFinal || step.isFullAlphabetPreview || step.isSmallItems)}
           disableAudio={step.disableAudio}
-          allowOrganize={(levelId === 1 || levelId === 4) && (type === "review" || type === "full-review")}
+          allowOrganize={type === "review" || type === "full-review" || type === "vowels-review" || type === "words-preview" || type === "words-review"}
           uniformTextSize={step.uniformTextSize}
           uniformMaxLen={step.uniformMaxLen}
           wordHighlights={step.wordHighlights}

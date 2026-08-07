@@ -393,11 +393,11 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
 
                               {(() => {
                                 const isSentence = w.includes(' ');
-                                const isSingleLetterOrSyllable = w.replace(/-HARD|-SOFT/i, "").length <= 3;
+                                const wordLen = w.replace(/-HARD|-SOFT/i, "").length;
                                 const textClass = isSentence
                                   ? 'text-base sm:text-xl font-bold text-left flex-1 min-w-0 leading-snug'
-                                  : isSingleLetterOrSyllable
-                                    ? 'text-xl sm:text-2xl font-bold text-left tracking-wider flex-1 min-w-0'
+                                  : wordLen >= 8
+                                    ? 'text-lg sm:text-2xl font-bold text-left tracking-wider flex-1 min-w-0'
                                     : `text-2xl sm:text-4xl font-black text-left tracking-wider flex-1 min-w-0`;
                                 return (
                                   <div className="flex flex-col">

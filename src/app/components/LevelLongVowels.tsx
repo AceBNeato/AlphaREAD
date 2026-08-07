@@ -67,10 +67,7 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
     const uData = LONG_VOWELS_DATA.find(d => d.vowel === "U")!;
     steps.push({ phase: "words-preview", groups: [...iData.patterns, ...oData.patterns, ...uData.patterns], batchNumber: 2, totalBatches: 2 });
 
-    // Phase 2: Vowels Review - all patterns as clickable buttons
-    steps.push({ phase: "vowels-review", items: allPatternsRaw, uniformTextSize: true });
-
-    // Phase 3: Words Review - 12 per batch, 3 batches
+    // Phase 2: Words Review - 12 per batch, 3 batches
     const WORDS_BATCH = 12;
     const wordBatches = Math.ceil(allWordsRaw.length / WORDS_BATCH);
     const maxWordLen = Math.max(0, ...allWordsRaw.map(w => w.length));
@@ -87,14 +84,14 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
       });
     }
 
-    // Phase 4: Words Evaluation - 12 per batch, 3 cols x 4 rows, white text with yellow highlights
+    // Phase 3: Words Evaluation - 12 per batch, 3 cols x 4 rows, white text with yellow highlights
     steps.push({ phase: "words-eval", items: allWordsRaw, wordHighlights: wordHighlightsMap, overrideBatchSize: 12 });
 
-    // Phase 5: Sentences Evaluation - 10 per batch, 2 cols x 5 rows, white text
+    // Phase 4: Sentences Evaluation - 10 per batch, 2 cols x 5 rows, white text
     steps.push({ phase: "sentences", items: LONG_VOWELS_SENTENCES, gridColumns: 2, overrideBatchSize: 10 });
 
     return steps;
-  }, [allPatternsRaw, allWordsRaw]);
+  }, [allWordsRaw]);
 
   const {
     currentStepIdx,
@@ -128,7 +125,6 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
     if (!safeStep) return "";
     switch (safeStep.phase) {
       case "words-preview": return "Preview";
-      case "vowels-review": return "Vowels Review";
       case "words-review": return "Words Review";
       case "words-eval": return "Say the Words";
       case "sentences": return "Say the Sentences";
@@ -151,11 +147,9 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
           ...safeStep,
           titleOverride: safeStep.phase === "words-preview" 
             ? `Tap any pattern or word to hear it! (Batch ${safeStep.batchNumber} of ${safeStep.totalBatches})`
-            : safeStep.phase === "vowels-review"
-              ? `Review all patterns. Tap any to hear it spoken! (${allPatternsRaw.length} patterns)`
-              : safeStep.phase === "words-review"
-                ? `Review words! Tap any word to hear it! (Batch ${safeStep.batchNumber} of ${safeStep.totalBatches})`
-                : undefined
+            : safeStep.phase === "words-review"
+              ? `Review words! Tap any word to hear it! (Batch ${safeStep.batchNumber} of ${safeStep.totalBatches})`
+              : undefined
         }}
         levelId={levelId}
         accent={accent}
