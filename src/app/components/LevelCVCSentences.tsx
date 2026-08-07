@@ -39,7 +39,7 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
   // Per-sentence state maps (matches Lesson 5 pattern)
   const [evaluatingSentenceId, setEvaluatingSentenceId] = useState<string | null>(null);
   const [completedSentences, setCompletedSentences] = useState<Set<string>>(new Set());
-  const [sentenceFeedbackMap, setSentenceFeedbackMap] = useState<Record<string, "correct" | "wrong" | null>>({});
+  const [sentenceFeedbackMap, setSentenceFeedbackMap] = useState<Record<string, "correct" | "close" | "wrong" | null>>({});
   const [sentenceTranscriptsMap, setSentenceTranscriptsMap] = useState<Record<string, string>>({});
 
   const [showConfetti, setShowConfetti] = useState(false);
@@ -130,6 +130,7 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
     singleShot: false, // Continuous mode: keeps mic alive through pauses for slow readers
     lang: language === "tl" ? "fil-PH" : "en-US",
     refreshTrigger,
+    initialTranscript: evaluatingSentenceId ? (sentenceTranscriptsMap[evaluatingSentenceId] || "") : "",
     onResult: handleResult,
     onError: () => setEvaluatingSentenceId(null),
     onSilenceTimeout: () => {

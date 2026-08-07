@@ -111,7 +111,9 @@ interface UseSpeechRecognitionProps {
   onSilenceTimeout: () => void;
   onError: () => void;
   refreshTrigger?: number;
+  initialTranscript?: string;
 }
+
 
 // ... (HOMOPHONES block remains) ...
 const HOMOPHONES: Record<string, string[]> = {
@@ -253,7 +255,7 @@ const HOMOPHONES: Record<string, string[]> = {
   "BOX": ["fox", "rocks"]
 };
 
-export function useSpeechRecognition({ evaluatingWord, enabled = true, singleShot = false, lang = "en-US", refreshTrigger = 0, onResult, onSilenceTimeout, onError }: UseSpeechRecognitionProps) {
+export function useSpeechRecognition({ evaluatingWord, enabled = true, singleShot = false, lang = "en-US", refreshTrigger = 0, initialTranscript = "", onResult, onSilenceTimeout, onError }: UseSpeechRecognitionProps) {
   const recognitionRef = useRef<any>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const resultReceivedRef = useRef(false);
@@ -319,11 +321,11 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, singleSho
       if (DEBUG) console.log(`[AlphabetGO Debug] 🗣️ Result Event Received. Evaluating against: "${evaluatingWord}"`);
 
       // Stitch together all chunks using the overlap merge to prevent Android duplication bugs
-      let fullTranscript = "";
+      let currentSessionTranscript = "";
       for (let r = 0; r < event.results.length; r++) {
-        fullTranscript = mergeTranscripts(fullTranscript, event.results[r][0].transcript);
+        currentSessionTranscript = mergeTranscripts(currentSessionTranscript, event.results[r][0].transcript);
       }
-      fullTranscript = fullTranscript.trim();
+      let fullTranscript = (initialTranscript + " " + currentSessionTranscript).trim();
 
       latestTranscript = fullTranscript; // Update fallback transcript
 
@@ -528,16 +530,6 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, singleSho
 
     recognition.onend = () => {
       if (isActive && !hasMatched) {
-        if (!singleShot) {
-          // If the browser stops the engine during a pause in continuous mode, instantly restart it!
-          try {
-            recognition.start();
-            return;
-          } catch (e) {
-            // If it fails to restart, fall through to graceful exit
-          }
-        }
-
         if (timeoutRef.current) clearTimeout(timeoutRef.current);
         hasMatched = true;
 
