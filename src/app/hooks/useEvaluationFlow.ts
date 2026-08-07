@@ -16,10 +16,12 @@ export function useEvaluationFlow({ words, singleShot, lang, onAllCompleted, onW
   const [evaluatingWord, setEvaluatingWord] = useState<string | null>(null);
   const [evalFeedback, setEvalFeedback] = useState<Record<string, "correct" | "close" | "wrong" | null>>({});
   const [transcripts, setTranscripts] = useState<Record<string, string>>({});
+  const [matchCountMap, setMatchCountMap] = useState<Record<string, number>>({});
   const [completedWords, setCompletedWords] = useState<Set<string>>(new Set());
   const [isMicResetting, setIsMicResetting] = useState(false);
   const [processingWord, setProcessingWord] = useState<string | null>(null);
   const [showConfetti, setShowConfetti] = useState(false);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   const evaluationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -35,15 +37,19 @@ export function useEvaluationFlow({ words, singleShot, lang, onAllCompleted, onW
   }, [clearEvalTimeout]);
 
   const safeSetEvaluatingWordNull = useCallback(() => {
+    clearEvalTimeout();
     setEvaluatingWord(null);
     setIsMicResetting(true);
     setTimeout(() => {
       setIsMicResetting(false);
     }, 400);
-  }, []);
+  }, [clearEvalTimeout]);
 
-  const handleResult = useCallback((word: string, status: "correct" | "close" | "wrong" | null, transcript: string) => {
+  const handleResult = useCallback((word: string, status: "correct" | "close" | "wrong" | null, transcript: string, matchedWordCount?: number) => {
     setTranscripts(prev => ({ ...prev, [word]: transcript }));
+    if (matchedWordCount !== undefined) {
+      setMatchCountMap(prev => ({ ...prev, [word]: matchedWordCount }));
+    }
     setEvalFeedback(prev => ({ ...prev, [word]: status }));
     clearEvalTimeout();
 
@@ -62,7 +68,6 @@ export function useEvaluationFlow({ words, singleShot, lang, onAllCompleted, onW
       if (onWordCompleted) onWordCompleted(word, newCompleted);
 
       evaluationTimeoutRef.current = setTimeout(() => {
-        safeSetEvaluatingWordNull();
         setShowConfetti(false);
         if (newCompleted.size >= words.length) {
           playSound("complete", 0.5);
@@ -101,6 +106,7 @@ export function useEvaluationFlow({ words, singleShot, lang, onAllCompleted, onW
     enabled: !!evaluatingWord,
     singleShot,
     lang: (lang === "fil" || lang === "tl") ? "fil-PH" : lang,
+    refreshTrigger,
     onResult: handleResult,
     onError: handleError,
     onSilenceTimeout: handleSilence
@@ -132,10 +138,20 @@ export function useEvaluationFlow({ words, singleShot, lang, onAllCompleted, onW
     });
   }, [clearEvalTimeout, safeSetEvaluatingWordNull]);
 
+  const retryCurrentWord = useCallback(() => {
+    if (!evaluatingWord) return;
+    clearEvalTimeout();
+    setEvalFeedback(prev => ({ ...prev, [evaluatingWord]: null }));
+    setTranscripts(prev => ({ ...prev, [evaluatingWord]: "" }));
+    setMatchCountMap(prev => ({ ...prev, [evaluatingWord]: 0 }));
+    setRefreshTrigger(prev => prev + 1);
+  }, [evaluatingWord, clearEvalTimeout]);
+
   return {
     evaluatingWord,
     evalFeedback,
     transcripts,
+    matchCountMap,
     completedWords,
     isMicResetting,
     processingWord,
@@ -146,6 +162,7 @@ export function useEvaluationFlow({ words, singleShot, lang, onAllCompleted, onW
     setEvalFeedback,
     setTranscripts,
     resetFlow,
-    skipFlow
+    skipFlow,
+    retryCurrentWord
   };
 }

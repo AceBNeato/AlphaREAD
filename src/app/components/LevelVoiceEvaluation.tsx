@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router";
-import { Mic, Home, ArrowRight, ArrowLeft, Sparkles, CheckCircle2, XCircle, MicOff, RotateCcw, AlertCircle, Volume2, Shuffle, Loader2, SkipForward, FastForward, X } from "lucide-react";
+import { Mic, Home, ArrowRight, ArrowLeft, Sparkles, CheckCircle2, XCircle, MicOff, RotateCcw, AlertCircle, Volume2, Shuffle, Loader2, SkipForward, FastForward, X, RefreshCcw } from "lucide-react";
 import { confirmAction } from "../utils/alerts";
 import { Button } from "./ui/button";
 import { PushableButton } from "./ui/PushableButton";
@@ -71,13 +71,11 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
   };
 
   const wordsEval = useEvaluationFlow({
-    words,
+    words: batchWords,
+    singleShot: true,
     lang: language === "tl" ? "fil-PH" : "en-US",
     onAllCompleted: () => setShowCompletionScreen(true),
-    onWordCompleted: (word, newCompleted) => {
-      // Option: Auto-advance batch if current batch is fully complete?
-      // For now, keep the Next Batch button manual as in original.
-    }
+    onWordCompleted: (word) => handlePlayTTS(word)
   });
 
   const isCurrentBatchDone = useMemo(() => {
@@ -231,30 +229,71 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
               initial={{ scale: 0.9, y: 20 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.9, y: 20 }}
-              className="bg-white dark:bg-gray-800 rounded-3xl p-6 sm:p-8 max-w-sm w-full text-center shadow-2xl border-4"
+              className="bg-white dark:bg-gray-800 rounded-3xl p-6 sm:p-8 max-w-sm w-full text-center shadow-[0_12px_40px_rgba(0,0,0,0.2)] border-4 border-b-[10px]"
               style={{ borderColor: accent.primary }}
             >
               <div className="flex flex-col items-center justify-center gap-2 mb-6">
-                <div className="flex items-center justify-center gap-2">
-                  <Mic className="w-6 h-6 text-pink-500 animate-pulse" />
-                  <h3 className="text-2xl font-bold tracking-tight text-pink-500 animate-pulse">Listening...</h3>
-                </div>
-                <AudioVisualizer isListening={!!wordsEval.evaluatingWord} isMobile={isMobile} />
+                {wordsEval.evalFeedback[wordsEval.evaluatingWord] === 'correct' ? (
+                  <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-col items-center justify-center gap-2 text-green-500">
+                    <CheckCircle2 className="w-10 h-10 mb-2" />
+                    <h3 className="text-2xl font-bold tracking-tight">Perfect!</h3>
+                  </motion.div>
+                ) : wordsEval.evalFeedback[wordsEval.evaluatingWord] === 'close' ? (
+                  <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-col items-center justify-center gap-2 text-blue-500">
+                    <Sparkles className="w-10 h-10 mb-2" />
+                    <h3 className="text-2xl font-bold tracking-tight">Almost there!</h3>
+                  </motion.div>
+                ) : (
+                  <>
+                    <div className="flex items-center justify-center gap-2">
+                      <Mic className="w-6 h-6 text-pink-500 animate-pulse" />
+                      <h3 className="text-2xl font-bold tracking-tight text-pink-500 animate-pulse">Listening...</h3>
+                    </div>
+                    <AudioVisualizer isListening={!!wordsEval.evaluatingWord} isMobile={isMobile} />
+                  </>
+                )}
               </div>
               <p className="text-gray-500 dark:text-gray-400 mb-6 font-medium">Please say the word clearly.</p>
 
               <div className="bg-gray-50 dark:bg-gray-900 rounded-2xl p-5 min-h-[100px] flex flex-col items-center justify-center border border-gray-100 dark:border-gray-800 shadow-inner">
                 <span className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Target</span>
-                <span className={`${wordsEval.evaluatingWord?.includes(' ') ? 'text-2xl sm:text-2xl' : 'text-6xl'} font-extrabold mb-4 tracking-wider leading-snug`} style={{ color: accent.primary }}>
-                  {wordsEval.evaluatingWord && wordsEval.evaluatingWord === wordsEval.evaluatingWord.toUpperCase() ? wordsEval.evaluatingWord.toLowerCase() : wordsEval.evaluatingWord}
-                </span>
-
-                <div className="w-full h-px bg-gray-200 dark:bg-gray-700 my-2" />
-
-                <span className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1 mt-2">Heard</span>
-                <span className={`${wordsEval.evaluatingWord?.includes(' ') ? 'text-2xl sm:text-3xl' : 'text-6xl'} font-extrabold tracking-wider leading-snug text-gray-700 dark:text-gray-300 min-h-[60px] flex items-center justify-center w-full break-words`}>
-                  {wordsEval.transcripts[wordsEval.evaluatingWord] ? `"${wordsEval.transcripts[wordsEval.evaluatingWord]}"` : <Loader2 className="w-5 h-5 text-gray-400 animate-spin" />}
-                </span>
+                {wordsEval.evaluatingWord?.includes(' ') ? (
+                  <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 mb-4">
+                    {(() => {
+                      const targetWords = wordsEval.evaluatingWord.split(/\s+/);
+                      const currentMatch = wordsEval.matchCountMap[wordsEval.evaluatingWord] || 0;
+                      
+                      return targetWords.map((word, idx) => {
+                        const isMatched = idx < currentMatch;
+                        const isCurrent = idx === currentMatch;
+                        
+                        let colorClass = "text-gray-300 dark:text-gray-600";
+                        if (isMatched) colorClass = "text-green-500 font-extrabold";
+                        else if (isCurrent) colorClass = "text-pink-500 font-extrabold";
+                        
+                        return (
+                          <motion.span 
+                            key={idx} 
+                            animate={isMatched ? { y: [0, -10, 0] } : { y: 0 }}
+                            transition={{ duration: 0.3 }}
+                            className={`text-2xl sm:text-3xl inline-block ${colorClass}`}
+                          >
+                            {word}
+                          </motion.span>
+                        );
+                      });
+                    })()}
+                  </div>
+                ) : (
+                  <motion.span 
+                    animate={(wordsEval.evalFeedback[wordsEval.evaluatingWord] === 'correct' || wordsEval.evalFeedback[wordsEval.evaluatingWord] === 'close') ? { y: [0, -15, 0] } : { y: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className={`text-6xl font-extrabold mb-4 tracking-wider leading-snug inline-block ${(wordsEval.evalFeedback[wordsEval.evaluatingWord] === 'correct' || wordsEval.evalFeedback[wordsEval.evaluatingWord] === 'close') ? 'text-green-500' : ''}`}
+                    style={{ color: (wordsEval.evalFeedback[wordsEval.evaluatingWord] === 'correct' || wordsEval.evalFeedback[wordsEval.evaluatingWord] === 'close') ? undefined : accent.primary }}
+                  >
+                    {wordsEval.evaluatingWord && wordsEval.evaluatingWord === wordsEval.evaluatingWord.toUpperCase() ? wordsEval.evaluatingWord.toLowerCase().replace(/-hard|-soft/i, "") : wordsEval.evaluatingWord?.replace(/-HARD|-SOFT/i, "")}
+                  </motion.span>
+                )}
               </div>
 
               {wordsEval.evalFeedback[wordsEval.evaluatingWord] === 'wrong' && (
@@ -262,25 +301,26 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
                   <AlertCircle className="w-5 h-5" /> Let's try again!
                 </motion.div>
               )}
-              {wordsEval.evalFeedback[wordsEval.evaluatingWord] === 'correct' && (
-                <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} className="mt-5 text-green-500 font-bold flex items-center justify-center gap-2 bg-green-50 dark:bg-green-900/20 py-2 px-4 rounded-xl">
-                  <CheckCircle2 className="w-5 h-5" /> Perfect!
-                </motion.div>
-              )}
-              {wordsEval.evalFeedback[wordsEval.evaluatingWord] === 'close' && (
-                <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} className="mt-5 text-blue-500 font-bold flex items-center justify-center gap-2 bg-blue-50 dark:bg-blue-900/20 py-2 px-4 rounded-xl">
-                  <Sparkles className="w-5 h-5" /> Almost there!
-                </motion.div>
-              )}
 
-              <div className="mt-6 flex gap-3">
-                <Button
-                  variant="outline"
+              <div className="mt-6 flex flex-col gap-3">
+                {wordsEval.evalFeedback[wordsEval.evaluatingWord] && wordsEval.evalFeedback[wordsEval.evaluatingWord] !== 'wrong' && (
+                  <PushableButton
+                    onClick={() => wordsEval.retryCurrentWord()}
+                    className="w-full mt-2"
+                    frontClassName="bg-gradient-to-r from-[#1cb0f6] to-[#0a8ed4] text-white w-full rounded-xl py-3 flex items-center justify-center gap-2"
+                    edgeClassName="bg-[#0979b5]"
+                  >
+                    <RefreshCcw className="w-5 h-5" /> Retry
+                  </PushableButton>
+                )}
+                <PushableButton
                   onClick={() => wordsEval.safeSetEvaluatingWordNull()}
-                  className="flex-1 rounded-xl font-bold text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 border-2"
+                  className="w-full"
+                  frontClassName="bg-gradient-to-r from-[rgb(255,75,75)] to-[rgb(216,42,42)] text-white w-full rounded-xl py-3 flex items-center justify-center gap-2"
+                  edgeClassName="bg-[rgb(180,30,30)]"
                 >
-                  Cancel
-                </Button>
+                  Close
+                </PushableButton>
               </div>
             </motion.div>
           </motion.div>
@@ -415,9 +455,6 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
                                   </div>
                                 );
                               })()}
-                              {feedback === 'correct' && <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="text-green-500 flex items-center gap-1 text-sm font-bold"><CheckCircle2 className="w-4 h-4" /> Correct!</motion.div>}
-                              {feedback === 'close' && <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="text-blue-500 flex items-center gap-1 text-sm font-bold"><Sparkles className="w-4 h-4" /> Close enough!</motion.div>}
-
                             </div>
 
                             <div className="flex items-center gap-2 shrink-0 ml-2 relative">

@@ -2,10 +2,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { evaluateSyllable, isSyllableTarget, PhonemeResult } from "../utils/PhonemeEvaluator";
 
 // Logs only in development — automatically silent in production builds
-declare const process: any;
-const DEBUG = typeof process !== 'undefined'
-  ? process.env.NODE_ENV !== 'production'
-  : import.meta.env?.DEV ?? false;
+const DEBUG = false;
 
 const DIGIT_MAP: Record<string, string> = {
   "0": "ZERO", "1": "ONE", "2": "TWO", "3": "THREE", "4": "FOUR",
@@ -110,9 +107,10 @@ interface UseSpeechRecognitionProps {
   /** BCP-47 language tag for SpeechRecognition.
    *  Defaults to "en-US". Pass "fil" for Filipino curriculum. */
   lang?: string;
-  onResult: (word: string, status: EvaluationFeedback, transcript: string) => void;
+  onResult: (word: string, status: EvaluationFeedback, transcript: string, matchedWordCount?: number) => void;
   onSilenceTimeout: () => void;
   onError: () => void;
+  refreshTrigger?: number;
 }
 
 // ... (HOMOPHONES block remains) ...
@@ -255,7 +253,7 @@ const HOMOPHONES: Record<string, string[]> = {
   "BOX": ["fox", "rocks"]
 };
 
-export function useSpeechRecognition({ evaluatingWord, enabled = true, singleShot = false, lang = "en-US", onResult, onSilenceTimeout, onError }: UseSpeechRecognitionProps) {
+export function useSpeechRecognition({ evaluatingWord, enabled = true, singleShot = false, lang = "en-US", refreshTrigger = 0, onResult, onSilenceTimeout, onError }: UseSpeechRecognitionProps) {
   const recognitionRef = useRef<any>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const resultReceivedRef = useRef(false);
@@ -296,6 +294,8 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, singleSho
     let latestTranscript = ""; // Track the latest thing heard for the timeout fallback
     let bestRecordedStatus: "correct" | "close" | "wrong" = "wrong";
     let bestRecordedTranscript = "";
+    let bestRecordedSequentialCount = 0;
+    let lastEmittedSequentialCount = -1; // Throttle UI updates
     let hasMatched = false; // Prevent race conditions while stopping
     let isActive = true; // Track if this specific effect is still active
     const recognition = new SpeechRecognitionAPI();
@@ -314,6 +314,7 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, singleSho
       let foundClose = false;
       let bestStatus: "correct" | "close" | "wrong" = "wrong";
       let bestTranscript = "";
+      let matchedSequentialCount = 0;
 
       if (DEBUG) console.log(`[AlphabetGO Debug] 🗣️ Result Event Received. Evaluating against: "${evaluatingWord}"`);
 
@@ -379,38 +380,44 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, singleSho
           const targetClean = evaluatingWord.toUpperCase().replace(/[.,!?'"-]/g, "").trim();
           const targetWords = targetClean.split(/\s+/).map(w => DIGIT_MAP[w] || w);
 
-          let bestStatus: "correct" | "close" | "wrong" = "wrong";
+          let bestSequentialCount = 0;
+          let bestSentenceStatus: "correct" | "close" | "wrong" = "wrong";
           let matchedTranscript = "";
 
           for (let i = 0; i < allTranscripts.length; i++) {
             const rawClean = allTranscripts[i].toUpperCase().replace(/[.,!?'"-]/g, "").trim();
             const rawWords = rawClean.split(/\s+/).map(w => DIGIT_MAP[w] || w);
 
-            // Compute LCS of targetWords and rawWords
-            const lcs = getLCS(targetWords, rawWords, HOMOPHONES);
+            let sequentialMatchCount = 0;
+            let rawIdx = 0;
 
-            let currentStatus: "correct" | "close" | "wrong" = "wrong";
-
-            // Allow up to 3 extra words for correct, or up to 50% of the sentence length, whichever is larger
-            const allowedExtra = Math.max(3, Math.floor(targetWords.length * 0.5));
-
-            if (lcs === targetWords.length && rawWords.length <= targetWords.length + allowedExtra) {
-              currentStatus = "correct";
-            } else if (lcs >= Math.max(2, targetWords.length - 1)) {
-              currentStatus = "close";
+            // Strict sequential lock evaluation
+            while (sequentialMatchCount < targetWords.length && rawIdx < rawWords.length) {
+              const expected = targetWords[sequentialMatchCount];
+              const spoken = rawWords[rawIdx];
+              const allowed = [expected, ...(HOMOPHONES[expected] || []).map(w => w.toUpperCase())];
+              
+              if (allowed.includes(spoken) || calculateSimilarity(expected, spoken) >= 0.6 || matchConsonants(expected, spoken)) {
+                sequentialMatchCount++;
+              }
+              rawIdx++; // Always advance rawIdx to search forward
             }
 
-            if (currentStatus === "correct") {
-              bestStatus = "correct";
-              matchedTranscript = evaluatingWord;
-              break;
-            } else if (currentStatus === "close") {
-              bestStatus = "close";
-              matchedTranscript = allTranscripts[i].trim();
+            if (sequentialMatchCount > bestSequentialCount) {
+               bestSequentialCount = sequentialMatchCount;
+               matchedTranscript = allTranscripts[i].trim();
             }
           }
 
-          status = bestStatus;
+          // Strict checking: must complete the full sequential count
+          if (bestSequentialCount === targetWords.length) {
+            bestSentenceStatus = "correct";
+          } else {
+            bestSentenceStatus = "wrong"; // UI handles intermediate visual progress via matchedWordCount
+          }
+
+          status = bestSentenceStatus;
+          matchedSequentialCount = bestSequentialCount;
           matchStr = matchedTranscript || allTranscripts[0].trim();
         }
         // PATH C: Single Word
@@ -453,6 +460,13 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, singleSho
 
         if (DEBUG) console.log(`[AlphabetGO Debug] Evaluated primary "${primaryTranscript}" -> Status: ${status}, matchStr: "${matchStr}"`);
 
+        // Keep track of the best status heard so far
+        if (status === "correct" || matchedSequentialCount > bestRecordedSequentialCount) {
+          bestRecordedStatus = status;
+          bestRecordedTranscript = matchStr;
+          bestRecordedSequentialCount = matchedSequentialCount;
+        }
+
         if (status === "correct") {
           foundCorrect = true;
           bestStatus = "correct";
@@ -464,12 +478,6 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, singleSho
           bestTranscript = matchStr;
         }
       } // End evaluation block
-
-      // Keep track of the best status heard so far
-      if (bestStatus === "correct" || (bestStatus === "close" && bestRecordedStatus !== "correct")) {
-        bestRecordedStatus = bestStatus;
-        bestRecordedTranscript = bestTranscript;
-      }
 
       // Determine if the target is a multi-word phrase
       const isPhrase = evaluatingWord.toUpperCase().replace(/[.,!?]/g, "").trim().includes(" ");
@@ -485,11 +493,14 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, singleSho
         if (recognitionRef.current) {
           try { recognitionRef.current.stop(); } catch (e) { }
         }
-        onResultRef.current(evaluatingWord, bestStatus, bestTranscript);
+        onResultRef.current(evaluatingWord, bestStatus, bestTranscript, matchedSequentialCount);
       } else {
-        // Emit interim transcript so the UI can display "Heard: ..." or "Listening..."
-        if (DEBUG) console.log(`[AlphabetGO Debug] ⏳ Interim match... Best Status: ${bestStatus}, Primary Transcript: "${latestTranscript}"`);
-        onResultRef.current(evaluatingWord, null, latestTranscript);
+        // Prevent React state thrashing: only emit an update if the sequential progress actually advanced
+        if (matchedSequentialCount !== lastEmittedSequentialCount) {
+          lastEmittedSequentialCount = matchedSequentialCount;
+          if (DEBUG) console.log(`[AlphabetGO Debug] ⏳ UI Update: Sequential progress advanced to ${matchedSequentialCount}`);
+          onResultRef.current(evaluatingWord, null, latestTranscript, matchedSequentialCount);
+        }
       }
     };
 
@@ -508,7 +519,7 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, singleSho
 
       // If we recorded a correct/close match earlier, return it instead of wrong!
       const finalStatus = bestRecordedStatus !== "wrong" ? bestRecordedStatus : "wrong";
-      onResultRef.current(evaluatingWord, finalStatus, bestRecordedTranscript || latestTranscript);
+      onResultRef.current(evaluatingWord, finalStatus, bestRecordedTranscript || latestTranscript, bestRecordedSequentialCount);
     };
 
     recognition.onend = () => {
@@ -518,12 +529,12 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, singleSho
 
         if (bestRecordedStatus !== "wrong") {
           if (DEBUG) console.log(`[AlphabetGO Debug] 🏁 onend — awarding recorded status "${bestRecordedStatus}" for: "${bestRecordedTranscript}"`);
-          onResultRef.current(evaluatingWord, bestRecordedStatus, bestRecordedTranscript);
+          onResultRef.current(evaluatingWord, bestRecordedStatus, bestRecordedTranscript, bestRecordedSequentialCount);
         } else if (singleShot && resultReceivedRef.current && latestTranscript) {
           if (DEBUG) console.log(`[AlphabetGO Debug] 🏁 singleShot onend — forcing "wrong" with: "${latestTranscript}"`);
-          onResultRef.current(evaluatingWord, "wrong", latestTranscript);
+          onResultRef.current(evaluatingWord, "wrong", latestTranscript, bestRecordedSequentialCount);
         } else if (!singleShot && resultReceivedRef.current && latestTranscript) {
-          onResultRef.current(evaluatingWord, "wrong", latestTranscript);
+          onResultRef.current(evaluatingWord, "wrong", latestTranscript, bestRecordedSequentialCount);
         } else {
           if (DEBUG) console.log(`[AlphabetGO Debug] 🤫 onend — no speech, silence timeout.`);
           onSilenceTimeoutRef.current();
@@ -542,28 +553,8 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, singleSho
       try {
         recognition.start();
 
-        const isPhrase = evaluatingWord.toUpperCase().replace(/[.,!?]/g, "").trim().includes(" ");
-        // Slow readers need more time for sentences — 25s ceiling, still exits instantly on match
-        const timeoutDuration = isPhrase ? 25000 : 5000;
-
-        timeoutRef.current = setTimeout(() => {
-          if (!isActive || hasMatched) return;
-          if (DEBUG) console.log(`[AlphabetGO Debug] ⏱️ Timeout reached (${timeoutDuration}ms) for "${evaluatingWord}". Evaluating final state...`);
-          if (recognitionRef.current) {
-            try { recognitionRef.current.stop(); } catch (e) { }
-          }
-          hasMatched = true;
-
-          if (bestRecordedStatus !== "wrong") {
-            onResultRef.current(evaluatingWord, bestRecordedStatus, bestRecordedTranscript);
-          } else if (resultReceivedRef.current && latestTranscript) {
-            if (DEBUG) console.log(`[AlphabetGO Debug] 👎 Forcing "wrong" feedback with transcript: "${latestTranscript}"`);
-            onResultRef.current(evaluatingWord, "wrong", latestTranscript);
-          } else {
-            if (DEBUG) console.log(`[AlphabetGO Debug] 🤫 No speech detected (silence timeout).`);
-            onSilenceTimeoutRef.current();
-          }
-        }, timeoutDuration);
+        // Removed artificial timeout: We now rely purely on the user completing the 
+        // phrase or pressing the "Cancel" button, creating a stress-free environment.
       } catch (error) {
         if (DEBUG) console.error("[AlphabetGO Debug] ❌ Error starting recognition:", error);
         onErrorRef.current();
@@ -582,5 +573,5 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, singleSho
       if (startupTimerId) clearTimeout(startupTimerId);
       cleanup();
     };
-  }, [evaluatingWord, enabled, lang, cleanup]);
+  }, [evaluatingWord, enabled, lang, cleanup, refreshTrigger]);
 }

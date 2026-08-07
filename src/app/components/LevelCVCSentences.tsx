@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { useNavigate } from "react-router";
-import { Home, Mic, MicOff, CheckCircle2, XCircle, Sparkles, ArrowRight, ArrowLeft, RotateCcw, SkipForward, FastForward, Volume2, Shuffle, X, AlertCircle, Loader2 } from "lucide-react";
+import { Home, Mic, MicOff, CheckCircle2, XCircle, Sparkles, ArrowRight, ArrowLeft, RotateCcw, SkipForward, FastForward, Volume2, Shuffle, X, AlertCircle, Loader2, RefreshCcw } from "lucide-react";
 import { confirmAction } from "../utils/alerts";
 import { Button } from "./ui/button";
 import { motion, AnimatePresence } from "motion/react";
@@ -48,6 +48,8 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
   const [hasClickedMic, setHasClickedMic] = useState(false);
 
   const evaluationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [sentenceMatchCountMap, setSentenceMatchCountMap] = useState<Record<string, number>>({});
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   const isMobile = useMemo(() => /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent), []);
 
@@ -66,6 +68,7 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
     setCompletedSentences(new Set());
     setSentenceFeedbackMap({});
     setSentenceTranscriptsMap({});
+    setSentenceMatchCountMap({});
     setEvaluatingSentenceId(null);
   }, [currentSetIndex]);
 
@@ -86,8 +89,11 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
 
   // Voice result handler (matches Lesson 5 pattern)
   const handleResult = useCallback(
-    (target: string, status: "correct" | "close" | "wrong" | null, transcript: string) => {
+    (target: string, status: "correct" | "close" | "wrong" | null, transcript: string, matchedWordCount?: number) => {
       setSentenceTranscriptsMap(prev => ({ ...prev, [target]: transcript }));
+      if (matchedWordCount !== undefined) {
+        setSentenceMatchCountMap(prev => ({ ...prev, [target]: matchedWordCount }));
+      }
 
       const tClean = transcript.toLowerCase().replace(/[.,!?'"-]/g, "").trim();
       const targetClean = target.toLowerCase().replace(/[.,!?'"-]/g, "").trim();
@@ -101,10 +107,10 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
 
       if (isCorrect) {
         playSound("correct", 0.4);
+        playTTS(target);
         setSentenceFeedbackMap(prev => ({ ...prev, [target]: "correct" }));
         evaluationTimeoutRef.current = setTimeout(() => {
           setCompletedSentences(prev => new Set(prev).add(target));
-          setEvaluatingSentenceId(null);
         }, 1500);
       } else {
         playSound("wrong", 0.35);
@@ -123,6 +129,7 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
     enabled: !!evaluatingSentenceId,
     singleShot: false, // Continuous mode: keeps mic alive through pauses for slow readers
     lang: language === "tl" ? "fil-PH" : "en-US",
+    refreshTrigger,
     onResult: handleResult,
     onError: () => setEvaluatingSentenceId(null),
     onSilenceTimeout: () => {
@@ -148,6 +155,7 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
     setCompletedSentences(new Set());
     setSentenceFeedbackMap({});
     setSentenceTranscriptsMap({});
+    setSentenceMatchCountMap({});
   };
 
   const handleReset = () => {
@@ -158,6 +166,7 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
     setCompletedSentences(new Set());
     setSentenceFeedbackMap({});
     setSentenceTranscriptsMap({});
+    setSentenceMatchCountMap({});
   };
 
   const handleNextQuiz = () => {
@@ -225,28 +234,61 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
                 initial={{ scale: 0.9, y: 20 }}
                 animate={{ scale: 1, y: 0 }}
                 exit={{ scale: 0.9, y: 20 }}
-                className="bg-white dark:bg-gray-800 rounded-3xl p-6 sm:p-8 max-w-sm w-full text-center shadow-2xl border-4"
+                className="bg-white dark:bg-gray-800 rounded-3xl p-6 sm:p-8 max-w-sm w-full text-center shadow-[0_12px_40px_rgba(0,0,0,0.2)] border-4 border-b-[10px]"
                 style={{ borderColor: accent.primary }}
               >
                 <div className="flex flex-col items-center justify-center gap-2 mb-6">
-                  <div className="flex items-center justify-center gap-2">
-                    <Mic className="w-6 h-6 text-pink-500 animate-pulse" />
-                    <h3 className="text-2xl font-bold tracking-tight text-pink-500 animate-pulse">Listening...</h3>
-                  </div>
-                  <AudioVisualizer isListening={!!evaluatingSentenceId} isMobile={isMobile} />
+                  {sentenceFeedbackMap[evaluatingSentenceId] === 'correct' ? (
+                    <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-col items-center justify-center gap-2 text-green-500">
+                      <CheckCircle2 className="w-10 h-10 mb-2" />
+                      <h3 className="text-2xl font-bold tracking-tight">Perfect!</h3>
+                    </motion.div>
+                  ) : sentenceFeedbackMap[evaluatingSentenceId] === 'close' ? (
+                    <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-col items-center justify-center gap-2 text-blue-500">
+                      <Sparkles className="w-10 h-10 mb-2" />
+                      <h3 className="text-2xl font-bold tracking-tight">Almost there!</h3>
+                    </motion.div>
+                  ) : (
+                    <>
+                      <div className="flex items-center justify-center gap-2">
+                        <Mic className="w-6 h-6 text-pink-500 animate-pulse" />
+                        <h3 className="text-2xl font-bold tracking-tight text-pink-500 animate-pulse">Listening...</h3>
+                      </div>
+                      <AudioVisualizer isListening={!!evaluatingSentenceId} isMobile={isMobile} />
+                    </>
+                  )}
                 </div>
                 <p className="text-gray-500 dark:text-gray-400 mb-6 font-medium">Please read the sentence clearly.</p>
 
                 <div className="bg-gray-50 dark:bg-gray-900 rounded-2xl p-5 min-h-[100px] flex flex-col items-center justify-center border border-gray-100 dark:border-gray-800 shadow-inner">
                   <span className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Target</span>
-                  <span className="text-2xl sm:text-3xl font-extrabold mb-4 leading-snug" style={{ color: accent.primary }}>{evaluatingSentenceId}</span>
-
-                  <div className="w-full h-px bg-gray-200 dark:bg-gray-700 my-2" />
-
-                  <span className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1 mt-2">Heard</span>
-                  <span className="text-2xl sm:text-3xl font-extrabold leading-snug text-gray-700 dark:text-gray-300 min-h-[30px] flex items-center justify-center w-full break-words">
-                    {sentenceTranscriptsMap[evaluatingSentenceId] ? `"${sentenceTranscriptsMap[evaluatingSentenceId]}"` : <Loader2 className="w-5 h-5 text-gray-400 animate-spin" />}
-                  </span>
+                  
+                  <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 mb-4">
+                    {(() => {
+                      const targetWords = evaluatingSentenceId.split(/\s+/);
+                      const currentMatch = sentenceMatchCountMap[evaluatingSentenceId] || 0;
+                      
+                      return targetWords.map((word, idx) => {
+                        const isMatched = idx < currentMatch;
+                        const isCurrent = idx === currentMatch;
+                        
+                        let colorClass = "text-gray-300 dark:text-gray-600";
+                        if (isMatched) colorClass = "text-green-500 font-extrabold";
+                        else if (isCurrent) colorClass = "text-pink-500 font-extrabold"; // Removed animate-pulse
+                        
+                        return (
+                          <motion.span 
+                            key={idx} 
+                            animate={isMatched ? { y: [0, -10, 0] } : { y: 0 }}
+                            transition={{ duration: 0.3 }}
+                            className={`text-2xl sm:text-3xl inline-block ${colorClass}`}
+                          >
+                            {word}
+                          </motion.span>
+                        );
+                      });
+                    })()}
+                  </div>
                 </div>
 
                 {sentenceFeedbackMap[evaluatingSentenceId] === 'wrong' && (
@@ -254,19 +296,31 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
                     <AlertCircle className="w-5 h-5" /> Let's try again!
                   </motion.div>
                 )}
-                {sentenceFeedbackMap[evaluatingSentenceId] === 'correct' && (
-                  <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} className="mt-5 text-green-500 font-bold flex items-center justify-center gap-2 bg-green-50 dark:bg-green-900/20 py-2 px-4 rounded-xl">
-                    <CheckCircle2 className="w-5 h-5" /> Perfect!
-                  </motion.div>
-                )}
-                <div className="mt-6 flex gap-3">
-                  <Button
-                    variant="outline"
+                <div className="mt-6 flex flex-col gap-3">
+                  {sentenceFeedbackMap[evaluatingSentenceId] && sentenceFeedbackMap[evaluatingSentenceId] !== 'wrong' && (
+                    <PushableButton
+                      onClick={() => {
+                        clearEvalTimeout();
+                        setSentenceFeedbackMap(prev => ({ ...prev, [evaluatingSentenceId]: null }));
+                        setSentenceMatchCountMap(prev => ({ ...prev, [evaluatingSentenceId]: 0 }));
+                        setSentenceTranscriptsMap(prev => ({ ...prev, [evaluatingSentenceId]: "" }));
+                        setRefreshTrigger(prev => prev + 1);
+                      }}
+                      className="w-full mt-2"
+                      frontClassName="bg-gradient-to-r from-[#1cb0f6] to-[#0a8ed4] text-white w-full rounded-xl py-3 flex items-center justify-center gap-2"
+                      edgeClassName="bg-[#0979b5]"
+                    >
+                      <RefreshCcw className="w-5 h-5" /> Retry
+                    </PushableButton>
+                  )}
+                  <PushableButton
                     onClick={() => setEvaluatingSentenceId(null)}
-                    className="flex-1 rounded-xl font-bold text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 border-2"
+                    className="w-full"
+                    frontClassName="bg-gradient-to-r from-[rgb(255,75,75)] to-[rgb(216,42,42)] text-white w-full rounded-xl py-3 flex items-center justify-center gap-2"
+                    edgeClassName="bg-[rgb(180,30,30)]"
                   >
-                    Cancel
-                  </Button>
+                    Close
+                  </PushableButton>
                 </div>
               </motion.div>
             </motion.div>
