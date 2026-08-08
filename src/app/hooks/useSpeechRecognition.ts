@@ -534,16 +534,28 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, singleSho
     recognition.onend = () => {
       if (isActive && !hasMatched) {
         if (timeoutRef.current) clearTimeout(timeoutRef.current);
-        hasMatched = true;
 
         if (bestRecordedStatus !== "wrong") {
+          hasMatched = true;
           if (DEBUG) console.log(`[AlphabetGO Debug] 🏁 onend — awarding recorded status "${bestRecordedStatus}" for: "${bestRecordedTranscript}"`);
           onResultRef.current(evaluatingWord, bestRecordedStatus, bestRecordedTranscript, bestRecordedSequentialCount);
         } else if (singleShot && resultReceivedRef.current && latestTranscript) {
+          hasMatched = true;
           if (DEBUG) console.log(`[AlphabetGO Debug] 🏁 singleShot onend — forcing "wrong" with: "${latestTranscript}"`);
           onResultRef.current(evaluatingWord, "wrong", latestTranscript, bestRecordedSequentialCount);
         } else {
-          if (DEBUG) console.log(`[AlphabetGO Debug] 🤫 onend — no speech, emitting null to preserve UI.`);
+          if (!singleShot && isActive) {
+            if (DEBUG) console.log(`[AlphabetGO Debug] 🤫 onend — auto-restarting continuous mic to prevent early shutoff.`);
+            try { 
+              recognition.start(); 
+              return; // successfully restarted, so we stay active
+            } catch (e) {
+              // start failed, fall through to stop
+            }
+          }
+          
+          hasMatched = true;
+          if (DEBUG) console.log(`[AlphabetGO Debug] 🤫 onend — emitting null to preserve UI.`);
           onResultRef.current(evaluatingWord, null, latestTranscript, bestRecordedSequentialCount);
           if (onEngineStopRef.current) {
             onEngineStopRef.current();
