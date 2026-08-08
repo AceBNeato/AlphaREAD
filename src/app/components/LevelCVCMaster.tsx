@@ -56,22 +56,15 @@ function LevelCVCPreview({
   onOrganize?: () => void;
   onShuffle?: () => void;
 }) {
-  const [order, setOrder] = useState<string[]>(words);
-  useEffect(() => {
-    setOrder(words);
-  }, [words]);
-
   const { language } = useLanguage();
   const isTagalog = language === "tl";
   const wordLabel = isTagalog ? "words" : "CVC words";
 
   const handleShuffle = () => {
-    setOrder([...order].sort(() => Math.random() - 0.5));
     if (onShuffle) onShuffle();
   };
 
   const handleOrganize = () => {
-    setOrder([...order].sort((a, b) => a.localeCompare(b)));
     if (onOrganize) onOrganize();
   };
 
@@ -87,7 +80,7 @@ function LevelCVCPreview({
           </p>
 
           <div className={`grid ${isTagalog ? 'grid-cols-3 sm:grid-cols-5 md:grid-cols-6' : 'grid-cols-4 sm:grid-cols-7'} gap-2 sm:gap-3 mb-12 w-full max-w-5xl mx-auto justify-items-center`}>
-            {order.map((word) => {
+            {words.map((word) => {
               let chunks: string[] = [];
               if (isTagalog) {
                 const standardChunks = TAGALOG_WORD_CHUNKS[word.toUpperCase()];
@@ -185,7 +178,15 @@ export function LevelCVCMaster({ levelId, accent }: LevelCVCMasterProps) {
     return a;
   };
 
-  const [baseWords] = useState<string[]>(() => shuffleArray([...CVC_WORDS]));
+  const [baseWords, setBaseWords] = useState<string[]>(() => shuffleArray([...CVC_WORDS]));
+
+  const handleOrganizeAll = () => {
+    setBaseWords([...CVC_WORDS].sort((a, b) => a.localeCompare(b)));
+  };
+
+  const handleShuffleAll = () => {
+    setBaseWords(shuffleArray([...CVC_WORDS]));
+  };
 
   const STEPS: GameStep[] = useMemo(() => {
     const wordsToUse = baseWords;
@@ -278,8 +279,8 @@ export function LevelCVCMaster({ levelId, accent }: LevelCVCMasterProps) {
         batchNumber={step.batchNumber}
         totalBatches={step.totalBatches}
         isReview={step.phase === "review"}
-        onOrganize={undefined}
-        onShuffle={undefined}
+        onOrganize={handleOrganizeAll}
+        onShuffle={handleShuffleAll}
       />
     );
   }
@@ -394,9 +395,8 @@ export function LevelCVCMaster({ levelId, accent }: LevelCVCMasterProps) {
     <div className="h-screen overflow-hidden flex flex-col bg-gradient-to-br from-green-50 via-blue-50 to-purple-50 dark:bg-none dark:bg-[#0d141c]">
       <div className="shrink-0 z-50 px-4 py-3 border-b border-gray-200 dark:border-gray-800">
         <div className="max-w-4xl mx-auto flex items-center gap-3 sm:gap-5 w-full">
-          <Button variant="ghost" size="sm" onClick={handleGoBack} className="rounded-full p-2 h-auto text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 flex items-center gap-1">
-            <X className="w-7 h-7 sm:w-8 sm:h-8 stroke-[3]" />
-            <span className="hidden sm:inline font-bold uppercase tracking-wider text-sm">EXIT</span>
+          <Button variant="ghost" size="sm" onClick={handleGoBack} className="rounded-full p-2 h-auto text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 flex items-center justify-center transition-transform hover:scale-105 active:scale-95">
+            <X className="!w-8 !h-8 sm:!w-10 sm:!h-10 stroke-[3]" />
           </Button>
 
           <div className="flex-1 flex flex-col gap-1.5 mt-1">

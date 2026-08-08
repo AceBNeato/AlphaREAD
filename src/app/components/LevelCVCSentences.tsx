@@ -41,6 +41,7 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
   const [completedSentences, setCompletedSentences] = useState<Set<string>>(new Set());
   const [sentenceFeedbackMap, setSentenceFeedbackMap] = useState<Record<string, "correct" | "close" | "wrong" | null>>({});
   const [sentenceTranscriptsMap, setSentenceTranscriptsMap] = useState<Record<string, string>>({});
+  const [isMicSleeping, setIsMicSleeping] = useState(false);
 
   const [showConfetti, setShowConfetti] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -58,6 +59,11 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
       clearTimeout(evaluationTimeoutRef.current);
       evaluationTimeoutRef.current = null;
     }
+  }, []);
+
+  const safeSetEvaluatingSentenceNull = useCallback(() => {
+    setEvaluatingSentenceId(null);
+    setIsMicSleeping(false);
   }, []);
 
   useEffect(() => () => clearEvalTimeout(), [clearEvalTimeout]);
@@ -121,7 +127,7 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
         }, 2000);
       }
     },
-    [clearEvalTimeout]
+    [clearEvalTimeout, safeSetEvaluatingSentenceNull]
   );
 
   useSpeechRecognition({
@@ -132,7 +138,8 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
     refreshTrigger,
     initialTranscript: evaluatingSentenceId ? (sentenceTranscriptsMap[evaluatingSentenceId] || "") : "",
     onResult: handleResult,
-    onError: () => setEvaluatingSentenceId(null),
+    onError: () => safeSetEvaluatingSentenceNull(),
+    onEngineStop: () => setIsMicSleeping(true),
     onSilenceTimeout: () => {
       clearEvalTimeout();
       if (evaluatingSentenceId) {
@@ -249,6 +256,11 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
                       <Sparkles className="w-10 h-10 mb-2" />
                       <h3 className="text-2xl font-bold tracking-tight">Almost there!</h3>
                     </motion.div>
+                  ) : isMicSleeping ? (
+                    <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-col items-center justify-center gap-2">
+                      <MicOff className="w-6 h-6 text-gray-400" />
+                      <h3 className="text-2xl font-bold tracking-tight text-gray-500">Paused</h3>
+                    </motion.div>
                   ) : (
                     <>
                       <div className="flex items-center justify-center gap-2">
@@ -259,7 +271,9 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
                     </>
                   )}
                 </div>
-                <p className="text-gray-500 dark:text-gray-400 mb-6 font-medium">Please read the sentence clearly.</p>
+                <p className="text-gray-500 dark:text-gray-400 mb-6 font-medium">
+                  {isMicSleeping ? "Take a breath and tap below to continue." : "Please read the sentence clearly."}
+                </p>
 
                 <div className="bg-gray-50 dark:bg-gray-900 rounded-2xl p-5 min-h-[100px] flex flex-col items-center justify-center border border-gray-100 dark:border-gray-800 shadow-inner">
                   <span className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Target</span>
@@ -275,7 +289,7 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
                         
                         let colorClass = "text-gray-300 dark:text-gray-600";
                         if (isMatched) colorClass = "text-green-500 font-extrabold";
-                        else if (isCurrent) colorClass = "text-pink-500 font-extrabold"; // Removed animate-pulse
+                        else if (isCurrent) colorClass = "text-pink-500 font-extrabold";
                         
                         return (
                           <motion.span 
@@ -297,32 +311,51 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
                     <AlertCircle className="w-5 h-5" /> Let's try again!
                   </motion.div>
                 )}
-                <div className="mt-6 flex flex-col gap-3">
-                  {sentenceFeedbackMap[evaluatingSentenceId] && sentenceFeedbackMap[evaluatingSentenceId] !== 'wrong' && (
+                {isMicSleeping ? (
+                  <div className="mt-6">
+                    <PushableButton
+                      onClick={() => {
+                        setIsMicSleeping(false);
+                        setRefreshTrigger(prev => prev + 1);
+                      }}
+                      className="w-full"
+                      frontClassName="bg-gradient-to-r from-pink-500 to-rose-500 text-white w-full rounded-xl py-4 flex items-center justify-center gap-2 font-bold text-lg"
+                      edgeClassName="bg-rose-700"
+                    >
+                      <Mic className="w-6 h-6 animate-pulse" /> Continue Reading
+                    </PushableButton>
+                  </div>
+                ) : (
+                  <div className="mt-6 flex flex-col gap-3">
+                    {sentenceFeedbackMap[evaluatingSentenceId] && sentenceFeedbackMap[evaluatingSentenceId] !== 'wrong' && (
+                      <PushableButton
+                        onClick={() => {
+                          setSentenceTranscriptsMap(prev => ({ ...prev, [evaluatingSentenceId]: "" }));
+                          setSentenceMatchCountMap(prev => ({ ...prev, [evaluatingSentenceId]: 0 }));
+                          setRefreshTrigger(prev => prev + 1);
+                          setSentenceFeedbackMap(prev => ({ ...prev, [evaluatingSentenceId]: null }));
+                        }}
+                        className="w-full mt-2"
+                        frontClassName="bg-gradient-to-r from-[#1cb0f6] to-[#0a8ed4] text-white w-full rounded-xl py-3 flex items-center justify-center gap-2"
+                        edgeClassName="bg-[#0979b5]"
+                      >
+                        <RefreshCcw className="w-5 h-5" /> Retry
+                      </PushableButton>
+                    )}
                     <PushableButton
                       onClick={() => {
                         clearEvalTimeout();
+                        safeSetEvaluatingSentenceNull();
                         setSentenceFeedbackMap(prev => ({ ...prev, [evaluatingSentenceId]: null }));
-                        setSentenceMatchCountMap(prev => ({ ...prev, [evaluatingSentenceId]: 0 }));
-                        setSentenceTranscriptsMap(prev => ({ ...prev, [evaluatingSentenceId]: "" }));
-                        setRefreshTrigger(prev => prev + 1);
                       }}
-                      className="w-full mt-2"
-                      frontClassName="bg-gradient-to-r from-[#1cb0f6] to-[#0a8ed4] text-white w-full rounded-xl py-3 flex items-center justify-center gap-2"
-                      edgeClassName="bg-[#0979b5]"
+                      className="w-full"
+                      frontClassName="bg-gradient-to-r from-[rgb(255,75,75)] to-[rgb(216,42,42)] text-white w-full rounded-xl py-3 flex items-center justify-center font-bold"
+                      edgeClassName="bg-[rgb(168,34,34)]"
                     >
-                      <RefreshCcw className="w-5 h-5" /> Retry
+                      Close
                     </PushableButton>
-                  )}
-                  <PushableButton
-                    onClick={() => setEvaluatingSentenceId(null)}
-                    className="w-full"
-                    frontClassName="bg-gradient-to-r from-[rgb(255,75,75)] to-[rgb(216,42,42)] text-white w-full rounded-xl py-3 flex items-center justify-center gap-2"
-                    edgeClassName="bg-[rgb(180,30,30)]"
-                  >
-                    Close
-                  </PushableButton>
-                </div>
+                  </div>
+                )}
               </motion.div>
             </motion.div>
           )}
@@ -332,8 +365,8 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
         {!isSubPhase && (
           <div className="shrink-0 z-10 px-4 py-3 border-b border-gray-200 dark:border-gray-800">
             <div className="max-w-4xl mx-auto flex items-center justify-between gap-3 w-full">
-              <Button variant="ghost" size="sm" onClick={handleGoBack} className="rounded-full flex-shrink-0 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
-                <X className="w-7 h-7 sm:w-8 sm:h-8 stroke-[3]" /> <span className="hidden sm:inline font-bold uppercase tracking-wider text-sm ml-1">EXIT</span>
+              <Button variant="ghost" size="sm" onClick={handleGoBack} className="rounded-full flex-shrink-0 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-transform hover:scale-105 active:scale-95 flex items-center justify-center p-2">
+                <X className="!w-8 !h-8 sm:!w-10 sm:!h-10 stroke-[3]" />
               </Button>
               <h2 className="text-lg font-bold tracking-tight text-center flex-1" style={{ color: accent.primary }}>
                 {levelId === 3 ? "CVC Master - Read the Sentences" : `Sentences Quiz (Set ${currentSetIndex + 1}/${totalSets}) Read the Sentences`}

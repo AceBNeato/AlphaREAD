@@ -37,11 +37,19 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
     return list;
   }, []);
 
+  const [sortType, setSortType] = useState<"shuffled" | "alphabetical">("shuffled");
+
   const allWordsRaw = useMemo(() => {
     const list: string[] = [];
     LONG_VOWELS_DATA.forEach((d) => d.patterns.forEach((p) => p.words.forEach(w => list.push(w.word))));
+    if (sortType === "alphabetical") {
+      return list.sort((a, b) => a.localeCompare(b));
+    }
     return shuffle(list);
-  }, []);
+  }, [sortType]);
+
+  const handleOrganizeAll = () => setSortType("alphabetical");
+  const handleShuffleAll = () => setSortType("shuffled");
 
   // Build highlight map: word -> array of character indices to highlight
   const wordHighlightsMap = useMemo(() => {
@@ -157,6 +165,8 @@ export function LevelLongVowels({ levelId, accent }: LevelLongVowelsProps) {
         onBack={handleStepBack}
         canBack={currentStepIdx > 0}
         onItemClick={handleItemClick}
+        onOrganize={handleOrganizeAll}
+        onShuffle={handleShuffleAll}
       />
     </LessonShell>
   );

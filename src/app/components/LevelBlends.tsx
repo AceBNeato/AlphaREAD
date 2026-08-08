@@ -62,11 +62,19 @@ export function LevelBlends({ levelId, accent, categoryFilter, onComplete, onExi
     return list;
   }, [filteredData]);
 
+  const [sortType, setSortType] = useState<"shuffled" | "alphabetical">("shuffled");
+
   const allWordsRaw = useMemo(() => {
     const list: string[] = [];
     filteredData.forEach((d: any) => d.patterns.forEach((p: any) => p.words.forEach((w: any) => list.push(w.word))));
+    if (sortType === "alphabetical") {
+      return list.sort((a, b) => a.localeCompare(b));
+    }
     return shuffleArray(list);
-  }, [filteredData]);
+  }, [filteredData, sortType]);
+
+  const handleOrganizeAll = () => setSortType("alphabetical");
+  const handleShuffleAll = () => setSortType("shuffled");
 
   const wordHighlightsMap = useMemo(() => {
     const map: Record<string, number[]> = {};
@@ -221,6 +229,8 @@ export function LevelBlends({ levelId, accent, categoryFilter, onComplete, onExi
         onBack={handleStepBack}
         canBack={currentStepIdx > 0}
         onItemClick={handleItemClick}
+        onOrganize={handleOrganizeAll}
+        onShuffle={handleShuffleAll}
       />
     </LessonShell>
   );

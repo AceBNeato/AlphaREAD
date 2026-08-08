@@ -42,15 +42,10 @@ export function ReviewPhase({
   wordHighlights,
   disableDynamicColors
 }: ReviewPhaseProps) {
-  const [reviewOrder, setReviewOrder] = useState<string[]>([]);
-  useEffect(() => setReviewOrder(items), [items]);
-
   const handleShuffle = () => {
-    setReviewOrder([...reviewOrder].sort(() => Math.random() - 0.5));
     if (onShuffle) onShuffle();
   };
   const handleOrganize = () => {
-    setReviewOrder([...reviewOrder].sort((a, b) => a.localeCompare(b)));
     if (onOrganize) onOrganize();
   };
 
@@ -102,7 +97,7 @@ export function ReviewPhase({
 
           <div className="flex-grow flex items-center justify-center w-full py-4">
             <div className="flex flex-wrap justify-center gap-3 sm:gap-4 max-w-5xl mx-auto w-full px-2">
-              {reviewOrder.map((syl) => {
+              {items.map((syl) => {
                 const isSingleComponent = syl.length <= 2 || (syl.length <= 3 && (syl.toLowerCase().endsWith("ng") || syl.toLowerCase().startsWith("ng"))) || syl.endsWith(")");
                 const isVowelStart = isSingleComponent && VOWELS.has(syl[0]?.toUpperCase());
 

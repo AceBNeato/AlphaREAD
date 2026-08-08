@@ -715,8 +715,8 @@ export function LevelSyllableBuilder({
       {/* Header */}
       <div className="shrink-0 z-10 px-4 py-3 border-b border-gray-200 dark:border-gray-800">
         <div className="max-w-2xl mx-auto flex items-center gap-3 w-full">
-          <Button variant="ghost" size="sm" onClick={handleGoBack} className="rounded-full p-2 h-auto text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 flex items-center gap-1">
-            <X className="w-7 h-7 sm:w-8 sm:h-8 stroke-[3]" /> <span className="hidden sm:inline font-bold uppercase tracking-wider text-sm">EXIT</span>
+          <Button variant="ghost" size="sm" onClick={handleGoBack} className="rounded-full p-2 h-auto text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 flex items-center justify-center transition-transform hover:scale-105 active:scale-95">
+            <X className="!w-8 !h-8 sm:!w-10 sm:!h-10 stroke-[3]" />
           </Button>
           <div className="flex-1 text-center">
             <h2 className="text-lg font-bold tracking-tight text-center flex-1" style={{ color: accent.primary }}>

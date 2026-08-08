@@ -72,7 +72,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
 
   const wordsEval = useEvaluationFlow({
     words: batchWords,
-    singleShot: true,
+    singleShot: false,
     lang: language === "tl" ? "fil-PH" : "en-US",
     onAllCompleted: () => setShowCompletionScreen(true),
     onWordCompleted: (word) => handlePlayTTS(word)
@@ -243,6 +243,11 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
                     <Sparkles className="w-10 h-10 mb-2" />
                     <h3 className="text-2xl font-bold tracking-tight">Almost there!</h3>
                   </motion.div>
+                ) : wordsEval.isMicSleeping ? (
+                  <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-col items-center justify-center gap-2">
+                    <MicOff className="w-6 h-6 text-gray-400" />
+                    <h3 className="text-2xl font-bold tracking-tight text-gray-500">Paused</h3>
+                  </motion.div>
                 ) : (
                   <>
                     <div className="flex items-center justify-center gap-2">
@@ -253,7 +258,9 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
                   </>
                 )}
               </div>
-              <p className="text-gray-500 dark:text-gray-400 mb-6 font-medium">Please say the word clearly.</p>
+              <p className="text-gray-500 dark:text-gray-400 mb-6 font-medium">
+                {wordsEval.isMicSleeping ? "Take a breath and tap below to continue." : "Please say the word clearly."}
+              </p>
 
               <div className="bg-gray-50 dark:bg-gray-900 rounded-2xl p-5 min-h-[100px] flex flex-col items-center justify-center border border-gray-100 dark:border-gray-800 shadow-inner">
                 <span className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Target</span>
@@ -302,26 +309,42 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
                 </motion.div>
               )}
 
-              <div className="mt-6 flex flex-col gap-3">
-                {wordsEval.evalFeedback[wordsEval.evaluatingWord] && wordsEval.evalFeedback[wordsEval.evaluatingWord] !== 'wrong' && (
+              {wordsEval.isMicSleeping ? (
+                <div className="mt-6">
                   <PushableButton
-                    onClick={() => wordsEval.retryCurrentWord()}
-                    className="w-full mt-2"
-                    frontClassName="bg-gradient-to-r from-[#1cb0f6] to-[#0a8ed4] text-white w-full rounded-xl py-3 flex items-center justify-center gap-2"
-                    edgeClassName="bg-[#0979b5]"
+                    onClick={() => {
+                      wordsEval.setIsMicSleeping(false);
+                      wordsEval.setRefreshTrigger((prev: number) => prev + 1);
+                    }}
+                    className="w-full"
+                    frontClassName="bg-gradient-to-r from-pink-500 to-rose-500 text-white w-full rounded-xl py-4 flex items-center justify-center gap-2 font-bold text-lg"
+                    edgeClassName="bg-rose-700"
                   >
-                    <RefreshCcw className="w-5 h-5" /> Retry
+                    <Mic className="w-6 h-6 animate-pulse" /> Continue
                   </PushableButton>
-                )}
-                <PushableButton
-                  onClick={() => wordsEval.safeSetEvaluatingWordNull()}
-                  className="w-full"
-                  frontClassName="bg-gradient-to-r from-[rgb(255,75,75)] to-[rgb(216,42,42)] text-white w-full rounded-xl py-3 flex items-center justify-center gap-2"
-                  edgeClassName="bg-[rgb(180,30,30)]"
-                >
-                  Close
-                </PushableButton>
-              </div>
+                </div>
+              ) : (
+                <div className="mt-6 flex flex-col gap-3">
+                  {wordsEval.evalFeedback[wordsEval.evaluatingWord] && wordsEval.evalFeedback[wordsEval.evaluatingWord] !== 'wrong' && (
+                    <PushableButton
+                      onClick={() => wordsEval.retryCurrentWord()}
+                      className="w-full mt-2"
+                      frontClassName="bg-gradient-to-r from-[#1cb0f6] to-[#0a8ed4] text-white w-full rounded-xl py-3 flex items-center justify-center gap-2"
+                      edgeClassName="bg-[#0979b5]"
+                    >
+                      <RefreshCcw className="w-5 h-5" /> Retry
+                    </PushableButton>
+                  )}
+                  <PushableButton
+                    onClick={() => wordsEval.safeSetEvaluatingWordNull()}
+                    className="w-full"
+                    frontClassName="bg-gradient-to-r from-[rgb(255,75,75)] to-[rgb(216,42,42)] text-white w-full rounded-xl py-3 flex items-center justify-center gap-2"
+                    edgeClassName="bg-[rgb(180,30,30)]"
+                  >
+                    Close
+                  </PushableButton>
+                </div>
+              )}
             </motion.div>
           </motion.div>
         )}

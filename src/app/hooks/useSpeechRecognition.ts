@@ -112,6 +112,7 @@ interface UseSpeechRecognitionProps {
   onError: () => void;
   refreshTrigger?: number;
   initialTranscript?: string;
+  onEngineStop?: () => void;
 }
 
 
@@ -255,7 +256,7 @@ const HOMOPHONES: Record<string, string[]> = {
   "BOX": ["fox", "rocks"]
 };
 
-export function useSpeechRecognition({ evaluatingWord, enabled = true, singleShot = false, lang = "en-US", refreshTrigger = 0, initialTranscript = "", onResult, onSilenceTimeout, onError }: UseSpeechRecognitionProps) {
+export function useSpeechRecognition({ evaluatingWord, enabled = true, singleShot = false, lang = "en-US", refreshTrigger = 0, initialTranscript = "", onResult, onSilenceTimeout, onError, onEngineStop }: UseSpeechRecognitionProps) {
   const recognitionRef = useRef<any>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const resultReceivedRef = useRef(false);
@@ -263,9 +264,11 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, singleSho
   const onResultRef = useRef(onResult);
   const onSilenceTimeoutRef = useRef(onSilenceTimeout);
   const onErrorRef = useRef(onError);
+  const onEngineStopRef = useRef(onEngineStop);
   useEffect(() => { onResultRef.current = onResult; }, [onResult]);
   useEffect(() => { onSilenceTimeoutRef.current = onSilenceTimeout; }, [onSilenceTimeout]);
   useEffect(() => { onErrorRef.current = onError; }, [onError]);
+  useEffect(() => { onEngineStopRef.current = onEngineStop; }, [onEngineStop]);
 
   const cleanup = useCallback(() => {
     if (timeoutRef.current) {
@@ -542,6 +545,9 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, singleSho
         } else {
           if (DEBUG) console.log(`[AlphabetGO Debug] 🤫 onend — no speech, emitting null to preserve UI.`);
           onResultRef.current(evaluatingWord, null, latestTranscript, bestRecordedSequentialCount);
+          if (onEngineStopRef.current) {
+            onEngineStopRef.current();
+          }
         }
       }
     };

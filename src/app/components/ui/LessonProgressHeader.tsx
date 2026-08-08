@@ -25,10 +25,9 @@ export function LessonProgressHeader({
           variant="ghost" 
           size="sm" 
           onClick={onExit} 
-          className="rounded-full flex items-center gap-1 p-2 h-auto text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+          className="rounded-full flex items-center justify-center p-2 h-auto text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-transform hover:scale-105 active:scale-95"
         >
-          {useXIcon ? <X className="w-7 h-7 sm:w-8 sm:h-8 stroke-[3]" /> : <ArrowLeft className="w-7 h-7 sm:w-8 sm:h-8 stroke-[3]" />}
-          <span className="hidden sm:inline font-bold uppercase tracking-wider text-sm">EXIT</span>
+          {useXIcon ? <X className="!w-8 !h-8 sm:!w-10 sm:!h-10 stroke-[3]" /> : <ArrowLeft className="!w-8 !h-8 sm:!w-10 sm:!h-10 stroke-[3]" />}
         </Button>
         <div className="flex-1 flex flex-col gap-1.5 mt-1">
           <div className="flex justify-between items-center px-1">

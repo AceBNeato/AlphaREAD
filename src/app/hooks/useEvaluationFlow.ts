@@ -19,6 +19,7 @@ export function useEvaluationFlow({ words, singleShot, lang, onAllCompleted, onW
   const [matchCountMap, setMatchCountMap] = useState<Record<string, number>>({});
   const [completedWords, setCompletedWords] = useState<Set<string>>(new Set());
   const [isMicResetting, setIsMicResetting] = useState(false);
+  const [isMicSleeping, setIsMicSleeping] = useState(false);
   const [processingWord, setProcessingWord] = useState<string | null>(null);
   const [showConfetti, setShowConfetti] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
@@ -39,6 +40,7 @@ export function useEvaluationFlow({ words, singleShot, lang, onAllCompleted, onW
   const safeSetEvaluatingWordNull = useCallback(() => {
     clearEvalTimeout();
     setEvaluatingWord(null);
+    setIsMicSleeping(false);
     setIsMicResetting(true);
     setTimeout(() => {
       setIsMicResetting(false);
@@ -109,6 +111,7 @@ export function useEvaluationFlow({ words, singleShot, lang, onAllCompleted, onW
     refreshTrigger,
     onResult: handleResult,
     onError: handleError,
+    onEngineStop: () => setIsMicSleeping(true),
     onSilenceTimeout: handleSilence
   });
 
@@ -154,6 +157,9 @@ export function useEvaluationFlow({ words, singleShot, lang, onAllCompleted, onW
     matchCountMap,
     completedWords,
     isMicResetting,
+    isMicSleeping,
+    setIsMicSleeping,
+    setRefreshTrigger,
     processingWord,
     showConfetti,
     startRecording,
