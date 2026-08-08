@@ -296,7 +296,9 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, singleSho
       cleanup();
       return;
     }    resultReceivedRef.current = false;
-    let latestTranscript = ""; // Track the latest thing heard for the timeout fallback
+    let currentAccumulatedTranscript = initialTranscript || "";
+    let latestSessionTranscript = "";
+    let latestTranscript = currentAccumulatedTranscript; // Track the latest thing heard for the timeout fallback
     let bestRecordedStatus: "correct" | "close" | "wrong" = "wrong";
     let bestRecordedTranscript = "";
     let bestRecordedSequentialCount = 0;
@@ -328,7 +330,9 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, singleSho
       for (let r = 0; r < event.results.length; r++) {
         currentSessionTranscript = mergeTranscripts(currentSessionTranscript, event.results[r][0].transcript);
       }
-      let fullTranscript = (initialTranscript + " " + currentSessionTranscript).trim();
+      latestSessionTranscript = currentSessionTranscript;
+      
+      let fullTranscript = (currentAccumulatedTranscript + " " + currentSessionTranscript).trim();
 
       latestTranscript = fullTranscript; // Update fallback transcript
 
@@ -551,6 +555,12 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, singleSho
           if (!singleShot && isActive && autoRestartCount < MAX_AUTO_RESTARTS) {
             autoRestartCount++;
             if (DEBUG) console.log(`[AlphabetGO Debug] 🤫 onend — auto-restarting continuous mic (${autoRestartCount}/${MAX_AUTO_RESTARTS}) to prevent early shutoff.`);
+            
+            // ACCUMULATE the transcript from the session that just ended so progress isn't lost!
+            if (latestSessionTranscript) {
+               currentAccumulatedTranscript = (currentAccumulatedTranscript + " " + latestSessionTranscript).trim();
+               latestSessionTranscript = ""; // Reset for the next session
+            }
             
             // MUST use setTimeout to let the engine fully clean up and prevent synchronous freezing loops
             timeoutRef.current = setTimeout(() => {
