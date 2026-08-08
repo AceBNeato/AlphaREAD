@@ -531,6 +531,9 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, singleSho
       }
     };
 
+    let autoRestartCount = 0;
+    const MAX_AUTO_RESTARTS = 3;
+
     recognition.onend = () => {
       if (isActive && !hasMatched) {
         if (timeoutRef.current) clearTimeout(timeoutRef.current);
@@ -544,18 +547,27 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, singleSho
           if (DEBUG) console.log(`[AlphabetGO Debug] 🏁 singleShot onend — forcing "wrong" with: "${latestTranscript}"`);
           onResultRef.current(evaluatingWord, "wrong", latestTranscript, bestRecordedSequentialCount);
         } else {
-          if (!singleShot && isActive) {
-            if (DEBUG) console.log(`[AlphabetGO Debug] 🤫 onend — auto-restarting continuous mic to prevent early shutoff.`);
-            try { 
-              recognition.start(); 
-              return; // successfully restarted, so we stay active
-            } catch (e) {
-              // start failed, fall through to stop
-            }
+          // Mobile workaround: Auto-restart on early shutoff, but limit to prevent infinite loops
+          if (!singleShot && isActive && autoRestartCount < MAX_AUTO_RESTARTS) {
+            autoRestartCount++;
+            if (DEBUG) console.log(`[AlphabetGO Debug] 🤫 onend — auto-restarting continuous mic (${autoRestartCount}/${MAX_AUTO_RESTARTS}) to prevent early shutoff.`);
+            
+            // MUST use setTimeout to let the engine fully clean up and prevent synchronous freezing loops
+            timeoutRef.current = setTimeout(() => {
+              if (isActive && !hasMatched) {
+                try { 
+                  recognition.start(); 
+                } catch (e) {
+                  if (DEBUG) console.error("[AlphabetGO Debug] Failed to auto-restart mic:", e);
+                  if (onEngineStopRef.current) onEngineStopRef.current();
+                }
+              }
+            }, 300);
+            return; // We scheduled a restart, DO NOT emit null or stop yet
           }
           
           hasMatched = true;
-          if (DEBUG) console.log(`[AlphabetGO Debug] 🤫 onend — emitting null to preserve UI.`);
+          if (DEBUG) console.log(`[AlphabetGO Debug] 🤫 onend — emitting null to preserve UI (auto-restarts exhausted or singleShot).`);
           onResultRef.current(evaluatingWord, null, latestTranscript, bestRecordedSequentialCount);
           if (onEngineStopRef.current) {
             onEngineStopRef.current();
