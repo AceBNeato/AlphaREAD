@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router";
 import { useCurriculum } from "../hooks/useCurriculum";
 import { playExclusiveAudio } from "../utils/soundEffects";
@@ -40,11 +40,8 @@ function getAudioPath(syllable: string, pattern: Pattern, language: string): str
   return `${base}audio/english/vc-audio/eng-vc-${lower}.mp3`;
 }
 
-function buildSteps(allSyllables: string[], isOrganized: boolean = false): Step[] {
+function buildSteps(sessionSyllables: string[]): Step[] {
   const steps: Step[] = [];
-  const sessionSyllables = isOrganized 
-    ? [...allSyllables].sort((a, b) => a.localeCompare(b))
-    : allSyllables;
 
   // Phase 1: Preview
   const REVIEW_BATCH_SIZE = 30;
@@ -100,7 +97,20 @@ export function LevelSyllableQuiz({ levelId, pattern, accent, onComplete, onExit
     return targets.map(t => t.syllable);
   });
 
-  const steps = buildSteps(allSyllables);
+  const [sortType, setSortType] = useState<"shuffled" | "alphabetical" | "default">("default");
+  const [shuffleTrigger, setShuffleTrigger] = useState(0);
+
+
+
+  const steps = useMemo(() => {
+    let sessionSyllables = [...allSyllables];
+    if (sortType === "shuffled") {
+      sessionSyllables.sort(() => Math.random() - 0.5);
+    } else if (sortType === "alphabetical") {
+      sessionSyllables.sort((a, b) => a.localeCompare(b));
+    }
+    return buildSteps(sessionSyllables);
+  }, [allSyllables, sortType, shuffleTrigger]);
   
   const {
     currentStepIdx,
@@ -110,7 +120,19 @@ export function LevelSyllableQuiz({ levelId, pattern, accent, onComplete, onExit
     handleNextStep: handleNext,
     handleStepBack,
     handleGoBack
-  } = useLessonProgress(steps, levelId, undefined, onExit);
+  } = useLessonProgress<Step>(steps, levelId, undefined, onExit);
+
+  useEffect(() => {
+    if (step && step.type !== "review") {
+      setSortType("default");
+    }
+  }, [currentStepIdx, step]);
+
+  const handleOrganizeAll = () => setSortType("alphabetical");
+  const handleShuffleAll = () => {
+    setSortType("shuffled");
+    setShuffleTrigger(prev => prev + 1);
+  };
 
   useEffect(() => {
     if (isProgressComplete) {
@@ -167,8 +189,8 @@ export function LevelSyllableQuiz({ levelId, pattern, accent, onComplete, onExit
         onBack={handleStepBack}
         canBack={currentStepIdx > 0}
         onItemClick={playSyllableAudio}
-        onOrganize={undefined}
-        onShuffle={undefined}
+        onOrganize={handleOrganizeAll}
+        onShuffle={handleShuffleAll}
         syllablePattern={pattern}
       />
     </LessonShell>

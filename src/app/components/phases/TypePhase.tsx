@@ -84,6 +84,7 @@ export function TypePhase({
   };
 
   const isTypePhaseComplete = typeOrder.length > 0 && typeOrder.every(item => typeStatus[item] === true);
+  const hasAnswers = Object.values(typeInputs).some(val => val.length > 0) || Object.values(typeStatus).some(val => val !== null && val !== undefined);
 
   const handleNextBatch = () => {
     if (!typeBatched.isLastBatch) {
@@ -210,12 +211,14 @@ export function TypePhase({
         onBack={handlePrevBatch}
         canBack={!(typeBatched.batchIndex === 0 && !canBack)}
         onShuffle={handleShuffleType}
+        canShuffle={!hasAnswers}
         onReset={() => {
           setTypeOrder([...batchItems].sort(() => Math.random() - 0.5));
           setTypeInputs({});
           setTypeStatus({});
           setShowConfetti(false);
         }}
+        canReset={hasAnswers}
         onSkip={handleNextBatch}
         onNext={handleNextBatch}
         canNext={isTypePhaseComplete}

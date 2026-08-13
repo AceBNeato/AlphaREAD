@@ -55,6 +55,7 @@ export function MatchPhase({
   useEffect(() => () => { if (timeoutRef.current) clearTimeout(timeoutRef.current); }, []);
 
   const allDone = matchedPairs.size === leftCol.length && leftCol.length > 0;
+  const hasAnswers = matchedPairs.size > 0 || selectedLeft !== null || selectedRight !== null || wrongPair !== null;
 
   const checkMatch = useCallback((left: string, right: string) => {
     if (left === right) {
@@ -184,12 +185,6 @@ export function MatchPhase({
               })}
             </div>
           </div>
-
-          {wrongPair && (
-            <motion.p initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="text-red-500 font-bold text-lg text-center mt-2">
-              Not quite, try again!
-            </motion.p>
-          )}
         </div>
       </div>
 
@@ -200,7 +195,9 @@ export function MatchPhase({
           setLeftCol([...leftCol].sort(() => Math.random() - 0.5));
           setRightCol([...rightCol].sort(() => Math.random() - 0.5));
         }}
+        canShuffle={!hasAnswers}
         onReset={() => reset()}
+        canReset={hasAnswers}
         onSkip={handleNextBatch}
         onNext={handleNextBatch}
         canNext={allDone}

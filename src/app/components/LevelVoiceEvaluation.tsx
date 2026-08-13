@@ -554,7 +554,9 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
           onBack={handleBackClick}
           canBack={!!(onBack || batched.batchIndex > 0)}
           onShuffle={handleShuffle}
+          canShuffle={!(wordsEval.completedWords.size > 0 || Object.keys(wordsEval.transcripts).length > 0)}
           onReset={handleReset}
+          canReset={wordsEval.completedWords.size > 0 || Object.keys(wordsEval.transcripts).length > 0}
           onSkip={handleSkip}
           onNext={handleNextClick}
           canNext={isCurrentBatchDone}

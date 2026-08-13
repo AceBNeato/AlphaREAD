@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useRef } from "react";
+import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { useCurriculum } from "../hooks/useCurriculum";
 import { playExclusiveAudio } from "../utils/soundEffects";
@@ -86,14 +86,37 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
 
   const safeStep = step!;
 
+  const [sortType, setSortType] = useState<"shuffled" | "alphabetical" | "default">("default");
+  const [shuffleTrigger, setShuffleTrigger] = useState(0);
+
+  // Reset sorting when moving to a new step
+  useEffect(() => {
+    setSortType("default");
+  }, [currentStepIdx]);
+
+  const handleOrganizeAll = () => setSortType("alphabetical");
+  const handleShuffleAll = () => {
+    setSortType("shuffled");
+    setShuffleTrigger(prev => prev + 1);
+  };
+
   const baseActiveLetters = useMemo(() => {
     if (!safeStep) return [];
-    if (safeStep.isFullAlphabetPreview) return ALPHABET;
-    if (safeStep.combo === "AL") return comboAL;
-    if (safeStep.combo === "AS") return comboAS;
-    if (safeStep.isFinal) return finalAlphabet;
-    return ALPHABET.slice(safeStep.start || 0, safeStep.end || ALPHABET.length);
-  }, [ALPHABET, finalAlphabet, comboAL, comboAS, safeStep]);
+    let letters: string[] = [];
+    if (safeStep.isFullAlphabetPreview) letters = ALPHABET;
+    else if (safeStep.combo === "AL") letters = comboAL;
+    else if (safeStep.combo === "AS") letters = comboAS;
+    else if (safeStep.isFinal) letters = finalAlphabet;
+    else letters = ALPHABET.slice(safeStep.start || 0, safeStep.end || ALPHABET.length);
+
+    if (sortType === "shuffled") {
+      return [...letters].sort(() => Math.random() - 0.5);
+    } else if (sortType === "alphabetical") {
+      return [...letters].sort((a, b) => a.localeCompare(b));
+    }
+    
+    return letters;
+  }, [ALPHABET, finalAlphabet, comboAL, comboAS, safeStep, sortType, shuffleTrigger]);
 
   const playLetterTTS = (letter: string) => {
     if (!letter) return;
@@ -136,6 +159,8 @@ export function LevelPairs({ levelId, accent }: LevelPairsProps) {
         onBack={handleStepBack}
         canBack={currentStepIdx > 0}
         onItemClick={playLetterTTS}
+        onOrganize={handleOrganizeAll}
+        onShuffle={handleShuffleAll}
       />
     </LessonShell>
   );

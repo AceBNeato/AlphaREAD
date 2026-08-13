@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { playSound } from '../utils/soundEffects';
+import { playSound, stopExclusiveAudio } from '../utils/soundEffects';
+import { stopTTS } from '../utils/tts';
 import { useSpeechRecognition } from './useSpeechRecognition';
 
 export interface UseEvaluationFlowProps {
@@ -38,14 +39,22 @@ export function useEvaluationFlow({ words, singleShot, lang, onAllCompleted, onW
   }, [clearEvalTimeout]);
 
   const safeSetEvaluatingWordNull = useCallback(() => {
+    stopExclusiveAudio();
+    stopTTS();
     clearEvalTimeout();
+    setShowConfetti(false);
     setEvaluatingWord(null);
     setIsMicSleeping(false);
     setIsMicResetting(true);
     setTimeout(() => {
       setIsMicResetting(false);
-    }, 400);
-  }, [clearEvalTimeout]);
+    }, 150);
+
+    if (completedWords.size >= words.length) {
+      playSound("complete", 0.5);
+      if (onAllCompleted) onAllCompleted();
+    }
+  }, [clearEvalTimeout, completedWords.size, words.length, onAllCompleted]);
 
   const handleResult = useCallback((word: string, status: "correct" | "close" | "wrong" | null, transcript: string, matchedWordCount?: number) => {
     setTranscripts(prev => ({ ...prev, [word]: transcript }));

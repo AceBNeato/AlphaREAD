@@ -63,6 +63,7 @@ export function LevelBlends({ levelId, accent, categoryFilter, onComplete, onExi
   }, [filteredData]);
 
   const [sortType, setSortType] = useState<"shuffled" | "alphabetical">("shuffled");
+  const [shuffleTrigger, setShuffleTrigger] = useState(0);
 
   const allWordsRaw = useMemo(() => {
     const list: string[] = [];
@@ -71,10 +72,13 @@ export function LevelBlends({ levelId, accent, categoryFilter, onComplete, onExi
       return list.sort((a, b) => a.localeCompare(b));
     }
     return shuffleArray(list);
-  }, [filteredData, sortType]);
+  }, [filteredData, sortType, shuffleTrigger]);
 
   const handleOrganizeAll = () => setSortType("alphabetical");
-  const handleShuffleAll = () => setSortType("shuffled");
+  const handleShuffleAll = () => {
+    setSortType("shuffled");
+    setShuffleTrigger(prev => prev + 1);
+  };
 
   const wordHighlightsMap = useMemo(() => {
     const map: Record<string, number[]> = {};

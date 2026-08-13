@@ -152,8 +152,8 @@ export function ReviewPhase({
       <ActionToolbar
         onBack={onBack}
         canBack={canBack}
-        onShuffle={handleShuffle}
-        onReset={allowOrganize ? handleOrganize : undefined}
+        onShuffle={onShuffle ? handleShuffle : undefined}
+        onReset={(allowOrganize && onOrganize) ? handleOrganize : undefined}
         resetLabel="Organize"
         onNext={onNext}
       />

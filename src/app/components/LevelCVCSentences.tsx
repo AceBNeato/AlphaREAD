@@ -8,8 +8,8 @@ import { supabase } from "../../lib/supabase";
 import { Confetti } from "./ui/Confetti";
 import { useCurriculum } from "../hooks/useCurriculum";
 import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
-import { playSound, playExclusiveAudio } from "../utils/soundEffects";
-import { playTTS as playTTSUtil } from "../utils/tts";
+import { playSound, playExclusiveAudio, stopExclusiveAudio } from "../utils/soundEffects";
+import { playTTS as playTTSUtil, stopTTS } from "../utils/tts";
 import { AudioVisualizer } from "./AudioVisualizer";
 import { PushableButton } from "./ui/PushableButton";
 import { ActionToolbar } from "./ui/ActionToolbar";
@@ -62,6 +62,8 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
   }, []);
 
   const safeSetEvaluatingSentenceNull = useCallback(() => {
+    stopExclusiveAudio();
+    stopTTS();
     setEvaluatingSentenceId(null);
     setIsMicSleeping(false);
   }, []);
@@ -115,9 +117,7 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
         playSound("correct", 0.4);
         playTTS(target);
         setSentenceFeedbackMap(prev => ({ ...prev, [target]: "correct" }));
-        evaluationTimeoutRef.current = setTimeout(() => {
-          setCompletedSentences(prev => new Set(prev).add(target));
-        }, 1500);
+        setCompletedSentences(prev => new Set(prev).add(target));
       } else {
         playSound("wrong", 0.35);
         setSentenceFeedbackMap(prev => ({ ...prev, [target]: "wrong" }));
@@ -585,6 +585,9 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
               }}
               canBack={currentSetIndex > 0 || !!onBack}
               onShuffle={handleShuffle}
+              canShuffle={!(completedSentences.size > 0 || Object.keys(sentenceTranscriptsMap).length > 0)}
+              onReset={handleReset}
+              canReset={completedSentences.size > 0 || Object.keys(sentenceTranscriptsMap).length > 0}
               onSkip={handleSkip}
               onNext={handleNextQuiz}
               canNext={completedSentences.size === activeSentences.length}

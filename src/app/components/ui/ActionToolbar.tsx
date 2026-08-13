@@ -6,7 +6,9 @@ interface ActionToolbarProps {
   onBack?: () => void;
   canBack?: boolean;
   onShuffle?: () => void;
+  canShuffle?: boolean;
   onReset?: () => void;
+  canReset?: boolean;
   resetLabel?: string;
   onSkip?: () => void; // Fast forward
   onNext?: () => void; // Proceed/Next
@@ -20,7 +22,9 @@ export function ActionToolbar({
   onBack,
   canBack = true,
   onShuffle,
+  canShuffle = true,
   onReset,
+  canReset = true,
   resetLabel = "Reset",
   onSkip,
   onNext,
@@ -57,6 +61,7 @@ export function ActionToolbar({
         {onReset && (
           <PushableButton
             onClick={() => handleAction(onReset)}
+            disabled={!canReset}
             className="w-12 sm:w-auto sm:flex-1 shrink-0 h-12"
             frontClassName="bg-gradient-to-r from-[rgb(255,75,75)] to-[rgb(216,42,42)] text-white py-2 px-0 sm:px-4 flex items-center justify-center gap-0 sm:gap-1"
             edgeClassName="bg-[rgb(180,30,30)]"
@@ -73,6 +78,7 @@ export function ActionToolbar({
         {onShuffle && (
           <PushableButton
             onClick={() => handleAction(onShuffle)}
+            disabled={!canShuffle}
             className="w-12 sm:w-auto sm:flex-1 shrink-0 h-12"
             frontClassName="bg-gradient-to-r from-[#ce82ff] to-[#a559d6] text-white py-2 px-0 sm:px-4 flex items-center justify-center gap-0 sm:gap-1"
             edgeClassName="bg-[#8f3fb8]"

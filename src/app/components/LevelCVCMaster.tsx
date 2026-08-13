@@ -152,8 +152,8 @@ function LevelCVCPreview({
       <ActionToolbar
         onBack={onBack}
         canBack={canBack}
-        onShuffle={handleShuffle}
-        onReset={handleOrganize}
+        onShuffle={onShuffle ? handleShuffle : undefined}
+        onReset={onOrganize ? handleOrganize : undefined}
         resetLabel="Organize"
         onNext={onComplete}
       />
@@ -231,10 +231,13 @@ export function LevelCVCMaster({ levelId, accent }: LevelCVCMasterProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
+  const [isTransitioning, setIsTransitioning] = useState(false);
 
   const step = STEPS[currentStep];
 
   const handleNextStep = async () => {
+    if (isTransitioning) return;
+    setIsTransitioning(true);
     if (currentStep < STEPS.length - 1) {
       setCurrentStep(prev => Math.min(prev + 1, STEPS.length - 1));
     } else {
@@ -242,6 +245,8 @@ export function LevelCVCMaster({ levelId, accent }: LevelCVCMasterProps) {
       markLevelComplete(levelId);
       setIsCompleted(true);
     }
+    // Allow transitions again after React has had time to commit
+    setTimeout(() => setIsTransitioning(false), 500);
   };
 
   const handleGoBack = async () => {

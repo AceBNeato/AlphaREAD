@@ -45,9 +45,14 @@ export function LevelBlendsMaster({ levelId, accent }: LevelBlendsMasterProps) {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [isCompleted, setIsCompleted] = useState(false);
 
-  const [completedCategories, setCompletedCategories] = useState<string[]>(() =>
-    JSON.parse(localStorage.getItem("completedSubLevels_Level6") || "[]")
-  );
+  const [completedCategories, setCompletedCategories] = useState<string[]>(() => {
+    try {
+      const raw = localStorage.getItem("completedSubLevels_Level6");
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  });
 
   const handleQuizComplete = async () => {
     const pattern = selectedCategory!;

@@ -29,9 +29,14 @@ export function LevelSyllablesMaster({ levelId, accent }: LevelSyllablesMasterPr
     CV: { primary: "#3b82f6", dark: "#1d4ed8", lightBg: "#dbeafe" }  // Blue
   };
 
-  const [completedSubLevels, setCompletedSubLevels] = useState<string[]>(() =>
-    JSON.parse(localStorage.getItem("completedSubLevels_Level2") || "[]")
-  );
+  const [completedSubLevels, setCompletedSubLevels] = useState<string[]>(() => {
+    try {
+      const raw = localStorage.getItem("completedSubLevels_Level2");
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  });
 
   const handleQuizComplete = async () => {
     const pattern = selectedSubLevel!;
