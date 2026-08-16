@@ -1,3 +1,4 @@
+import React from "react";
 import { PushableButton } from "./PushableButton";
 import { ArrowLeft, RotateCcw, Shuffle, FastForward, SkipForward, ChevronRight, ArrowRight, ArrowDownAZ } from "lucide-react";
 import { playSound } from "../../utils/soundEffects";
@@ -36,10 +37,18 @@ export function ActionToolbar({
   // Determine if we are rendering a full 5-button toolbar or a smaller one
   const isFullToolbar = !!onReset || !!onSkip;
 
+  const isLockedRef = React.useRef(false);
+
   const handleAction = (action?: () => void) => {
-    if (action) {
+    if (action && !isLockedRef.current) {
+      isLockedRef.current = true;
       playSound("click", 0.2);
       action();
+      
+      // Unlock after 400ms to prevent rapid clicking bugs
+      setTimeout(() => {
+        isLockedRef.current = false;
+      }, 400);
     }
   };
 

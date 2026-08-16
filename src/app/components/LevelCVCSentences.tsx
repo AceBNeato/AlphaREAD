@@ -180,6 +180,13 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
   const handleNextQuiz = () => {
     playSound("click", 0.2);
     if (!isFinalSet) {
+      clearEvalTimeout();
+      setEvaluatingSentenceId(null);
+      setCompletedSentences(new Set());
+      setSentenceFeedbackMap({});
+      setSentenceTranscriptsMap({});
+      setSentenceMatchCountMap({});
+      setShowConfetti(false);
       setCurrentSetIndex(prev => prev + 1);
     } else if (isSubPhase && onComplete) {
       // Skip internal celebration — parent component shows its own completion screen
@@ -388,7 +395,7 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
                   Read the sentences out loud into the microphone. (Batch {currentSetIndex + 1} of {totalSets})
                 </p>
                 <p className="text-sm font-semibold text-pink-650 dark:text-pink-400 mt-1 block">
-                  Completed {(currentSetIndex * SENTENCES_PER_SET) + completedSentences.size} of {sentences.length} sentences
+                  Completed {completedSentences.size} of {sentences.length} sentences
                 </p>
               </div>
 
@@ -459,8 +466,8 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
                           </div>
 
                           {/* Right: feedback + mic */}
-                          <div className="flex items-center gap-3 flex-shrink-0">
-                            {/* Mic button — identical to Lesson 5 */}
+                          <div className="flex items-center gap-3 flex-shrink-0 relative">
+                            {/* Mic button */}
                             <PushableButton
                               as="button"
                               isTile
@@ -585,9 +592,9 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
               }}
               canBack={currentSetIndex > 0 || !!onBack}
               onShuffle={handleShuffle}
-              canShuffle={!(completedSentences.size > 0 || Object.keys(sentenceTranscriptsMap).length > 0)}
+              canShuffle={!(completedSentences?.size > 0 || Object.keys(sentenceTranscriptsMap || {}).length > 0)}
               onReset={handleReset}
-              canReset={completedSentences.size > 0 || Object.keys(sentenceTranscriptsMap).length > 0}
+              canReset={completedSentences?.size > 0 || Object.keys(sentenceTranscriptsMap || {}).length > 0}
               onSkip={handleSkip}
               onNext={handleNextQuiz}
               canNext={completedSentences.size === activeSentences.length}

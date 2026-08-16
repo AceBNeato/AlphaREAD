@@ -97,6 +97,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
 
   const handleNextClick = () => {
     if (!batched.isLastBatch) {
+      wordsEval.resetFlow();
       batched.nextBatch();
     } else {
       handleNext();
@@ -105,27 +106,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
 
   const handleBackClick = () => {
     if (batched.batchIndex > 0) {
-      const prevBatchIndex = batched.batchIndex - 1;
-      const prevBatchWords = words.slice(prevBatchIndex * BATCH_SIZE, (prevBatchIndex + 1) * BATCH_SIZE);
-
-      wordsEval.setCompletedWords(prev => {
-        const next = new Set(prev);
-        prevBatchWords.forEach(w => next.delete(w));
-        return next;
-      });
-
-      wordsEval.setEvalFeedback(prev => {
-        const next = { ...prev };
-        prevBatchWords.forEach(w => delete next[w]);
-        return next;
-      });
-
-      wordsEval.setTranscripts(prev => {
-        const next = { ...prev };
-        prevBatchWords.forEach(w => delete next[w]);
-        return next;
-      });
-
+      wordsEval.resetFlow();
       batched.prevBatch();
     } else if (onBack) {
       onBack();
@@ -133,10 +114,11 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
   };
 
   const handleSkip = () => {
-    wordsEval.skipFlow(batchWords);
     if (!batched.isLastBatch) {
+      wordsEval.resetFlow();
       batched.nextBatch();
     } else {
+      wordsEval.skipFlow(batchWords);
       handleNext();
     }
   };
@@ -554,9 +536,9 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
           onBack={handleBackClick}
           canBack={!!(onBack || batched.batchIndex > 0)}
           onShuffle={handleShuffle}
-          canShuffle={!(wordsEval.completedWords.size > 0 || Object.keys(wordsEval.transcripts).length > 0)}
+          canShuffle={!(wordsEval?.completedWords?.size > 0 || Object.keys(wordsEval?.transcripts || {}).length > 0)}
           onReset={handleReset}
-          canReset={wordsEval.completedWords.size > 0 || Object.keys(wordsEval.transcripts).length > 0}
+          canReset={wordsEval?.completedWords?.size > 0 || Object.keys(wordsEval?.transcripts || {}).length > 0}
           onSkip={handleSkip}
           onNext={handleNextClick}
           canNext={isCurrentBatchDone}
