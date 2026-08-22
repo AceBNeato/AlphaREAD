@@ -106,6 +106,7 @@ export function StepRenderer({
           canBack={canBack}
           onItemClick={onItemClick}
           typeBatchSize={step.batchSize || 6}
+          hasImages={levelId >= 3}
         />
       );
 

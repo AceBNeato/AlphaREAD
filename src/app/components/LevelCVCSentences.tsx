@@ -225,15 +225,33 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
   const isFinalSet = currentSetIndex === totalSets - 1;
 
   return (
-    <AnimatePresence mode="wait">
-      <motion.div
-        key={showConfetti ? "completion-screen" : `sentences-set-${currentSetIndex}`}
-        initial={{ opacity: 0, x: 50 }}
-        animate={{ opacity: 1, x: 0 }}
-        exit={{ opacity: 0, x: -50 }}
-        transition={{ duration: 0.3 }}
-        className={`flex flex-col overflow-hidden ${isSubPhase ? 'flex-1 w-full h-full' : 'h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 dark:bg-none dark:bg-[#0d141c]'}`}
-      >
+    <div className={`flex flex-col overflow-hidden ${isSubPhase ? 'flex-1 w-full h-full' : 'h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 dark:bg-none dark:bg-[#0d141c]'}`}>
+      {/* Header */}
+      {!isSubPhase && (
+        <div className="shrink-0 z-10 px-4 py-3 border-b border-gray-200 dark:border-gray-800">
+          <div className="max-w-4xl mx-auto flex items-center justify-between gap-3 w-full">
+            <Button variant="ghost" size="sm" onClick={handleGoBack} className="rounded-full flex-shrink-0 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-transform hover:scale-105 active:scale-95 flex items-center justify-center p-2">
+              <X className="!w-8 !h-8 sm:!w-10 sm:!h-10 stroke-[3]" />
+            </Button>
+            <h2 className="text-lg font-bold tracking-tight text-center flex-1" style={{ color: accent.primary }}>
+              {levelId === 3 ? "CVC Master - Read the Sentences" : `Sentences Quiz (Set ${currentSetIndex + 1}/${totalSets}) Read the Sentences`}
+            </h2>
+            <span className="text-sm font-bold" style={{ color: accent.primary }}>
+              Step {completedSentences.size}/{activeSentences.length}
+            </span>
+          </div>
+        </div>
+      )}
+
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={showConfetti ? "completion-screen" : `sentences-set-${currentSetIndex}`}
+          initial={{ opacity: 0, x: 50 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -50 }}
+          transition={{ duration: 0.3 }}
+          className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden flex flex-col w-full relative"
+        >
         <Confetti active={showConfetti} />
 
         {/* Listening Modal */}
@@ -285,32 +303,13 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
                 <div className="bg-gray-50 dark:bg-gray-900 rounded-2xl p-5 min-h-[100px] flex flex-col items-center justify-center border border-gray-100 dark:border-gray-800 shadow-inner">
                   <span className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Target</span>
                   
-                  <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 mb-4">
-                    {(() => {
-                      const targetWords = evaluatingSentenceId.split(/\s+/);
-                      const currentMatch = sentenceMatchCountMap[evaluatingSentenceId] || 0;
-                      
-                      return targetWords.map((word, idx) => {
-                        const isMatched = idx < currentMatch;
-                        const isCurrent = idx === currentMatch;
-                        
-                        let colorClass = "text-gray-300 dark:text-gray-600";
-                        if (isMatched) colorClass = "text-green-500 font-extrabold";
-                        else if (isCurrent) colorClass = "text-pink-500 font-extrabold";
-                        
-                        return (
-                          <motion.span 
-                            key={idx} 
-                            animate={isMatched ? { y: [0, -10, 0] } : { y: 0 }}
-                            transition={{ duration: 0.3 }}
-                            className={`text-2xl sm:text-3xl inline-block ${colorClass}`}
-                          >
-                            {word}
-                          </motion.span>
-                        );
-                      });
-                    })()}
-                  </div>
+                  <motion.span 
+                    animate={(sentenceFeedbackMap[evaluatingSentenceId] === 'correct' || sentenceFeedbackMap[evaluatingSentenceId] === 'close') ? { y: [0, -15, 0] } : { y: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className={`text-3xl sm:text-4xl px-2 font-extrabold mb-4 tracking-wider leading-snug inline-block text-center ${(sentenceFeedbackMap[evaluatingSentenceId] === 'correct' || sentenceFeedbackMap[evaluatingSentenceId] === 'close') ? 'text-green-500' : 'text-pink-500'}`}
+                  >
+                    {evaluatingSentenceId}
+                  </motion.span>
                 </div>
 
                 {sentenceFeedbackMap[evaluatingSentenceId] === 'wrong' && (
@@ -322,6 +321,7 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
                   <div className="mt-6">
                     <PushableButton
                       onClick={() => {
+                        playSound("mic", 0.3);
                         setIsMicSleeping(false);
                         setRefreshTrigger(prev => prev + 1);
                       }}
@@ -368,25 +368,10 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
           )}
         </AnimatePresence>
 
-        {/* Header */}
-        {!isSubPhase && (
-          <div className="shrink-0 z-10 px-4 py-3 border-b border-gray-200 dark:border-gray-800">
-            <div className="max-w-4xl mx-auto flex items-center justify-between gap-3 w-full">
-              <Button variant="ghost" size="sm" onClick={handleGoBack} className="rounded-full flex-shrink-0 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-transform hover:scale-105 active:scale-95 flex items-center justify-center p-2">
-                <X className="!w-8 !h-8 sm:!w-10 sm:!h-10 stroke-[3]" />
-              </Button>
-              <h2 className="text-lg font-bold tracking-tight text-center flex-1" style={{ color: accent.primary }}>
-                {levelId === 3 ? "CVC Master - Read the Sentences" : `Sentences Quiz (Set ${currentSetIndex + 1}/${totalSets}) Read the Sentences`}
-              </h2>
-              <span className="text-sm font-bold" style={{ color: accent.primary }}>
-                Step {completedSentences.size}/{activeSentences.length}
-              </span>
-            </div>
-          </div>
-        )}
+
 
         {/* Content */}
-        <div className={`w-full max-w-5xl mx-auto px-15 flex-1 min-h-0 overflow-y-auto overflow-x-hidden flex flex-col ${isSubPhase ? 'py-2' : 'py-4'}`}>
+        <div className={`w-full max-w-7xl mx-auto px-4 sm:px-8 flex-1 min-h-0 overflow-y-auto overflow-x-hidden flex flex-col ${isSubPhase ? 'py-2' : 'py-4'}`}>
           {!showConfetti ? (
             <div className="flex flex-col justify-between w-full flex-1">
               {/* Top Section: Instructions */}
@@ -476,6 +461,7 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
                                 if (isEval) {
                                   setEvaluatingSentenceId(null);
                                 } else if (!isDone) {
+                                  playSound("mic", 0.3);
                                   setEvaluatingSentenceId(s);
                                   setSentenceFeedbackMap(prev => ({ ...prev, [s]: null }));
                                   setSentenceTranscriptsMap(prev => ({ ...prev, [s]: "" }));
@@ -580,28 +566,30 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
           )}
         </div>
 
-        {!showConfetti && (
-          <div className="w-full shrink-0 mt-auto">
-            <ActionToolbar
-              onBack={() => {
-                if (currentSetIndex > 0) {
-                  setCurrentSetIndex(prev => prev - 1);
-                } else if (onBack) {
-                  onBack();
-                }
-              }}
-              canBack={currentSetIndex > 0 || !!onBack}
-              onShuffle={handleShuffle}
-              canShuffle={!(completedSentences?.size > 0 || Object.keys(sentenceTranscriptsMap || {}).length > 0)}
-              onReset={handleReset}
-              canReset={completedSentences?.size > 0 || Object.keys(sentenceTranscriptsMap || {}).length > 0}
-              onSkip={handleSkip}
-              onNext={handleNextQuiz}
-              canNext={completedSentences.size === activeSentences.length}
-            />
-          </div>
-        )}
-      </motion.div>
-    </AnimatePresence>
+        </motion.div>
+      </AnimatePresence>
+
+      {!showConfetti && (
+        <div className="w-full shrink-0 mt-auto">
+          <ActionToolbar
+            onBack={() => {
+              if (currentSetIndex > 0) {
+                setCurrentSetIndex(prev => prev - 1);
+              } else if (onBack) {
+                onBack();
+              }
+            }}
+            canBack={currentSetIndex > 0 || !!onBack}
+            onShuffle={handleShuffle}
+            canShuffle={!(completedSentences?.size > 0 || Object.keys(sentenceTranscriptsMap || {}).length > 0)}
+            onReset={handleReset}
+            canReset={completedSentences?.size > 0 || Object.keys(sentenceTranscriptsMap || {}).length > 0}
+            onSkip={handleSkip}
+            onNext={handleNextQuiz}
+            canNext={completedSentences.size === activeSentences.length}
+          />
+        </div>
+      )}
+    </div>
   );
 }

@@ -1,8 +1,9 @@
-import { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, cloneElement } from "react";
 import { useLanguage } from "../context/LanguageContext";
 import { LevelSyllableBuilder } from "./LevelSyllableBuilder";
 import { LevelVoiceEvaluation } from "./LevelVoiceEvaluation";
 import { LevelCVCSentences } from "./LevelCVCSentences";
+import { StepRenderer } from "./StepRenderer";
 import { supabase } from "../../lib/supabase";
 import { useNavigate } from "react-router";
 import { SyllableTarget } from "../data/levels";
@@ -24,19 +25,21 @@ interface LevelCVCMasterProps {
   accent: { primary: string; dark: string; lightBg: string };
 }
 
-type StepPhase = "preview" | "build" | "eval" | "milestone" | "sentences" | "review";
+type StepPhase = "preview" | "build" | "type" | "eval" | "milestone" | "sentences" | "review";
 
 interface GameStep {
   phase: StepPhase;
   words: string[];
   batchNumber?: number;
   totalBatches?: number;
+  batchSize?: number;
 }
 
 function LevelCVCPreview({
   accent,
   words,
   onComplete,
+  onSkip,
   onBack,
   canBack,
   batchNumber,
@@ -48,6 +51,7 @@ function LevelCVCPreview({
   accent: { primary: string; dark: string; lightBg: string };
   words: string[];
   onComplete: () => void;
+  onSkip?: () => void;
   onBack: () => void;
   canBack: boolean;
   batchNumber?: number;
@@ -59,27 +63,38 @@ function LevelCVCPreview({
   const { language } = useLanguage();
   const isTagalog = language === "tl";
   const wordLabel = isTagalog ? "words" : "CVC words";
+  
+  const [flippedWords, setFlippedWords] = useState<Record<string, boolean>>({});
+  const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
 
   const handleShuffle = () => {
+    setFlippedWords({});
     if (onShuffle) onShuffle();
   };
 
   const handleOrganize = () => {
+    setFlippedWords({});
     if (onOrganize) onOrganize();
   };
 
   return (
     <div className="flex flex-col w-full h-full">
-      <div className="flex-1 min-h-0 overflow-y-auto w-full flex flex-col items-center">
-        <div className="w-full max-w-4xl mx-auto px-15 py-4 text-center flex-1">
-          <p className="text-gray-600 dark:text-gray-300 text-base sm:text-lg font-bold mt-2 mb-8 block">
+      <motion.div
+        initial={{ opacity: 0, x: 50 }}
+        animate={{ opacity: 1, x: 0 }}
+        exit={{ opacity: 0, x: -50 }}
+        transition={{ duration: 0.3 }}
+        className="flex-1 min-h-0 overflow-y-auto w-full flex flex-col items-center"
+      >
+        <div className="w-full max-w-6xl mx-auto px-4 sm:px-10 py-4 text-center flex-1">
+          <p className="text-gray-600 dark:text-gray-300 text-base sm:text-lg font-bold mt-2 mb-12 sm:mb-16 block">
             {isReview
               ? `Great work! Review ${wordLabel}! ${batchNumber && totalBatches ? "(Batch " + batchNumber + " of " + totalBatches + ")" : ""}`
               : `Review ${wordLabel} before we start! ${batchNumber && totalBatches ? "(Batch " + batchNumber + " of " + totalBatches + ")" : ""}`
             }
           </p>
 
-          <div className={`grid ${isTagalog ? 'grid-cols-3 sm:grid-cols-5 md:grid-cols-6' : 'grid-cols-4 sm:grid-cols-7'} gap-2 sm:gap-3 mb-12 w-full max-w-5xl mx-auto justify-items-center`}>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 sm:gap-8 lg:gap-12 mb-12 w-full max-w-6xl mx-auto justify-items-center px-2 sm:px-0">
             {words.map((word) => {
               let chunks: string[] = [];
               if (isTagalog) {
@@ -91,63 +106,107 @@ function LevelCVCPreview({
                 }
               }
 
-              const cleanW = word.replace(/-HARD|-SOFT/i, "");
-              const fontSizeClass = cleanW.length >= 6 ? "text-xl sm:text-2xl" : "text-2xl sm:text-3xl";
+              const wordContent = (
+                <span className="text-xl sm:text-2xl font-black drop-shadow-sm flex flex-col items-center justify-center">
+                  <div className="flex">
+                    {!isTagalog && word.length === 3 ? (
+                      <>
+                        <span style={{ color: "#FF6B8A" }}>{word.slice(0, 2).toLowerCase()}</span>
+                        <span style={{ color: "#1CB0F6" }}>{word.slice(2).toLowerCase()}</span>
+                      </>
+                    ) : (
+                      chunks.length > 0 ? (
+                        chunks.map((ch, i) => (
+                          <span key={i} style={{ color: i % 2 === 0 ? "#1CB0F6" : "#FF6B8A" }}>
+                            {ch.toLowerCase()}
+                          </span>
+                        ))
+                      ) : (
+                        <span style={{ color: "#1CB0F6" }}>{word.toLowerCase()}</span>
+                      )
+                    )}
+                  </div>
+                  {word.toUpperCase().includes('-HARD') && <span className="text-[8px] sm:text-[10px] text-gray-400 font-bold tracking-wider">HARD</span>}
+                  {word.toUpperCase().includes('-SOFT') && <span className="text-[8px] sm:text-[10px] text-gray-400 font-bold tracking-wider">SOFT</span>}
+                </span>
+              );
 
               return (
                 <motion.div
                   key={word}
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
-                  className={`flex flex-col items-center w-full ${isTagalog ? 'max-w-[135px] sm:max-w-[155px]' : 'max-w-[110px] sm:max-w-[125px]'}`}
+                  className="flex flex-col items-center w-full gap-4 max-w-[160px] md:max-w-[220px]"
                 >
-                  <PushableButton
-                    as="div"
-                    isTile
+                  {/* The Card */}
+                  <div 
+                    className="relative w-full aspect-[3/4] group cursor-pointer md:cursor-default" 
+                    style={{ perspective: '1000px' }}
                     onClick={() => {
-                      if (isReview) {
-                        const audioPath = isTagalog
-                          ? `${import.meta.env.BASE_URL}audio/filipino/tagalog-words/fil-level3-${word.toLowerCase()}.mp3`
-                          : `${import.meta.env.BASE_URL}audio/english/cvc-audio/cvc-${word.toLowerCase()}.mp3`;
-                        playExclusiveAudio(audioPath).catch((err: any) => {
-                          console.warn(`[AlphabetGO] Local CVC audio not found: ${audioPath}, falling back to TTS`, err);
-                          playTTS(word.replace(/-HARD|-SOFT/i, "").toLowerCase());
-                        });
+                      if (window.innerWidth < 768) {
+                        setFlippedWords(prev => ({...prev, [word]: !prev[word]}));
                       }
                     }}
-                    className={`w-full ${isTagalog ? 'aspect-[4/3]' : 'aspect-square'} flex items-center justify-center ${!isReview ? 'cursor-pointer' : ''}`}
-                    frontClassName="bg-white dark:bg-gray-800"
-                    edgeStyle={{ backgroundColor: '#e5e7eb' }}
                   >
-                    <span className="text-xl sm:text-3xl font-black drop-shadow-sm flex flex-col items-center justify-center">
-                      <div className="flex">
-                        {!isTagalog && word.length === 3 ? (
-                          <>
-                            <span style={{ color: "#FF6B8A" }}>{word.slice(0, 2).toLowerCase()}</span>
-                            <span style={{ color: "#1CB0F6" }}>{word.slice(2).toLowerCase()}</span>
-                          </>
-                        ) : (
-                          chunks.length > 0 ? (
-                            chunks.map((ch, i) => (
-                              <span key={i} style={{ color: i % 2 === 0 ? "#1CB0F6" : "#FF6B8A" }}>
-                                {ch.toLowerCase()}
-                              </span>
-                            ))
-                          ) : (
-                            <span style={{ color: "#1CB0F6" }}>{word.toLowerCase()}</span>
-                          )
-                        )}
+                    <motion.div 
+                      className="w-full h-full relative"
+                      style={{ transformStyle: 'preserve-3d' }}
+                      animate={ flippedWords[word] ? { rotateY: 180, y: [0, -30, 0] } : { rotateY: 0, y: 0 } }
+                      transition={{ duration: 0.8, ease: "easeInOut" }}
+                    >
+                      {/* Front (Skeleton Question Mark) */}
+                      <div className="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-gray-800 rounded-2xl border-4 border-dashed border-gray-300 dark:border-gray-600 transition-colors group-hover:border-blue-400 dark:group-hover:border-blue-500" style={{ backfaceVisibility: 'hidden' }}>
+                        <span className="text-6xl sm:text-7xl font-black text-gray-300 dark:text-gray-600">?</span>
                       </div>
-                      {word.toUpperCase().includes('-HARD') && <span className="text-[10px] sm:text-xs text-gray-400 font-bold mt-0.5 tracking-wider">HARD</span>}
-                      {word.toUpperCase().includes('-SOFT') && <span className="text-[10px] sm:text-xs text-gray-400 font-bold mt-0.5 tracking-wider">SOFT</span>}
-                    </span>
-                  </PushableButton>
+                      
+                      {/* Back (Image) */}
+                      <div className="absolute inset-0 flex items-center justify-center bg-white dark:bg-gray-800 rounded-2xl border-4 border-blue-400 overflow-hidden" style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}>
+                         {!imageErrors[word] ? (
+                           <img 
+                             src={`${import.meta.env.BASE_URL}images/cvc/${word.toLowerCase()}.png`} 
+                             alt={word} 
+                             className="w-full h-full object-cover"
+                             onError={() => setImageErrors(prev => ({...prev, [word]: true}))}
+                           />
+                         ) : (
+                           <div className="w-full h-full flex items-center justify-center bg-blue-50 dark:bg-blue-900/30">
+                              <span className="scale-125">{wordContent}</span>
+                           </div>
+                         )}
+                      </div>
+                    </motion.div>
+                  </div>
+
+                  {/* The Button */}
+                  <div className="w-full">
+                    <PushableButton
+                      as="button"
+                      isTile
+                      onClick={() => {
+                        setFlippedWords(prev => ({...prev, [word]: !prev[word]}));
+                        if (isReview) {
+                          const audioPath = isTagalog
+                            ? `${import.meta.env.BASE_URL}audio/filipino/tagalog-words/fil-level3-${word.toLowerCase()}.mp3`
+                            : `${import.meta.env.BASE_URL}audio/english/cvc-audio/cvc-${word.toLowerCase()}.mp3`;
+                          playExclusiveAudio(audioPath).catch((err: any) => {
+                            console.warn(`[AlphabetGO] Local CVC audio not found: ${audioPath}, falling back to TTS`, err);
+                            playTTS(word.replace(/-HARD|-SOFT/i, "").toLowerCase());
+                          });
+                        }
+                      }}
+                      className="w-full h-12 sm:h-14 flex items-center justify-center cursor-pointer"
+                      frontClassName="bg-white dark:bg-gray-800 flex items-center justify-center"
+                      edgeStyle={{ backgroundColor: '#e5e7eb' }}
+                    >
+                      {wordContent}
+                    </PushableButton>
+                  </div>
                 </motion.div>
               );
             })}
           </div>
         </div>
-      </div>
+      </motion.div>
 
       <ActionToolbar
         onBack={onBack}
@@ -155,6 +214,7 @@ function LevelCVCPreview({
         onShuffle={onShuffle ? handleShuffle : undefined}
         onReset={onOrganize ? handleOrganize : undefined}
         resetLabel="Organize"
+        onSkip={onSkip || onComplete}
         onNext={onComplete}
       />
     </div>
@@ -163,7 +223,7 @@ function LevelCVCPreview({
 
 export function LevelCVCMaster({ levelId, accent }: LevelCVCMasterProps) {
   const navigate = useNavigate();
-  const { CVC_WORDS } = useCurriculum();
+  const { CVC_WORDS, ASSESSMENT_WORDS } = useCurriculum();
   const { language } = useLanguage();
   const { markLevelComplete } = useProgress();
   const isTagalog = language === "tl";
@@ -179,6 +239,8 @@ export function LevelCVCMaster({ levelId, accent }: LevelCVCMasterProps) {
   };
 
   const [baseWords, setBaseWords] = useState<string[]>(() => shuffleArray([...CVC_WORDS]));
+  // Assessment words are static 30 concrete nouns, randomized order on mount
+  const [assessmentWords] = useState<string[]>(() => shuffleArray([...ASSESSMENT_WORDS]));
 
   const handleOrganizeAll = () => {
     setBaseWords([...CVC_WORDS].sort((a, b) => a.localeCompare(b)));
@@ -192,8 +254,7 @@ export function LevelCVCMaster({ levelId, accent }: LevelCVCMasterProps) {
     const wordsToUse = baseWords;
 
     const steps: GameStep[] = [];
-    const targetBatches = isTagalog ? 5 : Math.ceil(wordsToUse.length / 30);
-    const PREVIEW_BATCH_SIZE = Math.ceil(wordsToUse.length / targetBatches);
+    const PREVIEW_BATCH_SIZE = 5;
     const previewBatches = Math.ceil(wordsToUse.length / PREVIEW_BATCH_SIZE);
 
     // 1. Previews
@@ -209,7 +270,14 @@ export function LevelCVCMaster({ levelId, accent }: LevelCVCMasterProps) {
     // 2. Word Builder
     steps.push({ phase: "build", words: wordsToUse });
 
-    // 3. Clickable Review Phase
+    // 3. Picture and Type Assessment
+    steps.push({ 
+      phase: "type", 
+      words: assessmentWords,
+      batchSize: 5
+    });
+
+    // 4. Clickable Review Phase
     for (let i = 0; i < previewBatches; i++) {
       steps.push({
         phase: "review",
@@ -265,6 +333,7 @@ export function LevelCVCMaster({ levelId, accent }: LevelCVCMasterProps) {
       return `${title} - Word Review ${step.batchNumber && step.totalBatches ? `(${step.batchNumber}/${step.totalBatches})` : ""}`;
     }
     if (step.phase === "build") return `${title} - Word Builder`;
+    if (step.phase === "type") return `${title} - Picture & Type Assessment`;
     if (step.phase === "eval" || step.phase === "milestone") return `${title} - Voice Evaluation`;
     if (step.phase === "sentences") return `${title} - Read Sentences`;
     return title;
@@ -274,11 +343,21 @@ export function LevelCVCMaster({ levelId, accent }: LevelCVCMasterProps) {
 
   // Phase: CVC Preview
   if (step.phase === "preview" || step.phase === "review") {
+    const handleSkipPhase = () => {
+      const nextPhaseIndex = STEPS.findIndex((s, idx) => idx > currentStep && s.phase !== step.phase);
+      if (nextPhaseIndex !== -1) {
+        setCurrentStep(nextPhaseIndex);
+      } else {
+        setIsCompleted(true);
+      }
+    };
+
     content = (
       <LevelCVCPreview
         accent={accent}
         words={step.words}
         onComplete={handleNextStep}
+        onSkip={handleSkipPhase}
         onBack={() => setCurrentStep(prev => Math.max(0, prev - 1))}
         canBack={currentStep > 0}
         batchNumber={step.batchNumber}
@@ -319,6 +398,28 @@ export function LevelCVCMaster({ levelId, accent }: LevelCVCMasterProps) {
         embedded={true}
         onComplete={handleNextStep}
         onBack={() => setCurrentStep(prev => Math.max(0, prev - 1))}
+      />
+    );
+  }
+  // Phase: Picture and Type Assessment
+  else if (step.phase === "type") {
+    content = (
+      <StepRenderer
+        step={step}
+        levelId={levelId}
+        accent={accent}
+        onNext={handleNextStep}
+        onBack={() => setCurrentStep(prev => Math.max(0, prev - 1))}
+        canBack={currentStep > 0}
+        onItemClick={(item) => {
+          const audioPath = isTagalog
+            ? `${import.meta.env.BASE_URL}audio/filipino/tagalog-words/fil-level3-${item.toLowerCase()}.mp3`
+            : `${import.meta.env.BASE_URL}audio/english/cvc-audio/cvc-${item.toLowerCase()}.mp3`;
+          playExclusiveAudio(audioPath).catch((err: any) => {
+            console.warn(`[AlphabetGO] Local CVC audio not found: ${audioPath}, falling back to TTS`, err);
+            playTTS(item.replace(/-HARD|-SOFT/i, "").toLowerCase());
+          });
+        }}
       />
     );
   }
@@ -396,6 +497,16 @@ export function LevelCVCMaster({ levelId, accent }: LevelCVCMasterProps) {
     );
   }
 
+  const getCurrentPhaseIndex = () => {
+    const phase = STEPS[currentStep]?.phase;
+    if (phase === "build") return 1;
+    if (phase === "type") return 2;
+    if (phase === "review") return 3;
+    if (phase === "eval") return 4;
+    if (phase === "sentences" || phase === "milestone") return 5;
+    return 0; // preview
+  };
+
   return (
     <div className="h-screen overflow-hidden flex flex-col bg-gradient-to-br from-green-50 via-blue-50 to-purple-50 dark:bg-none dark:bg-[#0d141c]">
       <div className="shrink-0 z-50 px-4 py-3 border-b border-gray-200 dark:border-gray-800">
@@ -405,18 +516,12 @@ export function LevelCVCMaster({ levelId, accent }: LevelCVCMasterProps) {
           </Button>
 
           <div className="flex-1 flex flex-col gap-1.5 mt-1">
-            <div className="flex justify-between items-center px-1">
-              <h2 className="text-sm sm:text-base font-bold tracking-tight" style={{ color: accent.primary }}>
-                {getPhaseTitle()}
-              </h2>
-            </div>
-
             {/* Duolingo-style Progress Bar */}
             <div className="w-full bg-gray-200 dark:bg-gray-800 rounded-full h-4 sm:h-5 overflow-hidden relative shadow-inner">
               <div
                 className="absolute top-0 left-0 h-full rounded-full transition-all duration-700 ease-out flex flex-col justify-start"
                 style={{
-                  width: `${Math.max(5, (currentStep / STEPS.length) * 100)}%`,
+                  width: `${Math.max(5, (getCurrentPhaseIndex() / 6) * 100)}%`,
                   backgroundColor: accent.primary
                 }}
               >
@@ -429,16 +534,7 @@ export function LevelCVCMaster({ levelId, accent }: LevelCVCMasterProps) {
       </div>
       <div className="flex-1 min-h-0 overflow-hidden w-full flex flex-col">
         <AnimatePresence mode="wait">
-          <motion.div
-            key={currentStep}
-            initial={{ opacity: 0, x: 50 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -50 }}
-            transition={{ duration: 0.3 }}
-            className="flex flex-col w-full h-full"
-          >
-            {content}
-          </motion.div>
+          {React.cloneElement(content as React.ReactElement, { key: currentStep })}
         </AnimatePresence>
       </div>
     </div>

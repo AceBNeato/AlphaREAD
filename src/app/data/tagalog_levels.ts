@@ -79,6 +79,12 @@ export const TAGALOG_WORDS = [
   "PULIS", "KUSINA", "BANYO", "SILID", "HARDIN"
 ];
 
+export const TAGALOG_ASSESSMENT_WORDS = [
+  "ASO", "PUSA", "IBON", "PUNO", "BASO", "KESO", "BATA", "BATO", "LOBO", "MATA", 
+  "TASA", "MAPA", "BARKO", "DAGA", "BAKA", "ISDA", "PATO", "BIBE", "MANOK", "PATING", 
+  "PAGONG", "UNGGOY", "ILONG", "BIBIG", "BUHOK", "BOTE", "KAMA", "MESA", "LAPIS", "RELO"
+];
+
 export const TAGALOG_SENTENCES = [
   "Ako ay mabait, masipag, at mapagmahal na bata.",
   "Ako ay may alagang pusa at aso sa bahay.",

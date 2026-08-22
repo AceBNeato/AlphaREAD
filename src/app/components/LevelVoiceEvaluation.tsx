@@ -87,17 +87,20 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
     setWords(shuffle([...words]));
     batched.setBatchIndex(0);
     wordsEval.resetFlow();
+    setShowCompletionScreen(false);
   };
 
   const handleReset = () => {
     playSound("click", 0.2);
     batched.setBatchIndex(0);
     wordsEval.resetFlow();
+    setShowCompletionScreen(false);
   };
 
   const handleNextClick = () => {
     if (!batched.isLastBatch) {
       wordsEval.resetFlow();
+      setShowCompletionScreen(false);
       batched.nextBatch();
     } else {
       handleNext();
@@ -107,6 +110,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
   const handleBackClick = () => {
     if (batched.batchIndex > 0) {
       wordsEval.resetFlow();
+      setShowCompletionScreen(false);
       batched.prevBatch();
     } else if (onBack) {
       onBack();
@@ -116,6 +120,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
   const handleSkip = () => {
     if (!batched.isLastBatch) {
       wordsEval.resetFlow();
+      setShowCompletionScreen(false);
       batched.nextBatch();
     } else {
       wordsEval.skipFlow(batchWords);
@@ -246,43 +251,13 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
 
               <div className="bg-gray-50 dark:bg-gray-900 rounded-2xl p-5 min-h-[100px] flex flex-col items-center justify-center border border-gray-100 dark:border-gray-800 shadow-inner">
                 <span className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Target</span>
-                {wordsEval.evaluatingWord?.includes(' ') ? (
-                  <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 mb-4">
-                    {(() => {
-                      const targetWords = wordsEval.evaluatingWord.split(/\s+/);
-                      const currentMatch = wordsEval.matchCountMap[wordsEval.evaluatingWord] || 0;
-                      
-                      return targetWords.map((word, idx) => {
-                        const isMatched = idx < currentMatch;
-                        const isCurrent = idx === currentMatch;
-                        
-                        let colorClass = "text-gray-300 dark:text-gray-600";
-                        if (isMatched) colorClass = "text-green-500 font-extrabold";
-                        else if (isCurrent) colorClass = "text-pink-500 font-extrabold";
-                        
-                        return (
-                          <motion.span 
-                            key={idx} 
-                            animate={isMatched ? { y: [0, -10, 0] } : { y: 0 }}
-                            transition={{ duration: 0.3 }}
-                            className={`text-2xl sm:text-3xl inline-block ${colorClass}`}
-                          >
-                            {word}
-                          </motion.span>
-                        );
-                      });
-                    })()}
-                  </div>
-                ) : (
-                  <motion.span 
-                    animate={(wordsEval.evalFeedback[wordsEval.evaluatingWord] === 'correct' || wordsEval.evalFeedback[wordsEval.evaluatingWord] === 'close') ? { y: [0, -15, 0] } : { y: 0 }}
-                    transition={{ duration: 0.3 }}
-                    className={`text-6xl font-extrabold mb-4 tracking-wider leading-snug inline-block ${(wordsEval.evalFeedback[wordsEval.evaluatingWord] === 'correct' || wordsEval.evalFeedback[wordsEval.evaluatingWord] === 'close') ? 'text-green-500' : ''}`}
-                    style={{ color: (wordsEval.evalFeedback[wordsEval.evaluatingWord] === 'correct' || wordsEval.evalFeedback[wordsEval.evaluatingWord] === 'close') ? undefined : accent.primary }}
-                  >
-                    {wordsEval.evaluatingWord && wordsEval.evaluatingWord === wordsEval.evaluatingWord.toUpperCase() ? wordsEval.evaluatingWord.toLowerCase().replace(/-hard|-soft/i, "") : wordsEval.evaluatingWord?.replace(/-HARD|-SOFT/i, "")}
-                  </motion.span>
-                )}
+                <motion.span 
+                  animate={(wordsEval.evalFeedback[wordsEval.evaluatingWord!] === 'correct' || wordsEval.evalFeedback[wordsEval.evaluatingWord!] === 'close') ? { y: [0, -15, 0] } : { y: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className={`${wordsEval.evaluatingWord?.includes(' ') ? 'text-3xl sm:text-4xl px-2' : 'text-6xl'} font-extrabold mb-4 tracking-wider leading-snug inline-block text-center ${(wordsEval.evalFeedback[wordsEval.evaluatingWord!] === 'correct' || wordsEval.evalFeedback[wordsEval.evaluatingWord!] === 'close') ? 'text-green-500' : 'text-pink-500'}`}
+                >
+                  {wordsEval.evaluatingWord && wordsEval.evaluatingWord === wordsEval.evaluatingWord.toUpperCase() ? wordsEval.evaluatingWord.toLowerCase().replace(/-hard|-soft/i, "") : wordsEval.evaluatingWord?.replace(/-HARD|-SOFT/i, "")}
+                </motion.span>
               </div>
 
               {wordsEval.evalFeedback[wordsEval.evaluatingWord] === 'wrong' && (
@@ -295,6 +270,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
                 <div className="mt-6">
                   <PushableButton
                     onClick={() => {
+                      playSound("mic", 0.3);
                       wordsEval.setIsMicSleeping(false);
                       wordsEval.setRefreshTrigger((prev: number) => prev + 1);
                     }}
@@ -387,10 +363,10 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
               <div className="flex-1 flex flex-col justify-center w-full py-4 shrink-0">
                 <AnimatePresence mode="wait">
                   <motion.div
-                    key="list-phase"
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
+                    key={`voice-batch-${batched.batchIndex}`}
+                    initial={{ opacity: 0, x: 50 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -50 }}
                     transition={{ duration: 0.3 }}
                     className="text-center w-full"
                   >
@@ -471,6 +447,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
                                   if (isCurrent) {
                                     wordsEval.safeSetEvaluatingWordNull();
                                   } else {
+                                    playSound("mic", 0.3);
                                     wordsEval.startRecording(w);
                                   }
                                 }}

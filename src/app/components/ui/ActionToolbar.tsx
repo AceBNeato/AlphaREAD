@@ -12,6 +12,7 @@ interface ActionToolbarProps {
   canReset?: boolean;
   resetLabel?: string;
   onSkip?: () => void; // Fast forward
+  canSkip?: boolean;
   onNext?: () => void; // Proceed/Next
   canNext?: boolean;
   nextLabel?: string;
@@ -28,6 +29,7 @@ export function ActionToolbar({
   canReset = true,
   resetLabel = "Reset",
   onSkip,
+  canSkip = true,
   onNext,
   canNext = true,
   nextLabel = "Proceed",
@@ -100,6 +102,7 @@ export function ActionToolbar({
         {onSkip && (
           <PushableButton
             onClick={() => handleAction(onSkip)}
+            disabled={!canSkip}
             className="w-12 sm:w-auto sm:flex-1 shrink-0 h-12"
             frontClassName="bg-gradient-to-r from-[#ffc800] to-[#ff9600] text-white py-2 px-0 sm:px-4 flex items-center justify-center gap-0 sm:gap-1"
             edgeClassName="bg-[#d97e00]"

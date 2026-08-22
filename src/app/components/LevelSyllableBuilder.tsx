@@ -136,6 +136,8 @@ export function LevelSyllableBuilder({
 
   const [selectedLetters, setSelectedLetters] = useState<string[]>([]);
   const [completedTargets, setCompletedTargets] = useState<Set<string>>(new Set());
+  const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
+  const [mobileFlipped, setMobileFlipped] = useState(false);
   const [feedback, setFeedback] = useState<"correct" | "wrong" | null>(null);
   const [showConfetti, setShowConfetti] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -146,6 +148,10 @@ export function LevelSyllableBuilder({
   const wrongTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
+    setMobileFlipped(false);
+  }, [currentIndex]);
+
+  useEffect(() => {
     return () => {
       if (ttsTimeoutRef.current) clearTimeout(ttsTimeoutRef.current);
       if (successTimeoutRef.current) clearTimeout(successTimeoutRef.current);
@@ -154,6 +160,15 @@ export function LevelSyllableBuilder({
   }, []);
 
   const allDone = completedTargets.size >= targets.length;
+  const isOrganized = useMemo(() => {
+    for (let i = 0; i < targets.length - 1; i++) {
+      if (targets[i].syllable.localeCompare(targets[i + 1].syllable) > 0) {
+        return false;
+      }
+    }
+    return true;
+  }, [targets]);
+
   const progress = (completedTargets.size / targets.length) * 100;
   const slotCount = currentTarget ? (hasChunks ? currentTarget.letters.join("").length : currentTarget.letters.length) : 2;
 
@@ -283,6 +298,36 @@ export function LevelSyllableBuilder({
     });
   };
 
+  const handleOrganize = () => {
+    playSound("click", 0.2);
+    const newTargets = [...targets].sort((a, b) => a.syllable.localeCompare(b.syllable));
+    setTargets(newTargets);
+    
+    const firstUnanswered = newTargets.findIndex(t => !completedTargets.has(t.syllable));
+    setCurrentIndex(firstUnanswered !== -1 ? firstUnanswered : 0);
+    
+    setSelectedLetters([]);
+    setFeedback(null);
+  };
+
+  const handleShuffle = () => {
+    playSound("click", 0.2);
+    const newTargets = shuffle([...targets]);
+    setTargets(newTargets);
+    
+    const firstUnanswered = newTargets.findIndex(t => !completedTargets.has(t.syllable));
+    setCurrentIndex(firstUnanswered !== -1 ? firstUnanswered : 0);
+    
+    setSelectedLetters([]);
+    setFeedback(null);
+  };
+
+  const handleReset = () => {
+    playSound("click", 0.2);
+    setSelectedLetters([]);
+    setFeedback(null);
+  };
+
   const goNext = () => {
     if (ttsTimeoutRef.current) clearTimeout(ttsTimeoutRef.current);
 
@@ -381,17 +426,213 @@ export function LevelSyllableBuilder({
       navigate("/levels", { replace: true });
     }
   };
-  const innerContent = (
-    <AnimatePresence mode="wait">
-      <motion.div
-        key={selectedSubPattern ? `builder-${currentIndex}` : "picker"}
-        initial={{ opacity: 0, x: 50 }}
-        animate={{ opacity: 1, x: 0 }}
-        exit={{ opacity: 0, x: -50 }}
-        transition={{ duration: 0.3 }}
-        className="flex-grow w-full flex flex-col min-h-0"
+  const targetButtonNode = (
+    <div className="flex items-center gap-2 relative justify-center w-full">
+      <PushableButton
+        as="button"
+        onClick={() => playTTS(currentTarget?.syllable || "", currentTarget?.pattern || "CV")}
+        className={`transition-all w-full flex justify-center ${!hasClickedTTS && currentIndex === 0 ? 'ring-2 ring-indigo-400 ring-offset-2 animate-pulse' : ''}`}
+        frontClassName="flex items-center justify-center gap-3 px-6 py-3 bg-white dark:bg-gray-800"
+        edgeStyle={{ backgroundColor: patternColors[currentTarget?.pattern || "CV"] }}
+        title="Click to hear again"
       >
-        <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden w-full">
+        <div className="flex flex-col items-center justify-center">
+          <div className="font-black text-4xl sm:text-5xl tracking-wide flex gap-0.5">
+            {currentTarget?.letters.map((ch, i) => (
+              <span
+                key={i}
+                style={{
+                  color: hasChunks
+                    ? (i % 2 === 0 ? "#1CB0F6" : "#FF6B8A")
+                    : (language === "en" && levelId === 3
+                      ? (i < 2 ? "#FF6B8A" : "#1CB0F6")
+                      : (VOWELS.includes(ch.toUpperCase()) ? "#FF6B8A" : "#1CB0F6")),
+                }}
+              >
+                {ch.toLowerCase()}
+              </span>
+            ))}
+          </div>
+          {currentTarget?.syllable.toUpperCase().includes('-HARD') && <span className="text-[10px] sm:text-xs text-gray-400 font-bold tracking-wider pt-1">HARD</span>}
+          {currentTarget?.syllable.toUpperCase().includes('-SOFT') && <span className="text-[10px] sm:text-xs text-gray-400 font-bold tracking-wider pt-1">SOFT</span>}
+        </div>
+      </PushableButton>
+      {!hasClickedTTS && currentIndex === 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 10, scale: 0.8 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ repeat: Infinity, repeatType: "reverse", duration: 1.5 }}
+          className="absolute -top-10 left-1/2 -translate-x-1/2 bg-indigo-500 text-white text-[10px] font-bold py-1 px-3 rounded-full shadow-lg whitespace-nowrap pointer-events-none z-10"
+        >
+          Tap to listen!
+          <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-indigo-500 rotate-45" />
+        </motion.div>
+      )}
+    </div>
+  );
+
+  const slotsNode = (
+    <div className="flex flex-col items-center w-full">
+      <span className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+        Tap letters below in the correct order
+      </span>
+      <motion.div
+        animate={{
+          x: feedback === "wrong" ? [-10, 10, -10, 10, 0] : 0,
+          scale: feedback === "correct" ? [1, 1.05, 1] : 1
+        }}
+        className="flex justify-center gap-2 mb-2"
+      >
+        {Array.from({ length: slotCount }).map((_, slot) => {
+          const joinedSelected = selectedLetters.join("");
+          const displayedChar = joinedSelected[slot];
+
+          const charToSelectedChunk: number[] = [];
+          selectedLetters.forEach((chunk, idx) => {
+            for (let i = 0; i < chunk.length; i++) charToSelectedChunk.push(idx);
+          });
+          const chunkIdxToRemove = charToSelectedChunk[slot];
+
+          let slotBackground = "";
+          let slotBorderColor = "";
+
+          if (hasChunks && currentTarget) {
+            const slotToTargetChunk: number[] = [];
+            currentTarget.letters.forEach((chunk, idx) => {
+              for (let i = 0; i < chunk.length; i++) slotToTargetChunk.push(idx);
+            });
+            const targetChunkIdx = slotToTargetChunk[slot] ?? 0;
+            const isBlue = targetChunkIdx % 2 === 0;
+            slotBackground = isBlue ? "linear-gradient(135deg, #1CB0F6 0%, #0a8ed4 100%)" : "linear-gradient(135deg, #FF6B8A 0%, #FF4B8A 100%)";
+            slotBorderColor = isBlue ? "#086CA5" : "#C82A52";
+          } else {
+            let isRose = false;
+            if (language === "en" && levelId === 3) {
+              isRose = slot < 2;
+            } else {
+              isRose = !!displayedChar && VOWELS.includes(displayedChar.toUpperCase());
+            }
+            slotBackground = isRose ? "linear-gradient(135deg, #FF6B8A 0%, #FF4B8A 100%)" : "linear-gradient(135deg, #1CB0F6 0%, #0a8ed4 100%)";
+            slotBorderColor = isRose ? "#C82A52" : "#086CA5";
+          }
+
+          return (
+            <div
+              key={slot}
+              onClick={() => chunkIdxToRemove !== undefined ? handleRemoveLetter(chunkIdxToRemove) : undefined}
+              className={`w-16 h-16 sm:w-20 sm:h-20 rounded-2xl flex items-center justify-center transition-all ${!displayedChar
+                ? "border-4 border-dashed border-gray-300 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-800/30"
+                : "cursor-pointer hover:scale-95 active:scale-90"
+                }`}
+            >
+              {displayedChar ? (
+                <motion.div
+                  initial={{ opacity: 0, y: 40 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                  className={`w-full h-full rounded-2xl flex flex-col items-center justify-center border-b-[4px] select-none shadow-md ${feedback === "correct" ? "bg-green-100 border-green-400 text-green-700 animate-shine animate-match-success overflow-hidden" :
+                    feedback === "wrong" ? "bg-red-50 border-red-400 text-red-600" : ""
+                    }`}
+                  style={{
+                    background: feedback ? undefined : slotBackground,
+                    borderColor: feedback ? undefined : slotBorderColor,
+                  }}
+                >
+                  <span className={`text-4xl sm:text-5xl font-black drop-shadow-sm ${feedback ? "" : "text-white"}`}>
+                    {displayedChar.toLowerCase()}
+                  </span>
+                </motion.div>
+              ) : (
+                <span className="text-gray-300 dark:text-gray-600 text-2xl font-bold opacity-50">
+                  {hasChunks ? "_" : patternPlaceholder(currentTarget?.pattern || "CV")[slot]}
+                </span>
+              )}
+            </div>
+          );
+        })}
+      </motion.div>
+    </div>
+  );
+
+  const letterPoolNode = (
+    <div className={`grid gap-2.5 mb-4 mx-auto mt-4 ${(levelId === 2 || levelId === 3) ? "grid-cols-3 w-full max-w-[200px] sm:max-w-[240px]" : "grid-cols-4 sm:grid-cols-6 w-full max-w-lg"}`}>
+      {letterPool.map((item, i) => {
+        const timesInTarget = currentTarget?.letters
+          .filter((chunk) => chunk.toUpperCase() === item.letter.toUpperCase()).length || 0;
+        const timesSelected = selectedLetters.filter(
+          (l) => l === item.letter
+        ).length;
+
+        const isVisuallySelected = timesInTarget > 0
+          ? timesSelected >= timesInTarget
+          : timesSelected > 0;
+
+        const currentLength = selectedLetters.join("").length;
+        const isDisabled =
+          (timesInTarget > 0 && timesSelected >= timesInTarget) ||
+          (currentLength + item.letter.length > (currentTarget?.syllable.length || 0)) ||
+          !!feedback;
+
+        const isOrangeButton = language === "tl" && levelId === 3;
+        let btnBackground = "";
+        let btnEdgeColor = "";
+
+        if (playingLetter === item.letter) {
+          btnBackground = "linear-gradient(135deg, #FFC800 0%, #FF9600 100%)";
+          btnEdgeColor = "#d97e00";
+        } else if (isOrangeButton) {
+          btnBackground = "linear-gradient(135deg, #FFC800 0%, #FF9600 100%)";
+          btnEdgeColor = "#d97e00";
+        } else if (item.isVowel) {
+          btnBackground = "linear-gradient(135deg, #FF6B8A 0%, #FF4B8A 100%)";
+          btnEdgeColor = "#C82A52";
+        } else {
+          btnBackground = "linear-gradient(135deg, #1CB0F6 0%, #0a8ed4 100%)";
+          btnEdgeColor = "#086CA5";
+        }
+
+        return (
+          <PushableButton
+            as="button"
+            isTile
+            key={item.id}
+            onClick={() =>
+              !isDisabled && handleLetterClick(item.letter)
+            }
+            disabled={!!feedback || isDisabled}
+            className={`aspect-square relative select-none w-full ${isVisuallySelected
+              ? "opacity-30 pointer-events-none"
+              : ""
+              }`}
+            frontStyle={{ background: btnBackground }}
+            edgeStyle={{ backgroundColor: btnEdgeColor }}
+          >
+            <span className="text-white text-2xl sm:text-3xl font-black drop-shadow-sm flex items-center justify-center">
+              {item.letter.length > 1 ? (
+                item.letter.toLowerCase()
+              ) : (
+                (language === "tl" && levelId === 3)
+                  ? item.letter.toLowerCase()
+                  : <>{item.letter.toUpperCase()}{item.letter.toLowerCase()}</>
+              )}
+            </span>
+          </PushableButton>
+        );
+      })}
+    </div>
+  );
+
+  const innerContent = (
+    <div className="flex-grow w-full flex flex-col min-h-0">
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={selectedSubPattern ? `builder-${currentIndex}` : "picker"}
+          initial={{ opacity: 0, x: 50 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -50 }}
+          transition={{ duration: 0.3 }}
+          className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden w-full"
+        >
           <div className={`w-full max-w-2xl mx-auto px-15 flex flex-col justify-center min-h-full ${embedded ? "py-2" : "py-6"}`}>
             <Confetti active={showConfetti} />
             {/* SUB-LEVEL PICKER — shown when Level 2 has both VC and CV */}
@@ -486,223 +727,99 @@ export function LevelSyllableBuilder({
                     </div>
 
                     {/* Middle Section: Centered Interactive builder */}
-                    <div className="w-full py-4 shrink-0 flex flex-col items-center justify-center">
-                      <div className="text-center w-full flex flex-col items-center">
-                        <div className="inline-flex flex-col items-center gap-2 px-6 py-3 rounded-2xl mb-4">
-                          {/* Show the actual target syllable */}
-                          <div className="flex items-center gap-2 relative">
-                            <PushableButton
-                              as="button"
-                              onClick={() => playTTS(currentTarget.syllable, currentTarget.pattern)}
-                              className={`transition-all ${!hasClickedTTS && currentIndex === 0 ? 'ring-2 ring-indigo-400 ring-offset-2 animate-pulse' : ''}`}
-                              frontClassName="flex items-center justify-center gap-3 px-6 py-3 bg-white dark:bg-gray-800"
-                              edgeStyle={{ backgroundColor: patternColors[currentTarget.pattern] }}
-                              title="Click to hear again"
-                            >
-                              <div className="flex flex-col items-center justify-center">
-                                <div className="font-black text-4xl sm:text-5xl tracking-wide flex gap-0.5">
-                                  {currentTarget.letters.map((ch, i) => (
-                                    <span
-                                      key={i}
-                                      style={{
-                                        color: hasChunks
-                                          ? (i % 2 === 0 ? "#1CB0F6" : "#FF6B8A")
-                                          : (language === "en" && levelId === 3
-                                            ? (i < 2 ? "#FF6B8A" : "#1CB0F6")
-                                            : (VOWELS.includes(ch.toUpperCase()) ? "#FF6B8A" : "#1CB0F6")),
-                                      }}
-                                    >
-                                      {ch.toLowerCase()}
-                                    </span>
-                                  ))}
-                                </div>
-                                {currentTarget.syllable.toUpperCase().includes('-HARD') && <span className="text-[10px] sm:text-xs text-gray-400 font-bold tracking-wider pt-1">HARD</span>}
-                                {currentTarget.syllable.toUpperCase().includes('-SOFT') && <span className="text-[10px] sm:text-xs text-gray-400 font-bold tracking-wider pt-1">SOFT</span>}
-                              </div>
-                            </PushableButton>
-                            {!hasClickedTTS && currentIndex === 0 && (
-                              <motion.div
-                                initial={{ opacity: 0, y: 10, scale: 0.8 }}
-                                animate={{ opacity: 1, y: 0, scale: 1 }}
-                                transition={{ repeat: Infinity, repeatType: "reverse", duration: 1.5 }}
-                                className="absolute -top-10 left-1/2 -translate-x-1/2 bg-indigo-500 text-white text-[10px] font-bold py-1 px-3 rounded-full shadow-lg whitespace-nowrap pointer-events-none z-10"
-                              >
-                                Tap to listen!
-                                <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-indigo-500 rotate-45" />
-                              </motion.div>
-                            )}
-                          </div>
-                          <span className="text-xs text-gray-500 dark:text-gray-400">
-                            Tap letters below in the correct order
-                          </span>
-                          <motion.div
-                            animate={{
-                              x: feedback === "wrong" ? [-10, 10, -10, 10, 0] : 0,
-                              scale: feedback === "correct" ? [1, 1.05, 1] : 1
-                            }}
-                            className="flex justify-center gap-2 mt-2 mb-2"
-                          >
-                            {Array.from({ length: slotCount }).map((_, slot) => {
-                              const joinedSelected = selectedLetters.join("");
-                              const displayedChar = joinedSelected[slot];
-
-                              // Map each character back to its source chunk in selectedLetters
-                              const charToSelectedChunk: number[] = [];
-                              selectedLetters.forEach((chunk, idx) => {
-                                for (let i = 0; i < chunk.length; i++) charToSelectedChunk.push(idx);
-                              });
-                              const chunkIdxToRemove = charToSelectedChunk[slot];
-
-                              let slotBackground = "";
-                              let slotBorderColor = "";
-
-                              if (hasChunks && currentTarget) {
-                                // For chunks, we map color based on the target chunk index to get alternating blue/rose
-                                const slotToTargetChunk: number[] = [];
-                                currentTarget.letters.forEach((chunk, idx) => {
-                                  for (let i = 0; i < chunk.length; i++) slotToTargetChunk.push(idx);
-                                });
-                                const targetChunkIdx = slotToTargetChunk[slot] ?? 0;
-                                const isBlue = targetChunkIdx % 2 === 0;
-                                slotBackground = isBlue ? "linear-gradient(135deg, #1CB0F6 0%, #0a8ed4 100%)" : "linear-gradient(135deg, #FF6B8A 0%, #FF4B8A 100%)";
-                                slotBorderColor = isBlue ? "#086CA5" : "#C82A52";
-                              } else {
-                                let isRose = false;
-                                if (language === "en" && levelId === 3) {
-                                  isRose = slot < 2;
-                                } else {
-                                  isRose = !!displayedChar && VOWELS.includes(displayedChar.toUpperCase());
-                                }
-                                slotBackground = isRose ? "linear-gradient(135deg, #FF6B8A 0%, #FF4B8A 100%)" : "linear-gradient(135deg, #1CB0F6 0%, #0a8ed4 100%)";
-                                slotBorderColor = isRose ? "#C82A52" : "#086CA5";
+                    {/* Middle Section: Interactive builder */}
+                    {currentTarget.pattern === "CVC" && levelId === 3 ? (
+                      <div className="w-full py-6 shrink-0 flex flex-col md:flex-row items-center justify-center gap-6 md:gap-8">
+                        {/* Left Side: Card + Target Button */}
+                        <div className="flex flex-col items-center w-full gap-4 max-w-[180px] md:max-w-[200px]">
+                          {/* The Card */}
+                          <div 
+                            className="relative w-full aspect-[3/4] group cursor-pointer md:cursor-default" 
+                            style={{ perspective: '1000px' }}
+                            onClick={() => {
+                              if (window.innerWidth < 768) {
+                                setMobileFlipped(true);
                               }
+                            }}
+                          >
+                            <motion.div 
+                              className="w-full h-full relative"
+                              style={{ transformStyle: 'preserve-3d' }}
+                              animate={(feedback === "correct" || completedTargets.has(currentTarget.syllable) || mobileFlipped) ? { rotateY: 180, y: [0, -30, 0] } : { rotateY: 0, y: 0 }}
+                              transition={{ duration: 0.8, ease: "easeInOut" }}
+                            >
+                              {/* Front (Skeleton) */}
+                              <div className="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-gray-800 rounded-2xl border-4 border-dashed border-gray-300 dark:border-gray-600" style={{ backfaceVisibility: 'hidden' }}>
+                                <span className="text-6xl sm:text-7xl font-black text-gray-300 dark:text-gray-600">?</span>
+                              </div>
+                              {/* Back (Image) */}
+                              <div className="absolute inset-0 flex items-center justify-center bg-white dark:bg-gray-800 rounded-2xl border-4 border-blue-400 overflow-hidden" style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}>
+                                {!imageErrors[currentTarget.syllable] ? (
+                                  <img 
+                                    src={`${import.meta.env.BASE_URL}images/cvc/${currentTarget.syllable.toLowerCase()}.png`} 
+                                    alt={currentTarget.syllable} 
+                                    className="w-full h-full object-cover"
+                                    onError={() => setImageErrors(prev => ({...prev, [currentTarget.syllable]: true}))}
+                                  />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center bg-blue-50 dark:bg-blue-900/30">
+                                    <span className="text-4xl font-black text-blue-500">{currentTarget.syllable.toLowerCase()}</span>
+                                  </div>
+                                )}
+                              </div>
+                            </motion.div>
+                          </div>
+                          
+                          {/* Target Button */}
+                          <div className="w-full">
+                            {targetButtonNode}
+                          </div>
+                        </div>
 
-                              return (
-                                <div
-                                  key={slot}
-                                  onClick={() => chunkIdxToRemove !== undefined ? handleRemoveLetter(chunkIdxToRemove) : undefined}
-                                  className={`w-16 h-16 sm:w-20 sm:h-20 rounded-2xl flex items-center justify-center transition-all ${!displayedChar
-                                    ? "border-4 border-dashed border-gray-300 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-800/30"
-                                    : "cursor-pointer hover:scale-95 active:scale-90"
-                                    }`}
-                                >
-                                  {displayedChar ? (
-                                    <motion.div
-                                      initial={{ opacity: 0, y: 40 }}
-                                      animate={{ opacity: 1, y: 0 }}
-                                      transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                                      className={`w-full h-full rounded-2xl flex flex-col items-center justify-center border-b-[4px] select-none shadow-md ${feedback === "correct" ? "bg-green-100 border-green-400 text-green-700 animate-shine animate-match-success overflow-hidden" :
-                                        feedback === "wrong" ? "bg-red-50 border-red-400 text-red-600" : ""
-                                        }`}
-                                      style={{
-                                        background: feedback ? undefined : slotBackground,
-                                        borderColor: feedback ? undefined : slotBorderColor,
-                                      }}
-                                    >
-                                      <span className={`text-4xl sm:text-5xl font-black drop-shadow-sm ${feedback ? "" : "text-white"}`}>
-                                        {displayedChar.toLowerCase()}
-                                      </span>
-                                    </motion.div>
-                                  ) : (
-                                    <span className="text-gray-300 dark:text-gray-600 text-2xl font-bold opacity-50">
-                                      {hasChunks ? "_" : patternPlaceholder(currentTarget.pattern)[slot]}
-                                    </span>
-                                  )}
-                                </div>
-                              );
-                            })}
-                          </motion.div>
+                        {/* Right Side: Slots & Pool */}
+                        <div className="flex flex-col items-center w-full max-w-sm">
+                          {slotsNode}
+                          {letterPoolNode}
                         </div>
                       </div>
-
-                      {/* Letter Pool */}
-                      <div className={`grid gap-2.5 mb-4 mx-auto ${(levelId === 2 || levelId === 3) ? "grid-cols-3 w-full max-w-[200px] sm:max-w-[240px]" : "grid-cols-4 sm:grid-cols-6 w-full max-w-lg"}`}>
-                        {letterPool.map((item, i) => {
-                          const timesInTarget = currentTarget.letters
-                            .filter((chunk) => chunk.toUpperCase() === item.letter.toUpperCase()).length;
-                          const timesSelected = selectedLetters.filter(
-                            (l) => l === item.letter
-                          ).length;
-
-                          const isVisuallySelected = timesInTarget > 0
-                            ? timesSelected >= timesInTarget
-                            : timesSelected > 0;
-
-                          const currentLength = selectedLetters.join("").length;
-                          const isDisabled =
-                            (timesInTarget > 0 && timesSelected >= timesInTarget) ||
-                            (currentLength + item.letter.length > currentTarget.syllable.length) ||
-                            !!feedback;
-
-                          const isOrangeButton = language === "tl" && levelId === 3;
-                          let btnBackground = "";
-                          let btnEdgeColor = "";
-
-                          if (playingLetter === item.letter) {
-                            btnBackground = "linear-gradient(135deg, #FFC800 0%, #FF9600 100%)";
-                            btnEdgeColor = "#d97e00";
-                          } else if (isOrangeButton) {
-                            btnBackground = "linear-gradient(135deg, #FFC800 0%, #FF9600 100%)";
-                            btnEdgeColor = "#d97e00";
-                          } else if (item.isVowel) {
-                            btnBackground = "linear-gradient(135deg, #FF6B8A 0%, #FF4B8A 100%)";
-                            btnEdgeColor = "#C82A52";
-                          } else {
-                            btnBackground = "linear-gradient(135deg, #1CB0F6 0%, #0a8ed4 100%)";
-                            btnEdgeColor = "#086CA5";
-                          }
-
-                          return (
-                            <PushableButton
-                              as="button"
-                              isTile
-                              key={item.id}
-                              onClick={() =>
-                                !isDisabled && handleLetterClick(item.letter)
-                              }
-                              disabled={!!feedback || isDisabled}
-                              className={`aspect-square relative select-none w-full ${isVisuallySelected
-                                ? "opacity-30 pointer-events-none"
-                                : ""
-                                }`}
-                              frontStyle={{ background: btnBackground }}
-                              edgeStyle={{ backgroundColor: btnEdgeColor }}
-                            >
-                              <span className="text-white text-2xl sm:text-3xl font-black drop-shadow-sm flex items-center justify-center">
-                                {item.letter.length > 1 ? (
-                                  item.letter.toLowerCase()
-                                ) : (
-                                  (language === "tl" && levelId === 3)
-                                    ? item.letter.toLowerCase()
-                                    : <>{item.letter.toUpperCase()}{item.letter.toLowerCase()}</>
-                                )}
-                              </span>
-                            </PushableButton>
-                          );
-                        })}
+                    ) : (
+                      <div className="w-full py-4 shrink-0 flex flex-col items-center justify-center">
+                        <div className="text-center w-full flex flex-col items-center">
+                          <div className="inline-flex flex-col items-center gap-2 px-6 py-3 rounded-2xl mb-4">
+                            {targetButtonNode}
+                            {slotsNode}
+                          </div>
+                        </div>
+                        {letterPoolNode}
                       </div>
-                    </div>
+                    )}
                   </div>
                 )}
               </>
             )}
           </div>
-        </div>
+        </motion.div>
+      </AnimatePresence>
 
-        {/* Sticky Bottom Section: Navigation Controls */}
-        {selectedSubPattern && !allDone && (
-          <div className="w-full shrink-0 mt-auto">
-            <ActionToolbar
-              onBack={goPrev}
-              canBack={!(currentIndex === 0 && !onBack)}
-              onSkip={() => onComplete?.()}
-              onNext={goNext}
-              canNext={!(currentIndex === targets.length - 1 && feedback !== "correct")}
-            />
-          </div>
-        )}
-      </motion.div>
-    </AnimatePresence>
+      {/* Sticky Bottom Section: Navigation Controls */}
+      {selectedSubPattern && !allDone && (
+        <div className="w-full shrink-0 mt-auto">
+          <ActionToolbar
+            onBack={goPrev}
+            canBack={!(currentIndex === 0 && !onBack)}
+            onShuffle={handleShuffle}
+            canShuffle={!feedback} // don't shuffle while evaluating
+            onReset={selectedLetters.length > 0 ? handleReset : handleOrganize}
+            canReset={!feedback && (selectedLetters.length > 0 || !isOrganized)}
+            resetLabel={selectedLetters.length > 0 ? "Reset" : "Organize"}
+            onSkip={() => onComplete?.()}
+            canSkip={selectedLetters.length === 0 || feedback === "correct" || completedTargets.has(targets[currentIndex].syllable)}
+            onNext={goNext}
+            canNext={!(currentIndex === targets.length - 1 && feedback !== "correct") && (selectedLetters.length === 0 || feedback === "correct" || completedTargets.has(targets[currentIndex].syllable))}
+          />
+        </div>
+      )}
+    </div>
   );
 
   if (embedded) {
@@ -718,12 +835,7 @@ export function LevelSyllableBuilder({
           <Button variant="ghost" size="sm" onClick={handleGoBack} className="rounded-full p-2 h-auto text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 flex items-center justify-center transition-transform hover:scale-105 active:scale-95">
             <X className="!w-8 !h-8 sm:!w-10 sm:!h-10 stroke-[3]" />
           </Button>
-          <div className="flex-1 text-center">
-            <h2 className="text-lg font-bold tracking-tight text-center flex-1" style={{ color: accent.primary }}>
-              {levelId === 3 ? "CVC Master - Word Builder" : (isTagalog ? "Antas 2: Pagbuo ng Pantig" : "Syllable Builder")}
-            </h2>
-          </div>
-          {targets.length > 0 && <span className="text-sm font-bold" style={{ color: accent.primary }}>Step {currentIndex + 1}/{targets.length}</span>}
+          <div className="flex-1"></div>
         </div>
       </div>
       {innerContent}

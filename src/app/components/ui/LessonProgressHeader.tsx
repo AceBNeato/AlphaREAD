@@ -30,11 +30,7 @@ export function LessonProgressHeader({
           {useXIcon ? <X className="!w-8 !h-8 sm:!w-10 sm:!h-10 stroke-[3]" /> : <ArrowLeft className="!w-8 !h-8 sm:!w-10 sm:!h-10 stroke-[3]" />}
         </Button>
         <div className="flex-1 flex flex-col gap-1.5 mt-1">
-          <div className="flex justify-between items-center px-1">
-            <h2 className="text-sm sm:text-base font-bold tracking-tight" style={{ color: accentColor }}>
-              {title}
-            </h2>
-          </div>
+
           <div className="w-full bg-gray-200 dark:bg-gray-800 rounded-full h-4 sm:h-5 overflow-hidden relative shadow-inner">
             <div
               className="absolute top-0 left-0 h-full rounded-full transition-all duration-700 ease-out flex flex-col justify-start"

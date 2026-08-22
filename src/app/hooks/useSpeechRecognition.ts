@@ -37,7 +37,7 @@ export function calculateSimilarity(str1: string, str2: string): number {
 export function normalizeTranscript(text: string): string {
   return text
     .toUpperCase()
-    .replace(/[.,!?]/g, "")
+    .replace(/[.,!?'"]/g, "")
     .trim()
     .split(/\s+/)
     .map(w => DIGIT_MAP[w] || w)
@@ -311,7 +311,7 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, singleSho
     recognition.continuous = !singleShot;      // singleShot: stops after one phrase
     recognition.interimResults = !singleShot;  // singleShot: only final results
     recognition.lang = lang;
-    recognition.maxAlternatives = 5;
+    recognition.maxAlternatives = 1; // 1 drastically improves latency in MS Edge (Azure)
 
     recognition.onresult = (event: any) => {
       if (!isActive || hasMatched) return; // Prevent overlapping events while stopping or after cleanup
@@ -326,22 +326,38 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, singleSho
       if (DEBUG) console.log(`[AlphabetGO Debug] 🗣️ Result Event Received. Evaluating against: "${evaluatingWord}"`);
 
       // Stitch together all chunks using the overlap merge to prevent Android duplication bugs
-      let currentSessionTranscript = "";
-      for (let r = 0; r < event.results.length; r++) {
-        currentSessionTranscript = mergeTranscripts(currentSessionTranscript, event.results[r][0].transcript);
+      // Generate up to 5 alternative stitched transcripts
+      const allTranscripts: string[] = [];
+      let primarySessionTranscript = "";
+
+      for (let altIndex = 0; altIndex < 5; altIndex++) {
+        let altSessionTranscript = "";
+        let hasData = false;
+        
+        for (let r = 0; r < event.results.length; r++) {
+          const result = event.results[r];
+          const alt = result[altIndex] || result[0]; // fallback to primary if alternative doesn't exist
+          if (alt) {
+            altSessionTranscript = mergeTranscripts(altSessionTranscript, alt.transcript);
+            hasData = true;
+          }
+        }
+        
+        if (hasData) {
+          if (altIndex === 0) primarySessionTranscript = altSessionTranscript;
+          const fullAltTranscript = (currentAccumulatedTranscript + " " + altSessionTranscript).trim();
+          if (!allTranscripts.includes(fullAltTranscript)) {
+            allTranscripts.push(fullAltTranscript);
+          }
+        }
       }
-      latestSessionTranscript = currentSessionTranscript;
-      
-      let fullTranscript = (currentAccumulatedTranscript + " " + currentSessionTranscript).trim();
 
-      latestTranscript = fullTranscript; // Update fallback transcript
+      latestSessionTranscript = primarySessionTranscript;
+      latestTranscript = allTranscripts[0] || ""; // Update fallback transcript
 
-      if (DEBUG) console.log(`[AlphabetGO Debug] Full Stitched Transcript: "${fullTranscript}"`);
+      if (DEBUG) console.log(`[AlphabetGO Debug] Evaluated Transcripts:`, allTranscripts);
 
-      // We no longer loop through chunks, we evaluate the full stitched transcript once!
-      // (We package it inside an array to match the existing logic structure)
-      const allTranscripts = [fullTranscript];
-      const primaryTranscript = fullTranscript;
+      const primaryTranscript = allTranscripts[0] || "";
 
       // Start evaluation block
       {
@@ -434,7 +450,7 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, singleSho
           let wordMatch = "";
           let bestSimilarity = 0;
           let isPerfectMatch = false;
-          const wordUpper = evaluatingWord.toUpperCase().replace(/-HARD|-SOFT/i, "");
+          const wordUpper = evaluatingWord.toUpperCase().replace(/[.,!?'"-]/g, "").replace(/HARD|SOFT/i, "");
 
           for (let i = 0; i < allTranscripts.length; i++) {
             const normalized = normalizeTranscript(allTranscripts[i]);
@@ -489,11 +505,13 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, singleSho
       } // End evaluation block
 
       // Determine if the target is a multi-word phrase
-      const isPhrase = evaluatingWord.toUpperCase().replace(/[.,!?]/g, "").trim().includes(" ");
+      const targetWords = evaluatingWord.toUpperCase().replace(/[.,!?]/g, "").trim().split(/\s+/);
+      const isPhrase = targetWords.length > 1;
       const isFinalResult = event.results[event.results.length - 1]?.isFinal;
+      const allPhraseWordsMatched = isPhrase && matchedSequentialCount >= targetWords.length;
 
       // If we found a success, or if final result arrived with a close match, stop the mic and complete!
-      const shouldEarlyExit = foundCorrect || (foundClose && isFinalResult) || (!isPhrase && foundClose);
+      const shouldEarlyExit = foundCorrect || (foundClose && isFinalResult) || (!isPhrase && foundClose) || allPhraseWordsMatched;
 
       if (shouldEarlyExit) {
         hasMatched = true; // Block future onresult events
@@ -535,9 +553,6 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, singleSho
       }
     };
 
-    let autoRestartCount = 0;
-    const MAX_AUTO_RESTARTS = 3;
-
     recognition.onend = () => {
       if (isActive && !hasMatched) {
         if (timeoutRef.current) clearTimeout(timeoutRef.current);
@@ -551,33 +566,8 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, singleSho
           if (DEBUG) console.log(`[AlphabetGO Debug] 🏁 singleShot onend — forcing "wrong" with: "${latestTranscript}"`);
           onResultRef.current(evaluatingWord, "wrong", latestTranscript, bestRecordedSequentialCount);
         } else {
-          // Mobile workaround: Auto-restart on early shutoff, but limit to prevent infinite loops
-          if (!singleShot && isActive && autoRestartCount < MAX_AUTO_RESTARTS) {
-            autoRestartCount++;
-            if (DEBUG) console.log(`[AlphabetGO Debug] 🤫 onend — auto-restarting continuous mic (${autoRestartCount}/${MAX_AUTO_RESTARTS}) to prevent early shutoff.`);
-            
-            // ACCUMULATE the transcript from the session that just ended so progress isn't lost!
-            if (latestSessionTranscript) {
-               currentAccumulatedTranscript = (currentAccumulatedTranscript + " " + latestSessionTranscript).trim();
-               latestSessionTranscript = ""; // Reset for the next session
-            }
-            
-            // MUST use setTimeout to let the engine fully clean up and prevent synchronous freezing loops
-            timeoutRef.current = setTimeout(() => {
-              if (isActive && !hasMatched) {
-                try { 
-                  recognition.start(); 
-                } catch (e) {
-                  if (DEBUG) console.error("[AlphabetGO Debug] Failed to auto-restart mic:", e);
-                  if (onEngineStopRef.current) onEngineStopRef.current();
-                }
-              }
-            }, 300);
-            return; // We scheduled a restart, DO NOT emit null or stop yet
-          }
-          
           hasMatched = true;
-          if (DEBUG) console.log(`[AlphabetGO Debug] 🤫 onend — emitting null to preserve UI (auto-restarts exhausted or singleShot).`);
+          if (DEBUG) console.log(`[AlphabetGO Debug] 🤫 onend — emitting null to preserve UI.`);
           onResultRef.current(evaluatingWord, null, latestTranscript, bestRecordedSequentialCount);
           if (onEngineStopRef.current) {
             onEngineStopRef.current();

@@ -112,6 +112,18 @@ export function MatchPhase({
     }
   };
 
+  const handleOrganize = () => {
+    playSound("click", 0.2);
+    const sorted = [...batchItems].sort((a, b) => a.localeCompare(b));
+    setLeftCol(sorted);
+    setRightCol(sorted);
+    setMatchedPairs(new Set());
+    setSelectedLeft(null);
+    setSelectedRight(null);
+    setWrongPair(null);
+    setShowConfetti(false);
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, x: 50 }}
@@ -192,12 +204,14 @@ export function MatchPhase({
         onBack={handlePrevBatch}
         canBack={!(matchBatched.batchIndex === 0 && !canBack)}
         onShuffle={() => {
+          playSound("click", 0.2);
           setLeftCol([...leftCol].sort(() => Math.random() - 0.5));
           setRightCol([...rightCol].sort(() => Math.random() - 0.5));
         }}
         canShuffle={!hasAnswers}
-        onReset={() => reset()}
-        canReset={hasAnswers}
+        onReset={hasAnswers ? () => { playSound("click", 0.2); reset(); } : handleOrganize}
+        canReset={true}
+        resetLabel={hasAnswers ? "Reset" : "Organize"}
         onSkip={handleNextBatch}
         onNext={handleNextBatch}
         canNext={allDone}

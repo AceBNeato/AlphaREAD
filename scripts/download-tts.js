@@ -32,7 +32,7 @@ const BLENDS_WORDS = [
 ];
 
 const CVC_SENTENCES = [
-  "The car is red.", "Jim ran far.", "Tom is on the bed.", "The cat is on the bed.",
+  "The car is red.", "Jake ran far.", "Tom is on the bed.", "The cat is on the bed.",
   "The toy car is red.", "Pam is on the red bed.", "The dog has a red cap.", "The pig ran.",
   "The man got mad.", "Dan sat on the mat.", "Ben has a big toy car.", "The boy is big.",
   "The pig got wet.", "Joy has a hen.", "The kid ran to the man.", "It was a big box.",

@@ -16,7 +16,7 @@ function getAudioContext() {
   return audioCtx;
 }
 
-export type SoundType = "click" | "correct" | "wrong" | "complete";
+export type SoundType = "click" | "correct" | "wrong" | "complete" | "mic";
 
 let currentAudio: HTMLAudioElement | null = null;
 
@@ -39,8 +39,6 @@ export function playExclusiveAudio(path: string) {
       currentAudio.play()
         .then(() => resolve())
         .catch((err) => {
-          // If playback was aborted (e.g., by rapid clicking calling pause()), 
-          // resolve instead of reject so we don't trigger the TTS fallback.
           if (err.name === "AbortError") {
             return resolve();
           }
@@ -68,7 +66,6 @@ export function playSound(type: SoundType, volume = 0.4) {
     const now = ctx.currentTime;
 
     if (type === "click") {
-      // Soft tap (like a wooden block)
       osc.type = "sine";
       osc.frequency.setValueAtTime(600, now);
       osc.frequency.exponentialRampToValueAtTime(100, now + 0.05);
@@ -78,10 +75,9 @@ export function playSound(type: SoundType, volume = 0.4) {
       osc.stop(now + 0.05);
     }
     else if (type === "correct") {
-      // Cheerful Ding (C5 then E5)
       osc.type = "sine";
-      osc.frequency.setValueAtTime(523.25, now); // C5
-      osc.frequency.setValueAtTime(659.25, now + 0.1); // E5
+      osc.frequency.setValueAtTime(523.25, now);
+      osc.frequency.setValueAtTime(659.25, now + 0.1);
       gainNode.gain.setValueAtTime(0, now);
       gainNode.gain.linearRampToValueAtTime(volume, now + 0.02);
       gainNode.gain.setValueAtTime(volume, now + 0.1);
@@ -90,7 +86,6 @@ export function playSound(type: SoundType, volume = 0.4) {
       osc.stop(now + 0.4);
     }
     else if (type === "wrong") {
-      // Gentle Buzzer
       osc.type = "triangle";
       osc.frequency.setValueAtTime(150, now);
       osc.frequency.linearRampToValueAtTime(100, now + 0.3);
@@ -100,20 +95,32 @@ export function playSound(type: SoundType, volume = 0.4) {
       osc.stop(now + 0.3);
     }
     else if (type === "complete") {
-      // Triumphant Fanfare (C4, E4, G4, C5)
       osc.type = "square";
       gainNode.gain.setValueAtTime(0, now);
       gainNode.gain.linearRampToValueAtTime(volume * 0.15, now + 0.05);
 
-      osc.frequency.setValueAtTime(261.63, now); // C4
-      osc.frequency.setValueAtTime(329.63, now + 0.15); // E4
-      osc.frequency.setValueAtTime(392.00, now + 0.3); // G4
-      osc.frequency.setValueAtTime(523.25, now + 0.45); // C5
+      osc.frequency.setValueAtTime(261.63, now);
+      osc.frequency.setValueAtTime(329.63, now + 0.15);
+      osc.frequency.setValueAtTime(392.00, now + 0.3);
+      osc.frequency.setValueAtTime(523.25, now + 0.45);
 
       gainNode.gain.setValueAtTime(volume * 0.15, now + 0.45);
       gainNode.gain.exponentialRampToValueAtTime(0.01, now + 1.2);
       osc.start(now);
       osc.stop(now + 1.2);
+    }
+    else if (type === "mic") {
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(800, now);
+      gainNode.gain.setValueAtTime(volume * 0.3, now);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+      
+      osc.frequency.setValueAtTime(1200, now + 0.15);
+      gainNode.gain.setValueAtTime(volume * 0.3, now + 0.15);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+      
+      osc.start(now);
+      osc.stop(now + 0.25);
     }
   } catch (err) {
     console.error("Audio playback failed:", err);

@@ -15,6 +15,7 @@ export interface Curriculum {
   CONSONANTS: string[];
   sentences: string[];
   CVC_WORDS: string[];
+  ASSESSMENT_WORDS: string[];
   BLENDS_DATA: any;
   BLENDS_SENTENCES: string[];
 }
@@ -34,6 +35,7 @@ export function useCurriculum(): Curriculum {
       CONSONANTS: tagalogData.TAGALOG_CONSONANTS,
       sentences: tagalogData.TAGALOG_SENTENCES,
       CVC_WORDS: tagalogData.TAGALOG_WORDS,
+      ASSESSMENT_WORDS: tagalogData.TAGALOG_ASSESSMENT_WORDS,
       BLENDS_DATA: tagalogData.TAGALOG_BLENDS_DATA,
       BLENDS_SENTENCES: tagalogData.TAGALOG_BLENDS_SENTENCES,
     };
@@ -50,6 +52,7 @@ export function useCurriculum(): Curriculum {
     CONSONANTS: englishData.CONSONANTS,
     sentences: englishData.CVC_SENTENCES,
     CVC_WORDS: englishData.CVC_WORDS,
+    ASSESSMENT_WORDS: englishData.CVC_ASSESSMENT_WORDS,
     BLENDS_DATA: englishBlendsData,
     BLENDS_SENTENCES: englishBlendsSentences,
   };
