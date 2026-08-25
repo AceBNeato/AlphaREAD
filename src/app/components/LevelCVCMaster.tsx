@@ -163,7 +163,7 @@ function LevelCVCPreview({
                       <div className="absolute inset-0 flex items-center justify-center bg-white dark:bg-gray-800 rounded-2xl border-4 border-blue-400 overflow-hidden" style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}>
                          {!imageErrors[word] ? (
                            <img 
-                             src={`${import.meta.env.BASE_URL}images/cvc/${word.toLowerCase()}.png`} 
+                             src={`${import.meta.env.BASE_URL}images/cvc/${word.toLowerCase()}.jpg`} 
                              alt={word} 
                              className="w-full h-full object-cover"
                              onError={() => setImageErrors(prev => ({...prev, [word]: true}))}

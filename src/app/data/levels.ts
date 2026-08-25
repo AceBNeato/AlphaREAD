@@ -183,9 +183,9 @@ export const CVC_WORDS = [
 
 // Concrete nouns for assessment (Level 5 / 3)
 export const CVC_ASSESSMENT_WORDS = [
-  "BAT", "BED", "BIB", "BOX", "BUG", "CAN", "CAR", "COB", "CUP", "DOG", 
-  "FAN", "GUM", "HAT", "JAM", "KIT", "LID", "MAN", "MEN", "NET", "PAD", 
-  "PAN", "PEN", "PIN", "POT", "RAG", "RAT", "RUG", "TUB", "VAN", "VET"
+  "BAT", "BED", "PIG", "BOX", "BUG", "CAN", "CAR", "CAT", "CUP", "DOG", 
+  "FAN", "GUM", "HAM", "HAT", "JAM", "SUN", "MAN", "NET", "MAP", "PAN", 
+  "PEN", "PIN", "POT", "RAG", "RAM", "RAT", "RUG", "TUB", "VAN", "WIG"
 ];
 
 export const CVC_SENTENCES = [

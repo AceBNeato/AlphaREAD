@@ -200,14 +200,14 @@ export function TypePhase({
                             <div className="absolute inset-0 flex items-center justify-center bg-white dark:bg-gray-800 rounded-2xl border-4 border-blue-400 overflow-hidden" style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}>
                                {!imageErrors[item] ? (
                                  <img 
-                                   src={`${import.meta.env.BASE_URL}images/cvc/${item.toLowerCase()}.png`} 
+                                   src={`${import.meta.env.BASE_URL}images/cvc/${item.toLowerCase()}.jpg`} 
                                    alt="assessment image" 
                                    className="w-full h-full object-cover"
                                    onError={() => setImageErrors(prev => ({...prev, [item]: true}))}
                                  />
                                ) : (
-                                 <div className="w-full h-full flex items-center justify-center bg-blue-50 dark:bg-blue-900/30">
-                                    <span className="scale-125 text-gray-400 font-bold text-4xl">?</span>
+                                 <div className="w-full h-full flex flex-col items-center justify-center bg-blue-50 dark:bg-blue-900/30">
+                                    <span className="text-3xl font-black text-gray-400 dark:text-gray-500 tracking-widest uppercase">{item}</span>
                                  </div>
                                )}
                             </div>

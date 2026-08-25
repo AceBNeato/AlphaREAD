@@ -756,7 +756,7 @@ export function LevelSyllableBuilder({
                               <div className="absolute inset-0 flex items-center justify-center bg-white dark:bg-gray-800 rounded-2xl border-4 border-blue-400 overflow-hidden" style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}>
                                 {!imageErrors[currentTarget.syllable] ? (
                                   <img 
-                                    src={`${import.meta.env.BASE_URL}images/cvc/${currentTarget.syllable.toLowerCase()}.png`} 
+                                    src={`${import.meta.env.BASE_URL}images/cvc/${currentTarget.syllable.toLowerCase()}.jpg`} 
                                     alt={currentTarget.syllable} 
                                     className="w-full h-full object-cover"
                                     onError={() => setImageErrors(prev => ({...prev, [currentTarget.syllable]: true}))}
