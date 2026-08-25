@@ -197,12 +197,12 @@ export function TypePhase({
                             </div>
                             
                             {/* Back (Image) */}
-                            <div className="absolute inset-0 flex items-center justify-center bg-white dark:bg-gray-800 rounded-2xl border-4 border-blue-400 overflow-hidden" style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}>
+                            <div className="absolute inset-0 flex items-center justify-center bg-white dark:bg-gray-800 rounded-2xl border-4 border-blue-400 overflow-hidden transition-all duration-300 group-hover:border-blue-500 group-hover:shadow-lg group-hover:-translate-y-1" style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}>
                                {!imageErrors[item] ? (
                                  <img 
                                    src={`${import.meta.env.BASE_URL}images/cvc/${item.toLowerCase()}.jpg`} 
                                    alt="assessment image" 
-                                   className="w-full h-full object-cover"
+                                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                                    onError={() => setImageErrors(prev => ({...prev, [item]: true}))}
                                  />
                                ) : (
