@@ -10,7 +10,7 @@ import {
 } from "../data/levels";
 import { useCurriculum } from "../hooks/useCurriculum";
 import { useLanguage } from "../context/LanguageContext";
-import { motion, AnimatePresence } from "motion/react";
+import { motion, AnimatePresence, useMotionValue, useTransform, useSpring } from "motion/react";
 import { supabase } from "../../lib/supabase";
 import { Confetti } from "./ui/Confetti";
 import { playSound, playExclusiveAudio } from "../utils/soundEffects";
@@ -150,6 +150,26 @@ export function LevelSyllableBuilder({
   useEffect(() => {
     setMobileFlipped(false);
   }, [currentIndex]);
+
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+  const rotateX = useTransform(y, [-150, 150], [15, -15]);
+  const rotateY = useTransform(x, [-150, 150], [-15, 15]);
+  const smoothRotateX = useSpring(rotateX, { damping: 20, stiffness: 300 });
+  const smoothRotateY = useSpring(rotateY, { damping: 20, stiffness: 300 });
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    x.set(e.clientX - centerX);
+    y.set(e.clientY - centerY);
+  };
+
+  const handleMouseLeave = () => {
+    x.set(0);
+    y.set(0);
+  };
 
   useEffect(() => {
     return () => {
@@ -733,15 +753,18 @@ export function LevelSyllableBuilder({
                         {/* Left Side: Card + Target Button */}
                         <div className="flex flex-col items-center w-full gap-4 max-w-[180px] md:max-w-[200px]">
                           {/* The Card */}
-                          <div 
-                            className="relative w-full aspect-[3/4] group cursor-pointer md:cursor-default" 
-                            style={{ perspective: '1000px' }}
-                            onClick={() => {
-                              if (window.innerWidth < 768) {
-                                setMobileFlipped(true);
-                              }
-                            }}
-                          >
+                          <div className="w-full" style={{ perspective: '1000px' }}>
+                            <motion.div 
+                              className="relative w-full aspect-[3/4] cursor-pointer md:cursor-default" 
+                              onMouseMove={handleMouseMove}
+                              onMouseLeave={handleMouseLeave}
+                              style={{ rotateX: smoothRotateX, rotateY: smoothRotateY, transformStyle: 'preserve-3d' }}
+                              onClick={() => {
+                                if (window.innerWidth < 768) {
+                                  setMobileFlipped(true);
+                                }
+                              }}
+                            >
                             <motion.div 
                               className="w-full h-full relative"
                               style={{ transformStyle: 'preserve-3d' }}
@@ -768,7 +791,8 @@ export function LevelSyllableBuilder({
                                 )}
                               </div>
                             </motion.div>
-                          </div>
+                          </motion.div>
+                        </div>
                           
                           {/* Target Button */}
                           <div className="w-full">

@@ -12,7 +12,7 @@ import { useCurriculum } from "../hooks/useCurriculum";
 import { X, ArrowLeft, Shuffle, ChevronRight, ArrowRight } from "lucide-react";
 import { Button } from "./ui/button";
 import { confirmAction } from "../utils/alerts";
-import { motion, AnimatePresence } from "motion/react";
+import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from "motion/react";
 import { Confetti } from "./ui/Confetti";
 import { playExclusiveAudio, playSound } from "../utils/soundEffects";
 import { playTTS } from "../utils/tts";
@@ -47,6 +47,7 @@ function LevelCVCPreview({
   isReview,
   onOrganize,
   onShuffle,
+  isOrganized,
 }: {
   accent: { primary: string; dark: string; lightBg: string };
   words: string[];
@@ -59,21 +60,53 @@ function LevelCVCPreview({
   isReview?: boolean;
   onOrganize?: () => void;
   onShuffle?: () => void;
+  isOrganized?: boolean;
 }) {
   const { language } = useLanguage();
   const isTagalog = language === "tl";
   const wordLabel = isTagalog ? "words" : "CVC words";
   
-  const [flippedWords, setFlippedWords] = useState<Record<string, boolean>>({});
+  const [activeWord, setActiveWord] = useState<string | null>(words[0] || null);
+  const [sideAWord, setSideAWord] = useState<string>(words[0] || "");
+  const [sideBWord, setSideBWord] = useState<string>("");
+  const [activeSide, setActiveSide] = useState<'A' | 'B'>('A');
+  const [rotation, setRotation] = useState(0);
   const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
 
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+  const rotateX = useTransform(y, [-150, 150], [15, -15]);
+  const rotateY = useTransform(x, [-150, 150], [-15, 15]);
+  const smoothRotateX = useSpring(rotateX, { damping: 20, stiffness: 300 });
+  const smoothRotateY = useSpring(rotateY, { damping: 20, stiffness: 300 });
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    x.set(e.clientX - centerX);
+    y.set(e.clientY - centerY);
+  };
+
+  const handleMouseLeave = () => {
+    x.set(0);
+    y.set(0);
+  };
+
+  // Reset state when words change (e.g. batch change)
+  useEffect(() => {
+    setActiveWord(words[0] || null);
+    setSideAWord(words[0] || "");
+    setSideBWord("");
+    setActiveSide('A');
+    setRotation(0);
+  }, [words]);
+
   const handleShuffle = () => {
-    setFlippedWords({});
     if (onShuffle) onShuffle();
   };
 
   const handleOrganize = () => {
-    setFlippedWords({});
     if (onOrganize) onOrganize();
   };
 
@@ -86,124 +119,168 @@ function LevelCVCPreview({
         transition={{ duration: 0.3 }}
         className="flex-1 min-h-0 overflow-y-auto w-full flex flex-col items-center"
       >
-        <div className="w-full max-w-6xl mx-auto px-4 sm:px-10 py-4 text-center flex-1">
-          <p className="text-gray-600 dark:text-gray-300 text-base sm:text-lg font-bold mt-2 mb-12 sm:mb-16 block">
+        <div className="w-full max-w-6xl mx-auto px-4 sm:px-10 py-4 text-center flex-1 flex flex-col justify-center">
+          <p className="text-gray-600 dark:text-gray-300 text-base sm:text-lg font-bold mt-2 mb-8 block shrink-0">
             {isReview
               ? `Great work! Review ${wordLabel}! ${batchNumber && totalBatches ? "(Batch " + batchNumber + " of " + totalBatches + ")" : ""}`
               : `Review ${wordLabel} before we start! ${batchNumber && totalBatches ? "(Batch " + batchNumber + " of " + totalBatches + ")" : ""}`
             }
           </p>
 
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 sm:gap-8 lg:gap-12 mb-12 w-full max-w-6xl mx-auto justify-items-center px-2 sm:px-0">
-            {words.map((word) => {
-              let chunks: string[] = [];
-              if (isTagalog) {
-                const standardChunks = TAGALOG_WORD_CHUNKS[word.toUpperCase()];
-                if (standardChunks && standardChunks.length > 0) {
-                  chunks = standardChunks;
-                } else {
-                  chunks = word.match(/ng|Ng|NG|[A-Za-z]/g) || word.split("");
+          <div className="flex flex-col md:flex-row w-full max-w-6xl mx-auto gap-8 lg:gap-12 justify-center items-center">
+            
+            {/* Left Column: Active Card */}
+            <div className="w-full md:w-1/3 flex flex-col items-center justify-center shrink-0">
+              {activeWord && (() => {
+                let chunks: string[] = [];
+                if (isTagalog) {
+                  const standardChunks = TAGALOG_WORD_CHUNKS[activeWord.toUpperCase()];
+                  if (standardChunks && standardChunks.length > 0) {
+                    chunks = standardChunks;
+                  } else {
+                    chunks = activeWord.match(/ng|Ng|NG|[A-Za-z]/g) || activeWord.split("");
+                  }
                 }
-              }
 
-              const wordContent = (
-                <span className="text-xl sm:text-2xl font-black drop-shadow-sm flex flex-col items-center justify-center">
-                  <div className="flex">
-                    {!isTagalog && word.length === 3 ? (
-                      <>
-                        <span style={{ color: "#FF6B8A" }}>{word.slice(0, 2).toLowerCase()}</span>
-                        <span style={{ color: "#1CB0F6" }}>{word.slice(2).toLowerCase()}</span>
-                      </>
-                    ) : (
-                      chunks.length > 0 ? (
-                        chunks.map((ch, i) => (
-                          <span key={i} style={{ color: i % 2 === 0 ? "#1CB0F6" : "#FF6B8A" }}>
-                            {ch.toLowerCase()}
-                          </span>
-                        ))
-                      ) : (
-                        <span style={{ color: "#1CB0F6" }}>{word.toLowerCase()}</span>
-                      )
-                    )}
-                  </div>
-                  {word.toUpperCase().includes('-HARD') && <span className="text-[8px] sm:text-[10px] text-gray-400 font-bold tracking-wider">HARD</span>}
-                  {word.toUpperCase().includes('-SOFT') && <span className="text-[8px] sm:text-[10px] text-gray-400 font-bold tracking-wider">SOFT</span>}
-                </span>
-              );
-
-              return (
-                <motion.div
-                  key={word}
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  className="flex flex-col items-center w-full gap-4 max-w-[160px] md:max-w-[220px]"
-                >
-                  {/* The Card */}
-                  <div 
-                    className="relative w-full aspect-[3/4] group cursor-pointer md:cursor-default" 
-                    style={{ perspective: '1000px' }}
-                    onClick={() => {
-                      if (window.innerWidth < 768) {
-                        setFlippedWords(prev => ({...prev, [word]: !prev[word]}));
-                      }
-                    }}
-                  >
+                return (
+                  <div className="w-full" style={{ perspective: '1000px' }}>
                     <motion.div 
-                      className="w-full h-full relative"
-                      style={{ transformStyle: 'preserve-3d' }}
-                      animate={ flippedWords[word] ? { rotateY: 180, y: [0, -30, 0] } : { rotateY: 0, y: 0 } }
-                      transition={{ duration: 0.8, ease: "easeInOut" }}
+                      className="relative w-full max-w-[220px] md:max-w-[260px] mx-auto aspect-[3/4] cursor-pointer"
+                      onMouseMove={handleMouseMove}
+                      onMouseLeave={handleMouseLeave}
+                      style={{ rotateX: smoothRotateX, rotateY: smoothRotateY, transformStyle: 'preserve-3d' }}
+                      onClick={() => {
+                        if (isReview && activeWord) {
+                          const audioPath = isTagalog
+                            ? `${import.meta.env.BASE_URL}audio/filipino/tagalog-words/fil-level3-${activeWord.toLowerCase()}.mp3`
+                            : `${import.meta.env.BASE_URL}audio/english/cvc-audio/cvc-${activeWord.toLowerCase()}.mp3`;
+                          playExclusiveAudio(audioPath).catch((err: any) => {
+                            playTTS(activeWord.replace(/-HARD|-SOFT/i, "").toLowerCase());
+                          });
+                        }
+                      }}
                     >
-                      {/* Front (Skeleton Question Mark) */}
-                      <div className="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-gray-800 rounded-2xl border-4 border-dashed border-gray-300 dark:border-gray-600 transition-colors group-hover:border-blue-400 dark:group-hover:border-blue-500" style={{ backfaceVisibility: 'hidden' }}>
-                        <span className="text-6xl sm:text-7xl font-black text-gray-300 dark:text-gray-600">?</span>
-                      </div>
-                      
-                      {/* Back (Image) */}
-                      <div className="absolute inset-0 flex items-center justify-center bg-white dark:bg-gray-800 rounded-2xl border-4 border-blue-400 overflow-hidden" style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}>
-                         {!imageErrors[word] ? (
-                           <img 
-                             src={`${import.meta.env.BASE_URL}images/cvc/${word.toLowerCase()}.jpg`} 
-                             alt={word} 
-                             className="w-full h-full object-cover"
-                             onError={() => setImageErrors(prev => ({...prev, [word]: true}))}
-                           />
-                         ) : (
-                           <div className="w-full h-full flex items-center justify-center bg-blue-50 dark:bg-blue-900/30">
-                              <span className="scale-125">{wordContent}</span>
-                           </div>
-                         )}
-                      </div>
+                      <motion.div 
+                        className="w-full h-full relative"
+                        style={{ transformStyle: 'preserve-3d' }}
+                        animate={{ rotateY: rotation }}
+                        transition={{ duration: 0.6, ease: "easeInOut" }}
+                      >
+                        {/* Side A */}
+                        <div className="absolute inset-0 flex items-center justify-center bg-white dark:bg-gray-800 rounded-3xl border-4 border-blue-400 overflow-hidden shadow-lg" style={{ backfaceVisibility: 'hidden' }}>
+                          {sideAWord && !imageErrors[sideAWord] ? (
+                             <img 
+                               src={`${import.meta.env.BASE_URL}images/cvc/${sideAWord.toLowerCase()}.jpg`} 
+                               alt={sideAWord} 
+                               className="w-full h-full object-cover"
+                               onError={() => setImageErrors(prev => ({...prev, [sideAWord]: true}))}
+                             />
+                           ) : (
+                             <div className="w-full h-full flex flex-col items-center justify-center bg-blue-50 dark:bg-blue-900/30">
+                                <span className="text-3xl font-black text-gray-400 dark:text-gray-500 tracking-widest uppercase">{sideAWord}</span>
+                             </div>
+                           )}
+                        </div>
+                        
+                        {/* Side B */}
+                        <div className="absolute inset-0 flex items-center justify-center bg-white dark:bg-gray-800 rounded-3xl border-4 border-blue-400 overflow-hidden shadow-lg" style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}>
+                          {sideBWord && !imageErrors[sideBWord] ? (
+                             <img 
+                               src={`${import.meta.env.BASE_URL}images/cvc/${sideBWord.toLowerCase()}.jpg`} 
+                               alt={sideBWord} 
+                               className="w-full h-full object-cover"
+                               onError={() => setImageErrors(prev => ({...prev, [sideBWord]: true}))}
+                             />
+                           ) : (
+                             <div className="w-full h-full flex flex-col items-center justify-center bg-blue-50 dark:bg-blue-900/30">
+                                <span className="text-3xl font-black text-gray-400 dark:text-gray-500 tracking-widest uppercase">{sideBWord}</span>
+                             </div>
+                           )}
+                        </div>
+                      </motion.div>
                     </motion.div>
                   </div>
+                );
+              })()}
+            </div>
 
-                  {/* The Button */}
-                  <div className="w-full">
-                    <PushableButton
-                      as="button"
-                      isTile
-                      onClick={() => {
-                        setFlippedWords(prev => ({...prev, [word]: !prev[word]}));
+            {/* Right Column: Grid of Buttons */}
+            <div className="w-full md:w-2/3 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 px-2 sm:px-0 content-start">
+              {words.map((word) => {
+                const isActive = activeWord === word;
+                let chunks: string[] = [];
+                if (isTagalog) {
+                  const standardChunks = TAGALOG_WORD_CHUNKS[word.toUpperCase()];
+                  if (standardChunks && standardChunks.length > 0) {
+                    chunks = standardChunks;
+                  } else {
+                    chunks = word.match(/ng|Ng|NG|[A-Za-z]/g) || word.split("");
+                  }
+                }
+
+                const wordContent = (
+                  <span className="text-xl sm:text-2xl font-black drop-shadow-sm flex flex-col items-center justify-center pointer-events-none">
+                    <div className="flex">
+                      {!isTagalog && word.length === 3 ? (
+                        <>
+                          <span style={{ color: isActive ? "#ffffff" : "#FF6B8A" }}>{word.slice(0, 2).toLowerCase()}</span>
+                          <span style={{ color: isActive ? "#ffffff" : "#1CB0F6" }}>{word.slice(2).toLowerCase()}</span>
+                        </>
+                      ) : (
+                        chunks.length > 0 ? (
+                          chunks.map((ch, i) => (
+                            <span key={i} style={{ color: isActive ? "#ffffff" : (i % 2 === 0 ? "#1CB0F6" : "#FF6B8A") }}>
+                              {ch.toLowerCase()}
+                            </span>
+                          ))
+                        ) : (
+                          <span style={{ color: isActive ? "#ffffff" : "#1CB0F6" }}>{word.toLowerCase()}</span>
+                        )
+                      )}
+                    </div>
+                  </span>
+                );
+
+                return (
+                  <PushableButton
+                    key={word}
+                    as="button"
+                    isTile
+                    onClick={() => {
+                      if (activeWord !== word) {
+                        playSound("click", 0.1);
+                        setActiveWord(word);
+                        
+                        if (activeSide === 'A') {
+                          setSideBWord(word);
+                          setActiveSide('B');
+                        } else {
+                          setSideAWord(word);
+                          setActiveSide('A');
+                        }
+                        
+                        setRotation(prev => prev + 180);
+
                         if (isReview) {
                           const audioPath = isTagalog
                             ? `${import.meta.env.BASE_URL}audio/filipino/tagalog-words/fil-level3-${word.toLowerCase()}.mp3`
                             : `${import.meta.env.BASE_URL}audio/english/cvc-audio/cvc-${word.toLowerCase()}.mp3`;
                           playExclusiveAudio(audioPath).catch((err: any) => {
-                            console.warn(`[AlphabetGO] Local CVC audio not found: ${audioPath}, falling back to TTS`, err);
                             playTTS(word.replace(/-HARD|-SOFT/i, "").toLowerCase());
                           });
                         }
-                      }}
-                      className="w-full h-12 sm:h-14 flex items-center justify-center cursor-pointer"
-                      frontClassName="bg-white dark:bg-gray-800 flex items-center justify-center"
-                      edgeStyle={{ backgroundColor: '#e5e7eb' }}
-                    >
-                      {wordContent}
-                    </PushableButton>
-                  </div>
-                </motion.div>
-              );
-            })}
+                      }
+                    }}
+                    className={`w-full h-16 sm:h-20 flex items-center justify-center cursor-pointer transition-transform ${isActive ? 'scale-105 z-10' : 'hover:scale-105'}`}
+                    frontClassName={`flex items-center justify-center border-2 ${isActive ? 'bg-blue-500 text-white border-blue-600' : 'bg-white dark:bg-gray-800 border-transparent hover:border-gray-300 text-gray-800 dark:text-white'}`}
+                    edgeStyle={{ backgroundColor: isActive ? '#2563eb' : '#e5e7eb' }}
+                  >
+                    {wordContent}
+                  </PushableButton>
+                );
+              })}
+            </div>
+
           </div>
         </div>
       </motion.div>
@@ -213,6 +290,7 @@ function LevelCVCPreview({
         canBack={canBack}
         onShuffle={onShuffle ? handleShuffle : undefined}
         onReset={onOrganize ? handleOrganize : undefined}
+        canReset={!isOrganized}
         resetLabel="Organize"
         onSkip={onSkip || onComplete}
         onNext={onComplete}
@@ -242,6 +320,11 @@ export function LevelCVCMaster({ levelId, accent }: LevelCVCMasterProps) {
   // Assessment words are static 30 concrete nouns, randomized order on mount
   const [assessmentWords] = useState<string[]>(() => shuffleArray([...ASSESSMENT_WORDS]));
 
+  const isOrganized = useMemo(() => {
+    const sorted = [...CVC_WORDS].sort((a, b) => a.localeCompare(b));
+    return baseWords.length === sorted.length && baseWords.every((val, i) => val === sorted[i]);
+  }, [baseWords, CVC_WORDS]);
+
   const handleOrganizeAll = () => {
     setBaseWords([...CVC_WORDS].sort((a, b) => a.localeCompare(b)));
   };
@@ -254,7 +337,7 @@ export function LevelCVCMaster({ levelId, accent }: LevelCVCMasterProps) {
     const wordsToUse = baseWords;
 
     const steps: GameStep[] = [];
-    const PREVIEW_BATCH_SIZE = 5;
+    const PREVIEW_BATCH_SIZE = 30;
     const previewBatches = Math.ceil(wordsToUse.length / PREVIEW_BATCH_SIZE);
 
     // 1. Previews
@@ -274,7 +357,7 @@ export function LevelCVCMaster({ levelId, accent }: LevelCVCMasterProps) {
     steps.push({ 
       phase: "type", 
       words: assessmentWords,
-      batchSize: 5
+      batchSize: 15
     });
 
     // 4. Clickable Review Phase
@@ -365,6 +448,7 @@ export function LevelCVCMaster({ levelId, accent }: LevelCVCMasterProps) {
         isReview={step.phase === "review"}
         onOrganize={handleOrganizeAll}
         onShuffle={handleShuffleAll}
+        isOrganized={isOrganized}
       />
     );
   }
