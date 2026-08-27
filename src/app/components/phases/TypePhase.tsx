@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from "motion/react";
 import { Volume2 } from "lucide-react";
 import { ActionToolbar } from "../ui/ActionToolbar";
@@ -17,6 +17,9 @@ export interface TypePhaseProps {
   onItemClick: (item: string) => void;
   typeBatchSize?: number;
   hasImages?: boolean;
+  onOrganize?: () => void;
+  onShuffle?: () => void;
+  isOrganized?: boolean;
 }
 
 export function TypePhase({
@@ -27,7 +30,10 @@ export function TypePhase({
   canBack,
   onItemClick,
   typeBatchSize = 6,
-  hasImages = true
+  hasImages = true,
+  onOrganize,
+  onShuffle,
+  isOrganized
 }: TypePhaseProps) {
   const typeBatched = useBatchedItems(items, typeBatchSize);
   const batchItems = typeBatched.currentBatch;
@@ -44,6 +50,12 @@ export function TypePhase({
   const [sideBWord, setSideBWord] = useState<string | null>(null);
   const [activeSide, setActiveSide] = useState<'A' | 'B'>('A');
   const [rotation, setRotation] = useState(0);
+
+  const isCurrentBatchOrganized = useMemo(() => {
+    if (isOrganized !== undefined) return isOrganized;
+    const sorted = [...batchItems].sort((a, b) => a.localeCompare(b));
+    return typeOrder.length === sorted.length && typeOrder.every((val, i) => val === sorted[i]);
+  }, [isOrganized, batchItems, typeOrder]);
 
   const x = useMotionValue(0);
   const y = useMotionValue(0);
@@ -66,9 +78,14 @@ export function TypePhase({
   };
 
   useEffect(() => {
-    const newOrder = [...batchItems].sort(() => Math.random() - 0.5);
+    const isAlphabetical = isOrganized || (items.length > 0 && items.every((val, i, arr) => i === 0 || arr[i - 1].localeCompare(val) <= 0));
+    const sorted = [...batchItems].sort((a, b) => a.localeCompare(b));
+
+    const newOrder = isAlphabetical ? sorted : [...batchItems].sort(() => Math.random() - 0.5);
+    const newWordBank = isAlphabetical ? sorted : [...batchItems].sort(() => Math.random() - 0.5);
+
     setTypeOrder(newOrder);
-    setWordBank([...batchItems].sort(() => Math.random() - 0.5));
+    setWordBank(newWordBank);
     setTypeInputs({});
     setTypeStatus({});
     setHasClickedTTS(false);
@@ -78,10 +95,49 @@ export function TypePhase({
     setSideBWord(null);
     setActiveSide('A');
     setRotation(0);
-  }, [typeBatched.batchIndex, batchItems]);
+  }, [typeBatched.batchIndex, batchItems, isOrganized, items]);
 
   const handleShuffleType = () => {
-    setTypeOrder(prev => [...prev].sort(() => Math.random() - 0.5));
+    playSound("click", 0.2);
+    if (onShuffle) {
+      onShuffle();
+    } else {
+      setTypeOrder([...batchItems].sort(() => Math.random() - 0.5));
+      setWordBank([...batchItems].sort(() => Math.random() - 0.5));
+    }
+    setTypeInputs({});
+    setTypeStatus({});
+    setShowConfetti(false);
+    setSideAWord(null);
+    setSideBWord(null);
+    setActiveSide('A');
+    setRotation(0);
+  };
+
+  const handleOrganizeType = () => {
+    playSound("click", 0.2);
+    if (onOrganize) {
+      onOrganize();
+    } else {
+      const sorted = [...batchItems].sort((a, b) => a.localeCompare(b));
+      setTypeOrder(sorted);
+      setWordBank(sorted);
+      setActiveItem(sorted[0] || null);
+    }
+    setTypeInputs({});
+    setTypeStatus({});
+    setShowConfetti(false);
+    setSideAWord(null);
+    setSideBWord(null);
+    setActiveSide('A');
+    setRotation(0);
+  };
+
+  const handleResetAnswers = () => {
+    playSound("click", 0.2);
+    setTypeInputs({});
+    setTypeStatus({});
+    setShowConfetti(false);
   };
 
   const handleItemSelect = (item: string) => {
@@ -343,18 +399,9 @@ export function TypePhase({
         canBack={!(typeBatched.batchIndex === 0 && !canBack)}
         onShuffle={handleShuffleType}
         canShuffle={!hasAnswers}
-        onReset={() => {
-          setTypeOrder([...batchItems].sort(() => Math.random() - 0.5));
-          setWordBank([...batchItems].sort(() => Math.random() - 0.5));
-          setTypeInputs({});
-          setTypeStatus({});
-          setShowConfetti(false);
-          setSideAWord(null);
-          setSideBWord(null);
-          setActiveSide('A');
-          setRotation(0);
-        }}
-        canReset={hasAnswers}
+        onReset={hasAnswers ? handleResetAnswers : handleOrganizeType}
+        canReset={hasAnswers || !isCurrentBatchOrganized}
+        resetLabel={hasAnswers ? "Reset" : "Organize"}
         onSkip={handleNextBatch}
         onNext={handleNextBatch}
         canNext={isTypePhaseComplete}

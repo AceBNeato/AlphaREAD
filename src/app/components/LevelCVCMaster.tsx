@@ -318,7 +318,13 @@ export function LevelCVCMaster({ levelId, accent }: LevelCVCMasterProps) {
 
   const [baseWords, setBaseWords] = useState<string[]>(() => shuffleArray([...CVC_WORDS]));
   // Assessment words are static 30 concrete nouns, randomized order on mount
-  const [assessmentWords] = useState<string[]>(() => shuffleArray([...ASSESSMENT_WORDS]));
+  const [assessmentWords, setAssessmentWords] = useState<string[]>(() => shuffleArray([...ASSESSMENT_WORDS]));
+
+  // Sync state when language changes or curriculum updates
+  useEffect(() => {
+    setBaseWords(shuffleArray([...CVC_WORDS]));
+    setAssessmentWords(shuffleArray([...ASSESSMENT_WORDS]));
+  }, [CVC_WORDS, ASSESSMENT_WORDS]);
 
   const isOrganized = useMemo(() => {
     const sorted = [...CVC_WORDS].sort((a, b) => a.localeCompare(b));
@@ -331,6 +337,19 @@ export function LevelCVCMaster({ levelId, accent }: LevelCVCMasterProps) {
 
   const handleShuffleAll = () => {
     setBaseWords(shuffleArray([...CVC_WORDS]));
+  };
+
+  const isAssessmentOrganized = useMemo(() => {
+    const sorted = [...ASSESSMENT_WORDS].sort((a, b) => a.localeCompare(b));
+    return assessmentWords.length === sorted.length && assessmentWords.every((val, i) => val === sorted[i]);
+  }, [assessmentWords, ASSESSMENT_WORDS]);
+
+  const handleOrganizeAssessment = () => {
+    setAssessmentWords([...ASSESSMENT_WORDS].sort((a, b) => a.localeCompare(b)));
+  };
+
+  const handleShuffleAssessment = () => {
+    setAssessmentWords(shuffleArray([...ASSESSMENT_WORDS]));
   };
 
   const STEPS: GameStep[] = useMemo(() => {
@@ -377,7 +396,7 @@ export function LevelCVCMaster({ levelId, accent }: LevelCVCMasterProps) {
     steps.push({ phase: "sentences", words: [] });
 
     return steps;
-  }, [CVC_WORDS, baseWords, isTagalog]);
+  }, [CVC_WORDS, baseWords, assessmentWords, isTagalog]);
 
   const [currentStep, setCurrentStep] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
@@ -495,6 +514,9 @@ export function LevelCVCMaster({ levelId, accent }: LevelCVCMasterProps) {
         onNext={handleNextStep}
         onBack={() => setCurrentStep(prev => Math.max(0, prev - 1))}
         canBack={currentStep > 0}
+        onOrganize={handleOrganizeAssessment}
+        onShuffle={handleShuffleAssessment}
+        isOrganized={isAssessmentOrganized}
         onItemClick={(item) => {
           const audioPath = isTagalog
             ? `${import.meta.env.BASE_URL}audio/filipino/tagalog-words/fil-level3-${item.toLowerCase()}.mp3`

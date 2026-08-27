@@ -16,6 +16,7 @@ export interface StepRendererProps {
   onItemClick?: (item: string) => void;
   onOrganize?: () => void;
   onShuffle?: () => void;
+  isOrganized?: boolean;
 
   // Specific prop overrides for special phases
   syllablePattern?: string; // for LevelSyllableBuilder
@@ -31,6 +32,7 @@ export function StepRenderer({
   onItemClick = () => { },
   onOrganize,
   onShuffle,
+  isOrganized,
   syllablePattern
 }: StepRendererProps) {
   if (!step) return null;
@@ -107,6 +109,9 @@ export function StepRenderer({
           onItemClick={onItemClick}
           typeBatchSize={step.batchSize || 6}
           hasImages={levelId >= 3}
+          onOrganize={onOrganize}
+          onShuffle={onShuffle}
+          isOrganized={isOrganized}
         />
       );
 
