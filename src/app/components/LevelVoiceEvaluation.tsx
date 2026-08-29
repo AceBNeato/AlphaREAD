@@ -82,6 +82,9 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
     return batchWords.length > 0 && batchWords.every(w => wordsEval.completedWords.has(w));
   }, [batchWords, wordsEval.completedWords]);
 
+  const hasStarted = wordsEval?.completedWords?.size > 0 || Object.keys(wordsEval?.transcripts || {}).length > 0;
+  const isSentencesEval = words.some(w => w.includes(' '));
+
   const handleShuffle = () => {
     playSound("click", 0.2);
     setWords(shuffle([...words]));
@@ -89,6 +92,19 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
     wordsEval.resetFlow();
     setShowCompletionScreen(false);
   };
+
+  const handleOrganize = () => {
+    playSound("click", 0.2);
+    setWords([...words].sort((a, b) => a.localeCompare(b)));
+    batched.setBatchIndex(0);
+    wordsEval.resetFlow();
+    setShowCompletionScreen(false);
+  };
+
+  const isOrganized = useMemo(() => {
+    const sorted = [...words].sort((a, b) => a.localeCompare(b));
+    return words.length === sorted.length && words.every((val, i) => val === sorted[i]);
+  }, [words]);
 
   const handleReset = () => {
     playSound("click", 0.2);
@@ -513,9 +529,10 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
           onBack={handleBackClick}
           canBack={!!(onBack || batched.batchIndex > 0)}
           onShuffle={handleShuffle}
-          canShuffle={!(wordsEval?.completedWords?.size > 0 || Object.keys(wordsEval?.transcripts || {}).length > 0)}
-          onReset={handleReset}
-          canReset={wordsEval?.completedWords?.size > 0 || Object.keys(wordsEval?.transcripts || {}).length > 0}
+          canShuffle={!hasStarted}
+          onReset={hasStarted ? handleReset : (isSentencesEval ? undefined : handleOrganize)}
+          canReset={hasStarted ? true : (isSentencesEval ? false : !isOrganized)}
+          resetLabel={hasStarted ? "Reset" : (isSentencesEval ? "Reset" : "Organize")}
           onSkip={handleSkip}
           onNext={handleNextClick}
           canNext={isCurrentBatchDone}

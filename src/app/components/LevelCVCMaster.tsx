@@ -19,6 +19,7 @@ import { playTTS } from "../utils/tts";
 import { PushableButton } from "./ui/PushableButton";
 import { ActionToolbar } from "./ui/ActionToolbar";
 import { useProgress } from "../hooks/useProgress";
+import { LevelCompleteScreen } from "./ui/LevelCompleteScreen";
 
 interface LevelCVCMasterProps {
   levelId: number;
@@ -372,14 +373,7 @@ export function LevelCVCMaster({ levelId, accent }: LevelCVCMasterProps) {
     // 2. Word Builder
     steps.push({ phase: "build", words: wordsToUse });
 
-    // 3. Picture and Type Assessment
-    steps.push({ 
-      phase: "type", 
-      words: assessmentWords,
-      batchSize: 15
-    });
-
-    // 4. Clickable Review Phase
+    // 3. Clickable Review Phase
     for (let i = 0; i < previewBatches; i++) {
       steps.push({
         phase: "review",
@@ -392,7 +386,14 @@ export function LevelCVCMaster({ levelId, accent }: LevelCVCMasterProps) {
     // 4. Voice Evaluation
     steps.push({ phase: "eval", words: wordsToUse });
 
-    // 5. Final sentences quiz
+    // 5. Picture and Type Assessment
+    steps.push({ 
+      phase: "type", 
+      words: assessmentWords,
+      batchSize: 15
+    });
+
+    // 6. Final sentences quiz
     steps.push({ phase: "sentences", words: [] });
 
     return steps;
@@ -558,57 +559,33 @@ export function LevelCVCMaster({ levelId, accent }: LevelCVCMasterProps) {
 
   if (isCompleted) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-purple-50 dark:bg-none dark:bg-[#0d141c] flex flex-col items-center justify-center p-4">
-        <Confetti active={true} />
-        <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5 }}
-          className="text-center py-12 max-w-lg w-full mx-auto flex flex-col items-center"
-        >
-          {/* Mascot Section */}
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: [0, 1.2, 1] }}
-            transition={{ delay: 0.2, duration: 0.6 }}
-            className="w-48 h-48 relative flex items-center justify-center mb-6"
-          >
-            {/* Glowing background */}
-            <div className="absolute inset-0 bg-yellow-400/20 dark:bg-yellow-400/10 rounded-full blur-xl animate-pulse" />
-            <motion.img
-              src={`${import.meta.env.BASE_URL}dragon.png`}
-              alt="Mascot"
-              className="w-44 h-44 object-contain relative z-10"
-              animate={{ y: [0, -10, 0] }}
-              transition={{ repeat: Infinity, duration: 2.5, ease: "easeInOut" }}
-            />
-          </motion.div>
-
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-yellow-500 via-orange-500 to-red-500 drop-shadow-sm mb-4">
-            Level Complete!
-          </h1>
-          <p className="text-gray-600 dark:text-gray-300 text-lg font-medium leading-relaxed max-w-sm mx-auto mb-8">
-            Amazing job! You have fully mastered {isTagalog ? "words" : "CVC words"} in <span className="font-bold text-blue-500">{isTagalog ? "Salita Master" : "CVC Master"}</span>!
-          </p>
-
-          <Button
-            onClick={() => navigate("/levels")}
-            className="w-full sm:w-auto px-10 py-6 rounded-2xl font-bold text-white text-lg shadow-lg border-b-[4px] border-[#3c8c01] hover:scale-[1.02] active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
-            style={{ background: 'linear-gradient(135deg, #58cc02 0%, #46a302 100%)' }}
-          >
-            Keep Going! <ArrowRight className="w-5 h-5" />
-          </Button>
-        </motion.div>
-      </div>
+      <LevelCompleteScreen
+        title={isTagalog ? "Kumpleto na ang Antas!" : "Level Complete!"}
+        subtitle={
+          isTagalog ? (
+            <>
+              Napakagaling! Ganap mo nang natutunan ang mga salita sa{" "}
+              <span className="font-bold text-blue-500">Salita Master</span>!
+            </>
+          ) : (
+            <>
+              Amazing job! You have fully mastered CVC words in{" "}
+              <span className="font-bold text-blue-500">CVC Master</span>!
+            </>
+          )
+        }
+        continueText={isTagalog ? "Ipagpatuloy!" : "Keep Going!"}
+        onContinue={() => navigate("/levels")}
+      />
     );
   }
 
   const getCurrentPhaseIndex = () => {
     const phase = STEPS[currentStep]?.phase;
     if (phase === "build") return 1;
-    if (phase === "type") return 2;
-    if (phase === "review") return 3;
-    if (phase === "eval") return 4;
+    if (phase === "review") return 2;
+    if (phase === "eval") return 3;
+    if (phase === "type") return 4;
     if (phase === "sentences" || phase === "milestone") return 5;
     return 0; // preview
   };
