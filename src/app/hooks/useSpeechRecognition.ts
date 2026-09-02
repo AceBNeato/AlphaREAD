@@ -256,6 +256,103 @@ const HOMOPHONES: Record<string, string[]> = {
   "BOX": ["fox", "rocks"]
 };
 
+// ─── Filipino (Tagalog) Homophones ─────────────────────────────────────────────
+// The Web Speech API with fil-PH frequently mishears common Filipino words.
+// This dictionary maps TARGET words to common misrecognitions.
+const FILIPINO_HOMOPHONES: Record<string, string[]> = {
+  // Particles & linkers — the #1 source of failures
+  "NG": ["nang", "nag", "ning", "ng"],
+  "ANG": ["ung", "ong", "ang", "un"],
+  "MGA": ["manga", "ma nga", "mga", "maga", "mang ga"],
+  "NA": ["nah", "la", "nan"],
+  "SA": ["za", "shah", "s"],
+  "AT": ["ad", "ut", "a"],
+  "AY": ["ai", "aye", "eye", "hay"],
+  "NI": ["knee", "ne", "nee"],
+  "SI": ["see", "sea", "she", "c"],
+  "KAY": ["kai", "cay", "key"],
+  
+  // Pronouns & common function words
+  "AKO": ["aku", "a ko", "aco", "ako", "acu"],
+  "KO": ["ku", "co", "coo", "koo"],
+  "KAMI": ["kami", "come e", "come ee"],
+  "NAMIN": ["na min", "naman", "na mean"],
+  "AMIN": ["a min", "amen"],
+  "NANG": ["nang", "nung", "nong"],
+  "PARA": ["para", "pra", "pera"],
+  "INA": ["ina", "in a", "ena"],
+  "AMA": ["ama", "amma", "a ma"],
+  "SINA": ["si na", "seen a", "cena"],
+  "KANYANG": ["kanya ng", "can yang", "kaniang"],
+  
+  // Common verbs that Web Speech API mangles
+  "BIBILI": ["bi-bili", "be billy", "vivi li"],
+  "LUMILIPAD": ["lumilipad", "lumi lipad", "lummi lipad"],
+  "MAGLULUTO": ["magluluto", "mag luluto", "magluto"],
+  "KUMAKAIN": ["kumakain", "kuma kain", "come a kain"],
+  "NAGAARAL": ["nagaaral", "nag-aaral", "naga aral", "nag aral"],
+  "NAGLALARO": ["naglalaro", "nag lalaro", "naglaro"],
+  "NAGSASAKA": ["nagsasaka", "nag sasaka", "nagsaka"],
+  "NAGTUTURO": ["nagtuturo", "nag tuturo", "nagturo"],
+  "NAKAKITA": ["nakakita", "naka kita", "nakkita"],
+  "NALILIGO": ["naliligo", "nali ligo", "naligo"],
+  "TUMAKBO": ["tumakbo", "to mock bo", "tu makbo"],
+  "MATUTULOG": ["matutulog", "matu tulog", "matulog"],
+  "NAGBEBENTA": ["nagbebenta", "nag bebenta", "nagbenta"],
+  "NAGBIBENTA": ["nagbibenta", "nag bibenta", "nagbenta"],
+  "UMALIS": ["umalis", "u malis", "um alis"],
+  "PUMUNTA": ["pumunta", "pu munta", "pumun ta"],
+  "TUTUGTOG": ["tutugtog", "tugtog", "tu tugtog"],
+  "SASAMA": ["sasama", "sa sama", "sasa ma"],
+  "INUMIN": ["inumin", "in umin", "inu min"],
+  "MAGBASA": ["magbasa", "mag basa", "magbasa"],
+  
+  // Common nouns the API misrecognizes
+  "PAGKAIN": ["pagkain", "pag kain", "pa kain"],
+  "BAHAY": ["bahay", "ba hai", "ba hay"],
+  "PALENGKE": ["palengke", "pa lengke", "paleng ke"],
+  "ULAM": ["ulam", "olam", "u lam"],
+  "HIMPAPAWID": ["himpapawid", "him pa pa wid", "himpa pawid"],
+  "PAARALAN": ["paaralan", "pa aralan", "paar alan"],
+  "KAGUBATAN": ["kagubatan", "ka gubatan", "kagu batan"],
+  "TAHANAN": ["tahanan", "ta hanan", "taha nan"],
+  "OSPITAL": ["ospital", "hospital", "ospi tal"],
+  "BULAKLAK": ["bulaklak", "bulak lak", "bula klak"],
+  "KAIBIGAN": ["kaibigan", "kai bigan", "ka ibigan"],
+  "PAGMAMAHAL": ["pagmamahal", "pag mamahal", "pagmama hal"],
+  "TAKOT": ["takot", "ta kot", "tacot"],
+  "MASIPAG": ["masipag", "ma sipag", "masi pag"],
+  "MAPAGMAHAL": ["mapagmahal", "ma pag mahal", "mapag mahal"],
+  "MABAIT": ["mabait", "ma bait", "maba it"],
+  "MAGLAKAD": ["maglakad", "mag lakad"],
+  "AKLAT": ["aklat", "ak lat"],
+  
+  // Names that appear in sentences
+  "TINA": ["tina", "teen a", "teena"],
+  "NILO": ["nilo", "neelo", "ni lo"],
+  "NARUBI": ["narubi", "na ruby", "narobi"],
+  "MAYA": ["maya", "my a", "maia"],
+  "ALAN": ["alan", "allen", "a lan"],
+  "LITO": ["lito", "li to", "leeto"],
+  "BEN": ["ben", "been", "bin"],
+};
+
+/**
+ * Normalize Filipino text for comparison:
+ * - Converts Ñ/ñ → NY/ny (standard Filipino romanization)
+ * - Strips diacritics / accents
+ * - Uppercases for uniform comparison
+ */
+export function normalizeFilipino(text: string): string {
+  return text
+    .replace(/[Ññ]/g, "NY")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // Strip combining diacritics
+    .toUpperCase()
+    .replace(/[.,!?'"-]/g, "")
+    .trim();
+}
+
 export function useSpeechRecognition({ evaluatingWord, enabled = true, singleShot = false, lang = "en-US", refreshTrigger = 0, initialTranscript = "", onResult, onSilenceTimeout, onError, onEngineStop }: UseSpeechRecognitionProps) {
   const recognitionRef = useRef<any>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -402,7 +499,13 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, singleSho
         }
         // PATH B: Phrase / Sentence
         else if (evaluatingWord.toUpperCase().replace(/[.,!?]/g, "").trim().includes(" ")) {
-          const targetClean = evaluatingWord.toUpperCase().replace(/[.,!?'"-]/g, "").trim();
+          const isFilipino = lang.startsWith("fil");
+          const normFn = isFilipino ? normalizeFilipino : (t: string) => t.toUpperCase().replace(/[.,!?'"-]/g, "").trim();
+          const homoDict = isFilipino ? FILIPINO_HOMOPHONES : HOMOPHONES;
+          // Filipino: lower threshold because fil-PH produces more spelling variance
+          const similarityThreshold = isFilipino ? 0.5 : 0.6;
+
+          const targetClean = normFn(evaluatingWord);
           const targetWords = targetClean.split(/\s+/).map(w => DIGIT_MAP[w] || w);
 
           let bestSequentialCount = 0;
@@ -410,7 +513,7 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, singleSho
           let matchedTranscript = "";
 
           for (let i = 0; i < allTranscripts.length; i++) {
-            const rawClean = allTranscripts[i].toUpperCase().replace(/[.,!?'"-]/g, "").trim();
+            const rawClean = normFn(allTranscripts[i]);
             const rawWords = rawClean.split(/\s+/).map(w => DIGIT_MAP[w] || w);
 
             let sequentialMatchCount = 0;
@@ -420,9 +523,12 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, singleSho
             while (sequentialMatchCount < targetWords.length && rawIdx < rawWords.length) {
               const expected = targetWords[sequentialMatchCount];
               const spoken = rawWords[rawIdx];
-              const allowed = [expected, ...(HOMOPHONES[expected] || []).map(w => w.toUpperCase())];
+              const allowed = [expected, ...(homoDict[expected] || []).map(w => w.toUpperCase())];
               
-              if (allowed.includes(spoken) || calculateSimilarity(expected, spoken) >= 0.6 || matchConsonants(expected, spoken)) {
+              // Filipino: skip matchConsonants() — too greedy on short function words (ko/ka, sa/si, ang/ing all collide)
+              const consonantMatch = !isFilipino && matchConsonants(expected, spoken);
+              
+              if (allowed.includes(spoken) || calculateSimilarity(expected, spoken) >= similarityThreshold || consonantMatch) {
                 sequentialMatchCount++;
               }
               rawIdx++; // Always advance rawIdx to search forward
