@@ -1,10 +1,10 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { useNavigate } from "react-router";
 import { Button } from "../components/ui/button";
 import { ArrowLeft, User, Loader2, CheckCircle2 } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 
-const AVATARS = ["👦", "👧"];
+const AVATARS = ["👦", "👧", "🦊", "🦁"];
 
 const ACCENTS = [
   { code: "US", label: "American English" },

@@ -1,11 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import { LevelSyllableQuiz } from "./LevelSyllableQuiz";
-import { supabase } from "../../lib/supabase";
 import { Home, CheckCircle2, X, ArrowLeft, ArrowRight } from "lucide-react";
 import { Button } from "./ui/button";
-import { motion, AnimatePresence } from "motion/react";
-import { Confetti } from "./ui/Confetti";
 import { playSound } from "../utils/soundEffects";
 import { useLanguage } from "../context/LanguageContext";
 import { useProgress } from "../hooks/useProgress";

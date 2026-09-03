@@ -1,8 +1,8 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { ArrowLeft, Volume2 } from "lucide-react";
 import { ThemeToggle } from "../components/ThemeToggle";
-import { levels } from "../data/levels";
+import { useCurriculum } from "../hooks/useCurriculum";
 import { useProgress } from "../hooks/useProgress";
 
 const ACCENTS = [
@@ -28,6 +28,7 @@ export default function Settings() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [selectedAccent, setSelectedAccent] = useState("US");
   const { completedLevels } = useProgress();
+  const { levels } = useCurriculum();
 
   useEffect(() => {
     const storedProfile = localStorage.getItem("userProfile");

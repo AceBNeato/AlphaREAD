@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { supabase } from "../../lib/supabase";
 import { 
@@ -54,7 +54,7 @@ export default function TeacherDashboard() {
         
       if (error || !data || data.role !== "teacher") {
         localStorage.removeItem("userProfile");
-        alert("Teacher access revoked, invalid, or deleted.");
+        await showAlert("Access Revoked", "Teacher access revoked, invalid, or deleted.", "error");
         navigate("/", { replace: true });
         return;
       }
@@ -63,7 +63,7 @@ export default function TeacherDashboard() {
       // Since the secure RPC now ensures devices register properly, if the DB is null or doesn't match, they must be kicked.
       if (profile.deviceId && data.current_device_id !== profile.deviceId) {
         localStorage.removeItem("userProfile");
-        alert("Session Expired: An admin forcefully unlocked your account, or you logged in elsewhere.");
+        await showAlert("Session Expired", "An admin forcefully unlocked your account, or you logged in elsewhere.", "warning");
         navigate("/", { replace: true });
       }
     };
@@ -108,9 +108,9 @@ export default function TeacherDashboard() {
 
     if (error) {
       console.error(error);
-      alert("Failed to unlock device.");
+      await showAlert("Error", "Failed to unlock device.", "error");
     } else {
-      alert("Device unlocked successfully!");
+      await showAlert("Success", "Device unlocked successfully!", "success");
       fetchStudents(teacherProfile.id);
     }
   };
@@ -146,7 +146,7 @@ export default function TeacherDashboard() {
     localStorage.setItem("userProfile", JSON.stringify({
       id: "teacher-preview",
       name: teacherProfile?.first_name || "Teacher",
-      avatar: "👨‍🏫",
+      avatar: "ðŸ‘¨â€ðŸ«",
       role: "teacher-preview",
       returnTo: "/teacher-dashboard"
     }));
@@ -234,7 +234,7 @@ export default function TeacherDashboard() {
             </div>
           ) : students.length === 0 ? (
             <div className="py-20 text-center text-gray-400">
-              <span className="text-5xl block mb-4">👦👧</span>
+              <span className="text-5xl block mb-4">ðŸ‘¦ðŸ‘§</span>
               <p className="text-lg font-bold text-white mb-2">No students assigned to you yet.</p>
               <p className="text-sm max-w-sm mx-auto">Please contact your administrator to assign students to your class.</p>
             </div>
@@ -271,7 +271,7 @@ export default function TeacherDashboard() {
                         <td className="py-4 px-6">
                           <div className="flex items-center gap-2">
                             <span className="font-mono font-bold tracking-wider text-green-400 min-w-[70px]">
-                              {isCodeVisible ? student.student_code : "••••••"}
+                              {isCodeVisible ? student.student_code : "â€¢â€¢â€¢â€¢â€¢â€¢"}
                             </span>
                             <button
                               onClick={() => toggleCodeVisibility(student.id)}

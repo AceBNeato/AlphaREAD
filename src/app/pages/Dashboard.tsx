@@ -1,6 +1,5 @@
-import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router";
-import { Button } from "../components/ui/button";
+﻿import { useState, useEffect } from "react";
+import { useNavigate } from "react-router";
 import { Sparkles, Trophy, Power } from "lucide-react";
 import { ThemeToggle } from "../components/ThemeToggle";
 import { LanguageToggle } from "../components/LanguageToggle";
@@ -116,14 +115,9 @@ export default function Dashboard() {
     }
   };
 
-  const currentLevel = levels.find((level) => !completedLevels.includes(level.id))?.id || 1;
-  const accuracy = completedLevels.length > 0
-    ? Math.round((completedLevels.length / levels.length) * 100)
-    : 0;
-
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#e8f9f0] to-[#f0fdf4] dark:bg-none dark:bg-[#0d141c] transition-colors duration-300">
-      <div className="max-w-md mx-auto px-6 py-10 flex flex-col min-h-screen">
+      <div className="max-w-md mx-auto px-6 py-10 flex flex-col flex-1">
         {/* Header */}
         <header className="flex items-center justify-between mb-10">
           <div className="flex items-center gap-4">
@@ -150,7 +144,7 @@ export default function Dashboard() {
         <div className="bg-white dark:bg-[#1f2f3d] rounded-[2.5rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.15)] p-6 mb-8 border border-gray-100 dark:border-white/5 transition-all">
           <div className="flex items-center gap-5">
             <div className="w-16 h-16 rounded-3xl bg-gradient-to-br from-[#1CB0F6] to-[#0a8ed4] shadow-inner flex items-center justify-center text-4xl transform -rotate-6 flex-shrink-0">
-              {profile.avatar || "🦉"}
+              {profile.avatar || "🎓"}
             </div>
             <div>
               <span className="text-[10px] uppercase font-bold tracking-widest text-[#1CB0F6] block mb-0.5">
@@ -206,26 +200,26 @@ export default function Dashboard() {
           {/* Exit / Back to Teacher Dashboard Button */}
           <button
             onClick={() => {
+              const restoreTeacherProfile = () => {
+                const original = localStorage.getItem("originalTeacherProfile");
+                if (original) {
+                  localStorage.setItem("userProfile", original);
+                  localStorage.removeItem("originalTeacherProfile");
+                } else {
+                  localStorage.setItem("userProfile", JSON.stringify({ id: (profile as any).teacherId || "teacher", role: "teacher", name: profile.name }));
+                }
+              };
+
               const returnTo = (profile as any).returnTo;
               if (returnTo) {
                 if (returnTo === "/admin") {
                   localStorage.setItem("userProfile", JSON.stringify({ role: "admin", name: "Admin" }));
                 } else if (returnTo === "/teacher-dashboard") {
-                  const original = localStorage.getItem("originalTeacherProfile");
-                  if (original) {
-                    localStorage.setItem("userProfile", original);
-                    localStorage.removeItem("originalTeacherProfile");
-                  } else {
-                    localStorage.setItem("userProfile", JSON.stringify({ id: (profile as any).teacherId || "teacher", role: "teacher", name: profile.name }));
-                  }
+                  restoreTeacherProfile();
                 }
                 navigate(returnTo);
               } else if (profile.id === "teacher-preview" || (profile as any).role === "teacher-preview") {
-                const original = localStorage.getItem("originalTeacherProfile");
-                if (original) {
-                  localStorage.setItem("userProfile", original);
-                  localStorage.removeItem("originalTeacherProfile");
-                }
+                restoreTeacherProfile();
                 navigate("/teacher-dashboard");
               } else if ((profile as any).role === "admin") {
                 navigate("/admin");

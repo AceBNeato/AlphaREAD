@@ -1,14 +1,13 @@
-import { useState, useMemo } from "react";
+import { useMemo } from "react";
 import { Link } from "react-router";
 import {
-  LayoutDashboard,
+  Home,
   Sparkles,
   Layers,
   Puzzle,
   Brain,
   BookOpen,
 } from "lucide-react";
-import { Button } from "../components/ui/button";
 import { useCurriculum } from "../hooks/useCurriculum";
 import { ThemeToggle } from "../components/ThemeToggle";
 import { LanguageToggle } from "../components/LanguageToggle";
@@ -18,6 +17,7 @@ import { translations } from "../utils/translations";
 import { showAlert } from "../utils/alerts";
 import { motion } from "motion/react";
 import { PushableButton } from "../components/ui/PushableButton";
+import { playSound } from "../utils/soundEffects";
 
 const levelColors = [
   {
@@ -87,8 +87,6 @@ export default function Levels() {
     }));
   }, [levels, completedLevels]);
 
-
-
   return (
     <>
       {/* Entry Transition Overlay */}
@@ -99,25 +97,36 @@ export default function Levels() {
         className="fixed inset-0 z-[9999] bg-gradient-to-br from-[#58CC02] to-[#46a302] pointer-events-none"
       />
 
-      <div className="min-h-screen bg-gradient-to-b from-[#e8f9f0] to-[#f0fdf4] dark:bg-none dark:bg-[#0d141c] overflow-x-hidden">
-        <div className="max-w-2xl mx-auto px-4 py-8 w-full">
-          {/* Top Bar */}
-          <div className="flex items-center justify-between mb-8">
-            <Link
-              to="/dashboard"
-              className="flex items-center gap-2 px-4 py-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full transition-colors"
+      <div className="min-h-screen bg-gradient-to-b from-[#e8f9f0] to-[#f0fdf4] dark:bg-none dark:bg-[#0d141c]">
+        {/* Sticky Top Navigation Bar */}
+        <header className="sticky top-0 z-50 backdrop-blur-md bg-white/80 dark:bg-[#0d141c]/80 border-b border-gray-200/60 dark:border-gray-700/60 shadow-xs transition-colors">
+          <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
+            <Link 
+              to="/dashboard" 
+              onClick={() => playSound("click", 0.2)} 
+              className="inline-flex items-center"
             >
-              <LayoutDashboard className="w-5 h-5" />
-              <span className="text-gray-700 dark:text-gray-300">Dashboard</span>
+              <PushableButton
+                as="div"
+                className="h-10 w-auto min-w-[120px]"
+                frontClassName="bg-gradient-to-r from-[#1cb0f6] to-[#0a8ed4] text-white px-4 py-0 flex items-center justify-center gap-2 font-bold h-full"
+                edgeClassName="bg-[#0979b5]"
+              >
+                <Home className="w-5 h-5 text-white" />
+                <span className="text-sm font-black tracking-wider uppercase">Dashboard</span>
+              </PushableButton>
             </Link>
             <div className="flex items-center gap-2">
               <LanguageToggle />
               <ThemeToggle />
             </div>
           </div>
+        </header>
 
-          {/* Header */}
-          <header className="text-center mb-8">
+        {/* Scrollable Main Content */}
+        <main className="max-w-2xl mx-auto px-4 py-8 w-full">
+          {/* Header Title Section */}
+          <div className="text-center mb-8">
             <div className="flex items-center justify-center gap-4 mb-4">
               <div className="p-4 rounded-3xl shadow-xl bg-gradient-to-br from-[#58CC02] to-[#46a302] transform -rotate-3 hover:rotate-3 transition-transform">
                 <Sparkles className="w-10 h-10 text-white" fill="white" />
@@ -130,7 +139,7 @@ export default function Levels() {
             <p className="text-gray-600 dark:text-gray-400 text-lg sm:text-xl font-bold tracking-tight">
               {t.title} - {t.subtitle} ({levels.length})
             </p>
-          </header>
+          </div>
 
           {/* Lesson Cards */}
           <div className="space-y-6">
@@ -165,13 +174,18 @@ export default function Levels() {
                       </div>
                     </div>
 
-
                     {/* Action Button */}
                     {level.isUnderDevelopment ? (
                       <PushableButton
                         onClick={() => {
-                          import("../utils/soundEffects").then(m => m.playSound("click", 0.2));
-                          showAlert("Under Development 🚧", "This level is currently being customized for the new Tagalog curriculum.<br><br>Please check back later!", "info");
+                          playSound("click", 0.2);
+                          showAlert(
+                            t.underDevelopment,
+                            isTagalog
+                              ? "Ang antas na ito ay kasalukuyang inihahanda para sa bagong kurikulum sa Tagalog.<br><br>Mangyaring bumalik muli!"
+                              : "This level is currently being customized for the new curriculum.<br><br>Please check back later!",
+                            "info"
+                          );
                         }}
                         className="w-full"
                         frontClassName={`bg-gradient-to-r ${colors.bg} text-white font-bold py-4 hover-shine overflow-hidden`}
@@ -180,7 +194,11 @@ export default function Levels() {
                         {t.startLearning}
                       </PushableButton>
                     ) : (
-                      <Link to={`/lesson/${level.id}`} className="block w-full" onClick={() => import("../utils/soundEffects").then(m => m.playSound("click", 0.2))}>
+                      <Link 
+                        to={`/lesson/${level.id}`} 
+                        className="block w-full" 
+                        onClick={() => playSound("click", 0.2)}
+                      >
                         <PushableButton
                           as="div"
                           className="w-full"
@@ -196,7 +214,7 @@ export default function Levels() {
               );
             })}
           </div>
-        </div>
+        </main>
       </div>
     </>
   );

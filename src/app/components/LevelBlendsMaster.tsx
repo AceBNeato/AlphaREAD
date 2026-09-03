@@ -1,11 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import { LevelBlends } from "./LevelBlends";
-import { supabase } from "../../lib/supabase";
-import { CheckCircle2, X, ArrowLeft, ArrowRight } from "lucide-react";
 import { Button } from "./ui/button";
-import { motion, AnimatePresence } from "motion/react";
-import { Confetti } from "./ui/Confetti";
 import { playSound } from "../utils/soundEffects";
 import { useCurriculum } from "../hooks/useCurriculum";
 import { useLanguage } from "../context/LanguageContext";
