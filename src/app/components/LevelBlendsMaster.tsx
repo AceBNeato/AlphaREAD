@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { X } from "lucide-react";
 import { useNavigate } from "react-router";
 import { LevelBlends } from "./LevelBlends";
 import { Button } from "./ui/button";
