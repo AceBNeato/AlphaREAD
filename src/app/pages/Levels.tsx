@@ -113,7 +113,7 @@ export default function Levels() {
                 edgeClassName="bg-[#0979b5]"
               >
                 <Home className="w-5 h-5 text-white" />
-                <span className="text-sm font-black tracking-wider uppercase">Dashboard</span>
+                <span className="text-sm font-black tracking-wider uppercase">Home</span>
               </PushableButton>
             </Link>
             <div className="flex items-center gap-2">
