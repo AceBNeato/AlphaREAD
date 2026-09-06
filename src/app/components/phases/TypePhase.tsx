@@ -7,6 +7,7 @@ import { MatchButton } from "../MatchButton";
 import { PushableButton } from "../ui/PushableButton";
 import { playSound } from "../../utils/soundEffects";
 import { useBatchedItems } from "../../hooks/useBatchedItems";
+import { useLanguage } from "../../context/LanguageContext";
 
 export interface TypePhaseProps {
   items: string[];
@@ -37,6 +38,8 @@ export function TypePhase({
 }: TypePhaseProps) {
   const typeBatched = useBatchedItems(items, typeBatchSize);
   const batchItems = typeBatched.currentBatch;
+  const { language } = useLanguage();
+  const isTagalog = language === "tl";
 
   const [typeOrder, setTypeOrder] = useState<string[]>([]);
   const [wordBank, setWordBank] = useState<string[]>([]);
@@ -280,7 +283,7 @@ export function TypePhase({
                               <span className="text-7xl sm:text-8xl font-black text-gray-300 dark:text-gray-600">?</span>
                             ) : !imageErrors[sideAWord] ? (
                               <img 
-                                src={`${import.meta.env.BASE_URL}images/cvc/${sideAWord.toLowerCase()}.jpg`} 
+                                src={`${import.meta.env.BASE_URL}images/${isTagalog ? 'fil' : 'cvc'}/${sideAWord.toLowerCase()}.jpg`} 
                                 alt="assessment image" 
                                 className="w-full h-full object-cover"
                                 onError={() => setImageErrors(prev => ({...prev, [sideAWord]: true}))}
@@ -298,7 +301,7 @@ export function TypePhase({
                               <span className="text-7xl sm:text-8xl font-black text-gray-300 dark:text-gray-600">?</span>
                             ) : !imageErrors[sideBWord] ? (
                               <img 
-                                src={`${import.meta.env.BASE_URL}images/cvc/${sideBWord.toLowerCase()}.jpg`} 
+                                src={`${import.meta.env.BASE_URL}images/${isTagalog ? 'fil' : 'cvc'}/${sideBWord.toLowerCase()}.jpg`} 
                                 alt="assessment image" 
                                 className="w-full h-full object-cover"
                                 onError={() => setImageErrors(prev => ({...prev, [sideBWord]: true}))}

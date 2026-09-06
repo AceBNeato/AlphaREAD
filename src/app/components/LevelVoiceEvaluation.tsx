@@ -466,7 +466,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
                                   <span className="text-7xl sm:text-8xl font-black text-gray-300 dark:text-gray-600">?</span>
                                 ) : !imageErrors[sideAWord] ? (
                                   <img 
-                                    src={`${import.meta.env.BASE_URL}images/cvc/${sideAWord.toLowerCase().replace(/-hard|-soft/i, "")}.jpg`} 
+                                    src={`${import.meta.env.BASE_URL}images/${language === 'tl' ? 'fil' : 'cvc'}/${sideAWord.toLowerCase().replace(/-hard|-soft/i, "")}.jpg`} 
                                     alt="cvc word" 
                                     className="w-full h-full object-cover"
                                     onError={() => setImageErrors(prev => ({...prev, [sideAWord]: true}))}
@@ -484,7 +484,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
                                   <span className="text-7xl sm:text-8xl font-black text-gray-300 dark:text-gray-600">?</span>
                                 ) : !imageErrors[sideBWord] ? (
                                   <img 
-                                    src={`${import.meta.env.BASE_URL}images/cvc/${sideBWord.toLowerCase().replace(/-hard|-soft/i, "")}.jpg`} 
+                                    src={`${import.meta.env.BASE_URL}images/${language === 'tl' ? 'fil' : 'cvc'}/${sideBWord.toLowerCase().replace(/-hard|-soft/i, "")}.jpg`} 
                                     alt="cvc word" 
                                     className="w-full h-full object-cover"
                                     onError={() => setImageErrors(prev => ({...prev, [sideBWord]: true}))}

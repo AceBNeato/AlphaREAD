@@ -749,9 +749,9 @@ export function LevelSyllableBuilder({
                     {/* Middle Section: Centered Interactive builder */}
                     {/* Middle Section: Interactive builder */}
                     {currentTarget.pattern === "CVC" && levelId === 3 ? (
-                      <div className="w-full py-6 shrink-0 flex flex-col md:flex-row items-center justify-center gap-6 md:gap-8">
+                      <div className="w-full py-6 shrink-0 flex flex-row items-center justify-center gap-8 sm:gap-20 md:gap-32">
                         {/* Left Side: Card + Target Button */}
-                        <div className="flex flex-col items-center w-full gap-4 max-w-[180px] md:max-w-[200px]">
+                        <div className="flex flex-col items-center w-[250px] gap-4 shrink-0">
                           {/* The Card */}
                           <div className="w-full" style={{ perspective: '1000px' }}>
                             <motion.div 
@@ -779,7 +779,7 @@ export function LevelSyllableBuilder({
                               <div className="absolute inset-0 flex items-center justify-center bg-white dark:bg-gray-800 rounded-2xl border-4 border-blue-400 overflow-hidden" style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}>
                                 {!imageErrors[currentTarget.syllable] ? (
                                   <img 
-                                    src={`${import.meta.env.BASE_URL}images/cvc/${currentTarget.syllable.toLowerCase()}.jpg`} 
+                                    src={`${import.meta.env.BASE_URL}images/${isTagalog ? 'fil' : 'cvc'}/${currentTarget.syllable.toLowerCase()}.jpg`} 
                                     alt={currentTarget.syllable} 
                                     className="w-full h-full object-cover"
                                     onError={() => setImageErrors(prev => ({...prev, [currentTarget.syllable]: true}))}
@@ -801,7 +801,7 @@ export function LevelSyllableBuilder({
                         </div>
 
                         {/* Right Side: Slots & Pool */}
-                        <div className="flex flex-col items-center w-full max-w-sm">
+                        <div className="flex flex-col items-center w-full max-w-[400px]">
                           {slotsNode}
                           {letterPoolNode}
                         </div>

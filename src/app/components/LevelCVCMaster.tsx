@@ -169,7 +169,7 @@ function LevelCVCPreview({
                         <div className="absolute inset-0 flex items-center justify-center bg-white dark:bg-gray-800 rounded-3xl border-4 border-blue-400 overflow-hidden shadow-lg" style={{ backfaceVisibility: 'hidden' }}>
                           {sideAWord && !imageErrors[sideAWord] ? (
                              <img 
-                               src={`${import.meta.env.BASE_URL}images/cvc/${sideAWord.toLowerCase()}.jpg`} 
+                               src={`${import.meta.env.BASE_URL}images/${isTagalog ? 'fil' : 'cvc'}/${sideAWord.toLowerCase()}.jpg`} 
                                alt={sideAWord} 
                                className="w-full h-full object-cover"
                                onError={() => setImageErrors(prev => ({...prev, [sideAWord]: true}))}
@@ -185,7 +185,7 @@ function LevelCVCPreview({
                         <div className="absolute inset-0 flex items-center justify-center bg-white dark:bg-gray-800 rounded-3xl border-4 border-blue-400 overflow-hidden shadow-lg" style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}>
                           {sideBWord && !imageErrors[sideBWord] ? (
                              <img 
-                               src={`${import.meta.env.BASE_URL}images/cvc/${sideBWord.toLowerCase()}.jpg`} 
+                               src={`${import.meta.env.BASE_URL}images/${isTagalog ? 'fil' : 'cvc'}/${sideBWord.toLowerCase()}.jpg`} 
                                alt={sideBWord} 
                                className="w-full h-full object-cover"
                                onError={() => setImageErrors(prev => ({...prev, [sideBWord]: true}))}
