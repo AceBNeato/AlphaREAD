@@ -749,9 +749,9 @@ export function LevelSyllableBuilder({
                     {/* Middle Section: Centered Interactive builder */}
                     {/* Middle Section: Interactive builder */}
                     {currentTarget.pattern === "CVC" && levelId === 3 ? (
-                      <div className="w-full py-6 shrink-0 flex flex-row items-center justify-center gap-8 sm:gap-20 md:gap-32">
+                      <div className="w-full py-6 shrink-0 flex flex-col md:flex-row items-center justify-center gap-8 md:gap-32">
                         {/* Left Side: Card + Target Button */}
-                        <div className="flex flex-col items-center w-[250px] gap-4 shrink-0">
+                        <div className="flex flex-col items-center w-full max-w-[200px] md:max-w-[250px] gap-4 shrink-0">
                           {/* The Card */}
                           <div className="w-full" style={{ perspective: '1000px' }}>
                             <motion.div 
