@@ -408,8 +408,8 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
       )}
 
       <div className="flex-grow w-full flex flex-col min-h-0">
-        <div className="flex-1 min-h-0 overflow-y-auto w-full">
-          <div className={`w-full flex flex-col justify-center min-h-full ${hasImages ? 'max-w-6xl' : isSubPhase ? 'max-w-5xl' : 'max-w-2xl'} mx-auto px-4 sm:px-8 py-4`}>
+        <div className="flex-1 min-h-0 overflow-hidden w-full flex flex-col">
+          <div className={`w-full flex flex-col justify-start md:justify-center min-h-0 flex-1 ${hasImages ? 'max-w-6xl' : isSubPhase ? 'max-w-5xl' : 'max-w-2xl'} mx-auto px-4 sm:px-8 py-4`}>
 
             {!window.SpeechRecognition && !window.webkitSpeechRecognition && (
               <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 text-amber-800 text-sm flex items-center gap-3 shrink-0">
@@ -430,7 +430,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
               </div>
 
               {/* Middle Section: Centered Interactive Grid */}
-              <div className="flex-1 flex flex-col justify-center w-full py-4 shrink-0">
+              <div className="flex-1 flex flex-col justify-center w-full py-4 shrink-0 min-h-0">
                 <AnimatePresence mode="wait">
                   <motion.div
                     key={`voice-batch-${batched.batchIndex}`}
@@ -440,13 +440,13 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
                     transition={{ duration: 0.3 }}
                     className={
                       hasImages
-                        ? "flex flex-col md:flex-row w-full max-w-6xl mx-auto gap-8 lg:gap-12 justify-center items-center px-2 sm:px-6"
-                        : "text-center w-full"
+                        ? "flex flex-col md:flex-row w-full max-w-6xl mx-auto gap-8 lg:gap-12 justify-center items-stretch px-2 sm:px-6 flex-1 min-h-0"
+                        : "text-center w-full flex-1 min-h-0 flex flex-col"
                     }
                   >
                     {/* Left Column: Active Card (matches Picture and Type / TypePhase) */}
                     {hasImages && activeItem && (
-                      <div className="w-full md:w-1/3 flex flex-col items-center justify-center shrink-0">
+                      <div className="w-full md:w-1/3 flex flex-col items-center justify-center shrink-0 py-4 md:py-0">
                         <div className="w-full" style={{ perspective: '1000px' }}>
                           <motion.div 
                             className="relative w-full max-w-[220px] md:max-w-[260px] mx-auto aspect-[3/4] cursor-pointer md:cursor-default"
@@ -502,11 +502,12 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
                     )}
 
                     {/* Right Column: Words with Tap to Hear & Tap to Speak on the right */}
-                    <div className={
-                      hasImages
-                        ? "w-full md:w-2/3 grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 max-w-full mx-auto md:mx-0 content-start"
-                        : `${batchWords.length > 5 ? `grid grid-cols-1 ${gridColumns === 2 ? 'sm:grid-cols-2' : 'sm:grid-cols-3'} gap-3` : 'space-y-3'} bg-white/50 dark:bg-gray-800/50 p-4 rounded-3xl backdrop-blur-sm border-2 border-dashed border-gray-200 dark:border-gray-700 w-full`
-                    }>
+                    <div className={`flex-1 min-h-0 overflow-y-auto px-1 pb-4 flex flex-col md:justify-center w-full ${hasImages ? 'md:w-2/3' : ''}`}>
+                      <div className={
+                        hasImages
+                          ? "w-11/12 max-w-[300px] sm:max-w-full grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mx-auto md:mx-0 content-start"
+                          : `${batchWords.length > 5 ? `grid grid-cols-1 ${gridColumns === 2 ? 'sm:grid-cols-2' : 'sm:grid-cols-3'} gap-3` : 'space-y-3'} bg-white/50 dark:bg-gray-800/50 p-4 rounded-3xl backdrop-blur-sm border-2 border-dashed border-gray-200 dark:border-gray-700 w-11/12 max-w-[300px] sm:max-w-full mx-auto`
+                      }>
                       {batchWords.map((w, idx) => {
                         const isDone = wordsEval.completedWords.has(w);
                         const isCurrent = wordsEval.evaluatingWord === w;
@@ -662,6 +663,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
                           </div>
                         );
                       })}
+                      </div>
                     </div>
                   </motion.div>
                 </AnimatePresence>

@@ -7,6 +7,7 @@ export interface ReviewPhaseProps {
   items: string[];
   accent: { primary: string; dark: string };
   onNext: () => void;
+  onSkip?: () => void;
   onBack?: () => void;
   canBack?: boolean;
   onItemClick: (item: string) => void;
@@ -27,6 +28,7 @@ export function ReviewPhase({
   items,
   accent,
   onNext,
+  onSkip,
   onBack,
   canBack,
   onItemClick,
@@ -155,6 +157,7 @@ export function ReviewPhase({
         onShuffle={onShuffle ? handleShuffle : undefined}
         onReset={(allowOrganize && onOrganize) ? handleOrganize : undefined}
         resetLabel="Organize"
+        onSkip={onSkip}
         onNext={onNext}
       />
     </motion.div>

@@ -118,6 +118,7 @@ export function LevelSyllableQuiz({ levelId, pattern, accent, onComplete, onExit
     progressPercentage,
     isComplete: isProgressComplete,
     handleNextStep: handleNext,
+    handleSkipPhase,
     handleStepBack,
     handleGoBack
   } = useLessonProgress<Step>(steps, levelId, undefined, onExit);
@@ -186,6 +187,7 @@ export function LevelSyllableQuiz({ levelId, pattern, accent, onComplete, onExit
         levelId={levelId}
         accent={accent}
         onNext={handleNext}
+        onSkip={handleSkipPhase}
         onBack={handleStepBack}
         canBack={currentStepIdx > 0}
         onItemClick={playSyllableAudio}

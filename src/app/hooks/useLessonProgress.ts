@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router';
 import { playSound } from '../utils/soundEffects';
 import { confirmAction } from '../utils/alerts';
@@ -10,6 +10,7 @@ interface UseLessonProgressResult<T> {
   progressPercentage: number;
   isComplete: boolean;
   handleNextStep: () => void;
+  handleSkipPhase: () => void;
   handleStepBack: () => void;
   handleGoBack: () => Promise<void>;
   setIsComplete: (val: boolean) => void;
@@ -28,9 +29,30 @@ export function useLessonProgress<T>(
 
   const currentStep = steps[currentStepIdx];
   
-  // Progress is correctly calculated by dividing by length 
-  // (so the final evaluation step completes the bar, or close to it)
-  const progressPercentage = steps.length > 0 ? (currentStepIdx / steps.length) * 100 : 0;
+  // Calculate progress based on sequential major phases
+  const progressPercentage = useMemo(() => {
+    if (steps.length === 0) return 0;
+    
+    let totalPhases = 0;
+    let currentPhaseCount = 0;
+    let lastPhase = null;
+
+    for (let i = 0; i < steps.length; i++) {
+      const phase = (steps[i] as any)?.phase || (steps[i] as any)?.type;
+      
+      if (phase !== lastPhase) {
+        totalPhases++;
+        lastPhase = phase;
+      }
+      
+      if (i === currentStepIdx) {
+        currentPhaseCount = totalPhases - 1; // 0-indexed
+      }
+    }
+    
+    // Divide by totalPhases (plus 1 buffer) to leave the final chunk for completion
+    return Math.max(5, (currentPhaseCount / totalPhases) * 100);
+  }, [steps, currentStepIdx]);
 
   const handleNextStep = useCallback(() => {
     playSound("click", 0.2);
@@ -60,6 +82,28 @@ export function useLessonProgress<T>(
     });
   }, [steps.length, levelId, onComplete]);
 
+  const handleSkipPhase = useCallback(() => {
+    playSound("click", 0.2);
+    setCurrentStepIdx(prev => {
+      const currentPhase = (steps[prev] as any)?.phase || (steps[prev] as any)?.type;
+      const nextPhaseIndex = steps.findIndex((s: any, idx: number) => idx > prev && (s.phase || s.type) !== currentPhase);
+      
+      if (nextPhaseIndex !== -1) {
+        window.scrollTo(0, 0);
+        return nextPhaseIndex;
+      }
+
+      if (!completionFiredRef.current) {
+        completionFiredRef.current = true;
+        playSound("complete", 0.5);
+        markLevelComplete(levelId);
+        setIsComplete(true);
+        if (onComplete) onComplete();
+      }
+      return prev;
+    });
+  }, [steps, levelId, onComplete]);
+
   const handleStepBack = useCallback(() => {
     if (currentStepIdx > 0) {
       setCurrentStepIdx(prev => prev - 1);
@@ -85,6 +129,7 @@ export function useLessonProgress<T>(
     progressPercentage,
     isComplete,
     handleNextStep,
+    handleSkipPhase,
     handleStepBack,
     handleGoBack,
     setIsComplete

@@ -116,20 +116,20 @@ function LevelCVCPreview({
         animate={{ opacity: 1, x: 0 }}
         exit={{ opacity: 0, x: -50 }}
         transition={{ duration: 0.3 }}
-        className="flex-1 min-h-0 overflow-y-auto w-full flex flex-col items-center"
+        className="flex-1 min-h-0 w-full flex flex-col items-center overflow-hidden"
       >
-        <div className="w-full max-w-6xl mx-auto px-4 sm:px-10 py-4 text-center flex-1 flex flex-col justify-center">
-          <p className="text-gray-600 dark:text-gray-300 text-base sm:text-lg font-bold mt-2 mb-8 block shrink-0">
+        <div className="w-full max-w-6xl mx-auto px-4 sm:px-10 py-4 text-center flex-1 flex flex-col min-h-0 justify-start md:justify-center">
+          <p className="text-gray-600 dark:text-gray-300 text-base sm:text-lg font-bold mt-2 mb-4 md:mb-8 block shrink-0">
             {isReview
               ? `Great work! Review ${wordLabel}! ${batchNumber && totalBatches ? "(Batch " + batchNumber + " of " + totalBatches + ")" : ""}`
               : `Review ${wordLabel} before we start! ${batchNumber && totalBatches ? "(Batch " + batchNumber + " of " + totalBatches + ")" : ""}`
             }
           </p>
 
-          <div className="flex flex-col md:flex-row w-full max-w-6xl mx-auto gap-8 lg:gap-12 justify-center items-center">
+          <div className="flex flex-col md:flex-row w-full max-w-6xl mx-auto gap-6 md:gap-12 justify-center items-stretch flex-1 min-h-0">
             
             {/* Left Column: Active Card */}
-            <div className="w-full md:w-1/3 flex flex-col items-center justify-center shrink-0">
+            <div className="w-full md:w-1/3 flex flex-col items-center justify-center shrink-0 py-4 md:py-0">
               {activeWord && (() => {
                 let chunks: string[] = [];
                 if (isTagalog) {
@@ -204,7 +204,8 @@ function LevelCVCPreview({
             </div>
 
             {/* Right Column: Grid of Buttons */}
-            <div className="w-full md:w-2/3 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 px-2 sm:px-0 content-start">
+            <div className="w-full md:w-2/3 flex-1 min-h-0 overflow-y-auto px-1 pb-4 flex flex-col md:justify-center">
+              <div className="grid grid-cols-[repeat(2,40%)] sm:grid-cols-3 lg:grid-cols-5 justify-center sm:justify-start gap-3 sm:gap-4 content-start">
               {words.map((word) => {
                 const isActive = activeWord === word;
                 let chunks: string[] = [];
@@ -278,6 +279,7 @@ function LevelCVCPreview({
                   </PushableButton>
                 );
               })}
+              </div>
             </div>
 
           </div>

@@ -522,7 +522,7 @@ export const tagalogLevels: Level[] = [
     completed: false,
     isUnderDevelopment: false,
   },
-  // Level 4 is EXCLUDED per requirements
+
   {
     id: 4,
     title: "Blends at Pangungusap",

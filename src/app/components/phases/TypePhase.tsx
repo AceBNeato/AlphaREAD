@@ -220,9 +220,9 @@ export function TypePhase({
         initial={{ opacity: 0, x: 50 }}
         animate={{ opacity: 1, x: 0 }}
         exit={{ opacity: 0, x: -50 }}
-        className="flex-1 min-h-0 overflow-y-auto w-full flex flex-col items-center"
+        className="flex-1 min-h-0 overflow-hidden w-full flex flex-col items-center"
       >
-        <div className="w-full max-w-6xl mx-auto px-4 sm:px-10 py-4 text-center flex flex-col min-h-full">
+        <div className="w-full max-w-6xl mx-auto px-4 sm:px-10 py-4 text-center flex flex-col min-h-full min-h-0 flex-1">
           {/* Top Section: Instructions */}
           <div className="text-center mt-2 shrink-0">
             <p className="text-gray-600 dark:text-gray-300 text-base sm:text-xl font-bold block">
@@ -237,7 +237,7 @@ export function TypePhase({
                 return (
                   <span 
                     key={i} 
-                    className="px-4 py-1.5 border-2 rounded-xl font-black text-lg transition-all bg-white border-indigo-200 text-indigo-500 shadow-sm dark:bg-gray-800 dark:border-indigo-900 dark:text-indigo-400"
+                    className="px-2 py-1 sm:px-4 sm:py-1.5 border-2 rounded-xl font-black text-sm sm:text-lg transition-all bg-white border-indigo-200 text-indigo-500 shadow-sm dark:bg-gray-800 dark:border-indigo-900 dark:text-indigo-400"
                   >
                     {cleanWord}
                   </span>
@@ -247,7 +247,7 @@ export function TypePhase({
           </div>
 
           {/* Middle Section: Centered Interactive Area */}
-          <div className="flex-grow flex flex-col justify-center w-full py-4 shrink-0 overflow-hidden">
+          <div className="flex-grow flex flex-col justify-center w-full py-4 shrink-0 overflow-hidden min-h-0 flex-1">
             <AnimatePresence mode="wait">
               <motion.div
                 key={`batch-${typeBatched.batchIndex}`}
@@ -257,16 +257,16 @@ export function TypePhase({
                 transition={{ duration: 0.3 }}
                 className={
                   hasImages
-                    ? "flex flex-col md:flex-row w-full max-w-6xl mx-auto gap-8 lg:gap-12 justify-center items-center px-4 sm:px-10"
-                    : "flex flex-col gap-3 sm:gap-4 w-full max-w-[280px] sm:max-w-sm mx-auto items-center px-4"
+                    ? "flex flex-col md:flex-row w-full max-w-6xl mx-auto gap-8 lg:gap-12 justify-center items-stretch px-4 sm:px-10 min-h-0 flex-1"
+                    : "flex flex-col gap-3 sm:gap-4 w-full max-w-[280px] sm:max-w-sm mx-auto items-center px-4 min-h-0 flex-1"
                 }
               >
                 {/* Left Column: Active Card */}
                 {hasImages && activeItem && (
-                  <div className="w-full md:w-1/3 flex flex-col items-center justify-center shrink-0">
+                  <div className="w-full md:w-1/3 flex flex-col items-center justify-center shrink-0 py-1 sm:py-2 md:py-0">
                     <div className="w-full" style={{ perspective: '1000px' }}>
                       <motion.div 
-                        className="relative w-full max-w-[220px] md:max-w-[260px] mx-auto aspect-[3/4] cursor-pointer md:cursor-default"
+                        className="relative w-full max-w-[140px] sm:max-w-[180px] md:max-w-[260px] mx-auto aspect-[3/4] cursor-pointer md:cursor-default"
                         onMouseMove={handleMouseMove}
                         onMouseLeave={handleMouseLeave}
                         style={{ rotateX: smoothRotateX, rotateY: smoothRotateY, transformStyle: 'preserve-3d' }}
@@ -319,11 +319,12 @@ export function TypePhase({
                 )}
 
                 {/* Right Column: List of Inputs */}
-                <div className={
-                  hasImages
-                    ? "w-full md:w-2/3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 max-w-full mx-auto md:mx-0 content-start"
-                    : "w-full flex flex-col gap-3 sm:gap-4"
-                }>
+                <div className={`flex-1 min-h-0 overflow-y-auto px-1 pb-4 flex flex-col md:justify-center w-full ${hasImages ? 'md:w-2/3' : ''}`}>
+                  <div className={
+                    hasImages
+                      ? "w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 max-w-full mx-auto md:mx-0 content-start"
+                      : "w-full flex flex-col gap-3 sm:gap-4"
+                  }>
                   {typeOrder.map((item, idx) => {
                     const isCorrect = typeStatus[item] === true;
                     const isWrong = typeStatus[item] === false;
@@ -390,6 +391,7 @@ export function TypePhase({
                       </div>
                     );
                   })}
+                  </div>
                 </div>
               </motion.div>
             </AnimatePresence>

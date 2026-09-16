@@ -371,9 +371,9 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
 
 
         {/* Content */}
-        <div className={`w-full max-w-7xl mx-auto px-4 sm:px-8 flex-1 min-h-0 overflow-y-auto overflow-x-hidden flex flex-col ${isSubPhase ? 'py-2' : 'py-4'}`}>
+        <div className={`w-full max-w-7xl mx-auto px-4 sm:px-8 flex-1 min-h-0 overflow-hidden flex flex-col ${isSubPhase ? 'py-2' : 'py-4'}`}>
           {!showConfetti ? (
-            <div className="flex flex-col justify-between w-full flex-1">
+            <div className="flex flex-col justify-between w-full flex-1 min-h-0">
               {/* Top Section: Instructions */}
               <div className="text-center shrink-0">
                 <p className="text-gray-800 dark:text-gray-200 text-base sm:text-lg font-bold mt-2 block">
@@ -385,10 +385,11 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
               </div>
 
               {/* Middle Section: Centered Interactive Area */}
-              <div className="flex-grow flex flex-col justify-center w-full py-4 shrink-0">
-                <div className="w-full text-center">
-                  <div className="w-full bg-white/50 dark:bg-gray-800/50 p-4 rounded-3xl backdrop-blur-sm border-2 border-dashed border-gray-200 dark:border-gray-700 grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {activeSentences.map((s, idx) => {
+              <div className="flex-grow flex flex-col justify-center w-full py-4 shrink-0 min-h-0 flex-1">
+                <div className="w-full text-center flex-1 min-h-0 flex flex-col">
+                  <div className="flex-1 min-h-0 overflow-y-auto px-1 pb-4 flex flex-col justify-start md:justify-center w-full">
+                    <div className="w-full max-w-5xl mx-auto bg-white/50 dark:bg-gray-800/50 p-4 rounded-3xl backdrop-blur-sm border-2 border-dashed border-gray-200 dark:border-gray-700 grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {activeSentences.map((s, idx) => {
                       const isDone = completedSentences.has(s);
                       const isEval = evaluatingSentenceId === s;
                       const vFeedback = sentenceFeedbackMap[s];
@@ -517,8 +518,10 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
                         </div>
                       );
                     })}
+                    </div>
                   </div>
-                </div>            </div>
+                </div>
+              </div>
             </div>
           ) : (
             /* Completion screen */

@@ -8,6 +8,7 @@ export interface GroupedReviewPhaseProps {
   groups: any[];
   accent: { primary: string; dark: string };
   onNext: () => void;
+  onSkip?: () => void;
   onBack?: () => void;
   canBack?: boolean;
   onItemClick: (item: string) => void;
@@ -18,6 +19,7 @@ export function GroupedReviewPhase({
   groups,
   accent,
   onNext,
+  onSkip,
   onBack,
   canBack,
   onItemClick,
@@ -134,6 +136,7 @@ export function GroupedReviewPhase({
       <ActionToolbar
         onBack={onBack}
         canBack={canBack}
+        onSkip={onSkip}
         onNext={onNext}
       />
     </motion.div>

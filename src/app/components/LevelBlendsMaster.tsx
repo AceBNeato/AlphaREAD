@@ -30,7 +30,7 @@ export function LevelBlendsMaster({ levelId, accent }: LevelBlendsMasterProps) {
 
   const TAGALOG_CATEGORIES = [
     { id: "Diptonggo", label: "Diptonggo", desc: "e.g., aw, ay, oy", color: "#FF9600", darkColor: "#e08600" },
-    { id: "Klaster", label: "Klaster / Kambal Katinig", desc: "e.g., br, dr, gr, pl, tr", color: "#3b82f6", darkColor: "#2563eb" }
+    { id: "Kambal Katinig", label: "Klaster / Kambal Katinig", desc: "e.g., br, dr, gr, pl, tr", color: "#3b82f6", darkColor: "#2563eb" }
   ];
 
   const categories = isTagalog ? TAGALOG_CATEGORIES : ENGLISH_CATEGORIES;

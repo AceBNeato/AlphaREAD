@@ -11,6 +11,7 @@ export interface StepRendererProps {
   levelId: number;
   accent: { primary: string; dark: string; lightBg?: string };
   onNext: () => void;
+  onSkip?: () => void;
   onBack?: () => void;
   canBack?: boolean;
   onItemClick?: (item: string) => void;
@@ -27,6 +28,7 @@ export function StepRenderer({
   levelId,
   accent,
   onNext,
+  onSkip,
   onBack,
   canBack,
   onItemClick = () => { },
@@ -53,6 +55,7 @@ export function StepRenderer({
             groups={step.groups}
             accent={accent}
             onNext={onNext}
+            onSkip={onSkip}
             onBack={onBack}
             canBack={canBack}
             onItemClick={onItemClick}
@@ -66,6 +69,7 @@ export function StepRenderer({
           items={items}
           accent={accent}
           onNext={onNext}
+          onSkip={onSkip}
           onBack={onBack}
           canBack={canBack}
           onItemClick={onItemClick}
