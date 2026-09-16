@@ -1,4 +1,5 @@
 import React from "react";
+import { createPortal } from "react-dom";
 import { PushableButton } from "./PushableButton";
 import { ArrowLeft, RotateCcw, Shuffle, FastForward, SkipForward, ChevronRight, ArrowRight, ArrowDownAZ } from "lucide-react";
 import { playSound } from "../../utils/soundEffects";
@@ -46,7 +47,7 @@ export function ActionToolbar({
       isLockedRef.current = true;
       playSound("click", 0.2);
       action();
-      
+
       // Unlock after 400ms to prevent rapid clicking bugs
       setTimeout(() => {
         isLockedRef.current = false;
@@ -54,7 +55,7 @@ export function ActionToolbar({
     }
   };
 
-  return (
+  const toolbarContent = (
     <div className="w-full shrink-0 py-8 px-10 mt-auto border-t border-gray-200 dark:border-gray-800">
       <div className={`flex justify-center items-center w-full gap-2 sm:gap-4 ${isFullToolbar ? 'max-w-xl' : 'max-w-md'} mx-auto`}>
         {onBack && (
@@ -130,4 +131,14 @@ export function ActionToolbar({
       </div>
     </div>
   );
+
+  const [portalNode, setPortalNode] = React.useState<HTMLElement | null>(null);
+  React.useLayoutEffect(() => {
+    setPortalNode(document.getElementById("footer-portal"));
+  }, []);
+
+  if (portalNode) {
+    return createPortal(toolbarContent, portalNode);
+  }
+  return toolbarContent;
 }

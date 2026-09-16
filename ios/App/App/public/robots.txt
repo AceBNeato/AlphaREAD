@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+
+# Prevent indexing of specific admin or API routes if necessary
+Disallow: /admin
+Disallow: /teacher
+
+Sitemap: https://yourdomain.com/sitemap.xml

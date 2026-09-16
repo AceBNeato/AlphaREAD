@@ -1,9 +1,12 @@
 {
 	"appId": "com.commsforedu.alphabetgo",
-	"appName": "Alphabet GO",
+	"appName": "AlphaREAD",
 	"webDir": "dist",
 	"packageClassList": [
 		"TextToSpeechPlugin",
-		"AppPlugin"
+		"AppPlugin",
+		"DevicePlugin",
+		"CapacitorUpdaterPlugin",
+		"SecureStoragePlugin"
 	]
 }

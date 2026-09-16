@@ -1,0 +1,7 @@
+# AlphaREAD by AlphabetGO
+
+## About
+AlphaREAD is an interactive reading curriculum designed to help children master phonics, syllables, and fluency through AI-powered voice evaluation. 
+
+## Structure
+The platform is an SPA built with React and Vite. It serves an educational curriculum covering English and Tagalog reading levels.

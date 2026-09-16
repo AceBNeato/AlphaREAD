@@ -4,6 +4,8 @@ import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 
 
+import obfuscatorPlugin from 'vite-plugin-javascript-obfuscator'
+
 function figmaAssetResolver() {
   return {
     name: 'figma-asset-resolver',
@@ -20,9 +22,24 @@ export default defineConfig({
   base: '/',
   plugins: [
     figmaAssetResolver(),
-
     react(),
     tailwindcss(),
+    obfuscatorPlugin({
+      include: ['src/**/*.ts', 'src/**/*.tsx', 'src/**/*.js', 'src/**/*.jsx'],
+      exclude: [/node_modules/],
+      apply: 'build', // Only run on build, not during dev
+      debugger: true,
+      options: {
+        compact: true,
+        controlFlowFlattening: true,
+        controlFlowFlatteningThreshold: 1,
+        numbersToExpressions: true,
+        simplify: true,
+        stringArrayShuffle: true,
+        splitStrings: true,
+        stringArrayThreshold: 1
+      },
+    }),
   ],
   resolve: {
     alias: {

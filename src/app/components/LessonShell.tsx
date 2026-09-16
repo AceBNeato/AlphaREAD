@@ -69,6 +69,8 @@ export function LessonShell({
           {children}
         </AnimatePresence>
       </div>
+
+      <div id="footer-portal" className="w-full shrink-0 z-50 empty:hidden"></div>
     </div>
   );
 }

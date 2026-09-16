@@ -1,18 +1,14 @@
 import { useState, useEffect } from 'react';
-import { markLevelComplete as markCompleteService } from '../services/progress';
+import { markLevelComplete as markCompleteService, readNumberArray } from '../services/progress';
 
 export function useProgress() {
   const [completedLevels, setCompletedLevels] = useState<number[]>([]);
 
   // Initialize and listen for storage events to keep tabs in sync (if needed)
   useEffect(() => {
-    const fetchProgress = () => {
-      try {
-        const parsed = JSON.parse(localStorage.getItem('completedLevels') || '[]');
-        setCompletedLevels(Array.isArray(parsed) ? parsed : []);
-      } catch {
-        setCompletedLevels([]);
-      }
+    const fetchProgress = async () => {
+      const parsed = await readNumberArray('completedLevels');
+      setCompletedLevels(parsed);
     };
     
     fetchProgress();

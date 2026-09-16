@@ -37,7 +37,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
   const { language } = useLanguage();
   const [words, setWords] = useState<string[]>(() => customWords ? customWords : shuffle(CVC_WORDS).slice(0, 10));
 
-  const BATCH_SIZE = overrideBatchSize || 12;
+  const BATCH_SIZE = overrideBatchSize || 15;
   const batched = useBatchedItems(words, BATCH_SIZE);
   const batchWords = batched.currentBatch;
   
@@ -440,7 +440,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
                     transition={{ duration: 0.3 }}
                     className={
                       hasImages
-                        ? "flex flex-col md:flex-row w-full max-w-6xl mx-auto gap-8 lg:gap-12 justify-center items-stretch px-2 sm:px-6 flex-1 min-h-0"
+                        ? "flex flex-col md:flex-row w-full max-w-6xl mx-auto lg:gap-12 justify-center items-stretch px-2 sm:px-6 flex-1 min-h-0"
                         : "text-center w-full flex-1 min-h-0 flex flex-col"
                     }
                   >
@@ -502,12 +502,16 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
                     )}
 
                     {/* Right Column: Words with Tap to Hear & Tap to Speak on the right */}
-                    <div className={`flex-1 min-h-0 overflow-y-auto px-1 pb-4 flex flex-col md:justify-center w-full ${hasImages ? 'md:w-2/3' : ''}`}>
-                      <div className={
-                        hasImages
-                          ? "w-11/12 max-w-[300px] sm:max-w-full grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mx-auto md:mx-0 content-start"
-                          : `${batchWords.length > 5 ? `grid grid-cols-1 ${gridColumns === 2 ? 'sm:grid-cols-2' : 'sm:grid-cols-3'} gap-3` : 'space-y-3'} bg-white/50 dark:bg-gray-800/50 p-4 rounded-3xl backdrop-blur-sm border-2 border-dashed border-gray-200 dark:border-gray-700 w-11/12 max-w-[300px] sm:max-w-full mx-auto`
-                      }>
+                    <div className={`flex-1 min-h-0 overflow-y-auto px-1 pt-4 pb-4 flex flex-col md:justify-center w-full relative z-20 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] ${hasImages ? 'md:w-2/3' : ''}`}>
+                      {(() => {
+                        const isWordsMode = !words.some(w => w.includes(' '));
+                        const isCompact = isWordsMode && hasImages;
+                        return (
+                          <div className={
+                            hasImages
+                              ? `bg-white/50 dark:bg-gray-800/50 p-4 rounded-3xl backdrop-blur-sm border-2 border-dashed border-gray-200 dark:border-gray-700 w-[95%] sm:w-11/12 max-w-[400px] sm:max-w-full ${isWordsMode ? 'columns-2 lg:columns-3' : 'columns-1 sm:columns-2'} gap-2 sm:gap-4 mx-auto md:mx-0`
+                              : `${batchWords.length > 5 ? `${isWordsMode ? 'columns-2' : 'columns-1'} ${gridColumns === 2 ? 'sm:columns-2' : 'sm:columns-3'} gap-2 sm:gap-3` : 'space-y-3'} bg-white/50 dark:bg-gray-800/50 p-4 rounded-3xl backdrop-blur-sm border-2 border-dashed border-gray-200 dark:border-gray-700 w-[95%] sm:w-11/12 max-w-[400px] sm:max-w-full mx-auto`
+                          }>
                       {batchWords.map((w, idx) => {
                         const isDone = wordsEval.completedWords.has(w);
                         const isCurrent = wordsEval.evaluatingWord === w;
@@ -519,7 +523,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
                           <div 
                             key={w} 
                             onClick={() => handleItemSelect(w)}
-                            className={`flex items-center justify-between ${batchWords.length >= 10 ? 'p-2 sm:p-3' : 'p-3 sm:p-4'} rounded-2xl transition-all cursor-pointer ${
+                            className={`flex items-center justify-between ${batchWords.length >= 10 || isCompact ? 'p-1.5 sm:p-2' : 'p-3 sm:p-4'} rounded-2xl transition-all cursor-pointer break-inside-avoid w-full mb-2 sm:mb-4 ${
                               isDone 
                                 ? 'bg-green-50 dark:bg-green-900/20 border-green-200 shadow-xs' 
                                 : isCurrent
@@ -538,7 +542,9 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
                                   ? 'text-base sm:text-lg font-bold text-left flex-1 min-w-0 leading-snug'
                                   : wordLen >= 8
                                     ? 'text-lg sm:text-xl font-bold text-left tracking-wider flex-1 min-w-0'
-                                    : `text-xl sm:text-3xl font-black text-left tracking-wider flex-1 min-w-0`;
+                                    : isCompact
+                                      ? 'text-lg sm:text-2xl font-black text-left tracking-wider flex-1 min-w-0'
+                                      : 'text-xl sm:text-3xl font-black text-left tracking-wider flex-1 min-w-0';
                                 return (
                                   <div className="flex flex-col">
                                     <span className={`${textClass} text-gray-800 dark:text-gray-200 flex items-center gap-1`} style={{ color: isDone ? '#58CC02' : undefined }}>
@@ -558,7 +564,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
                             </div>
 
                             {/* RIGHT: Both Tap to Hear AND Tap to Speak */}
-                            <div className="flex items-center gap-2 shrink-0 ml-2 relative">
+                            <div className={`flex items-center ${isCompact ? 'gap-1 ml-1' : 'gap-2 ml-2'} shrink-0 relative`}>
                               {/* Tap to Hear */}
                               <div className="relative shrink-0 flex items-center justify-center">
                                 <PushableButton
@@ -569,7 +575,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
                                     handleItemSelect(w);
                                     handlePlayTTS(w);
                                   }}
-                                  className={`w-12 h-12 sm:w-14 sm:h-14 flex-shrink-0 transition-all ${idx === 0 && !hasClickedTTS && !isDone ? 'ring-2 ring-blue-400 ring-offset-2 animate-pulse' : ''}`}
+                                  className={`${isCompact ? 'w-10 h-10 sm:w-11 sm:h-11' : 'w-12 h-12 sm:w-14 sm:h-14'} flex-shrink-0 transition-all ${idx === 0 && !hasClickedTTS && !isDone ? 'ring-2 ring-blue-400 ring-offset-2 animate-pulse' : ''}`}
                                   frontClassName={
                                     isDone
                                       ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400"
@@ -585,14 +591,14 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
                                         : "bg-[#0979b5]"
                                   }
                                 >
-                                  <Volume2 className="w-5 h-5 sm:w-6 sm:h-6" />
+                                  <Volume2 className={isCompact ? "w-4 h-4 sm:w-5 sm:h-5" : "w-5 h-5 sm:w-6 sm:h-6"} />
                                 </PushableButton>
                                 {idx === 0 && !hasClickedTTS && !isDone && (
                                   <motion.div
                                     initial={{ opacity: 0, y: 10, scale: 0.8 }}
                                     animate={{ opacity: 1, y: 0, scale: 1 }}
                                     transition={{ repeat: Infinity, repeatType: "reverse", duration: 1.5 }}
-                                    className="absolute -top-12 left-1/2 -translate-x-1/2 bg-blue-500 text-white text-[10px] font-bold py-1 px-2 rounded-full shadow-lg whitespace-nowrap pointer-events-none z-10"
+                                    className="absolute -top-8 left-1/2 -translate-x-1/2 bg-blue-500 text-white text-[10px] font-bold py-1 px-2 rounded-full shadow-lg whitespace-nowrap pointer-events-none z-50"
                                   >
                                     Listen
                                     <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-blue-500 rotate-45" />
@@ -617,7 +623,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
                                     }
                                   }}
                                   disabled={(wordsEval.evaluatingWord !== null && !isCurrent) || isDone || wordsEval.isMicResetting}
-                                  className="relative w-12 h-12 sm:w-14 sm:h-14 flex-shrink-0"
+                                  className={`relative ${isCompact ? 'w-10 h-10 sm:w-11 sm:h-11' : 'w-12 h-12 sm:w-14 sm:h-14'} flex-shrink-0`}
                                   frontClassName={
                                     isDone
                                       ? "bg-green-500 text-white"
@@ -644,7 +650,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
                                     </>
                                   )}
                                   <span className="relative z-10 flex items-center justify-center h-full w-full">
-                                    {isDone ? <CheckCircle2 className="w-5 h-5 sm:w-6 sm:h-6" /> : isCurrent ? <MicOff className="w-5 h-5 animate-bounce" /> : <Mic className="w-5 h-5 sm:w-6 sm:h-6" />}
+                                    {isDone ? <CheckCircle2 className={isCompact ? "w-4 h-4 sm:w-5 sm:h-5" : "w-5 h-5 sm:w-6 sm:h-6"} /> : isCurrent ? <MicOff className={isCompact ? "w-4 h-4 sm:w-5 sm:h-5 animate-bounce" : "w-5 h-5 animate-bounce"} /> : <Mic className={isCompact ? "w-4 h-4 sm:w-5 sm:h-5" : "w-5 h-5 sm:w-6 sm:h-6"} />}
                                   </span>
                                 </PushableButton>
                                 {idx === 0 && !hasClickedMic && !isDone && (
@@ -652,7 +658,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
                                     initial={{ opacity: 0, y: 10, scale: 0.8 }}
                                     animate={{ opacity: 1, y: 0, scale: 1 }}
                                     transition={{ repeat: Infinity, repeatType: "reverse", duration: 1.5 }}
-                                    className="absolute -top-12 left-1/2 -translate-x-1/2 bg-pink-500 text-white text-[10px] font-bold py-1 px-2 rounded-full shadow-lg whitespace-nowrap pointer-events-none z-10"
+                                    className="absolute -top-8 left-1/2 -translate-x-1/2 bg-pink-500 text-white text-[10px] font-bold py-1 px-2 rounded-full shadow-lg whitespace-nowrap pointer-events-none z-50"
                                   >
                                     Speak
                                     <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-pink-500 rotate-45" />
@@ -664,6 +670,8 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
                         );
                       })}
                       </div>
+                      );
+                      })()}
                     </div>
                   </motion.div>
                 </AnimatePresence>

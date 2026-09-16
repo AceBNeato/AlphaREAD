@@ -129,7 +129,7 @@ function LevelCVCPreview({
           <div className="flex flex-col md:flex-row w-full max-w-6xl mx-auto gap-6 md:gap-12 justify-center items-stretch flex-1 min-h-0">
             
             {/* Left Column: Active Card */}
-            <div className="w-full md:w-1/3 flex flex-col items-center justify-center shrink-0 py-4 md:py-0">
+            <div className="w-full md:w-1/3 flex flex-col items-center justify-center shrink-0 py-1 sm:py-2 md:py-0 relative z-10">
               {activeWord && (() => {
                 let chunks: string[] = [];
                 if (isTagalog) {
@@ -144,7 +144,7 @@ function LevelCVCPreview({
                 return (
                   <div className="w-full" style={{ perspective: '1000px' }}>
                     <motion.div 
-                      className="relative w-full max-w-[220px] md:max-w-[260px] mx-auto aspect-[3/4] cursor-pointer"
+                      className="relative w-full max-w-[140px] sm:max-w-[180px] md:max-w-[260px] mx-auto aspect-[3/4] cursor-pointer md:cursor-default"
                       onMouseMove={handleMouseMove}
                       onMouseLeave={handleMouseLeave}
                       style={{ rotateX: smoothRotateX, rotateY: smoothRotateY, transformStyle: 'preserve-3d' }}
@@ -204,7 +204,7 @@ function LevelCVCPreview({
             </div>
 
             {/* Right Column: Grid of Buttons */}
-            <div className="w-full md:w-2/3 flex-1 min-h-0 overflow-y-auto px-1 pb-4 flex flex-col md:justify-center">
+            <div className="w-full md:w-2/3 flex-1 min-h-0 overflow-y-auto px-1 pt-4 pb-4 flex flex-col md:justify-center relative z-20 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
               <div className="grid grid-cols-[repeat(2,40%)] sm:grid-cols-3 lg:grid-cols-5 justify-center sm:justify-start gap-3 sm:gap-4 content-start">
               {words.map((word) => {
                 const isActive = activeWord === word;
@@ -620,6 +620,8 @@ export function LevelCVCMaster({ levelId, accent }: LevelCVCMasterProps) {
           {React.cloneElement(content as React.ReactElement, { key: currentStep })}
         </AnimatePresence>
       </div>
+
+      <div id="footer-portal" className="w-full shrink-0 z-50 empty:hidden"></div>
     </div>
   );
 }

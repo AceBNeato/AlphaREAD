@@ -228,16 +228,16 @@ export function TypePhase({
             <p className="text-gray-600 dark:text-gray-300 text-base sm:text-xl font-bold block">
               Tap the speaker, then type what you hear! {typeBatched.totalBatches > 1 ? `(Batch ${typeBatched.batchIndex + 1}/${typeBatched.totalBatches})` : ''}
             </p>
-            
+
             {/* Word Bank */}
             <div className="flex flex-wrap justify-center gap-2 mt-4 mb-2 max-w-3xl mx-auto">
               {wordBank.map((word, i) => {
                 const cleanWord = word.replace(/-HARD|-SOFT/i, '').toLowerCase();
                 const isUsed = typeStatus[word] === true;
                 return (
-                  <span 
-                    key={i} 
-                    className="px-2 py-1 sm:px-4 sm:py-1.5 border-2 rounded-xl font-black text-sm sm:text-lg transition-all bg-white border-indigo-200 text-indigo-500 shadow-sm dark:bg-gray-800 dark:border-indigo-900 dark:text-indigo-400"
+                  <span
+                    key={i}
+                    className={`border-2 rounded-xl font-black transition-all bg-white border-indigo-200 text-indigo-500 shadow-sm dark:bg-gray-800 dark:border-indigo-900 dark:text-indigo-400 ${hasImages ? 'px-2 py-1 sm:px-4 sm:py-1.5 text-sm sm:text-lg' : 'px-4 py-2 sm:px-6 sm:py-3 text-2xl sm:text-3xl'}`}
                   >
                     {cleanWord}
                   </span>
@@ -258,20 +258,20 @@ export function TypePhase({
                 className={
                   hasImages
                     ? "flex flex-col md:flex-row w-full max-w-6xl mx-auto gap-8 lg:gap-12 justify-center items-stretch px-4 sm:px-10 min-h-0 flex-1"
-                    : "flex flex-col gap-3 sm:gap-4 w-full max-w-[280px] sm:max-w-sm mx-auto items-center px-4 min-h-0 flex-1"
+                    : ""
                 }
               >
                 {/* Left Column: Active Card */}
                 {hasImages && activeItem && (
                   <div className="w-full md:w-1/3 flex flex-col items-center justify-center shrink-0 py-1 sm:py-2 md:py-0">
                     <div className="w-full" style={{ perspective: '1000px' }}>
-                      <motion.div 
+                      <motion.div
                         className="relative w-full max-w-[140px] sm:max-w-[180px] md:max-w-[260px] mx-auto aspect-[3/4] cursor-pointer md:cursor-default"
                         onMouseMove={handleMouseMove}
                         onMouseLeave={handleMouseLeave}
                         style={{ rotateX: smoothRotateX, rotateY: smoothRotateY, transformStyle: 'preserve-3d' }}
                       >
-                        <motion.div 
+                        <motion.div
                           className="w-full h-full relative"
                           style={{ transformStyle: 'preserve-3d' }}
                           animate={{ rotateY: rotation }}
@@ -282,11 +282,11 @@ export function TypePhase({
                             {!sideAWord ? (
                               <span className="text-7xl sm:text-8xl font-black text-gray-300 dark:text-gray-600">?</span>
                             ) : !imageErrors[sideAWord] ? (
-                              <img 
-                                src={`${import.meta.env.BASE_URL}images/${isTagalog ? 'fil' : 'cvc'}/${sideAWord.toLowerCase()}.jpg`} 
-                                alt="assessment image" 
+                              <img
+                                src={`${import.meta.env.BASE_URL}images/${isTagalog ? 'fil' : 'cvc'}/${sideAWord.toLowerCase()}.jpg`}
+                                alt="assessment image"
                                 className="w-full h-full object-cover"
-                                onError={() => setImageErrors(prev => ({...prev, [sideAWord]: true}))}
+                                onError={() => setImageErrors(prev => ({ ...prev, [sideAWord]: true }))}
                               />
                             ) : (
                               <div className="w-full h-full flex flex-col items-center justify-center bg-blue-50 dark:bg-blue-900/30">
@@ -294,17 +294,17 @@ export function TypePhase({
                               </div>
                             )}
                           </div>
-                          
+
                           {/* Side B */}
                           <div className={`absolute inset-0 flex items-center justify-center bg-white dark:bg-gray-800 rounded-3xl border-[6px] ${!sideBWord ? 'border-dashed border-gray-300 dark:border-gray-600' : 'border-blue-400'} overflow-hidden shadow-lg`} style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}>
                             {!sideBWord ? (
                               <span className="text-7xl sm:text-8xl font-black text-gray-300 dark:text-gray-600">?</span>
                             ) : !imageErrors[sideBWord] ? (
-                              <img 
-                                src={`${import.meta.env.BASE_URL}images/${isTagalog ? 'fil' : 'cvc'}/${sideBWord.toLowerCase()}.jpg`} 
-                                alt="assessment image" 
+                              <img
+                                src={`${import.meta.env.BASE_URL}images/${isTagalog ? 'fil' : 'cvc'}/${sideBWord.toLowerCase()}.jpg`}
+                                alt="assessment image"
                                 className="w-full h-full object-cover"
-                                onError={() => setImageErrors(prev => ({...prev, [sideBWord]: true}))}
+                                onError={() => setImageErrors(prev => ({ ...prev, [sideBWord]: true }))}
                               />
                             ) : (
                               <div className="w-full h-full flex flex-col items-center justify-center bg-blue-50 dark:bg-blue-900/30">
@@ -319,52 +319,54 @@ export function TypePhase({
                 )}
 
                 {/* Right Column: List of Inputs */}
-                <div className={`flex-1 min-h-0 overflow-y-auto px-1 pb-4 flex flex-col md:justify-center w-full ${hasImages ? 'md:w-2/3' : ''}`}>
+                <div className={`flex-1 min-h-0 overflow-y-auto px-1 pt-4 pb-4 flex flex-col md:justify-center w-full relative z-20 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] ${hasImages ? 'md:w-2/3' : ''}`}>
                   <div className={
                     hasImages
-                      ? "w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 max-w-full mx-auto md:mx-0 content-start"
-                      : "w-full flex flex-col gap-3 sm:gap-4"
+                      ? "bg-white/50 dark:bg-gray-800/50 p-4 rounded-3xl backdrop-blur-sm border-2 border-dashed border-gray-200 dark:border-gray-700 w-full columns-2 lg:columns-3 gap-2 sm:gap-4"
+                      : "bg-white/50 dark:bg-gray-800/50 p-4 rounded-3xl backdrop-blur-sm border-2 border-dashed border-gray-200 dark:border-gray-700 w-full max-w-5xl mx-auto columns-[180px] sm:columns-[280px] gap-4 sm:gap-6"
                   }>
-                  {typeOrder.map((item, idx) => {
-                    const isCorrect = typeStatus[item] === true;
-                    const isWrong = typeStatus[item] === false;
-                    const value = typeInputs[item] || "";
-                    const inputFontSize = item.length <= 1 ? "text-lg sm:text-xl" : "text-xl sm:text-2xl";
-                    const isActive = activeItem === item;
+                    {typeOrder.map((item, idx) => {
+                      const isCorrect = typeStatus[item] === true;
+                      const isWrong = typeStatus[item] === false;
+                      const value = typeInputs[item] || "";
+                      const inputFontSize = hasImages
+                        ? (item.length <= 1 ? "text-lg sm:text-xl" : "text-xl sm:text-2xl")
+                        : (item.length <= 1 ? "text-3xl sm:text-4xl" : "text-2xl sm:text-3xl");
+                      const isActive = activeItem === item;
 
-                    return (
-                      <div 
-                        key={`input-block-${item}`} 
-                        className={`flex flex-row items-center justify-center w-full gap-3 sm:gap-4 transition-all duration-300 ${isActive && hasImages ? 'scale-105' : 'opacity-90 hover:opacity-100'}`}
-                      >
-                        {/* Audio Button */}
-                        <div className={`relative w-14 h-14 sm:w-16 sm:h-16 shrink-0`}>
-                          <PushableButton
-                            as="button"
-                            isTile
-                            onClick={() => playTypeSound(item)}
-                            className={`flex items-center justify-center cursor-pointer w-full h-full ${idx === 0 && !hasClickedTTS ? 'ring-2 ring-indigo-400 ring-offset-2 animate-pulse' : ''}`}
-                            frontClassName={`flex items-center justify-center text-white ${isActive ? 'bg-blue-500' : 'bg-indigo-500'}`}
-                            edgeStyle={{ backgroundColor: isActive ? '#2563eb' : '#4338ca' }}
-                          >
-                            <Volume2 className="w-6 h-6 sm:w-8 sm:h-8" />
-                          </PushableButton>
-                          {idx === 0 && !hasClickedTTS && (
-                            <motion.div
-                              initial={{ opacity: 0, y: 10, scale: 0.8 }}
-                              animate={{ opacity: 1, y: 0, scale: 1 }}
-                              transition={{ repeat: Infinity, repeatType: "reverse", duration: 1.5 }}
-                              className="absolute -top-10 left-1/2 -translate-x-1/2 bg-indigo-500 text-white text-[10px] font-bold py-1 px-3 rounded-full shadow-lg whitespace-nowrap pointer-events-none z-10"
+                      return (
+                        <div
+                          key={`input-block-${item}`}
+                          className={`flex flex-row items-center justify-center w-max mx-auto gap-1 sm:gap-2 transition-all duration-300 break-inside-avoid mb-2 sm:mb-4 ${isActive && hasImages ? 'scale-105' : 'opacity-90 hover:opacity-100'}`}
+                        >
+                          {/* Audio Button */}
+                          <div className={`relative shrink-0 ${hasImages ? 'w-11 h-11 sm:w-14 sm:h-14' : 'w-14 h-14 sm:w-20 sm:h-20'}`}>
+                            <PushableButton
+                              as="button"
+                              isTile
+                              onClick={() => playTypeSound(item)}
+                              className={`flex items-center justify-center cursor-pointer w-full h-full ${idx === 0 && !hasClickedTTS ? 'ring-2 ring-indigo-400 ring-offset-2 animate-pulse' : ''}`}
+                              frontClassName={`flex items-center justify-center text-white ${isActive ? 'bg-blue-500' : 'bg-indigo-500'}`}
+                              edgeStyle={{ backgroundColor: isActive ? '#2563eb' : '#4338ca' }}
                             >
-                              Tap to listen!
-                              <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-indigo-500 rotate-45" />
-                            </motion.div>
-                          )}
-                        </div>
+                              <Volume2 className={hasImages ? "w-5 h-5 sm:w-6 sm:h-6" : "w-6 h-6 sm:w-10 sm:h-10"} />
+                            </PushableButton>
+                            {idx === 0 && !hasClickedTTS && (
+                              <motion.div
+                                initial={{ opacity: 0, y: 10, scale: 0.8 }}
+                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                transition={{ repeat: Infinity, repeatType: "reverse", duration: 1.5 }}
+                                className="absolute -top-8 left-1/2 -translate-x-1/2 bg-indigo-500 text-white text-[10px] font-bold py-1 px-3 rounded-full shadow-lg whitespace-nowrap pointer-events-none z-50"
+                              >
+                                Tap to listen!
+                                <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-indigo-500 rotate-45" />
+                              </motion.div>
+                            )}
+                          </div>
 
-                        {/* Type Input */}
-                        <div className={`relative flex-1 h-14 sm:h-16 rounded-xl ${isCorrect ? 'overflow-hidden animate-shine animate-match-success' : ''}`}>
-                          <input
+                          {/* Type Input */}
+                          <div className={`relative rounded-xl shrink-0 ${hasImages ? 'w-24 sm:w-32 h-12 sm:h-14' : 'w-32 sm:w-48 h-14 sm:h-20'} ${isCorrect ? 'overflow-hidden animate-shine animate-match-success' : ''}`}>
+                            <input
                               type="text"
                               value={value}
                               onFocus={() => handleItemSelect(item)}
@@ -387,10 +389,10 @@ export function TypePhase({
                               autoCorrect="off"
                               spellCheck="false"
                             />
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
                   </div>
                 </div>
               </motion.div>

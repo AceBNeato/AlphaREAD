@@ -1,4 +1,6 @@
 import { supabase } from "../../lib/supabase";
+import { SecureStoragePlugin } from 'capacitor-secure-storage-plugin';
+import { Device } from '@capacitor/device';
 
 export type AppRole = "admin" | "teacher" | "student" | "teacher-preview";
 
@@ -13,36 +15,64 @@ export interface StoredProfile {
   teacherId?: string;
 }
 
-export function getStoredProfile(): StoredProfile | null {
-  const raw = localStorage.getItem("userProfile");
+export async function secureSet(key: string, value: string) {
+  try {
+    await SecureStoragePlugin.set({ key, value });
+  } catch (err) {
+    console.warn("Secure storage set failed, falling back to localStorage", err);
+    localStorage.setItem(key, value);
+  }
+}
+
+export async function secureGet(key: string): Promise<string | null> {
+  try {
+    const { value } = await SecureStoragePlugin.get({ key });
+    return value || null;
+  } catch (err) {
+    // Fails on missing key or unsupported platform
+    return localStorage.getItem(key);
+  }
+}
+
+export async function secureRemove(key: string) {
+  try {
+    await SecureStoragePlugin.remove({ key });
+  } catch (err) {
+    // Ignore error
+  }
+  localStorage.removeItem(key);
+}
+
+export async function getStoredProfile(): Promise<StoredProfile | null> {
+  const raw = await secureGet("userProfile");
   if (!raw) return null;
 
   try {
     return JSON.parse(raw);
   } catch {
-    clearStoredSession();
+    await clearStoredSession();
     return null;
   }
 }
 
-export function getStoredDeviceId(profile?: StoredProfile | null) {
-  return profile?.deviceId || localStorage.getItem("activated_device_id") || null;
+export async function getStoredDeviceId(profile?: StoredProfile | null): Promise<string | null> {
+  if (profile?.deviceId) return profile.deviceId;
+  return await secureGet("activated_device_id");
 }
 
-export function clearStoredSession() {
-  localStorage.removeItem("userProfile");
-  localStorage.removeItem("activated_device_id");
-  localStorage.removeItem("originalTeacherProfile");
+export async function clearStoredSession() {
+  await secureRemove("userProfile");
+  await secureRemove("activated_device_id");
+  await secureRemove("originalTeacherProfile");
 }
 
 export async function validateStoredSession(allowedRoles: AppRole[]) {
-  const profile = getStoredProfile();
+  const profile = await getStoredProfile();
 
   if (!profile?.role || !allowedRoles.includes(profile.role)) {
     return { valid: false, profile: null };
   }
 
-  // Teacher preview mode bypasses DB check to allow previewing student levels without strict device locks
   if (profile.role === "teacher-preview") {
     return { valid: true, profile };
   }
@@ -51,11 +81,30 @@ export async function validateStoredSession(allowedRoles: AppRole[]) {
     return { valid: false, profile: null };
   }
 
-  const deviceId = getStoredDeviceId(profile);
+  const storedDeviceId = await getStoredDeviceId(profile);
+  
+  // Hardware Fingerprint Check
+  try {
+    const info = await Device.getId();
+    const liveHardwareId = info.identifier; // Cross-platform unique identifier
+    
+    // During first online login (or activation), we should save this liveHardwareId 
+    // to "hardware_fingerprint" in secure storage. 
+    // If it doesn't match upon future offline opens, we wipe it.
+    const savedFingerprint = await secureGet("hardware_fingerprint");
+    if (!savedFingerprint) {
+      // First time saving it
+      await secureSet("hardware_fingerprint", liveHardwareId);
+    } else if (savedFingerprint !== liveHardwareId) {
+      console.error("CRITICAL: Hardware fingerprint mismatch! App bundle moved.");
+      await clearStoredSession();
+      return { valid: false, profile: null };
+    }
+  } catch(e) {
+    // Device ID unsupported on web
+  }
 
   try {
-    // If supabase URL is just a placeholder (missing .env), we gracefully bypass strict server checks
-    // to prevent white screens during local development if someone forgot .env
     const isMockSupabase = import.meta.env.VITE_SUPABASE_URL === undefined || import.meta.env.VITE_SUPABASE_URL === "";
 
     if (isMockSupabase) {
@@ -66,7 +115,7 @@ export async function validateStoredSession(allowedRoles: AppRole[]) {
     const { data, error } = await supabase.rpc("validate_profile_session", {
       p_profile_id: profile.id,
       p_role: profile.role,
-      p_device_id: deviceId,
+      p_device_id: storedDeviceId,
     });
 
     if (error) {
@@ -76,7 +125,7 @@ export async function validateStoredSession(allowedRoles: AppRole[]) {
 
     if (!data?.valid) {
       console.warn("Session invalid reason:", data?.reason);
-      clearStoredSession();
+      await clearStoredSession();
       return { valid: false, profile: null };
     }
 
