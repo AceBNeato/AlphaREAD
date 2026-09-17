@@ -116,6 +116,7 @@ export function StepRenderer({
           onOrganize={onOrganize}
           onShuffle={onShuffle}
           isOrganized={isOrganized}
+          levelId={levelId}
         />
       );
 

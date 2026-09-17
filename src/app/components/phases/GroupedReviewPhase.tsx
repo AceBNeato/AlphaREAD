@@ -65,9 +65,8 @@ export function GroupedReviewPhase({
                         setActiveTab(g.pattern);
                         handleItemClick(g.pattern);
                       }}
-                      className={`min-w-[70px] sm:min-w-[80px] h-[50px] sm:h-[60px] transition-all duration-200 ${
-                        isActive ? "scale-110 z-10" : "opacity-80 hover:opacity-100 hover:scale-105"
-                      }`}
+                      className={`min-w-[70px] sm:min-w-[80px] h-[50px] sm:h-[60px] transition-all duration-200 ${isActive ? "scale-110 z-10" : "opacity-80 hover:opacity-100 hover:scale-105"
+                        }`}
                       frontStyle={isActive ? { background: accent.primary } : {}}
                       edgeStyle={isActive ? { backgroundColor: accent.dark } : {}}
                       frontClassName={isActive ? "text-white shadow-lg" : "bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300"}
@@ -85,7 +84,7 @@ export function GroupedReviewPhase({
               <div className="w-full mt-4 flex justify-center">
                 {groups.map((group) => {
                   if (group.pattern !== activeTab) return null;
-                  
+
                   if (group.unahan || group.gitna || group.hulihan) {
                     return (
                       <KambalKatinigPreview key={group.pattern} group={group} accent={accent} hideHeader={true} onItemClick={handleItemClick} />

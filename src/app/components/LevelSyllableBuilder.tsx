@@ -779,7 +779,7 @@ export function LevelSyllableBuilder({
                               <div className="absolute inset-0 flex items-center justify-center bg-white dark:bg-gray-800 rounded-2xl border-4 border-blue-400 overflow-hidden" style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}>
                                 {!imageErrors[currentTarget.syllable] ? (
                                   <img 
-                                    src={`${import.meta.env.BASE_URL}images/${isTagalog ? 'fil' : 'cvc'}/${currentTarget.syllable.toLowerCase()}.jpg`} 
+                                    src={`${import.meta.env.BASE_URL}images/${isTagalog ? 'fil/level 3' : 'eng/level 3'}/${currentTarget.syllable.toLowerCase()}.jpg`} 
                                     alt={currentTarget.syllable} 
                                     className="w-full h-full object-cover"
                                     onError={() => setImageErrors(prev => ({...prev, [currentTarget.syllable]: true}))}

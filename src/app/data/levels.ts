@@ -570,7 +570,7 @@ export const LONG_VOWELS_DATA: LongVowelVowelData[] = [
         words: [
           { word: "Pete", highlights: [1, 3] },
           { word: "here", highlights: [1, 3] },
-          { word: "eve", highlights: [0, 2] }
+          { word: "Eve", highlights: [0, 2] }
         ]
       }
     ]

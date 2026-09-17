@@ -466,7 +466,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
                                   <span className="text-7xl sm:text-8xl font-black text-gray-300 dark:text-gray-600">?</span>
                                 ) : !imageErrors[sideAWord] ? (
                                   <img 
-                                    src={`${import.meta.env.BASE_URL}images/${language === 'tl' ? 'fil' : 'cvc'}/${sideAWord.toLowerCase().replace(/-hard|-soft/i, "")}.jpg`} 
+                                    src={`${import.meta.env.BASE_URL}images/${language === 'tl' ? 'fil' : 'eng'}/level ${levelId}/${sideAWord.toLowerCase().replace(/-hard|-soft/i, "")}.jpg`} 
                                     alt="cvc word" 
                                     className="w-full h-full object-cover"
                                     onError={() => setImageErrors(prev => ({...prev, [sideAWord]: true}))}
@@ -484,7 +484,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
                                   <span className="text-7xl sm:text-8xl font-black text-gray-300 dark:text-gray-600">?</span>
                                 ) : !imageErrors[sideBWord] ? (
                                   <img 
-                                    src={`${import.meta.env.BASE_URL}images/${language === 'tl' ? 'fil' : 'cvc'}/${sideBWord.toLowerCase().replace(/-hard|-soft/i, "")}.jpg`} 
+                                    src={`${import.meta.env.BASE_URL}images/${language === 'tl' ? 'fil' : 'eng'}/level ${levelId}/${sideBWord.toLowerCase().replace(/-hard|-soft/i, "")}.jpg`} 
                                     alt="cvc word" 
                                     className="w-full h-full object-cover"
                                     onError={() => setImageErrors(prev => ({...prev, [sideBWord]: true}))}
@@ -545,15 +545,19 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
                                     : isCompact
                                       ? 'text-lg sm:text-2xl font-black text-left tracking-wider flex-1 min-w-0'
                                       : 'text-xl sm:text-3xl font-black text-left tracking-wider flex-1 min-w-0';
+                                
+                                const cleanWord = w.replace(/-HARD|-SOFT/i, "");
+                                const displayWord = isSentence ? w : (cleanWord === cleanWord.toUpperCase() ? cleanWord.toLowerCase() : cleanWord);
+
                                 return (
                                   <div className="flex flex-col">
                                     <span className={`${textClass} text-gray-800 dark:text-gray-200 flex items-center gap-1`} style={{ color: isDone ? '#58CC02' : undefined }}>
                                       {wordHighlights && wordHighlights[w] ? (
-                                        (isSentence ? w : w.replace(/-HARD|-SOFT/i, "").toLowerCase()).split('').map((char, ci) => (
+                                        displayWord.split('').map((char, ci) => (
                                           <span key={ci} className={wordHighlights[w].includes(ci) ? 'font-black' : ''} style={{ color: wordHighlights[w].includes(ci) ? accent.primary : undefined }}>{char}</span>
                                         ))
                                       ) : (
-                                        isSentence ? w : w.replace(/-HARD|-SOFT/i, "").toLowerCase()
+                                        displayWord
                                       )}
                                       {w.toUpperCase().includes('-HARD') && <span className="text-[10px] sm:text-xs text-gray-400 font-bold tracking-wider pt-1">HARD</span>}
                                       {w.toUpperCase().includes('-SOFT') && <span className="text-[10px] sm:text-xs text-gray-400 font-bold tracking-wider pt-1">SOFT</span>}
