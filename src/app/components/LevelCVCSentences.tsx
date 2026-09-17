@@ -103,8 +103,25 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
         setSentenceMatchCountMap(prev => ({ ...prev, [target]: matchedWordCount }));
       }
 
-      const tClean = transcript.toLowerCase().replace(/[.,!?'"-]/g, "").trim();
-      const targetClean = target.toLowerCase().replace(/[.,!?'"-]/g, "").trim();
+      let tClean = transcript.toLowerCase().replace(/[.,!?'"-]/g, "").trim();
+      let targetClean = target.toLowerCase().replace(/[.,!?'"-]/g, "").trim();
+
+      const normalizeNumbers = (s: string) => s
+        .replace(/\b(zero|sero)\b/g, "0")
+        .replace(/\b(one|isa)\b/g, "1")
+        .replace(/\b(two|dalawa)\b/g, "2")
+        .replace(/\b(three|tatlo)\b/g, "3")
+        .replace(/\b(four|apat)\b/g, "4")
+        .replace(/\b(five|lima)\b/g, "5")
+        .replace(/\b(six|anim)\b/g, "6")
+        .replace(/\b(seven|pito)\b/g, "7")
+        .replace(/\b(eight|walo)\b/g, "8")
+        .replace(/\b(nine|siyam)\b/g, "9")
+        .replace(/\b(ten|sampu)\b/g, "10");
+
+      tClean = normalizeNumbers(tClean);
+      targetClean = normalizeNumbers(targetClean);
+
       const tNoSpace = tClean.replace(/\s+/g, "");
       const targetNoSpace = targetClean.replace(/\s+/g, "");
       const isCorrect = status === "correct" || status === "close" || tClean.includes(targetClean) || tNoSpace.includes(targetNoSpace);
