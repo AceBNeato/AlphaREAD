@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { Sparkles, Trophy, Power } from "lucide-react";
 import { ThemeToggle } from "../components/ThemeToggle";
@@ -58,38 +58,38 @@ export default function Dashboard() {
     // Validate device lock to prevent duplicate sessions
     if (parsedProfile.id !== "teacher-preview" && parsedProfile.role !== "student") {
       const validateDevice = async () => {
-        // If the device is completely offline, allow them to play the downloaded app
-        if (!navigator.onLine) return;
-
         const localDeviceId = localStorage.getItem("activated_device_id");
         if (!localDeviceId) return;
 
         try {
-          const { data, error } = await supabase
+          // Race against a 5s timeout — Android's navigator.onLine is unreliable
+          const TIMEOUT_MS = 5000;
+          const timeoutResult = { data: null, error: { code: "TIMEOUT", message: "Offline timeout", details: "" } };
+          const timeoutPromise = new Promise<typeof timeoutResult>((resolve) =>
+            setTimeout(() => resolve(timeoutResult), TIMEOUT_MS)
+          );
+
+          const queryPromise = supabase
             .from("profiles")
             .select("activated_device_id")
             .eq("id", parsedProfile.id)
             .single();
 
-          // If there is an error but we are online, it might be a missing record. 
-          // If the data comes back but the device ID doesn't match, it's a security breach.
-          if (error) {
-            // Check if it's just a network error failing to reach supabase despite navigator.onLine being true
-            if (error.message && error.message.includes("fetch")) return;
+          const { data, error } = await Promise.race([queryPromise, timeoutPromise]);
 
+          if (error) {
             // If the error means "No rows found" (PGRST116), the account was deleted!
             if (error.code === "PGRST116" || error.details?.includes("Results contain 0 rows")) {
               localStorage.removeItem("userProfile");
               localStorage.removeItem("activated_device_id");
               alert("Your account has been deleted or deactivated by an administrator.");
               navigate("/", { replace: true });
-              return;
             }
+            // Ignore all other errors (timeout, network failures, offline)
+            return;
           }
 
           if (data && data.activated_device_id !== localDeviceId) {
-            // Security Breach: The teacher unlocked the device, or another device took it over.
-            // Force logout the current user.
             localStorage.removeItem("userProfile");
             localStorage.removeItem("activated_device_id");
             alert("Your session has expired or your account was unlocked by the teacher.");
@@ -97,7 +97,7 @@ export default function Dashboard() {
           }
         } catch (e) {
           // Network errors shouldn't kick out offline users
-          console.warn("Offline or network issue during security check.");
+          console.warn("Offline or network issue during security check in Dashboard.");
         }
       };
       validateDevice();

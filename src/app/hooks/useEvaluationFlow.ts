@@ -8,12 +8,13 @@ export interface UseEvaluationFlowProps {
   singleShot?: boolean;
   /** BCP-47 language tag for SpeechRecognition. Defaults to "en-US". */
   lang?: string;
+  isFilipinoDictionary?: boolean;
   onAllCompleted?: () => void;
   onWordCompleted?: (word: string, newCompleted: Set<string>) => void;
   isCorrectOverride?: (word: string, status: "correct" | "close" | "wrong" | null, transcript: string) => boolean;
 }
 
-export function useEvaluationFlow({ words, singleShot, lang, onAllCompleted, onWordCompleted, isCorrectOverride }: UseEvaluationFlowProps) {
+export function useEvaluationFlow({ words, singleShot, lang, isFilipinoDictionary, onAllCompleted, onWordCompleted, isCorrectOverride }: UseEvaluationFlowProps) {
   const [evaluatingWord, setEvaluatingWord] = useState<string | null>(null);
   const [evalFeedback, setEvalFeedback] = useState<Record<string, "correct" | "close" | "wrong" | null>>({});
   const [transcripts, setTranscripts] = useState<Record<string, string>>({});
@@ -116,7 +117,8 @@ export function useEvaluationFlow({ words, singleShot, lang, onAllCompleted, onW
     evaluatingWord,
     enabled: !!evaluatingWord,
     singleShot,
-    lang: (lang === "fil" || lang === "tl") ? "fil-PH" : lang,
+    lang: navigator.onLine && (lang === "fil" || lang === "tl") ? "fil-PH" : (lang === "fil" || lang === "tl" ? "en-US" : lang),
+    isFilipinoDictionary: isFilipinoDictionary ?? (lang === "fil" || lang === "tl"),
     refreshTrigger,
     onResult: handleResult,
     onError: handleError,

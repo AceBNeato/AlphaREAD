@@ -107,6 +107,7 @@ interface UseSpeechRecognitionProps {
   /** BCP-47 language tag for SpeechRecognition.
    *  Defaults to "en-US". Pass "fil" for Filipino curriculum. */
   lang?: string;
+  isFilipinoDictionary?: boolean;
   onResult: (word: string, status: EvaluationFeedback, transcript: string, matchedWordCount?: number) => void;
   onSilenceTimeout: () => void;
   onError: () => void;
@@ -353,7 +354,7 @@ export function normalizeFilipino(text: string): string {
     .trim();
 }
 
-export function useSpeechRecognition({ evaluatingWord, enabled = true, singleShot = false, lang = "en-US", refreshTrigger = 0, initialTranscript = "", onResult, onSilenceTimeout, onError, onEngineStop }: UseSpeechRecognitionProps) {
+export function useSpeechRecognition({ evaluatingWord, enabled = true, singleShot = false, lang = "en-US", isFilipinoDictionary, refreshTrigger = 0, initialTranscript = "", onResult, onSilenceTimeout, onError, onEngineStop }: UseSpeechRecognitionProps) {
   const recognitionRef = useRef<any>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const resultReceivedRef = useRef(false);
@@ -499,7 +500,7 @@ export function useSpeechRecognition({ evaluatingWord, enabled = true, singleSho
         }
         // PATH B: Phrase / Sentence
         else if (evaluatingWord.toUpperCase().replace(/[.,!?]/g, "").trim().includes(" ")) {
-          const isFilipino = lang.startsWith("fil");
+          const isFilipino = isFilipinoDictionary ?? lang.startsWith("fil");
           const normFn = isFilipino ? normalizeFilipino : (t: string) => t.toUpperCase().replace(/[.,!?'"-]/g, "").trim();
           const homoDict = isFilipino ? FILIPINO_HOMOPHONES : HOMOPHONES;
           // Filipino: lower threshold because fil-PH produces more spelling variance

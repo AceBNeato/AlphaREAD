@@ -127,7 +127,10 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
   const wordsEval = useEvaluationFlow({
     words: batchWords,
     singleShot: false,
-    lang: language === "tl" ? "fil-PH" : "en-US",
+    // If online, use Filipino speech engine (if supported by OS).
+    // If offline, ALWAYS use the fallback English engine (because almost no Android has offline Filipino).
+    lang: navigator.onLine && language === "tl" ? "fil-PH" : "en-US",
+    isFilipinoDictionary: language === "tl",
     onAllCompleted: () => setShowCompletionScreen(true),
     onWordCompleted: (word) => handlePlayTTS(word)
   });

@@ -112,26 +112,45 @@ export async function validateStoredSession(allowedRoles: AppRole[]) {
       return { valid: true, profile };
     }
 
-    const { data, error } = await supabase.rpc("validate_profile_session", {
+    // OFFLINE FIRST FIX: If the device is offline, trust the local secure storage.
+    if (!navigator.onLine) {
+      console.warn("Device is offline. Trusting local session.");
+      return { valid: true, profile };
+    }
+
+    // Race the RPC call against a 5-second timeout.
+    // On Android, navigator.onLine can be TRUE even when there's no real connectivity,
+    // which causes supabase.rpc() to hang forever. The timeout prevents infinite loading.
+    const TIMEOUT_MS = 5000;
+    const timeoutPromise = new Promise<{ data: null; error: { message: string } }>((resolve) =>
+      setTimeout(() => resolve({ data: null, error: { message: "OFFLINE_TIMEOUT" } }), TIMEOUT_MS)
+    );
+
+    const rpcPromise = supabase.rpc("validate_profile_session", {
       p_profile_id: profile.id,
       p_role: profile.role,
       p_device_id: storedDeviceId,
     });
 
+    const { data, error } = await Promise.race([rpcPromise, timeoutPromise]);
+
+    // If there is ANY error (network, timeout, server down), trust local session.
     if (error) {
-      console.error("Session validation RPC failed:", error);
-      return { valid: false, profile: null };
+      console.warn("Session validation failed or timed out. Trusting local session.", error.message);
+      return { valid: true, profile };
     }
 
-    if (!data?.valid) {
-      console.warn("Session invalid reason:", data?.reason);
+    // If the server was reached, and it explicitly says the session is invalid:
+    if (data && data.valid === false) {
+      console.warn("Session invalid reason:", data.reason);
       await clearStoredSession();
       return { valid: false, profile: null };
     }
 
     return { valid: true, profile };
-  } catch (err) {
+  } catch (err: any) {
     console.error("Session validation exception:", err);
-    return { valid: false, profile: null };
+    // Any unexpected exception (like a fetch crash) should default to trusting the offline session
+    return { valid: true, profile };
   }
 }
