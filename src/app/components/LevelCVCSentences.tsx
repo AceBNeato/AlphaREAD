@@ -117,7 +117,8 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
         .replace(/\b(seven|pito)\b/g, "7")
         .replace(/\b(eight|walo)\b/g, "8")
         .replace(/\b(nine|siyam)\b/g, "9")
-        .replace(/\b(ten|sampu)\b/g, "10");
+        .replace(/\b(ten|sampu)\b/g, "10")
+        .replace(/\bcandy\b/g, "kendi");
 
       tClean = normalizeNumbers(tClean);
       targetClean = normalizeNumbers(targetClean);
