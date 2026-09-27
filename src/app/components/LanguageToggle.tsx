@@ -39,7 +39,7 @@ export function LanguageToggle() {
           aria-label="Toggle language"
         >
           <img
-            src={`https://flagcdn.com/w20/${currentLang.country}.png`}
+            src={`${import.meta.env.BASE_URL}images/flags/${currentLang.country}_w20.png`}
             height="14"
             width="20"
             alt={currentLang.label}
@@ -75,8 +75,8 @@ export function LanguageToggle() {
                   }`}
                 >
                   <img
-                    src={`https://flagcdn.com/w20/${lang.country}.png`}
-                    srcSet={`https://flagcdn.com/w40/${lang.country}.png 2x`}
+                    src={`${import.meta.env.BASE_URL}images/flags/${lang.country}_w20.png`}
+                    srcSet={`${import.meta.env.BASE_URL}images/flags/${lang.country}_w40.png 2x`}
                     width="18"
                     height="13"
                     alt={lang.label}

@@ -120,16 +120,16 @@ export default function Dashboard() {
       <div className="max-w-md mx-auto px-6 py-10 flex flex-col flex-1">
         {/* Header */}
         <header className="flex items-center justify-between mb-10">
-          <div className="flex items-center gap-4">
-            <div className="p-3.5 rounded-2xl shadow-md bg-gradient-to-br from-[#58CC02] to-[#46a302]">
-              <Sparkles className="w-8 h-8 text-white" fill="white" />
+          <div className="flex items-center gap-2.5 sm:gap-4">
+            <div className="p-2 sm:p-3.5 rounded-2xl shadow-md bg-gradient-to-br from-[#58CC02] to-[#46a302]">
+              <Sparkles className="w-6 h-6 sm:w-8 sm:h-8 text-white" fill="white" />
             </div>
             <div>
-              <h1 className="text-3xl font-black tracking-tight">
+              <h1 className="text-2xl sm:text-3xl font-black tracking-tight">
                 <span className="text-[#58CC02]">Alpha</span>
                 <span className="text-[#1CB0F6]">READ!</span>
               </h1>
-              <p className="text-gray-500 dark:text-[#849baf] font-medium text-sm mt-0.5">
+              <p className="text-gray-500 dark:text-[#849baf] font-medium text-xs sm:text-sm mt-0.5 leading-tight">
                 {profile.id === "teacher-preview" ? "Previewing Student App" : `Ready to learn, ${profile.name}?`}
               </p>
             </div>

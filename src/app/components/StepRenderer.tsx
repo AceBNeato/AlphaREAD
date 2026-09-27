@@ -84,6 +84,11 @@ export function StepRenderer({
           uniformMaxLen={step.uniformMaxLen}
           wordHighlights={step.wordHighlights}
           disableDynamicColors={levelId >= 3}
+          imageBasePath={
+            (type === "words-review" || type === "review" || type === "full-review") && levelId >= 5
+              ? `images/eng/level ${levelId}`
+              : step.imageBasePath
+          }
         />
       );
 

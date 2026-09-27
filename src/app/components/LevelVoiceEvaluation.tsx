@@ -40,7 +40,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
   const BATCH_SIZE = overrideBatchSize || 15;
   const batched = useBatchedItems(words, BATCH_SIZE);
   const batchWords = batched.currentBatch;
-  
+
   const { markLevelComplete, completedLevels } = useProgress();
 
   const [hasClickedTTS, setHasClickedTTS] = useState(false);
@@ -324,7 +324,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
 
               <div className="bg-gray-50 dark:bg-gray-900 rounded-2xl p-5 min-h-[100px] flex flex-col items-center justify-center border border-gray-100 dark:border-gray-800 shadow-inner">
                 <span className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Target</span>
-                <motion.span 
+                <motion.span
                   animate={(wordsEval.evalFeedback[wordsEval.evaluatingWord!] === 'correct' || wordsEval.evalFeedback[wordsEval.evaluatingWord!] === 'close') ? { y: [0, -15, 0] } : { y: 0 }}
                   transition={{ duration: 0.3 }}
                   className={`${wordsEval.evaluatingWord?.includes(' ') ? 'text-3xl sm:text-4xl px-2' : 'text-6xl'} font-extrabold mb-4 tracking-wider leading-snug inline-block text-center ${(wordsEval.evalFeedback[wordsEval.evaluatingWord!] === 'correct' || wordsEval.evalFeedback[wordsEval.evaluatingWord!] === 'close') ? 'text-green-500' : 'text-pink-500'}`}
@@ -451,13 +451,13 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
                     {hasImages && activeItem && (
                       <div className="w-full md:w-1/3 flex flex-col items-center justify-center shrink-0 py-4 md:py-0">
                         <div className="w-full" style={{ perspective: '1000px' }}>
-                          <motion.div 
+                          <motion.div
                             className="relative w-full max-w-[220px] md:max-w-[260px] mx-auto aspect-[3/4] cursor-pointer md:cursor-default"
                             onMouseMove={handleMouseMove}
                             onMouseLeave={handleMouseLeave}
                             style={{ rotateX: smoothRotateX, rotateY: smoothRotateY, transformStyle: 'preserve-3d' }}
                           >
-                            <motion.div 
+                            <motion.div
                               className="w-full h-full relative"
                               style={{ transformStyle: 'preserve-3d' }}
                               animate={{ rotateY: rotation }}
@@ -468,11 +468,11 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
                                 {!sideAWord ? (
                                   <span className="text-7xl sm:text-8xl font-black text-gray-300 dark:text-gray-600">?</span>
                                 ) : !imageErrors[sideAWord] ? (
-                                  <img 
-                                    src={`${import.meta.env.BASE_URL}images/${language === 'tl' ? 'fil' : 'eng'}/level ${levelId}/${sideAWord.toLowerCase().replace(/-hard|-soft/i, "")}.jpg`} 
-                                    alt="cvc word" 
+                                  <img
+                                    src={`${import.meta.env.BASE_URL}images/${language === 'tl' ? 'fil' : 'eng'}/level ${levelId}/${sideAWord.toLowerCase().replace(/-hard|-soft/i, "")}.jpg`}
+                                    alt="cvc word"
                                     className="w-full h-full object-cover"
-                                    onError={() => setImageErrors(prev => ({...prev, [sideAWord]: true}))}
+                                    onError={() => setImageErrors(prev => ({ ...prev, [sideAWord]: true }))}
                                   />
                                 ) : (
                                   <div className="w-full h-full flex flex-col items-center justify-center bg-blue-50 dark:bg-blue-900/30">
@@ -480,17 +480,17 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
                                   </div>
                                 )}
                               </div>
-                              
+
                               {/* Side B */}
                               <div className={`absolute inset-0 flex items-center justify-center bg-white dark:bg-gray-800 rounded-3xl border-[6px] ${!sideBWord ? 'border-dashed border-gray-300 dark:border-gray-600' : 'border-blue-400'} overflow-hidden shadow-lg`} style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}>
                                 {!sideBWord ? (
                                   <span className="text-7xl sm:text-8xl font-black text-gray-300 dark:text-gray-600">?</span>
                                 ) : !imageErrors[sideBWord] ? (
-                                  <img 
-                                    src={`${import.meta.env.BASE_URL}images/${language === 'tl' ? 'fil' : 'eng'}/level ${levelId}/${sideBWord.toLowerCase().replace(/-hard|-soft/i, "")}.jpg`} 
-                                    alt="cvc word" 
+                                  <img
+                                    src={`${import.meta.env.BASE_URL}images/${language === 'tl' ? 'fil' : 'eng'}/level ${levelId}/${sideBWord.toLowerCase().replace(/-hard|-soft/i, "")}.jpg`}
+                                    alt="cvc word"
                                     className="w-full h-full object-cover"
-                                    onError={() => setImageErrors(prev => ({...prev, [sideBWord]: true}))}
+                                    onError={() => setImageErrors(prev => ({ ...prev, [sideBWord]: true }))}
                                   />
                                 ) : (
                                   <div className="w-full h-full flex flex-col items-center justify-center bg-blue-50 dark:bg-blue-900/30">
@@ -515,169 +515,168 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
                               ? `bg-white/50 dark:bg-gray-800/50 p-4 rounded-3xl backdrop-blur-sm border-2 border-dashed border-gray-200 dark:border-gray-700 w-[95%] sm:w-11/12 max-w-[400px] sm:max-w-full ${isWordsMode ? 'columns-2 lg:columns-3' : 'columns-1 sm:columns-2'} gap-2 sm:gap-4 mx-auto md:mx-0`
                               : `${batchWords.length > 5 ? `${isWordsMode ? 'columns-2' : 'columns-1'} ${gridColumns === 2 ? 'sm:columns-2' : 'sm:columns-3'} gap-2 sm:gap-3` : 'space-y-3'} bg-white/50 dark:bg-gray-800/50 p-4 rounded-3xl backdrop-blur-sm border-2 border-dashed border-gray-200 dark:border-gray-700 w-[95%] sm:w-11/12 max-w-[400px] sm:max-w-full mx-auto`
                           }>
-                      {batchWords.map((w, idx) => {
-                        const isDone = wordsEval.completedWords.has(w);
-                        const isCurrent = wordsEval.evaluatingWord === w;
-                        const feedback = wordsEval.evalFeedback[w];
-                        const transcript = wordsEval.transcripts[w];
-                        const isActive = activeItem === w;
+                            {batchWords.map((w, idx) => {
+                              const isDone = wordsEval.completedWords.has(w);
+                              const isCurrent = wordsEval.evaluatingWord === w;
+                              const feedback = wordsEval.evalFeedback[w];
+                              const transcript = wordsEval.transcripts[w];
+                              const isActive = activeItem === w;
 
-                        return (
-                          <div 
-                            key={w} 
-                            onClick={() => handleItemSelect(w)}
-                            className={`flex items-center justify-between ${batchWords.length >= 10 || isCompact ? 'p-1.5 sm:p-2' : 'p-3 sm:p-4'} rounded-2xl transition-all cursor-pointer break-inside-avoid w-full mb-2 sm:mb-4 ${
-                              isDone 
-                                ? 'bg-green-50 dark:bg-green-900/20 border-green-200 shadow-xs' 
-                                : isCurrent
-                                  ? 'border-pink-400 shadow-md bg-white dark:bg-gray-800'
-                                  : isActive && hasImages
-                                    ? 'bg-white dark:bg-gray-800 border-blue-400 ring-4 ring-blue-100 dark:ring-blue-900/30 shadow-md scale-[1.02]'
-                                    : 'bg-white dark:bg-gray-800 border-gray-200/60 dark:border-gray-700/60 shadow-xs hover:border-gray-300'
-                            } border-2`}
-                          >
-                            {/* LEFT: Word Text */}
-                            <div className="flex flex-row items-center gap-2 min-w-0 flex-1 pl-1">
-                              {(() => {
-                                const isSentence = w.includes(' ');
-                                const wordLen = w.replace(/-HARD|-SOFT/i, "").length;
-                                const textClass = isSentence
-                                  ? 'text-base sm:text-lg font-bold text-left flex-1 min-w-0 leading-snug'
-                                  : wordLen >= 8
-                                    ? 'text-lg sm:text-xl font-bold text-left tracking-wider flex-1 min-w-0'
-                                    : isCompact
-                                      ? 'text-lg sm:text-2xl font-black text-left tracking-wider flex-1 min-w-0'
-                                      : 'text-xl sm:text-3xl font-black text-left tracking-wider flex-1 min-w-0';
-                                
-                                const cleanWord = w.replace(/-HARD|-SOFT/i, "");
-                                const displayWord = isSentence ? w : (cleanWord === cleanWord.toUpperCase() ? cleanWord.toLowerCase() : cleanWord);
+                              return (
+                                <div
+                                  key={w}
+                                  onClick={() => handleItemSelect(w)}
+                                  className={`flex items-center justify-between ${batchWords.length >= 10 || isCompact ? 'p-1.5 sm:p-2' : 'p-3 sm:p-4'} rounded-2xl transition-all cursor-pointer break-inside-avoid w-full mb-2 sm:mb-4 ${isDone
+                                      ? 'bg-green-50 dark:bg-green-900/20 border-green-200 shadow-xs'
+                                      : isCurrent
+                                        ? 'border-pink-400 shadow-md bg-white dark:bg-gray-800'
+                                        : isActive && hasImages
+                                          ? 'bg-white dark:bg-gray-800 border-blue-400 ring-4 ring-blue-100 dark:ring-blue-900/30 shadow-md scale-[1.02]'
+                                          : 'bg-white dark:bg-gray-800 border-gray-200/60 dark:border-gray-700/60 shadow-xs hover:border-gray-300'
+                                    } border-2`}
+                                >
+                                  {/* LEFT: Word Text */}
+                                  <div className="flex flex-row items-center gap-2 min-w-0 flex-1 pl-1">
+                                    {(() => {
+                                      const isSentence = w.includes(' ');
+                                      const wordLen = w.replace(/-HARD|-SOFT/i, "").length;
+                                      const textClass = isSentence
+                                        ? 'text-base sm:text-lg font-bold text-left flex-1 min-w-0 leading-snug'
+                                        : wordLen >= 8
+                                          ? 'text-lg sm:text-xl font-bold text-left tracking-wider flex-1 min-w-0'
+                                          : isCompact
+                                            ? 'text-lg sm:text-2xl font-black text-left tracking-wider flex-1 min-w-0'
+                                            : 'text-xl sm:text-3xl font-black text-left tracking-wider flex-1 min-w-0';
 
-                                return (
-                                  <div className="flex flex-col">
-                                    <span className={`${textClass} text-gray-800 dark:text-gray-200 flex items-center gap-1`} style={{ color: isDone ? '#58CC02' : undefined }}>
-                                      {wordHighlights && wordHighlights[w] ? (
-                                        displayWord.split('').map((char, ci) => (
-                                          <span key={ci} className={wordHighlights[w].includes(ci) ? 'font-black' : ''} style={{ color: wordHighlights[w].includes(ci) ? accent.primary : undefined }}>{char}</span>
-                                        ))
-                                      ) : (
-                                        displayWord
-                                      )}
-                                      {w.toUpperCase().includes('-HARD') && <span className="text-[10px] sm:text-xs text-gray-400 font-bold tracking-wider pt-1">HARD</span>}
-                                      {w.toUpperCase().includes('-SOFT') && <span className="text-[10px] sm:text-xs text-gray-400 font-bold tracking-wider pt-1">SOFT</span>}
-                                    </span>
+                                      const cleanWord = w.replace(/-HARD|-SOFT/i, "");
+                                      const displayWord = isSentence ? w : (cleanWord === cleanWord.toUpperCase() ? cleanWord.toLowerCase() : cleanWord);
+
+                                      return (
+                                        <div className="flex flex-col">
+                                          <span className={`${textClass} text-gray-800 dark:text-gray-200 flex items-center gap-1`} style={{ color: isDone ? '#58CC02' : undefined }}>
+                                            {wordHighlights && wordHighlights[w] ? (
+                                              displayWord.split('').map((char, ci) => (
+                                                <span key={ci} className={wordHighlights[w].includes(ci) ? 'font-black' : ''} style={{ color: wordHighlights[w].includes(ci) ? accent.primary : undefined }}>{char}</span>
+                                              ))
+                                            ) : (
+                                              displayWord
+                                            )}
+                                            {w.toUpperCase().includes('-HARD') && <span className="text-[10px] sm:text-xs text-gray-400 font-bold tracking-wider pt-1">HARD</span>}
+                                            {w.toUpperCase().includes('-SOFT') && <span className="text-[10px] sm:text-xs text-gray-400 font-bold tracking-wider pt-1">SOFT</span>}
+                                          </span>
+                                        </div>
+                                      );
+                                    })()}
                                   </div>
-                                );
-                              })()}
-                            </div>
 
-                            {/* RIGHT: Both Tap to Hear AND Tap to Speak */}
-                            <div className={`flex items-center ${isCompact ? 'gap-1 ml-1' : 'gap-2 ml-2'} shrink-0 relative`}>
-                              {/* Tap to Hear */}
-                              <div className="relative shrink-0 flex items-center justify-center">
-                                <PushableButton
-                                  as="button"
-                                  isTile
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleItemSelect(w);
-                                    handlePlayTTS(w);
-                                  }}
-                                  className={`${isCompact ? 'w-10 h-10 sm:w-11 sm:h-11' : 'w-12 h-12 sm:w-14 sm:h-14'} flex-shrink-0 transition-all ${idx === 0 && !hasClickedTTS && !isDone ? 'ring-2 ring-blue-400 ring-offset-2 animate-pulse' : ''}`}
-                                  frontClassName={
-                                    isDone
-                                      ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400"
-                                      : isActive
-                                        ? "bg-blue-500 text-white"
-                                        : "bg-[#1cb0f6] text-white"
-                                  }
-                                  edgeClassName={
-                                    isDone
-                                      ? "bg-green-200 dark:bg-green-900"
-                                      : isActive
-                                        ? "bg-[#2563eb]"
-                                        : "bg-[#0979b5]"
-                                  }
-                                >
-                                  <Volume2 className={isCompact ? "w-4 h-4 sm:w-5 sm:h-5" : "w-5 h-5 sm:w-6 sm:h-6"} />
-                                </PushableButton>
-                                {idx === 0 && !hasClickedTTS && !isDone && (
-                                  <motion.div
-                                    initial={{ opacity: 0, y: 10, scale: 0.8 }}
-                                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                                    transition={{ repeat: Infinity, repeatType: "reverse", duration: 1.5 }}
-                                    className="absolute -top-8 left-1/2 -translate-x-1/2 bg-blue-500 text-white text-[10px] font-bold py-1 px-2 rounded-full shadow-lg whitespace-nowrap pointer-events-none z-50"
-                                  >
-                                    Listen
-                                    <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-blue-500 rotate-45" />
-                                  </motion.div>
-                                )}
-                              </div>
+                                  {/* RIGHT: Both Tap to Hear AND Tap to Speak */}
+                                  <div className={`flex items-center ${isCompact ? 'gap-1 ml-1' : 'gap-2 ml-2'} shrink-0 relative`}>
+                                    {/* Tap to Hear */}
+                                    <div className="relative shrink-0 flex items-center justify-center">
+                                      <PushableButton
+                                        as="button"
+                                        isTile
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleItemSelect(w);
+                                          handlePlayTTS(w);
+                                        }}
+                                        className={`${isCompact ? 'w-10 h-10 sm:w-11 sm:h-11' : 'w-12 h-12 sm:w-14 sm:h-14'} flex-shrink-0 transition-all ${idx === 0 && !hasClickedTTS && !isDone ? 'ring-2 ring-blue-400 ring-offset-2 animate-pulse' : ''}`}
+                                        frontClassName={
+                                          isDone
+                                            ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400"
+                                            : isActive
+                                              ? "bg-blue-500 text-white"
+                                              : "bg-[#1cb0f6] text-white"
+                                        }
+                                        edgeClassName={
+                                          isDone
+                                            ? "bg-green-200 dark:bg-green-900"
+                                            : isActive
+                                              ? "bg-[#2563eb]"
+                                              : "bg-[#0979b5]"
+                                        }
+                                      >
+                                        <Volume2 className={isCompact ? "w-4 h-4 sm:w-5 sm:h-5" : "w-5 h-5 sm:w-6 sm:h-6"} />
+                                      </PushableButton>
+                                      {idx === 0 && !hasClickedTTS && !isDone && (
+                                        <motion.div
+                                          initial={{ opacity: 0, y: 10, scale: 0.8 }}
+                                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                                          transition={{ repeat: Infinity, repeatType: "reverse", duration: 1.5 }}
+                                          className="absolute -top-8 left-1/2 -translate-x-1/2 bg-blue-500 text-white text-[10px] font-bold py-1 px-2 rounded-full shadow-lg whitespace-nowrap pointer-events-none z-50"
+                                        >
+                                          Listen
+                                          <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-blue-500 rotate-45" />
+                                        </motion.div>
+                                      )}
+                                    </div>
 
-                              {/* Tap to Speak */}
-                              <div className="relative shrink-0 flex items-center justify-center">
-                                <PushableButton
-                                  as="button"
-                                  isTile
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleItemSelect(w);
-                                    setHasClickedMic(true);
-                                    if (isCurrent) {
-                                      wordsEval.safeSetEvaluatingWordNull();
-                                    } else {
-                                      playSound("mic", 0.3);
-                                      wordsEval.startRecording(w);
-                                    }
-                                  }}
-                                  disabled={(wordsEval.evaluatingWord !== null && !isCurrent) || isDone || wordsEval.isMicResetting}
-                                  className={`relative ${isCompact ? 'w-10 h-10 sm:w-11 sm:h-11' : 'w-12 h-12 sm:w-14 sm:h-14'} flex-shrink-0`}
-                                  frontClassName={
-                                    isDone
-                                      ? "bg-green-500 text-white"
-                                      : isCurrent
-                                        ? "bg-red-500 text-white"
-                                        : wordsEval.isMicResetting
-                                          ? "bg-gray-300 dark:bg-gray-700 text-gray-400"
-                                          : "bg-gradient-to-br from-pink-500 to-rose-500 text-white"
-                                  }
-                                  edgeClassName={
-                                    isDone
-                                      ? "bg-green-600"
-                                      : isCurrent
-                                        ? "bg-red-600"
-                                        : wordsEval.isMicResetting
-                                          ? "bg-gray-400 dark:bg-gray-800"
-                                          : "bg-pink-700"
-                                  }
-                                >
-                                  {isCurrent && (
-                                    <>
-                                      <span className="absolute inset-0 rounded-xl bg-red-500/40 animate-ping" />
-                                      <span className="absolute -inset-1 rounded-xl bg-red-500/20 animate-pulse" />
-                                    </>
-                                  )}
-                                  <span className="relative z-10 flex items-center justify-center h-full w-full">
-                                    {isDone ? <CheckCircle2 className={isCompact ? "w-4 h-4 sm:w-5 sm:h-5" : "w-5 h-5 sm:w-6 sm:h-6"} /> : isCurrent ? <MicOff className={isCompact ? "w-4 h-4 sm:w-5 sm:h-5 animate-bounce" : "w-5 h-5 animate-bounce"} /> : <Mic className={isCompact ? "w-4 h-4 sm:w-5 sm:h-5" : "w-5 h-5 sm:w-6 sm:h-6"} />}
-                                  </span>
-                                </PushableButton>
-                                {idx === 0 && !hasClickedMic && !isDone && (
-                                  <motion.div
-                                    initial={{ opacity: 0, y: 10, scale: 0.8 }}
-                                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                                    transition={{ repeat: Infinity, repeatType: "reverse", duration: 1.5 }}
-                                    className="absolute -top-8 left-1/2 -translate-x-1/2 bg-pink-500 text-white text-[10px] font-bold py-1 px-2 rounded-full shadow-lg whitespace-nowrap pointer-events-none z-50"
-                                  >
-                                    Speak
-                                    <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-pink-500 rotate-45" />
-                                  </motion.div>
-                                )}
-                              </div>
-                            </div>
+                                    {/* Tap to Speak */}
+                                    <div className="relative shrink-0 flex items-center justify-center">
+                                      <PushableButton
+                                        as="button"
+                                        isTile
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleItemSelect(w);
+                                          setHasClickedMic(true);
+                                          if (isCurrent) {
+                                            wordsEval.safeSetEvaluatingWordNull();
+                                          } else {
+                                            playSound("mic", 0.3);
+                                            wordsEval.startRecording(w);
+                                          }
+                                        }}
+                                        disabled={(wordsEval.evaluatingWord !== null && !isCurrent) || isDone || wordsEval.isMicResetting}
+                                        className={`relative ${isCompact ? 'w-10 h-10 sm:w-11 sm:h-11' : 'w-12 h-12 sm:w-14 sm:h-14'} flex-shrink-0`}
+                                        frontClassName={
+                                          isDone
+                                            ? "bg-green-500 text-white"
+                                            : isCurrent
+                                              ? "bg-red-500 text-white"
+                                              : wordsEval.isMicResetting
+                                                ? "bg-gray-300 dark:bg-gray-700 text-gray-400"
+                                                : "bg-gradient-to-br from-pink-500 to-rose-500 text-white"
+                                        }
+                                        edgeClassName={
+                                          isDone
+                                            ? "bg-green-600"
+                                            : isCurrent
+                                              ? "bg-red-600"
+                                              : wordsEval.isMicResetting
+                                                ? "bg-gray-400 dark:bg-gray-800"
+                                                : "bg-pink-700"
+                                        }
+                                      >
+                                        {isCurrent && (
+                                          <>
+                                            <span className="absolute inset-0 rounded-xl bg-red-500/40 animate-ping" />
+                                            <span className="absolute -inset-1 rounded-xl bg-red-500/20 animate-pulse" />
+                                          </>
+                                        )}
+                                        <span className="relative z-10 flex items-center justify-center h-full w-full">
+                                          {isDone ? <CheckCircle2 className={isCompact ? "w-4 h-4 sm:w-5 sm:h-5" : "w-5 h-5 sm:w-6 sm:h-6"} /> : isCurrent ? <MicOff className={isCompact ? "w-4 h-4 sm:w-5 sm:h-5 animate-bounce" : "w-5 h-5 animate-bounce"} /> : <Mic className={isCompact ? "w-4 h-4 sm:w-5 sm:h-5" : "w-5 h-5 sm:w-6 sm:h-6"} />}
+                                        </span>
+                                      </PushableButton>
+                                      {idx === 0 && !hasClickedMic && !isDone && (
+                                        <motion.div
+                                          initial={{ opacity: 0, y: 10, scale: 0.8 }}
+                                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                                          transition={{ repeat: Infinity, repeatType: "reverse", duration: 1.5 }}
+                                          className="absolute -top-8 left-1/2 -translate-x-1/2 bg-pink-500 text-white text-[10px] font-bold py-1 px-2 rounded-full shadow-lg whitespace-nowrap pointer-events-none z-50"
+                                        >
+                                          Speak
+                                          <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-pink-500 rotate-45" />
+                                        </motion.div>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
                           </div>
                         );
-                      })}
-                      </div>
-                      );
                       })()}
                     </div>
                   </motion.div>
