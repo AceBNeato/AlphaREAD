@@ -296,7 +296,7 @@ export default function Activation() {
       if (rpcError) {
         throw new Error(rpcError.message || "Authentication failed.");
       }
-      
+
       // Check if the database successfully committed the attempt but returned an error
       if (student?.error) {
         throw new Error(student.error);
@@ -598,7 +598,7 @@ export default function Activation() {
               </form>
             )}
           </div>
-          
+
           <div className="mt-8 text-center">
             <PrivacyPolicyModal />
           </div>

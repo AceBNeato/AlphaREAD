@@ -1,7 +1,10 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
+import { Network } from '@capacitor/network';
 import { playSound, stopExclusiveAudio } from '../utils/soundEffects';
 import { stopTTS } from '../utils/tts';
-import { useSpeechRecognition } from './useSpeechRecognition';
+import { useSpeechRecognition, normalizeFilipino, normalizeTranscript, calculateSimilarity, matchConsonants, EvaluationFeedback } from './useSpeechRecognition';
+import { useWhisperRecognition, WhisperStatus } from './useWhisperRecognition';
+import { evaluateSyllable, isSyllableTarget } from '../utils/PhonemeEvaluator';
 
 export interface UseEvaluationFlowProps {
   words: string[];
@@ -12,6 +15,70 @@ export interface UseEvaluationFlowProps {
   onAllCompleted?: () => void;
   onWordCompleted?: (word: string, newCompleted: Set<string>) => void;
   isCorrectOverride?: (word: string, status: "correct" | "close" | "wrong" | null, transcript: string) => boolean;
+}
+
+
+
+
+/**
+ * Evaluate a Whisper transcript against a target Filipino word/sentence.
+ * This mirrors the evaluation logic in useSpeechRecognition but works with
+ * Whisper's output (which is already in Filipino, not English phonetics).
+ */
+export function evaluateWhisperTranscript(
+  evaluatingWord: string,
+  whisperText: string
+): { status: EvaluationFeedback; transcript: string; matchedWordCount: number } {
+  const normFn = normalizeFilipino;
+  const whisperNorm = normFn(whisperText);
+  const targetNorm = normFn(evaluatingWord);
+
+  // Single word evaluation
+  if (!targetNorm.includes(' ')) {
+    const whisperWords = whisperNorm.split(/\s+/);
+    
+    // Direct match
+    if (whisperNorm === targetNorm || whisperWords.includes(targetNorm)) {
+      return { status: 'correct', transcript: whisperText, matchedWordCount: 1 };
+    }
+    
+    // Similarity check
+    let bestSim = 0;
+    for (const w of whisperWords) {
+      const sim = calculateSimilarity(w, targetNorm);
+      if (sim > bestSim) bestSim = sim;
+    }
+
+    if (bestSim >= 0.75) {
+      return { status: 'correct', transcript: whisperText, matchedWordCount: 1 };
+    } else if (bestSim >= 0.5) {
+      return { status: 'close', transcript: whisperText, matchedWordCount: 1 };
+    }
+
+    return { status: 'wrong', transcript: whisperText, matchedWordCount: 0 };
+  }
+
+  // Sentence / phrase evaluation
+  const targetWords = targetNorm.split(/\s+/);
+  const whisperWords = whisperNorm.split(/\s+/);
+
+  let sequentialMatchCount = 0;
+  let rawIdx = 0;
+
+  while (sequentialMatchCount < targetWords.length && rawIdx < whisperWords.length) {
+    const expected = targetWords[sequentialMatchCount];
+    const spoken = whisperWords[rawIdx];
+
+    if (expected === spoken || calculateSimilarity(expected, spoken) >= 0.5) {
+      sequentialMatchCount++;
+    }
+    rawIdx++;
+  }
+
+  if (sequentialMatchCount === targetWords.length) {
+    return { status: 'correct', transcript: whisperText, matchedWordCount: sequentialMatchCount };
+  }
+  return { status: 'wrong', transcript: whisperText, matchedWordCount: sequentialMatchCount };
 }
 
 export function useEvaluationFlow({ words, singleShot, lang, isFilipinoDictionary, onAllCompleted, onWordCompleted, isCorrectOverride }: UseEvaluationFlowProps) {
@@ -25,8 +92,32 @@ export function useEvaluationFlow({ words, singleShot, lang, isFilipinoDictionar
   const [processingWord, setProcessingWord] = useState<string | null>(null);
   const [showConfetti, setShowConfetti] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [whisperProcessing, setWhisperProcessing] = useState(false);
 
   const evaluationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // ─── Determine if we should use Whisper ──────────────────────────────────────
+  // Whisper is used ONLY when: offline + Filipino language
+  const isFilipino = isFilipinoDictionary ?? (lang === "fil" || lang === "tl");
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+
+  useEffect(() => {
+    // Initial check
+    Network.getStatus().then(status => {
+      setIsOnline(status.connected);
+    });
+
+    // Listen for changes
+    const listener = Network.addListener('networkStatusChange', status => {
+      setIsOnline(status.connected);
+    });
+
+    return () => {
+      listener.then(l => l.remove());
+    };
+  }, []);
+
+  const useWhisperMode = isFilipino && !isOnline;
 
   const clearEvalTimeout = useCallback(() => {
     if (evaluationTimeoutRef.current) {
@@ -46,6 +137,7 @@ export function useEvaluationFlow({ words, singleShot, lang, isFilipinoDictionar
     setShowConfetti(false);
     setEvaluatingWord(null);
     setIsMicSleeping(false);
+    setWhisperProcessing(false);
     setIsMicResetting(true);
     setTimeout(() => {
       setIsMicResetting(false);
@@ -113,9 +205,10 @@ export function useEvaluationFlow({ words, singleShot, lang, isFilipinoDictionar
     }, 1500);
   }, [evaluatingWord, clearEvalTimeout, safeSetEvaluatingWordNull]);
 
+  // ─── Web Speech API path (English + Online Filipino) ─────────────────────────
   useSpeechRecognition({
-    evaluatingWord,
-    enabled: !!evaluatingWord,
+    evaluatingWord: useWhisperMode ? null : evaluatingWord, // Disable when Whisper is active
+    enabled: !useWhisperMode && !!evaluatingWord,
     singleShot,
     lang: navigator.onLine && (lang === "fil" || lang === "tl") ? "fil-PH" : (lang === "fil" || lang === "tl" ? "en-US" : lang),
     isFilipinoDictionary: isFilipinoDictionary ?? (lang === "fil" || lang === "tl"),
@@ -125,6 +218,45 @@ export function useEvaluationFlow({ words, singleShot, lang, isFilipinoDictionar
     onEngineStop: () => setIsMicSleeping(true),
     onSilenceTimeout: handleSilence
   });
+
+  // ─── Whisper path (Offline Filipino) ─────────────────────────────────────────
+  const handleWhisperResult = useCallback((transcript: string) => {
+    if (!evaluatingWord) return;
+    setWhisperProcessing(false);
+
+    // Evaluate the Whisper transcript against the target word
+    const { status, transcript: matchTranscript, matchedWordCount } = evaluateWhisperTranscript(
+      evaluatingWord,
+      transcript
+    );
+
+    handleResult(evaluatingWord, status, matchTranscript, matchedWordCount);
+  }, [evaluatingWord, handleResult]);
+
+  const handleWhisperError = useCallback((message: string) => {
+    console.warn('[AlphabetGO] Whisper error:', message);
+    alert('AI Error: ' + message);
+    setWhisperProcessing(false);
+    handleError();
+  }, [handleError]);
+
+  const { status: whisperStatus, loadProgress: whisperLoadProgress, preloadModel, stopRecording: stopWhisperRecording } = useWhisperRecognition({
+    evaluatingWord: useWhisperMode ? evaluatingWord : null, // Only active in Whisper mode
+    enabled: useWhisperMode && !!evaluatingWord,
+    onResult: handleWhisperResult,
+    onError: handleWhisperError,
+    maxDuration: 15000, // Allow longer for sentences
+    silenceTimeout: 2500, // Slightly longer silence threshold for Filipino
+    preload: useWhisperMode, // Warm up the model as soon as offline Filipino mode is active
+  });
+
+  useEffect(() => {
+    if (useWhisperMode && whisperStatus === 'processing') {
+      setWhisperProcessing(true);
+    } else if (whisperStatus === 'ready' || whisperStatus === 'idle' || whisperStatus === 'error') {
+      setWhisperProcessing(false);
+    }
+  }, [whisperStatus, useWhisperMode]);
 
   const startRecording = useCallback((word: string) => {
     if (evaluatingWord || completedWords.has(word) || isMicResetting) return;
@@ -161,6 +293,14 @@ export function useEvaluationFlow({ words, singleShot, lang, isFilipinoDictionar
     setRefreshTrigger(prev => prev + 1);
   }, [evaluatingWord, clearEvalTimeout]);
 
+  const forceStopRecording = useCallback(() => {
+    if (useWhisperMode) {
+      stopWhisperRecording();
+    } else {
+      safeSetEvaluatingWordNull();
+    }
+  }, [useWhisperMode, stopWhisperRecording, safeSetEvaluatingWordNull]);
+
   return {
     evaluatingWord,
     evalFeedback,
@@ -180,6 +320,14 @@ export function useEvaluationFlow({ words, singleShot, lang, isFilipinoDictionar
     setTranscripts,
     resetFlow,
     skipFlow,
-    retryCurrentWord
+    retryCurrentWord,
+    // Whisper-specific state for UI
+    whisperProcessing,
+    whisperStatus,
+    whisperLoadProgress,
+    useWhisperMode,
+    preloadWhisper: preloadModel,
+    forceStopRecording,
   };
 }
+

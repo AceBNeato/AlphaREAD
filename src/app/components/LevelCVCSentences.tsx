@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
+import { Network } from '@capacitor/network';
 import { useNavigate } from "react-router";
 import { Home, Mic, MicOff, CheckCircle2, XCircle, Sparkles, ArrowRight, ArrowLeft, RotateCcw, SkipForward, FastForward, Volume2, Shuffle, X, AlertCircle, Loader2, RefreshCcw } from "lucide-react";
 import { confirmAction } from "../utils/alerts";
@@ -8,6 +9,8 @@ import { supabase } from "../../lib/supabase";
 import { Confetti } from "./ui/Confetti";
 import { useCurriculum } from "../hooks/useCurriculum";
 import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
+import { useWhisperRecognition } from "../hooks/useWhisperRecognition";
+import { evaluateWhisperTranscript } from "../hooks/useEvaluationFlow";
 import { playSound, playExclusiveAudio, stopExclusiveAudio } from "../utils/soundEffects";
 import { playTTS as playTTSUtil, stopTTS } from "../utils/tts";
 import { AudioVisualizer } from "./AudioVisualizer";
@@ -148,9 +151,20 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
     [clearEvalTimeout, safeSetEvaluatingSentenceNull]
   );
 
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+
+  useEffect(() => {
+    Network.getStatus().then(status => setIsOnline(status.connected));
+    const listener = Network.addListener('networkStatusChange', status => setIsOnline(status.connected));
+    return () => { listener.then(l => l.remove()); };
+  }, []);
+
+  const useWhisperMode = language === "tl" && !isOnline;
+  const [whisperProcessing, setWhisperProcessing] = useState(false);
+
   useSpeechRecognition({
-    evaluatingWord: evaluatingSentenceId,
-    enabled: !!evaluatingSentenceId,
+    evaluatingWord: useWhisperMode ? null : evaluatingSentenceId,
+    enabled: !useWhisperMode && !!evaluatingSentenceId,
     singleShot: false, // Continuous mode: keeps mic alive through pauses for slow readers
     lang: navigator.onLine && language === "tl" ? "fil-PH" : "en-US",
     isFilipinoDictionary: language === "tl",
@@ -172,6 +186,52 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
       }
     }
   });
+
+
+  const handleWhisperResult = useCallback((transcript: string) => {
+    if (!evaluatingSentenceId) return;
+    setWhisperProcessing(false);
+
+    const { status, transcript: matchTranscript, matchedWordCount } = evaluateWhisperTranscript(
+      evaluatingSentenceId,
+      transcript
+    );
+
+    handleResult(evaluatingSentenceId, status, matchTranscript, matchedWordCount);
+  }, [evaluatingSentenceId, handleResult]);
+
+  const handleWhisperError = useCallback((message: string) => {
+    console.warn('[AlphabetGO] Whisper error:', message);
+    alert('AI Error: ' + message);
+    setWhisperProcessing(false);
+    safeSetEvaluatingSentenceNull();
+  }, [safeSetEvaluatingSentenceNull]);
+
+  const { status: whisperStatus, stopRecording: stopWhisperRecording } = useWhisperRecognition({
+    evaluatingWord: useWhisperMode ? evaluatingSentenceId : null,
+    enabled: useWhisperMode && !!evaluatingSentenceId,
+    onResult: handleWhisperResult,
+    onError: handleWhisperError,
+    maxDuration: 15000,
+    silenceTimeout: 2500,
+    preload: useWhisperMode,
+  });
+
+  const forceStopRecording = useCallback(() => {
+    if (useWhisperMode) {
+      stopWhisperRecording();
+    } else {
+      safeSetEvaluatingSentenceNull();
+    }
+  }, [useWhisperMode, stopWhisperRecording, safeSetEvaluatingSentenceNull]);
+
+  useEffect(() => {
+    if (useWhisperMode && whisperStatus === 'processing') {
+      setWhisperProcessing(true);
+    } else if (whisperStatus === 'ready' || whisperStatus === 'idle' || whisperStatus === 'error') {
+      setWhisperProcessing(false);
+    }
+  }, [whisperStatus, useWhisperMode]);
 
   // Controls
   const handleShuffle = () => {
@@ -305,6 +365,11 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
                         <MicOff className="w-6 h-6 text-gray-400" />
                         <h3 className="text-2xl font-bold tracking-tight text-gray-500">Paused</h3>
                       </motion.div>
+                    ) : whisperProcessing ? (
+                      <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-col items-center justify-center gap-2">
+                        <Loader2 className="w-6 h-6 text-orange-500 animate-spin" />
+                        <h3 className="text-2xl font-bold tracking-tight text-orange-500">Processing...</h3>
+                      </motion.div>
                     ) : (
                       <>
                         <div className="flex items-center justify-center gap-2">
@@ -316,7 +381,7 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
                     )}
                   </div>
                   <p className="text-gray-500 dark:text-gray-400 mb-6 font-medium">
-                    {isMicSleeping ? "Take a breath and tap below to continue." : "Please read the sentence clearly."}
+                    {isMicSleeping ? "Take a breath and tap below to continue." : whisperProcessing ? "Analyzing your voice..." : "Please read the sentence clearly."}
                   </p>
 
                   <div className="bg-gray-50 dark:bg-gray-900 rounded-2xl p-5 min-h-[100px] flex flex-col items-center justify-center border border-gray-100 dark:border-gray-800 shadow-inner">
@@ -479,7 +544,7 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
                                   onClick={() => {
                                     setHasClickedMic(true);
                                     if (isEval) {
-                                      setEvaluatingSentenceId(null);
+                                      forceStopRecording();
                                     } else if (!isDone) {
                                       playSound("mic", 0.3);
                                       setEvaluatingSentenceId(s);
@@ -493,7 +558,7 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
                                     isDone || vFeedback === "correct"
                                       ? "bg-green-500 text-white"
                                       : isEval
-                                        ? "bg-red-500 text-white"
+                                        ? (whisperProcessing ? "bg-orange-500 text-white" : "bg-red-500 text-white")
                                         : vFeedback === "wrong"
                                           ? "bg-red-400 text-white"
                                           : "bg-gradient-to-br from-pink-500 to-rose-500 text-white"
@@ -502,20 +567,33 @@ export function LevelCVCSentences({ levelId, accent, isSubPhase, onComplete, onB
                                     isDone || vFeedback === "correct"
                                       ? "bg-green-600"
                                       : isEval
-                                        ? "bg-red-600"
+                                        ? (whisperProcessing ? "bg-orange-600" : "bg-red-600")
                                         : vFeedback === "wrong"
                                           ? "bg-red-500"
                                           : "bg-pink-700"
                                   }
                                 >
-                                  {isEval && (
+                                  {isEval && !whisperProcessing && (
                                     <>
                                       <span className="absolute inset-0 rounded-xl bg-red-500/40 animate-ping" />
                                       <span className="absolute -inset-1 rounded-xl bg-red-500/20 animate-pulse" />
                                     </>
                                   )}
+                                  {isEval && whisperProcessing && (
+                                    <>
+                                      <span className="absolute inset-0 rounded-xl bg-orange-500/40 animate-pulse" />
+                                    </>
+                                  )}
                                   <span className="relative z-10 flex items-center justify-center h-full w-full">
-                                    {isDone || vFeedback === "correct" ? <CheckCircle2 className="w-6 h-6" /> : vFeedback === "wrong" ? <XCircle className="w-6 h-6" /> : isEval ? <MicOff className="w-5 h-5 animate-bounce" /> : <Mic className="w-5 h-5" />}
+                                    {isDone || vFeedback === "correct" 
+                                      ? <CheckCircle2 className="w-6 h-6" /> 
+                                      : vFeedback === "wrong" 
+                                        ? <XCircle className="w-6 h-6" /> 
+                                        : isEval 
+                                          ? (whisperProcessing 
+                                              ? <Loader2 className="w-5 h-5 animate-spin" />
+                                              : <MicOff className="w-5 h-5 animate-bounce" />)
+                                          : <Mic className="w-5 h-5" />}
                                   </span>
                                 </PushableButton>
                                 {idx === 0 && !hasClickedMic && (!isDone || vFeedback !== "correct") && (

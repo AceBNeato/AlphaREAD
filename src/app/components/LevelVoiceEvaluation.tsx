@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router";
-import { Mic, Sparkles, CheckCircle2, MicOff, AlertCircle, Volume2, RefreshCcw } from "lucide-react";
+import { Mic, Sparkles, CheckCircle2, MicOff, AlertCircle, Volume2, RefreshCcw, Loader2 } from "lucide-react";
 import { confirmAction } from "../utils/alerts";
 import { Button } from "./ui/button";
 import { PushableButton } from "./ui/PushableButton";
@@ -308,6 +308,11 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
                     <MicOff className="w-6 h-6 text-gray-400" />
                     <h3 className="text-2xl font-bold tracking-tight text-gray-500">Paused</h3>
                   </motion.div>
+                ) : wordsEval.whisperProcessing ? (
+                  <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-col items-center justify-center gap-2">
+                    <Loader2 className="w-6 h-6 text-orange-500 animate-spin" />
+                    <h3 className="text-2xl font-bold tracking-tight text-orange-500">Processing...</h3>
+                  </motion.div>
                 ) : (
                   <>
                     <div className="flex items-center justify-center gap-2">
@@ -319,7 +324,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
                 )}
               </div>
               <p className="text-gray-500 dark:text-gray-400 mb-6 font-medium">
-                {wordsEval.isMicSleeping ? "Take a breath and tap below to continue." : "Please say the word clearly."}
+                {wordsEval.isMicSleeping ? "Take a breath and tap below to continue." : wordsEval.whisperProcessing ? "Analyzing your voice..." : "Please say the word clearly."}
               </p>
 
               <div className="bg-gray-50 dark:bg-gray-900 rounded-2xl p-5 min-h-[100px] flex flex-col items-center justify-center border border-gray-100 dark:border-gray-800 shadow-inner">
@@ -622,7 +627,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
                                           handleItemSelect(w);
                                           setHasClickedMic(true);
                                           if (isCurrent) {
-                                            wordsEval.safeSetEvaluatingWordNull();
+                                            wordsEval.forceStopRecording();
                                           } else {
                                             playSound("mic", 0.3);
                                             wordsEval.startRecording(w);
@@ -634,7 +639,7 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
                                           isDone
                                             ? "bg-green-500 text-white"
                                             : isCurrent
-                                              ? "bg-red-500 text-white"
+                                              ? (wordsEval.whisperProcessing ? "bg-orange-500 text-white" : "bg-red-500 text-white")
                                               : wordsEval.isMicResetting
                                                 ? "bg-gray-300 dark:bg-gray-700 text-gray-400"
                                                 : "bg-gradient-to-br from-pink-500 to-rose-500 text-white"
@@ -643,20 +648,32 @@ export function LevelVoiceEvaluation({ levelId, accent, customWords, isSubPhase,
                                           isDone
                                             ? "bg-green-600"
                                             : isCurrent
-                                              ? "bg-red-600"
+                                              ? (wordsEval.whisperProcessing ? "bg-orange-600" : "bg-red-600")
                                               : wordsEval.isMicResetting
                                                 ? "bg-gray-400 dark:bg-gray-800"
                                                 : "bg-pink-700"
                                         }
                                       >
-                                        {isCurrent && (
+                                        {isCurrent && !wordsEval.whisperProcessing && (
                                           <>
                                             <span className="absolute inset-0 rounded-xl bg-red-500/40 animate-ping" />
                                             <span className="absolute -inset-1 rounded-xl bg-red-500/20 animate-pulse" />
                                           </>
                                         )}
+                                        {isCurrent && wordsEval.whisperProcessing && (
+                                          <>
+                                            <span className="absolute inset-0 rounded-xl bg-orange-500/40 animate-pulse" />
+                                          </>
+                                        )}
                                         <span className="relative z-10 flex items-center justify-center h-full w-full">
-                                          {isDone ? <CheckCircle2 className={isCompact ? "w-4 h-4 sm:w-5 sm:h-5" : "w-5 h-5 sm:w-6 sm:h-6"} /> : isCurrent ? <MicOff className={isCompact ? "w-4 h-4 sm:w-5 sm:h-5 animate-bounce" : "w-5 h-5 animate-bounce"} /> : <Mic className={isCompact ? "w-4 h-4 sm:w-5 sm:h-5" : "w-5 h-5 sm:w-6 sm:h-6"} />}
+                                          {isDone 
+                                            ? <CheckCircle2 className={isCompact ? "w-4 h-4 sm:w-5 sm:h-5" : "w-5 h-5 sm:w-6 sm:h-6"} /> 
+                                            : isCurrent 
+                                              ? (wordsEval.whisperProcessing 
+                                                  ? <Loader2 className={isCompact ? "w-4 h-4 sm:w-5 sm:h-5 animate-spin" : "w-5 h-5 animate-spin"} />
+                                                  : <MicOff className={isCompact ? "w-4 h-4 sm:w-5 sm:h-5 animate-bounce" : "w-5 h-5 animate-bounce"} />) 
+                                              : <Mic className={isCompact ? "w-4 h-4 sm:w-5 sm:h-5" : "w-5 h-5 sm:w-6 sm:h-6"} />
+                                          }
                                         </span>
                                       </PushableButton>
                                       {idx === 0 && !hasClickedMic && !isDone && (

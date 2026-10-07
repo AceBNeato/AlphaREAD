@@ -1,6 +1,4 @@
 import { supabase } from "../../lib/supabase";
-import { SecureStoragePlugin } from 'capacitor-secure-storage-plugin';
-import { Device } from '@capacitor/device';
 
 export type AppRole = "admin" | "teacher" | "student" | "teacher-preview";
 
@@ -16,30 +14,14 @@ export interface StoredProfile {
 }
 
 export async function secureSet(key: string, value: string) {
-  try {
-    await SecureStoragePlugin.set({ key, value });
-  } catch (err) {
-    console.warn("Secure storage set failed, falling back to localStorage", err);
-    localStorage.setItem(key, value);
-  }
+  localStorage.setItem(key, value);
 }
 
 export async function secureGet(key: string): Promise<string | null> {
-  try {
-    const { value } = await SecureStoragePlugin.get({ key });
-    return value || null;
-  } catch (err) {
-    // Fails on missing key or unsupported platform
-    return localStorage.getItem(key);
-  }
+  return localStorage.getItem(key);
 }
 
 export async function secureRemove(key: string) {
-  try {
-    await SecureStoragePlugin.remove({ key });
-  } catch (err) {
-    // Ignore error
-  }
   localStorage.removeItem(key);
 }
 
@@ -83,25 +65,11 @@ export async function validateStoredSession(allowedRoles: AppRole[]) {
 
   const storedDeviceId = await getStoredDeviceId(profile);
   
-  // Hardware Fingerprint Check
-  try {
-    const info = await Device.getId();
-    const liveHardwareId = info.identifier; // Cross-platform unique identifier
-    
-    // During first online login (or activation), we should save this liveHardwareId 
-    // to "hardware_fingerprint" in secure storage. 
-    // If it doesn't match upon future offline opens, we wipe it.
-    const savedFingerprint = await secureGet("hardware_fingerprint");
-    if (!savedFingerprint) {
-      // First time saving it
-      await secureSet("hardware_fingerprint", liveHardwareId);
-    } else if (savedFingerprint !== liveHardwareId) {
-      console.error("CRITICAL: Hardware fingerprint mismatch! App bundle moved.");
-      await clearStoredSession();
-      return { valid: false, profile: null };
-    }
-  } catch(e) {
-    // Device ID unsupported on web
+  // Hardware Fingerprint Check (Mocked via localStorage for now since native device plugin is removed)
+  let liveHardwareId = await secureGet("hardware_fingerprint");
+  if (!liveHardwareId) {
+    liveHardwareId = 'device_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
+    await secureSet("hardware_fingerprint", liveHardwareId);
   }
 
   try {
@@ -112,15 +80,13 @@ export async function validateStoredSession(allowedRoles: AppRole[]) {
       return { valid: true, profile };
     }
 
-    // OFFLINE FIRST FIX: If the device is offline, trust the local secure storage.
+    // OFFLINE FIRST FIX: If the device is offline, trust the local session.
     if (!navigator.onLine) {
       console.warn("Device is offline. Trusting local session.");
       return { valid: true, profile };
     }
 
     // Race the RPC call against a 5-second timeout.
-    // On Android, navigator.onLine can be TRUE even when there's no real connectivity,
-    // which causes supabase.rpc() to hang forever. The timeout prevents infinite loading.
     const TIMEOUT_MS = 5000;
     const timeoutPromise = new Promise<{ data: null; error: { message: string } }>((resolve) =>
       setTimeout(() => resolve({ data: null, error: { message: "OFFLINE_TIMEOUT" } }), TIMEOUT_MS)
@@ -134,13 +100,11 @@ export async function validateStoredSession(allowedRoles: AppRole[]) {
 
     const { data, error } = await Promise.race([rpcPromise, timeoutPromise]);
 
-    // If there is ANY error (network, timeout, server down), trust local session.
     if (error) {
       console.warn("Session validation failed or timed out. Trusting local session.", error.message);
       return { valid: true, profile };
     }
 
-    // If the server was reached, and it explicitly says the session is invalid:
     if (data && data.valid === false) {
       console.warn("Session invalid reason:", data.reason);
       await clearStoredSession();
@@ -150,7 +114,6 @@ export async function validateStoredSession(allowedRoles: AppRole[]) {
     return { valid: true, profile };
   } catch (err: any) {
     console.error("Session validation exception:", err);
-    // Any unexpected exception (like a fetch crash) should default to trusting the offline session
     return { valid: true, profile };
   }
 }
